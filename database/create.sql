@@ -1,5 +1,10 @@
 -- This trigger updates the value in the updated_at column. It is used in the tables below to log
 -- when a row was last updated.
+CREATE USER anton;
+CREATE DATABASE mymoney;
+GRANT ALL PRIVILEGES ON DATABASE mymoney TO anton;
+ALTER DATABASE mymoney OWNER TO anton;
+\c mymoney anton
 
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()
 RETURNS TRIGGER AS $$

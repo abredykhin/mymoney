@@ -17,10 +17,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.use(noAuthRouter);
-app.use(authenticateJwt);
-app.use(authRouter);
-
 app.get('/status', (request, response) => {
   const status = {
     Status: 'Running',
@@ -28,5 +24,9 @@ app.get('/status', (request, response) => {
 
   response.send(status);
 });
+
+app.use(noAuthRouter);
+app.use(authenticateJwt);
+app.use(authRouter);
 
 app.use(errorHandler);

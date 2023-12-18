@@ -1,0 +1,47 @@
+version: "3.4"
+
+#x-common-variables: &common-variables
+#  POSTGRES_USER: postgres
+#  POSTGRES_PASSWORD: password
+
+volumes:
+  pg_sandbox_data:
+  pg_development_data:
+
+services:
+  postgresdb:
+    image: postgres
+    restart: unless-stopped
+    ports:
+      - 5435:5435
+    env_file: ./.env
+    volumes:
+      - ./db-data:/var/lib/postgres
+      - ./database/create.sql:/docker-entrypoint-initdb.d/create.sql
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080      
+
+  server:
+    build: ./server
+    env_file: ./.env
+    restart: unless-stopped
+    ports:
+      - 5001:5001
+    environment:
+      PLAID_CLIENT_ID:
+      PLAID_SECRET_SANDBOX:
+      PLAID_SECRET_DEVELOPMENT:
+      PLAID_SANDBOX_REDIRECT_URI:
+      PLAID_DEVELOPMENT_REDIRECT_URI:
+      PLAID_ENV:
+      PORT: 5001
+      DB_PORT: 5432
+      DB_HOST_NAME: postgresdb
+    depends_on:
+      - postgresdb
+    stdin_open: true
+    tty: true
