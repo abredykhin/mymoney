@@ -45,3 +45,27 @@ services:
       - postgresdb
     stdin_open: true
     tty: true
+
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+    depends_on:
+      - server
+    command: certonly --webroot --webroot-path=/var/www/html --email abredykhin@gmail.com --agree-tos --no-eff-email --staging -d babloapp.com  -d www.babloapp.com
+    volumes:
+      certbot-etc:
+      certbot-var:
+      web-root:
+        driver: local
+        driver_opts:
+          type: none
+          device: /home/sammy/node_project/views/
+          o: bind
+
+networks:
+  app-network:
+    driver: bridge
