@@ -45,6 +45,18 @@ AS
     users_table;
 
 
+-- SESSIONS
+-- This table is used to store user sessions.
+CREATE TYPE session_token_status AS ENUM ('valid', 'expired');
+
+CREATE TABLE sessions_table
+(
+  token text UNIQUE NOT NULL,
+  created_at timestamptz default now(),
+  user_id integer REFERENCES users_table(id) ON DELETE CASCADE,
+  status session_token_status default 'valid',
+)
+
 -- ITEMS
 -- This table is used to store the items associated with each user. The view returns the same data
 -- as the table, we're just using both to maintain consistency with our other tables. For more info
