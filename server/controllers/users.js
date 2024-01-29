@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const usersQueries = require('../db/queries');
+const usersQueries = require('../db/queries/users');
 const boom = require('@hapi/boom');
 
 const registerUser = async req => {
