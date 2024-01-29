@@ -1,0 +1,22 @@
+openapi: 3.0.3
+info:
+  title: Bablo app API.
+  version: 1.0.0
+servers:
+  - url: http://babloapp.com:5001
+    description: Optional server description, e.g. Main (production) server
+  - url: http://staging-api.example.com
+    description: Optional server description, e.g. Internal staging server for testing
+paths:
+  /users:
+    post:
+      summary: Registers a new user.
+      responses:
+        '2XX':    # status code
+          description: A JSON array of user names
+          content:
+            application/json:
+              schema: 
+                type: array
+                items: 
+                  type: string

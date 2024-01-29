@@ -1,9 +1,8 @@
 const express = require('express');
 const logger = require('morgan');
 const cors = require('cors');
-const { authenticateJwt, errorHandler } = require('./middleware');
-
-const { noAuthRouter, authRouter } = require('./routes');
+const usersRoute = require('./routes/users');
+const { errorHandler } = require('./middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,8 +24,6 @@ app.get('/status', (request, response) => {
   response.send(status);
 });
 
-app.use(noAuthRouter);
-app.use(authenticateJwt);
-app.use(authRouter);
+app.use('/users', usersRoute);
 
-app.use(errorHandler);
+//app.use(errorHandler);
