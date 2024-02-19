@@ -15,7 +15,7 @@ const registerUser = async req => {
   // Checking if the user already exists
   const oldUser = await usersQueries.retrieveUserByUsername(username);
   if (oldUser) {
-    throw boom.badRequest('User Already Exist. Please Login.');
+    throw boom.conflict('User Already Exist. Please Login.');
   }
 
   console.log('No existing users with same username.');
@@ -33,14 +33,14 @@ const registerUser = async req => {
 const loginUser = async req => {
   const { username, password } = req.body;
   if (!(username && password)) {
-    throw boom.badRequest('User Already Exist. Please Login.');
+    throw boom.badRequest('All inputs are required.');
   }
 
   const user = await usersQueries.retrieveUserByUsername(username);
   if (user && (await bcrypt.compare(password, user.password))) {
     return user;
   } else {
-    throw boom.badRequest('User not found!');
+    throw boom.unauthorized('User not found!');
   }
 };
 

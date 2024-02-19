@@ -12,7 +12,7 @@ router.post(
     console.log('Register new user route. Uses updated code!');
     const user = await usersController.registerUser(req);
     const session = await sessionsController.initSession(user.id);
-    const userToReturn = utils.sanitizeUsers(user);
+    const userToReturn = utils.sanitizeUserObject(user);
     console.log('Ready to send data back.');
 
     res.status(200).json({
@@ -27,7 +27,7 @@ router.post(
   asyncWrapper(async (req, res) => {
     const user = await usersController.loginUser(req);
     const session = await sessionsController.initSession(user.id);
-    const userToReturn = utils.sanitizeUsers(user);
+    const userToReturn = utils.sanitizeUserObject(user);
 
     const returnObj = {
       user: userToReturn,

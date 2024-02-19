@@ -47,14 +47,15 @@ const sanitizeAccounts = accounts =>
  * @param {(Object|Object[])} items a single item or an array of items.
  */
 const sanitizeItems = items =>
-  sanitizeWith(items, [
-    'id',
-    'user_id',
-    'plaid_institution_id',
-    'status',
-    'created_at',
-    'updated_at',
-  ]);
+  sanitizeWith(items, ['id', 'user_id', 'plaid_institution_id', 'status']);
+
+function sanitizeUserObject(user) {
+  const sanitizedUser = {
+    id: user.id,
+    username: user.username,
+  };
+  return sanitizedUser;
+}
 
 /**
  * Returns an array of sanitized users.
@@ -79,8 +80,6 @@ const sanitizeTransactions = transactions =>
     'date',
     'category',
     'amount',
-    'created_at',
-    'updated_at',
   ]);
 
 const validItemStatuses = new Set(['good', 'bad']);
@@ -92,6 +91,6 @@ module.exports = {
   sanitizeItems,
   sanitizeUsers,
   sanitizeTransactions,
-  validItemStatuses,
   isValidItemStatus,
+  sanitizeUserObject,
 };
