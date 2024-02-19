@@ -7,7 +7,8 @@
 
 import Foundation
 
-class User: Identifiable, Codable {
+struct User: Identifiable, Codable {
     let id: String
-    let name: String    
+    let name: String
+    let token: String
 }

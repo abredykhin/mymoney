@@ -51,7 +51,7 @@ const sanitizeItems = items =>
 
 function sanitizeUserObject(user) {
   const sanitizedUser = {
-    id: user.id,
+    id: user.id.toString(),
     username: user.username,
   };
   return sanitizedUser;

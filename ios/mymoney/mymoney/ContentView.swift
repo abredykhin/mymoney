@@ -13,8 +13,10 @@ struct ContentView: View {
     var body: some View {
         Group {
             if (viewModel.currentUser != nil) {
+                Print("ContentView: user is known, showing home screen")
                 HomeView()
             } else {
+                Print("ContentView: user is NOT known, showing login form")
                 LoginView()
             }
         }

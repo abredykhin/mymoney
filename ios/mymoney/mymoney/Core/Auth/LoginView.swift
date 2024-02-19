@@ -24,12 +24,6 @@ struct LoginView: View {
     var body: some View {
         NavigationView {
             VStack {
-                Image(systemName: "person.circle.fill")
-                    .font(.system(size: 100))
-                    .foregroundColor(.primaryColor)
-                    .shadow(radius: 2)
-                    .symbolEffect(.scale.up)
-
                 TextField("Email", text: $email)
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
@@ -50,7 +44,13 @@ struct LoginView: View {
 
                 Button {
                     Task {
-                        try await viewModel.signIn(email:email, password:password)
+                        if (isSignIn) {
+                            debugPrint("Sign In button pressed!")
+                            try await viewModel.signIn(email:email, password:password)
+                        } else {
+                            debugPrint("Sign Up button pressed!")
+                            try await viewModel.createAccount(name:"", email: email, password: password)
+                        }
                     }
                 } label: {
                     Text(isSignIn ? "Sign In" : "Sign Up")

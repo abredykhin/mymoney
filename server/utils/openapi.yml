@@ -5,11 +5,12 @@ info:
 servers:
   - url: http://babloapp.com:5001
     description: Main (production) server
-  #- url: http://staging-api.example.com
-  #  description: Optional server description, e.g. Internal staging server for testing
+  - url: http://localhost:3000
+    description: Localhost dev server
 paths:
   /users/register:
     post:
+      operationId: userRegister
       summary: Registers a new user
       requestBody:
         required: true
@@ -30,20 +31,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                    example: 25893ed5f97eb70587d1e04d7a9335d3c6e2065b4368590d9d55d0be1f75a009
-                  user:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 11
-                      username:
-                        type: string
-                        example: username
+                $ref: '#/components/schemas/UserWithToken'
         '400':
           description: Invalid request data
           content:
@@ -66,6 +54,7 @@ paths:
                     example: Username already taken
   /users/login:
     post:
+      operationId: userLogin    
       summary: Logins an existing user
       requestBody:
         required: true
@@ -80,28 +69,13 @@ paths:
                 password:
                   type: string
                   example: password
-                  description: Password (will not be stored in API response)
       responses:
         '200':
           description: User logged in successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                    example: 25893ed5f97eb70587d1e04d7a9335d3c6e2065b4368590d9d55d0be1f75a009
-                    description: Authentication token (sensitive information)
-                  user:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 11
-                      username:
-                        type: string
-                        example: username
+                $ref: '#/components/schemas/UserWithToken'
         '401':
           description: Invalid username or password
           content:
@@ -122,3 +96,23 @@ paths:
                   error:
                     type: string
                     example: Missing username or password
+components:
+  schemas:
+    UserWithToken:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+          example: 25893ed5f97eb70587d1e04d7a9335d3c6e2065b4368590d9d55d0be1f75a009
+          description: Authentication token (sensitive information)
+        user:
+          type: object
+          required: [id, username]
+          properties:
+            id:
+              type: string
+              example: 11
+            username:
+              type: string
+              example: username
