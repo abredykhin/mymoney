@@ -2,29 +2,42 @@ const express = require('express');
 const usersController = require('../controllers/users');
 const sessionsController = require('../controllers/sessions');
 const utils = require('../utils');
+const { asyncWrapper } = require('../utils/errors');
 
 const router = express.Router();
 
-router.post('/register', async (req, res) => {
-  const user = usersController.registerUser(req);
-  const session = sessionsController.initSession(user.id);
-  const userToReturn = utils.sanitizeUsers(user);
+router.post(
+  '/register',
+  asyncWrapper(async (req, res) => {
+    console.log('Register new user route. Uses updated code!');
+    const user = await usersController.registerUser(req);
+    const session = await sessionsController.initSession(user.id);
+    const userToReturn = utils.sanitizeUsers(user);
+    console.log('Ready to send data back.');
 
-  return res.status(200).json({
-    user: userToReturn,
-    token: session.token,
-  });
-});
+    res.status(200).json({
+      user: userToReturn,
+      token: session.token,
+    });
+  })
+);
 
-router.post('/login', async (req, res) => {
-  const user = usersController.loginUser(req);
-  const session = sessionsController.initSession(user.id);
-  const userToReturn = utils.sanitizeUsers(user);
+router.post(
+  '/login',
+  asyncWrapper(async (req, res) => {
+    const user = await usersController.loginUser(req);
+    const session = await sessionsController.initSession(user.id);
+    const userToReturn = utils.sanitizeUsers(user);
 
-  return res.status(200).json({
-    user: userToReturn,
-    token: session.token,
-  });
-});
+    const returnObj = {
+      user: userToReturn,
+      token: session.token,
+    };
+
+    console.dir(returnObj, { depth: null });
+
+    res.status(200).json(returnObj);
+  })
+);
 
 module.exports = router;

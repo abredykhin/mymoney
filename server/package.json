@@ -5,14 +5,14 @@
   "main": "app.js",
   "scripts": {
     "test": "test",
-    "start": "node app.js",
+    "start": "nodemon app.js",
     "debug": "nodemon --inspect=0.0.0.0:9229 app.js"
   },
   "author": "abredykhin",
   "license": "ISC",
   "dependencies": {
     "@hapi/boom": "^10.0.1",
-    "bcrypt": "^5.1.1",
+    "bcrypt": "5.1.1",
     "cors": "^2.8.5",
     "debug": "^4.3.4",
     "dotenv": "^16.3.1",

@@ -1,5 +1,4 @@
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const usersQueries = require('../db/queries/users');
 const boom = require('@hapi/boom');
 
@@ -11,14 +10,19 @@ const registerUser = async req => {
     throw boom.badRequest('All inputs are required');
   }
 
+  console.log('Received non-empty name & password values.');
+
   // Checking if the user already exists
   const oldUser = await usersQueries.retrieveUserByUsername(username);
   if (oldUser) {
     throw boom.badRequest('User Already Exist. Please Login.');
   }
 
+  console.log('No existing users with same username.');
+
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
+  console.log(`Hashed password: ${hashedPassword}`);
 
   const user = await usersQueries.createUser(username, hashedPassword);
   console.log(`New user created with ${username}.`);
@@ -32,7 +36,7 @@ const loginUser = async req => {
     throw boom.badRequest('User Already Exist. Please Login.');
   }
 
-  const user = await retrieveUserByUsername(username);
+  const user = await usersQueries.retrieveUserByUsername(username);
   if (user && (await bcrypt.compare(password, user.password))) {
     return user;
   } else {

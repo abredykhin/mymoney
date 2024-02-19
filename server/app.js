@@ -26,4 +26,4 @@ app.get('/status', (request, response) => {
 
 app.use('/users', usersRoute);
 
-//app.use(errorHandler);
+app.use(errorHandler);

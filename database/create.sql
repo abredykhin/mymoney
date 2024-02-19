@@ -54,8 +54,8 @@ CREATE TABLE sessions_table
   token text UNIQUE NOT NULL,
   created_at timestamptz default now(),
   user_id integer REFERENCES users_table(id) ON DELETE CASCADE,
-  status session_token_status default 'valid',
-)
+  status session_token_status default 'valid'
+);
 
 -- ITEMS
 -- This table is used to store the items associated with each user. The view returns the same data

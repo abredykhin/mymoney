@@ -7,6 +7,9 @@ Dockerfile*
 docker-compose*
 .dockerignore
 
+# iOS code
+ios
+
 # other
 .DS_Store
 .env

@@ -3,13 +3,16 @@
  */
 
 const db = require('../');
+require('util').inspect.defaultOptions.depth = null;
 
 const createSession = async (token, crsfToken, userId) => {
+  console.log(`Adding new session token to database for ${userId} user`);
   const query = {
-    text: 'INSERT INTO sessions_table (token, user_id) VALUES ($1, $2, $3)',
+    text: 'INSERT INTO sessions_table (token, user_id) VALUES ($1, $2) RETURNING token;',
     values: [token, userId],
   };
-  await db.query(query);
+  const res = await db.query(query);
+  return res.rows[0];
 };
 
 const expireToken = async token => {
@@ -17,7 +20,7 @@ const expireToken = async token => {
     text: 'UPDATE sessions_table SET "status" = expired WHERE token = $1;',
     values: [token],
   };
-  await db.query(query);
+  return await db.query(query);
 };
 
 module.exports = {

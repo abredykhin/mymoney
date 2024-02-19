@@ -7,10 +7,11 @@ version: "3.4"
 volumes:
   pg_sandbox_data:
   pg_development_data:
+  server_data:
 
 services:
   postgresdb:
-    image: postgres
+    image: postgres:16.2
     restart: unless-stopped
     ports:
       - 5435:5435
@@ -20,7 +21,7 @@ services:
       - ./database/create.sql:/docker-entrypoint-initdb.d/create.sql
 
   adminer:
-    image: adminer
+    image: adminer:4.8.1
     restart: always
     ports:
       - 8080:8080      
@@ -39,12 +40,16 @@ services:
       PLAID_DEVELOPMENT_REDIRECT_URI:
       PLAID_ENV:
       PORT: 5001
-      DB_PORT: 5432
+      DB_PORT: 5435
       DB_HOST_NAME: postgresdb
+      NODE_ENV: development
     depends_on:
       - postgresdb
     stdin_open: true
     tty: true
+    volumes:
+#      - ./server:/opt/server   <- Breaks bccrypt and discouraged generally
+#      - /opt/server/app/node_modules # anonymous volume for node_modules only
 
 networks:
   app-network:

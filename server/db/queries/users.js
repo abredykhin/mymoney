@@ -3,6 +3,7 @@
  */
 
 const db = require('../');
+require('util').inspect.defaultOptions.depth = null;
 
 /**
  * Creates a single user.
@@ -11,14 +12,14 @@ const db = require('../');
  * @returns {Object} the new user.
  */
 const createUser = async (username, hashedPassword) => {
+  console.log(`Adding user to database: ${username}`);
   const query = {
     // RETURNING is a Postgres-specific clause that returns a list of the inserted items.
     text: 'INSERT INTO users_table (username, password) VALUES ($1, $2) RETURNING *;',
     values: [username, hashedPassword],
   };
-  console.log('About to run the query!! ' + username + ' ' + hashedPassword);
-  const { rows } = await db.query(query);
-  return rows[0];
+  const res = await db.query(query);
+  return res.rows[0];
 };
 
 /**
@@ -47,9 +48,8 @@ const retrieveUserById = async userId => {
     text: 'SELECT * FROM users WHERE id = $1',
     values: [userId],
   };
-  const { rows } = await db.query(query);
-  // since the user IDs are unique, this query will return at most one result.
-  return rows[0];
+  const res = await db.query(query);
+  return res.rows[0];
 };
 
 /**
@@ -63,9 +63,8 @@ const retrieveUserByUsername = async username => {
     text: 'SELECT * FROM users WHERE username = $1',
     values: [username],
   };
-  const { rows: users } = await db.query(query);
-  // the username column has a UNIQUE constraint, so this will never return more than one row.
-  return users[0];
+  const res = await db.query(query);
+  return res.rows[0];
 };
 
 /**
