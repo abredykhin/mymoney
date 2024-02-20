@@ -3,7 +3,8 @@
  */
 
 const Boom = require('@hapi/boom');
-const jwt = require('jsonwebtoken');
+const sessionQueries = require('../db/queries/sessions');
+const userQueries = require('../db/queries/users');
 
 /**
  * A higher-order function that wraps an async callback to properly trigger the
@@ -13,7 +14,24 @@ const jwt = require('jsonwebtoken');
  * @returns {Function} an Express callback that resolves the wrapped async fn.
  */
 const asyncWrapper = fn => (req, res, next) => {
-  return Promise.resolve(fn(req, res, next)).catch(next);
+  return Promise.resolve(fn(req, res, next)).catch(error => {
+    console.error('Caught an error!');
+
+    if (error.isBoom) {
+      console.error('The error is boom!');
+      // Return the Boom error directly with its appropriate status code
+      return res.status(error.output.statusCode).json(error.output.payload);
+    } else {
+      // Still log the error for debugging
+      console.error('The error is NOT boom!!!');
+      console.error(error);
+      // Create a Boom error with a 500 status code and a generic message
+      const boomError = Boom.internal('Internal Server Error');
+      return res
+        .status(boomError.output.statusCode)
+        .json(boomError.output.payload);
+    }
+  });
 };
 
 /**
@@ -29,6 +47,7 @@ const asyncWrapper = fn => (req, res, next) => {
  */
 const errorHandler = (err, req, res, next) => {
   console.log("We've got an error!");
+  console.log(err);
   let error = err;
 
   // handle errors from the Plaid api.
@@ -43,27 +62,37 @@ const errorHandler = (err, req, res, next) => {
   res.status(statusCode).json(payload);
 };
 
-const authenticateJwt = async (req, res, next) => {
+const verifyToken = async (req, res, next) => {
+  console.log('Verifying token...');
   const authHeader = req.headers.authorization;
 
-  if (authHeader) {
+  if (typeof authHeader !== 'undefined') {
     const [header, token] = authHeader.split(' ');
 
     if (!(header && token)) {
-      return res.status(401).send('Authentication credentials are required.');
+      return Boom.unauthorized('Authentication credentials are required.');
     }
 
-    jwt.verify(token, process.env.JWT_SECRET_KEY, (err, user) => {
-      if (err) {
-        return res.sendStatus(403);
-      }
+    const userId = await sessionQueries.lookupToken(token);
+    if (!userId) {
+      return Boom.unauthorized('Invalid token.');
+    }
 
-      req.user = user;
-      next();
-    });
+    console.log(`Found user ${userId.user_id} associated with the token`);
+    const user = await userQueries.retrieveUserById(userId.user_id);
+    if (!user) {
+      return Boom.forbidden('User not found!');
+    }
+
+    req.token = token;
+    req.user = user;
+    req.userId = user.id;
+
+    next();
+  } else {
+    console.log('Token not found!');
+    next(Boom.unauthorized('Token not found!'));
   }
-
-  return res.sendStatus(401);
 };
 
-module.exports = { asyncWrapper, errorHandler, authenticateJwt };
+module.exports = { asyncWrapper, errorHandler, verifyToken };

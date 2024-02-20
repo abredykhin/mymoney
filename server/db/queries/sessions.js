@@ -23,7 +23,19 @@ const expireToken = async token => {
   return await db.query(query);
 };
 
+const lookupToken = async token => {
+  console.log(`Looking up token ${token}`);
+  const query = {
+    text: 'SELECT user_id FROM sessions_table WHERE token = $1;',
+    values: [token],
+  };
+
+  const res = await db.query(query);
+  return res.rows[0];
+};
+
 module.exports = {
   createSession,
   expireToken,
+  lookupToken,
 };

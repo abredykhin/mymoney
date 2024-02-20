@@ -1,34 +1,6 @@
 const Boom = require('@hapi/boom');
 
 /**
- * A higher-order function that wraps an async callback to properly trigger the
- * Express error-handling middleware on errors.
- *
- * @param {Function} fn an async callback.
- * @returns {Function} an Express callback that resolves the wrapped async fn.
- */
-const asyncWrapper = fn => (req, res, next) => {
-  return Promise.resolve(fn(req, res, next)).catch(error => {
-    console.error('Caught an error!');
-
-    if (error.isBoom) {
-      console.error('The error is boom!');
-      // Return the Boom error directly with its appropriate status code
-      return res.status(error.output.statusCode).json(error.output.payload);
-    } else {
-      // Still log the error for debugging
-      console.error('The error is NOT boom!!!');
-      console.error(error);
-      // Create a Boom error with a 500 status code and a generic message
-      const boomError = Boom.internal('Internal Server Error');
-      return res
-        .status(boomError.output.statusCode)
-        .json(boomError.output.payload);
-    }
-  });
-};
-
-/**
  * A catch-all error handler that sends a formatted JSON response.
  * Uses Boom to set the status code and provide consistent formatting.
  *
@@ -54,4 +26,4 @@ const errorHandler = (err, req, res, next) => {
   res.status(statusCode).json(payload);
 };
 
-module.exports = { asyncWrapper, errorHandler };
+module.exports = { errorHandler };

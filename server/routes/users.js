@@ -1,42 +1,57 @@
 const express = require('express');
-const usersController = require('../controllers/users');
-const sessionsController = require('../controllers/sessions');
-const utils = require('../utils');
-const { asyncWrapper } = require('../utils/errors');
+const { retrieveAccountsByUserId } = require('../db/queries/accounts');
+const { retrieveItemsByUser } = require('../db/queries/items');
+const { retrieveTransactionsByUserId } = require('../db/queries/transactions');
+const { sanitizeItems, sanitizeAccounts } = require('../utils/sanitize');
+const { asyncWrapper } = require('../middleware');
 
 const router = express.Router();
 
-router.post(
-  '/register',
+/**
+ * Retrieves all items associated with a single user.
+ *
+ * @param {string} userId the ID of the user.
+ * @returns {Object[]} an array of items.
+ */
+router.get(
+  '/:userId/items',
   asyncWrapper(async (req, res) => {
-    console.log('Register new user route. Uses updated code!');
-    const user = await usersController.registerUser(req);
-    const session = await sessionsController.initSession(user.id);
-    const userToReturn = utils.sanitizeUserObject(user);
-    console.log('Ready to send data back.');
-
-    res.status(200).json({
-      user: userToReturn,
-      token: session.token,
-    });
+    const userId = req.userId;
+    console.log(`Retrieving user items for user ${userId}`);
+    const items = await retrieveItemsByUser(userId);
+    res.json(sanitizeItems(items));
   })
 );
 
-router.post(
-  '/login',
+/**
+ * Retrieves all accounts associated with a single user.
+ *
+ * @param {string} userId the ID of the user.
+ * @returns {Object[]} an array of accounts.
+ */
+router.get(
+  '/accounts',
   asyncWrapper(async (req, res) => {
-    const user = await usersController.loginUser(req);
-    const session = await sessionsController.initSession(user.id);
-    const userToReturn = utils.sanitizeUserObject(user);
+    const userId = req.userId;
+    console.log(`Retrieving user accounts for user ${userId}`);
+    const accounts = await retrieveAccountsByUserId(userId);
+    res.json(sanitizeAccounts(accounts));
+  })
+);
 
-    const returnObj = {
-      user: userToReturn,
-      token: session.token,
-    };
-
-    console.dir(returnObj, { depth: null });
-
-    res.status(200).json(returnObj);
+/**
+ * Retrieves all transactions associated with a single user.
+ *
+ * @param {string} userId the ID of the user.
+ * @returns {Object[]} an array of transactions
+ */
+router.get(
+  '/transactions',
+  asyncWrapper(async (req, res) => {
+    const userId = req.userId;
+    console.log(`Retrieving user transactions for user ${userId}`);
+    const transactions = await retrieveTransactionsByUserId(userId);
+    res.json(sanitizeTransactions(transactions));
   })
 );
 

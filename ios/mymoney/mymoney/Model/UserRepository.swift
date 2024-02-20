@@ -9,30 +9,16 @@ import Foundation
 import OpenAPIRuntime
 import OpenAPIURLSession
 
-struct LoginBody: Codable {
-    var username: String
-    var password: String
-}
-
 enum ApiError: Error {
     case unathorized(String)
     case genericError(String)
-    
 }
 
 class UserRepository {
     private let client: Client
     
     init() {
-        var serverUrl: URL
-#if TARGET_OS_SIMULATOR
-        Logger.d("UserRepository is using production server!")
-        serverUrl = try! Servers.server1()
-#else
-        Logger.d("UserRepository is using local dev server!")
-        serverUrl = try! Servers.server2()
-#endif
-        client = Client(serverURL: serverUrl, transport: URLSessionTransport())
+        client = Client(serverURL: Client.getServerUrl(), transport: URLSessionTransport())
     }
     
     func login(username: String, password: String) async throws -> User {

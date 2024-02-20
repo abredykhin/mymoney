@@ -12,6 +12,15 @@ struct HomeView: View {
     @EnvironmentObject var viewMode: AuthViewModel
     
     var body: some View {
-        Text(verbatim: "HELLO")
+        TabView {
+            OverviewView()
+                .tabItem {
+                    Label("", systemImage: "checkmark.circle")
+                }
+            TransactionsView()
+                .tabItem {
+                    Label("", systemImage: "questionmark.diamond")
+                }
+        }
     }
 }

@@ -27,6 +27,13 @@
 		75BADAF02B83F69C001701E2 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = 75BADAEF2B83F69C001701E2 /* Valet */; };
 		75BADAF52B8410EB001701E2 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADAF42B8410EB001701E2 /* Logger.swift */; };
 		75BADAF72B841109001701E2 /* View+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADAF62B841109001701E2 /* View+Extensions.swift */; };
+		75BADB012B842147001701E2 /* OverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB002B842147001701E2 /* OverviewView.swift */; };
+		75BADB042B842174001701E2 /* TransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB032B842174001701E2 /* TransactionsView.swift */; };
+		75BADB062B8422EB001701E2 /* AccountsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB052B8422EB001701E2 /* AccountsView.swift */; };
+		75BADB0A2B842354001701E2 /* AccountsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB092B842354001701E2 /* AccountsViewModel.swift */; };
+		75BADB0C2B84238A001701E2 /* AccountsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB0B2B84238A001701E2 /* AccountsRepository.swift */; };
+		75BADB0E2B8423E0001701E2 /* Client+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB0D2B8423E0001701E2 /* Client+Extensions.swift */; };
+		75BADB102B842477001701E2 /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB0F2B842477001701E2 /* Account.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,6 +74,13 @@
 		75BADAE82B8332BE001701E2 /* openapi-generator-config.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = "openapi-generator-config.yaml"; sourceTree = "<group>"; };
 		75BADAF42B8410EB001701E2 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		75BADAF62B841109001701E2 /* View+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Extensions.swift"; sourceTree = "<group>"; };
+		75BADB002B842147001701E2 /* OverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewView.swift; sourceTree = "<group>"; };
+		75BADB032B842174001701E2 /* TransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsView.swift; sourceTree = "<group>"; };
+		75BADB052B8422EB001701E2 /* AccountsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsView.swift; sourceTree = "<group>"; };
+		75BADB092B842354001701E2 /* AccountsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsViewModel.swift; sourceTree = "<group>"; };
+		75BADB0B2B84238A001701E2 /* AccountsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsRepository.swift; sourceTree = "<group>"; };
+		75BADB0D2B8423E0001701E2 /* Client+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Client+Extensions.swift"; sourceTree = "<group>"; };
+		75BADB0F2B842477001701E2 /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -163,6 +177,7 @@
 		756ECF322B5E47CC001F55A5 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				75BADB082B842342001701E2 /* Accounts */,
 				756ECF332B5E47DE001F55A5 /* Auth */,
 				756ECF3B2B5E4DD0001F55A5 /* Home */,
 			);
@@ -183,6 +198,8 @@
 			children = (
 				756ECF352B5E47F8001F55A5 /* User.swift */,
 				7576F7902B6577FD006083F4 /* UserRepository.swift */,
+				75BADB0B2B84238A001701E2 /* AccountsRepository.swift */,
+				75BADB0F2B842477001701E2 /* Account.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -190,7 +207,9 @@
 		756ECF3B2B5E4DD0001F55A5 /* Home */ = {
 			isa = PBXGroup;
 			children = (
+				75BADB002B842147001701E2 /* OverviewView.swift */,
 				756ECF3C2B5E4DEE001F55A5 /* HomeView.swift */,
+				75BADB032B842174001701E2 /* TransactionsView.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -200,8 +219,18 @@
 			children = (
 				75BADAF42B8410EB001701E2 /* Logger.swift */,
 				75BADAF62B841109001701E2 /* View+Extensions.swift */,
+				75BADB0D2B8423E0001701E2 /* Client+Extensions.swift */,
 			);
 			path = Util;
+			sourceTree = "<group>";
+		};
+		75BADB082B842342001701E2 /* Accounts */ = {
+			isa = PBXGroup;
+			children = (
+				75BADB052B8422EB001701E2 /* AccountsView.swift */,
+				75BADB092B842354001701E2 /* AccountsViewModel.swift */,
+			);
+			path = Accounts;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -351,12 +380,19 @@
 			buildActionMask = 2147483647;
 			files = (
 				756ECF382B5E4869001F55A5 /* AuthViewModel.swift in Sources */,
+				75BADB0E2B8423E0001701E2 /* Client+Extensions.swift in Sources */,
 				75BADAF72B841109001701E2 /* View+Extensions.swift in Sources */,
 				7559CF4F2B2FBAA600409A9A /* ContentView.swift in Sources */,
+				75BADB012B842147001701E2 /* OverviewView.swift in Sources */,
+				75BADB102B842477001701E2 /* Account.swift in Sources */,
 				7559CF4D2B2FBAA600409A9A /* mymoneyApp.swift in Sources */,
+				75BADB0A2B842354001701E2 /* AccountsViewModel.swift in Sources */,
+				75BADB042B842174001701E2 /* TransactionsView.swift in Sources */,
 				7576F7912B6577FD006083F4 /* UserRepository.swift in Sources */,
 				756ECF3D2B5E4DEE001F55A5 /* HomeView.swift in Sources */,
+				75BADB062B8422EB001701E2 /* AccountsView.swift in Sources */,
 				756ECF3A2B5E4911001F55A5 /* LoginView.swift in Sources */,
+				75BADB0C2B84238A001701E2 /* AccountsRepository.swift in Sources */,
 				756ECF362B5E47F8001F55A5 /* User.swift in Sources */,
 				75BADAF52B8410EB001701E2 /* Logger.swift in Sources */,
 			);

@@ -44,6 +44,7 @@ const deleteUsers = async userId => {
  * @returns {Object} a user.
  */
 const retrieveUserById = async userId => {
+  console.log(`Querying db for user ${userId}`);
   const query = {
     text: 'SELECT * FROM users WHERE id = $1',
     values: [userId],

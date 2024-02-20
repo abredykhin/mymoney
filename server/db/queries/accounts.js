@@ -115,6 +115,7 @@ const retrieveAccountsByItemId = async itemId => {
  * @returns {Object[]} an array of accounts.
  */
 const retrieveAccountsByUserId = async userId => {
+  console.log(`Querying db for accounts for user ${userId}`);
   const query = {
     text: 'SELECT * FROM accounts WHERE user_id = $1 ORDER BY id',
     values: [userId],
