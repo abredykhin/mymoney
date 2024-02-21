@@ -19,29 +19,23 @@ private enum UserKeys: String {
 }
 
 @MainActor
-class AuthViewModel: ObservableObject {
+class UserSessionService: ObservableObject {
     @Published var currentUser: User? = nil
     private let defaults = UserDefaults.standard
-    private let userRepository = UserRepository()
+    private let userRepository: UserRepository
     private let valet = Valet.valet(with: Identifier(nonEmpty: "BabloApp")!, accessibility: .whenUnlocked)
-
-    init() {
-        if (isUserLoggedIn()) {
-            Logger.d("User is logged in. Retrieving data...")
-            if let token = try? valet.string(forKey: UserKeys.token.rawValue), let userId = try? valet.string(forKey: UserKeys.id.rawValue), let userName = try? valet.string(forKey: UserKeys.name.rawValue) {
-                currentUser = User(id: userId, name: userName, token: token)
-                Logger.d("Logged in as \(userName)")
-            } else {
-                Logger.e("User is not logged in!")
-            }
-        }
-    }
     
-    private func isUserLoggedIn() -> Bool {
-        if let _ = try? valet.string(forKey: UserKeys.token.rawValue) {
-            return true
+    init() {
+        Logger.d("Checking if user is logged in. Retrieving data...")
+        if let token = try? valet.string(forKey: UserKeys.token.rawValue), let userId = try? valet.string(forKey: UserKeys.id.rawValue), let userName = try? valet.string(forKey: UserKeys.name.rawValue) {
+            let user = User(id: userId, name: userName, token: token)
+            currentUser = user
+            userRepository = UserRepository(token: user.token)
+            
+            Logger.d("Logged in as \(userName)")
         } else {
-            return false
+            Logger.e("User is not logged in!")
+            userRepository = UserRepository(token: "")
         }
     }
     

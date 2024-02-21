@@ -3,7 +3,7 @@ info:
   title: Bablo app API.
   version: 1.0.0
 servers:
-  - url: https://babloapp.com:5001
+  - url: http://babloapp.com:5001
     description: Main (production) server
   - url: http://localhost:3000
     description: Localhost dev server
@@ -96,7 +96,24 @@ paths:
                   error:
                     type: string
                     example: Missing username or password
+  /link-token:
+    post:
+      summary: Generates a Link token
+      operationId: getLinkToken
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Link token response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkTokenResponse'
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
   schemas:
     UserWithToken:
       type: object
@@ -116,3 +133,17 @@ components:
             username:
               type: string
               example: username
+    LinkTokenResponse:
+      type: object
+      required:
+        - expiration
+        - link_token
+        - request_id
+      properties:
+        expiration:
+          type: string
+          format: date-time
+        link_token:
+          type: string
+        request_id:
+          type: string

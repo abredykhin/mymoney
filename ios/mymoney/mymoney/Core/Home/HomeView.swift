@@ -9,8 +9,8 @@ import SwiftUI
 
 struct HomeView: View {
     
-    @EnvironmentObject var viewMode: AuthViewModel
-    
+    @EnvironmentObject var userSessionService: UserSessionService
+
     var body: some View {
         TabView {
             OverviewView()

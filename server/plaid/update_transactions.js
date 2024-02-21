@@ -9,7 +9,7 @@ const {
   createOrUpdateTransactions,
   deleteTransactions,
   updateItemTransactionsCursor,
-} = require('./db/queries');
+} = require('../db/queries');
 
 /**
  * Fetches transactions from the Plaid API for a given item.

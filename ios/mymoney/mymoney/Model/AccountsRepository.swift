@@ -16,9 +16,9 @@ class AccountsRepository {
         client = Client(serverURL: Client.getServerUrl(), transport: URLSessionTransport())
     }
     
-    func getAccounts() -> [Account]? {
-        Logger.w("Requesting list of accounts")
-
-        return nil
-    }
+//    func getAccounts() -> [Account]? {
+//        Logger.w("Requesting list of accounts")
+//
+//        return nil
+//    }
 }

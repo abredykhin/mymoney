@@ -16,7 +16,7 @@
 		7559CF6B2B2FBAA700409A9A /* mymoneyUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7559CF6A2B2FBAA700409A9A /* mymoneyUITestsLaunchTests.swift */; };
 		7559CF792B2FBC9200409A9A /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7559CF782B2FBC9200409A9A /* LinkKit */; };
 		756ECF362B5E47F8001F55A5 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 756ECF352B5E47F8001F55A5 /* User.swift */; };
-		756ECF382B5E4869001F55A5 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 756ECF372B5E4869001F55A5 /* AuthViewModel.swift */; };
+		756ECF382B5E4869001F55A5 /* UserSessionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 756ECF372B5E4869001F55A5 /* UserSessionService.swift */; };
 		756ECF3A2B5E4911001F55A5 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 756ECF392B5E4911001F55A5 /* LoginView.swift */; };
 		756ECF3D2B5E4DEE001F55A5 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 756ECF3C2B5E4DEE001F55A5 /* HomeView.swift */; };
 		7576F7912B6577FD006083F4 /* UserRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7576F7902B6577FD006083F4 /* UserRepository.swift */; };
@@ -33,7 +33,8 @@
 		75BADB0A2B842354001701E2 /* AccountsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB092B842354001701E2 /* AccountsViewModel.swift */; };
 		75BADB0C2B84238A001701E2 /* AccountsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB0B2B84238A001701E2 /* AccountsRepository.swift */; };
 		75BADB0E2B8423E0001701E2 /* Client+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB0D2B8423E0001701E2 /* Client+Extensions.swift */; };
-		75BADB102B842477001701E2 /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB0F2B842477001701E2 /* Account.swift */; };
+		75BADB122B844CC2001701E2 /* ItemsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB112B844CC2001701E2 /* ItemsRepository.swift */; };
+		75BADB152B84667D001701E2 /* AuthMiddleware.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB142B84667D001701E2 /* AuthMiddleware.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -66,7 +67,7 @@
 		7559CF682B2FBAA700409A9A /* mymoneyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mymoneyUITests.swift; sourceTree = "<group>"; };
 		7559CF6A2B2FBAA700409A9A /* mymoneyUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mymoneyUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		756ECF352B5E47F8001F55A5 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
-		756ECF372B5E4869001F55A5 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
+		756ECF372B5E4869001F55A5 /* UserSessionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSessionService.swift; sourceTree = "<group>"; };
 		756ECF392B5E4911001F55A5 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		756ECF3C2B5E4DEE001F55A5 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		7576F7902B6577FD006083F4 /* UserRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserRepository.swift; sourceTree = "<group>"; };
@@ -80,7 +81,8 @@
 		75BADB092B842354001701E2 /* AccountsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsViewModel.swift; sourceTree = "<group>"; };
 		75BADB0B2B84238A001701E2 /* AccountsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsRepository.swift; sourceTree = "<group>"; };
 		75BADB0D2B8423E0001701E2 /* Client+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Client+Extensions.swift"; sourceTree = "<group>"; };
-		75BADB0F2B842477001701E2 /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
+		75BADB112B844CC2001701E2 /* ItemsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemsRepository.swift; sourceTree = "<group>"; };
+		75BADB142B84667D001701E2 /* AuthMiddleware.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMiddleware.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -187,7 +189,7 @@
 		756ECF332B5E47DE001F55A5 /* Auth */ = {
 			isa = PBXGroup;
 			children = (
-				756ECF372B5E4869001F55A5 /* AuthViewModel.swift */,
+				756ECF372B5E4869001F55A5 /* UserSessionService.swift */,
 				756ECF392B5E4911001F55A5 /* LoginView.swift */,
 			);
 			path = Auth;
@@ -199,7 +201,8 @@
 				756ECF352B5E47F8001F55A5 /* User.swift */,
 				7576F7902B6577FD006083F4 /* UserRepository.swift */,
 				75BADB0B2B84238A001701E2 /* AccountsRepository.swift */,
-				75BADB0F2B842477001701E2 /* Account.swift */,
+				75BADB112B844CC2001701E2 /* ItemsRepository.swift */,
+				75BADB142B84667D001701E2 /* AuthMiddleware.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -379,13 +382,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				756ECF382B5E4869001F55A5 /* AuthViewModel.swift in Sources */,
+				756ECF382B5E4869001F55A5 /* UserSessionService.swift in Sources */,
+				75BADB152B84667D001701E2 /* AuthMiddleware.swift in Sources */,
 				75BADB0E2B8423E0001701E2 /* Client+Extensions.swift in Sources */,
 				75BADAF72B841109001701E2 /* View+Extensions.swift in Sources */,
 				7559CF4F2B2FBAA600409A9A /* ContentView.swift in Sources */,
 				75BADB012B842147001701E2 /* OverviewView.swift in Sources */,
-				75BADB102B842477001701E2 /* Account.swift in Sources */,
 				7559CF4D2B2FBAA600409A9A /* mymoneyApp.swift in Sources */,
+				75BADB122B844CC2001701E2 /* ItemsRepository.swift in Sources */,
 				75BADB0A2B842354001701E2 /* AccountsViewModel.swift in Sources */,
 				75BADB042B842174001701E2 /* TransactionsView.swift in Sources */,
 				7576F7912B6577FD006083F4 /* UserRepository.swift in Sources */,
@@ -579,7 +583,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = antonbredykhin.mymoney;
+				PRODUCT_BUNDLE_IDENTIFIER = net.babloapp.mymoney;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
@@ -617,7 +621,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = antonbredykhin.mymoney;
+				PRODUCT_BUNDLE_IDENTIFIER = net.babloapp.mymoney;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";

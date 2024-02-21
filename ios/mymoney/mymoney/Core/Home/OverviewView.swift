@@ -10,9 +10,11 @@ import SwiftUI
 
 struct OverviewView: View {
     
-    @EnvironmentObject var viewMode: AuthViewModel
+    @EnvironmentObject var userSessionService: UserSessionService
     
     var body: some View {
-        Text(verbatim: "Oveview")
+        ScrollView {
+            AccountsView(user: userSessionService.currentUser!)
+        }
     }
 }

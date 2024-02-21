@@ -9,7 +9,7 @@ import SwiftUI
 
 @main
 struct mymoneyApp: App {
-    @StateObject var authViewModel = AuthViewModel()
+    @StateObject var userSessionService = UserSessionService()
     
     init() {
         // initialize Plaid and other stuff
@@ -18,7 +18,7 @@ struct mymoneyApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(authViewModel)
+                .environmentObject(userSessionService)
         }
     }
 }

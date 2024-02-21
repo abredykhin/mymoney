@@ -3,6 +3,9 @@ const logger = require('morgan');
 const cors = require('cors');
 const auth = require('./routes/auth');
 const users = require('./routes/users');
+const linkEvents = require('./routes/linkEvents');
+const linkTokens = require('./routes/linkTokens');
+const items = require('./routes/items');
 const { errorHandler, verifyToken } = require('./middleware');
 
 const app = express();
@@ -28,5 +31,8 @@ app.get('/status', (request, response) => {
 app.use('/users', auth);
 app.use(verifyToken);
 app.use('/users', users);
+app.use('/items', items);
+app.use('/link-event', linkEvents);
+app.use('/link-token', linkTokens);
 
 app.use(errorHandler);

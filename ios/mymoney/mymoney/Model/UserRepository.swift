@@ -8,6 +8,7 @@
 import Foundation
 import OpenAPIRuntime
 import OpenAPIURLSession
+import SwiftUI
 
 enum ApiError: Error {
     case unathorized(String)
@@ -16,9 +17,9 @@ enum ApiError: Error {
 
 class UserRepository {
     private let client: Client
-    
-    init() {
-        client = Client(serverURL: Client.getServerUrl(), transport: URLSessionTransport())
+
+    init(token: String) {
+        client = Client(serverURL: Client.getServerUrl(), transport: URLSessionTransport(), middlewares: [AuthenticationMiddleware(authorizationHeaderFieldValue: token)])
     }
     
     func login(username: String, password: String) async throws -> User {

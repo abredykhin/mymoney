@@ -67,21 +67,23 @@ const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (typeof authHeader !== 'undefined') {
+    console.log(`Auth info provided: ${authHeader}!`);
     const [header, token] = authHeader.split(' ');
 
     if (!(header && token)) {
-      return Boom.unauthorized('Authentication credentials are required.');
+      console.log(`Unable to split header/token}!`);
+      throw Boom.unauthorized('Authentication credentials are required.');
     }
 
     const userId = await sessionQueries.lookupToken(token);
     if (!userId) {
-      return Boom.unauthorized('Invalid token.');
+      throw Boom.unauthorized('Invalid token.');
     }
 
     console.log(`Found user ${userId.user_id} associated with the token`);
     const user = await userQueries.retrieveUserById(userId.user_id);
     if (!user) {
-      return Boom.forbidden('User not found!');
+      throw Boom.forbidden('User not found!');
     }
 
     req.token = token;
@@ -91,7 +93,7 @@ const verifyToken = async (req, res, next) => {
     next();
   } else {
     console.log('Token not found!');
-    next(Boom.unauthorized('Token not found!'));
+    throw Boom.unauthorized('Token not found!');
   }
 };
 

@@ -10,8 +10,8 @@ import SwiftUI
 
 struct TransactionsView: View {
     
-    @EnvironmentObject var viewMode: AuthViewModel
-    
+    @EnvironmentObject var userSessionService: UserSessionService
+
     var body: some View {
         Text(verbatim: "Transactions")
     }

@@ -19,7 +19,7 @@ struct LoginView: View {
     @State private var password = ""
     @State private var isSignIn = true
     @State private var showError = false
-    @EnvironmentObject var viewModel: AuthViewModel
+    @EnvironmentObject var userSessionService: UserSessionService
     
     var body: some View {
         NavigationView {
@@ -46,10 +46,10 @@ struct LoginView: View {
                     Task {
                         if (isSignIn) {
                             debugPrint("Sign In button pressed!")
-                            try await viewModel.signIn(email:email, password:password)
+                            try await userSessionService.signIn(email:email, password:password)
                         } else {
                             debugPrint("Sign Up button pressed!")
-                            try await viewModel.createAccount(name:"", email: email, password: password)
+                            try await userSessionService.createAccount(name:"", email: email, password: password)
                         }
                     }
                 } label: {
@@ -116,10 +116,10 @@ extension LoginView: AuthFormValidationProtocol {
 }
 
 struct LoginView_Previews: PreviewProvider {
-    static let viewModel = AuthViewModel()
+    static let service = UserSessionService()
     
     static var previews: some View {
         LoginView()
-            .environmentObject(viewModel)
+            .environmentObject(service)
     }
 }

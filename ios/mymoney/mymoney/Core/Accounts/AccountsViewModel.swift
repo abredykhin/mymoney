@@ -8,6 +8,9 @@
 import Foundation
 
 @MainActor
-class AccountsViewModel {
+class AccountsViewModel: ObservableObject {
     
+    func linkNewAccount() async throws {
+        
+    }
 }
