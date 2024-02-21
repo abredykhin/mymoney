@@ -35,6 +35,9 @@
 		75BADB0E2B8423E0001701E2 /* Client+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB0D2B8423E0001701E2 /* Client+Extensions.swift */; };
 		75BADB122B844CC2001701E2 /* ItemsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB112B844CC2001701E2 /* ItemsRepository.swift */; };
 		75BADB152B84667D001701E2 /* AuthMiddleware.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB142B84667D001701E2 /* AuthMiddleware.swift */; };
+		75BADB1B2B85AC2A001701E2 /* LinkButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB1A2B85AC2A001701E2 /* LinkButtonView.swift */; };
+		75BADB1D2B85B01E001701E2 /* LinkController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB1C2B85B01E001701E2 /* LinkController.swift */; };
+		75BADB232B85D5BE001701E2 /* LinkViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB222B85D5BE001701E2 /* LinkViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -83,6 +86,9 @@
 		75BADB0D2B8423E0001701E2 /* Client+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Client+Extensions.swift"; sourceTree = "<group>"; };
 		75BADB112B844CC2001701E2 /* ItemsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemsRepository.swift; sourceTree = "<group>"; };
 		75BADB142B84667D001701E2 /* AuthMiddleware.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMiddleware.swift; sourceTree = "<group>"; };
+		75BADB1A2B85AC2A001701E2 /* LinkButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkButtonView.swift; sourceTree = "<group>"; };
+		75BADB1C2B85B01E001701E2 /* LinkController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkController.swift; sourceTree = "<group>"; };
+		75BADB222B85D5BE001701E2 /* LinkViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -179,6 +185,7 @@
 		756ECF322B5E47CC001F55A5 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				75BADB192B85AC1D001701E2 /* Link */,
 				75BADB082B842342001701E2 /* Accounts */,
 				756ECF332B5E47DE001F55A5 /* Auth */,
 				756ECF3B2B5E4DD0001F55A5 /* Home */,
@@ -234,6 +241,16 @@
 				75BADB092B842354001701E2 /* AccountsViewModel.swift */,
 			);
 			path = Accounts;
+			sourceTree = "<group>";
+		};
+		75BADB192B85AC1D001701E2 /* Link */ = {
+			isa = PBXGroup;
+			children = (
+				75BADB1A2B85AC2A001701E2 /* LinkButtonView.swift */,
+				75BADB1C2B85B01E001701E2 /* LinkController.swift */,
+				75BADB222B85D5BE001701E2 /* LinkViewModel.swift */,
+			);
+			path = Link;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -383,7 +400,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				756ECF382B5E4869001F55A5 /* UserSessionService.swift in Sources */,
+				75BADB1D2B85B01E001701E2 /* LinkController.swift in Sources */,
 				75BADB152B84667D001701E2 /* AuthMiddleware.swift in Sources */,
+				75BADB1B2B85AC2A001701E2 /* LinkButtonView.swift in Sources */,
 				75BADB0E2B8423E0001701E2 /* Client+Extensions.swift in Sources */,
 				75BADAF72B841109001701E2 /* View+Extensions.swift in Sources */,
 				7559CF4F2B2FBAA600409A9A /* ContentView.swift in Sources */,
@@ -392,6 +411,7 @@
 				75BADB122B844CC2001701E2 /* ItemsRepository.swift in Sources */,
 				75BADB0A2B842354001701E2 /* AccountsViewModel.swift in Sources */,
 				75BADB042B842174001701E2 /* TransactionsView.swift in Sources */,
+				75BADB232B85D5BE001701E2 /* LinkViewModel.swift in Sources */,
 				7576F7912B6577FD006083F4 /* UserRepository.swift in Sources */,
 				756ECF3D2B5E4DEE001F55A5 /* HomeView.swift in Sources */,
 				75BADB062B8422EB001701E2 /* AccountsView.swift in Sources */,
@@ -583,7 +603,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = net.babloapp.mymoney;
+				PRODUCT_BUNDLE_IDENTIFIER = net.babloapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
@@ -621,7 +641,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = net.babloapp.mymoney;
+				PRODUCT_BUNDLE_IDENTIFIER = net.babloapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";

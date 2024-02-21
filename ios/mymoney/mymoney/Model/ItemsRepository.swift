@@ -11,6 +11,7 @@ import OpenAPIURLSession
 
 typealias LinkTokenType = Components.Schemas.LinkTokenResponse
 
+@MainActor
 class ItemsRepository: ObservableObject {
     private let client: Client
     private let user: User
@@ -20,7 +21,7 @@ class ItemsRepository: ObservableObject {
         client = Client(serverURL: Client.getServerUrl(), transport: URLSessionTransport(), middlewares: [AuthenticationMiddleware(authorizationHeaderFieldValue: user.token)])
     }
     
-    func getLinkToken() async throws -> LinkTokenType {
+    func getLinkToken() async throws -> String {
         Logger.d("Requesting a link token...")
         let response = try await client.getLinkToken()
         
@@ -29,7 +30,7 @@ class ItemsRepository: ObservableObject {
             switch okResponse.body {
             case .json(let json):
                 Logger.i("Received OK response for Link token")
-                return json
+                return json.link_token
             }
         case .undocumented(statusCode: let statusCode, _):
             Logger.e("Recieved error from server. statusCode = \(statusCode)")
