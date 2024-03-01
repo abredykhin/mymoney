@@ -56,8 +56,3 @@ struct LinkButtonView : View {
         )
     }
 }
-
-#Preview {
-    LinkButtonView()
-        .withPreviewEnv()
-}

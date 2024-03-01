@@ -35,6 +35,7 @@ router.get(
     const userId = req.userId;
     console.log(`Retrieving user accounts for user ${userId}`);
     const accounts = await retrieveAccountsByUserId(userId);
+    console.log('Retrieved ' + accounts.length + ' accounts');
     res.json(sanitizeAccounts(accounts));
   })
 );

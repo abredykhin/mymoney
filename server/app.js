@@ -19,6 +19,7 @@ app.use(logger('dev'));
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.disable('etag');
 
 app.get('/status', (request, response) => {
   const status = {

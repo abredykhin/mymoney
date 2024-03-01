@@ -19,6 +19,11 @@ class BankAccountsManager: ObservableObject {
             Logger.e("Client is not set!")
             return
         }
-        self.accounts = try await BankAccountsRepository.refreshAccounts(client: client)
+        
+        do {
+            self.accounts = try await BankAccountsRepository.refreshAccounts(client: client)
+        } catch  {
+            Logger.e("Unable to refresh accounts: \(error)")
+        }
     }
 }

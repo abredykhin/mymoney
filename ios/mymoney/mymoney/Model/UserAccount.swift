@@ -82,7 +82,7 @@ class UserAccount: ObservableObject {
     private func updateClient() {
         if let theUser = currentUser {
             Logger.i("Updating current client to the auth one")
-            client = Client(serverURL: Client.getServerUrl(), transport: URLSessionTransport(), middlewares: [AuthenticationMiddleware(token: theUser.token)] )
+            client = Client(serverURL: Client.getServerUrl(), configuration: .init(dateTranscoder: ISO8601DateTranscoder(options: .withFractionalSeconds)), transport: URLSessionTransport(), middlewares: [AuthenticationMiddleware(token: theUser.token)] )
         } else {
             Logger.i("Updating current client to the no auth one")
             client = noAuthClient
