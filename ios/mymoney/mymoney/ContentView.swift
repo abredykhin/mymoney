@@ -8,11 +8,11 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject var service: UserSessionService
+    @EnvironmentObject var userAccount: UserAccount
     
     var body: some View {
         Group {
-            if (service.currentUser != nil) {
+            if (userAccount.currentUser != nil) {
                 Print("ContentView: user is known, showing home screen")
                 HomeView()
             } else {
@@ -24,10 +24,10 @@ struct ContentView: View {
 }
 
 struct ContentView_Previews: PreviewProvider {
-    static let service = UserSessionService()
+    static let userAccount = UserAccount()
     
     static var previews: some View {
         ContentView()
-            .environmentObject(service)
+            .environmentObject(userAccount)
     }
 }

@@ -17,6 +17,7 @@ const { asyncWrapper } = require('../middleware');
 const plaid = require('../plaid/plaid');
 const {
   sanitizeAccounts,
+  sanitizeItem,
   sanitizeItems,
   sanitizeTransactions,
   isValidItemStatus,
@@ -37,17 +38,25 @@ const router = express.Router();
 router.post(
   '/',
   asyncWrapper(async (req, res) => {
-    const { publicToken, institutionId, userId } = req.body;
+    console.log('Creating a new item');
+    const { publicToken, institutionId } = req.body;
+    const userId = req.userId;
+    console.log('All params passed correctly.');
+
     // prevent duplicate items for the same institution per user.
+    console.log('Checking for duplicate item...');
     const existingItem = await retrieveItemByPlaidInstitutionId(
       institutionId,
       userId
     );
-    if (existingItem)
+    if (existingItem) {
+      console.log('Duplicate institution!');
       throw new Boom('You have already linked an item at this institution.', {
         statusCode: 409,
       });
+    }
 
+    console.log('Talking to Plaid to exchange tokens...');
     // exchange the public token for a private access token and store with the item.
     const response = await plaid.itemPublicTokenExchange({
       public_token: publicToken,
@@ -65,10 +74,11 @@ router.post(
     // for this item.
     updateTransactions(itemId).then(() => {
       // Notify frontend to reflect any transactions changes.
-      req.io.emit('NEW_TRANSACTIONS_DATA', { itemId: newItem.id });
+      // TODO:
+      //req.io.emit('NEW_TRANSACTIONS_DATA', { itemId: newItem.id });
     });
 
-    res.json(sanitizeItems(newItem));
+    res.json(sanitizeItem(newItem));
   })
 );
 

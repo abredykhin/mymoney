@@ -96,6 +96,22 @@ paths:
                   error:
                     type: string
                     example: Missing username or password
+  /users/accounts:
+    get:
+      summary: List user accounts
+      operationId: getUserAccounts
+      description: Retrieves a list of all accounts for the user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
   /link-token:
     post:
       summary: Generates a Link token
@@ -109,6 +125,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LinkTokenResponse'
+  /items:
+    post:
+      summary: Saves new Plaid Item.
+      operationId: saveNewItem
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                institutionId:
+                  type: string
+                publicToken:
+                  type: string
+      responses:
+        200:
+          description: Item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -147,3 +188,62 @@ components:
           type: string
         request_id:
           type: string
+    Item:
+      type: object
+      required:
+        - id
+        - plaid_institution_id
+        - status
+      properties:
+        id:
+          type: integer
+          format: int64
+        plaid_institution_id:
+          type: string
+        status:
+          type: string
+    Account:
+      type: object
+      required: [id, item_id, name, current_balance, iso_currency_code, type, updated_at]
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the account
+        item_id:
+          type: integer
+          description: ID of the linked item
+        name:
+          type: string
+          description: User-defined name for the account
+        mask:
+          type: string
+          description: Masked account number
+        official_name:
+          type: string
+          description: Official name of the account provided by the financial institution (optional)
+        current_balance:
+          type: number
+          description: Current balance of the account
+        available_balance:
+          type: number
+          description: Available balance of the account (optional)
+        iso_currency_code:
+          type: string
+          description: 3-letter ISO currency code
+        unofficial_currency_code:
+          type: string
+          description: Unofficial currency code (optional)
+        type:
+          type: string
+          description: Type of account (depository, investment, loan, credit)
+        subtype:
+          type: string
+          description: Subtype of account (checking, savings, ira, 401k, student, mortgage, credit card, cd, money market)
+        created_at:
+          type: string
+          format: date-time
+          description: Date and time the account was created
+        updated_at:
+          type: string
+          format: date-time
+          description: Date and time the account was last updated

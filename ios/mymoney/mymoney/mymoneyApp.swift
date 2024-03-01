@@ -9,16 +9,20 @@ import SwiftUI
 
 @main
 struct mymoneyApp: App {
-    @StateObject var userSessionService = UserSessionService()
-    
-    init() {
-        // initialize Plaid and other stuff
-    }
+    @StateObject var userAccount = UserAccount()
+    @StateObject var bankAccountManager = BankAccountsManager()
     
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(userSessionService)
+                .environmentObject(userAccount)
+                .environmentObject(bankAccountManager)
+                .task {
+                    userAccount.checkCurrentUser()
+                }
+        }
+        .onChange(of: userAccount.currentUser) {
+            bankAccountManager.client = userAccount.client
         }
     }
 }

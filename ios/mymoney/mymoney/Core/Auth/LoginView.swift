@@ -19,7 +19,7 @@ struct LoginView: View {
     @State private var password = ""
     @State private var isSignIn = true
     @State private var showError = false
-    @EnvironmentObject var userSessionService: UserSessionService
+    @EnvironmentObject var userAccount: UserAccount
     
     var body: some View {
         NavigationView {
@@ -46,10 +46,10 @@ struct LoginView: View {
                     Task {
                         if (isSignIn) {
                             debugPrint("Sign In button pressed!")
-                            try await userSessionService.signIn(email:email, password:password)
+                            try await userAccount.signIn(email:email, password:password)
                         } else {
                             debugPrint("Sign Up button pressed!")
-                            try await userSessionService.createAccount(name:"", email: email, password: password)
+                            try await userAccount.createAccount(name:"", email: email, password: password)
                         }
                     }
                 } label: {
@@ -62,8 +62,8 @@ struct LoginView: View {
                         .padding(.horizontal)
                         .shadow(radius: 2)
                         .scaleEffect(isSignIn ? 1.0 : 1.1)
-                        .opacity(formIsValid ? 1.0 : 0.5)
-                        .disabled(!formIsValid)
+//                        .opacity(formIsValid ? 1.0 : 0.5)
+//                        .disabled(!formIsValid)
                 }
                 .padding(.top)
 
@@ -108,18 +108,16 @@ struct LoginView: View {
     }
 }
 
-extension LoginView: AuthFormValidationProtocol {
-    var formIsValid: Bool {
-        return !email.isEmpty &&
-        !password.isEmpty
-    }
+#Preview {
+    LoginView()
+        .withPreviewEnv()
 }
 
-struct LoginView_Previews: PreviewProvider {
-    static let service = UserSessionService()
-    
-    static var previews: some View {
-        LoginView()
-            .environmentObject(service)
-    }
-}
+//struct LoginView_Previews: PreviewProvider {
+//    static let userAccount = UserAccount()
+//    
+//    static var previews: some View {
+//        LoginView()
+//            .environmentObject(userAccount)
+//    }
+//}

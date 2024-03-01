@@ -1,5 +1,5 @@
 //
-//  AuthViewModel.swift
+//  User.swift
 //  mymoney
 //
 //  Created by Anton Bredykhin on 1/21/24.
@@ -7,9 +7,13 @@
 
 import Foundation
 import Valet
+import OpenAPIRuntime
+import OpenAPIURLSession
 
-protocol AuthFormValidationProtocol {
-    var formIsValid: Bool { get }
+struct User: Identifiable, Codable, Equatable, Sendable {
+    let id: String
+    let name: String
+    let token: String
 }
 
 private enum UserKeys: String {
@@ -19,29 +23,32 @@ private enum UserKeys: String {
 }
 
 @MainActor
-class UserSessionService: ObservableObject {
+class UserAccount: ObservableObject {
     @Published var currentUser: User? = nil
-    private let defaults = UserDefaults.standard
-    private let userRepository: UserRepository
+    @Published var client: Client? = nil
+
     private let valet = Valet.valet(with: Identifier(nonEmpty: "BabloApp")!, accessibility: .whenUnlocked)
+    private let noAuthClient: Client = Client(serverURL: Client.getServerUrl(), transport: URLSessionTransport())
     
     init() {
+        client = noAuthClient
+    }
+    
+    func checkCurrentUser() {
         Logger.d("Checking if user is logged in. Retrieving data...")
         if let token = try? valet.string(forKey: UserKeys.token.rawValue), let userId = try? valet.string(forKey: UserKeys.id.rawValue), let userName = try? valet.string(forKey: UserKeys.name.rawValue) {
+            Logger.d("Logged in as \(userName)")
             let user = User(id: userId, name: userName, token: token)
             currentUser = user
-            userRepository = UserRepository(token: user.token)
-            
-            Logger.d("Logged in as \(userName)")
+            updateClient()
         } else {
             Logger.e("User is not logged in!")
-            userRepository = UserRepository(token: "")
         }
     }
     
     func signIn(email: String, password: String) async throws {
         Logger.w("Attempting to sign in user \(email)")
-        if let user = try? await userRepository.login(username: email, password: password) {
+        if let user = try? await UserRepository.login(client: noAuthClient, username: email, password: password) {
             Logger.d("Signin successfull. Storing user data...")
             currentUser = user
             try saveUserData()
@@ -50,7 +57,7 @@ class UserSessionService: ObservableObject {
     
     func createAccount(name: String, email: String, password: String) async throws {
         Logger.w("Attempting to create account for \(email)")
-        if let user = try? await userRepository.register(username: email, password: password) {
+        if let user = try? await UserRepository.register(client: noAuthClient, username: email, password: password) {
             Logger.d("Create account is successfull. Storing user data...")
             currentUser = user
             try saveUserData()
@@ -60,6 +67,7 @@ class UserSessionService: ObservableObject {
     func signOut() {
         Logger.w("Signing out the user")
         try? valet.removeObject(forKey: "token")
+        self.currentUser = nil
     }
     
     private func saveUserData() throws {
@@ -67,6 +75,17 @@ class UserSessionService: ObservableObject {
             try valet.setString(theUser.id, forKey: UserKeys.id.rawValue)
             try valet.setString(theUser.name, forKey: UserKeys.name.rawValue)
             try valet.setString(theUser.token, forKey: UserKeys.token.rawValue)
+        }
+        updateClient()
+    }
+    
+    private func updateClient() {
+        if let theUser = currentUser {
+            Logger.i("Updating current client to the auth one")
+            client = Client(serverURL: Client.getServerUrl(), transport: URLSessionTransport(), middlewares: [AuthenticationMiddleware(token: theUser.token)] )
+        } else {
+            Logger.i("Updating current client to the no auth one")
+            client = noAuthClient
         }
     }
 }

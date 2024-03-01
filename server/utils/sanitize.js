@@ -27,7 +27,6 @@ const sanitizeAccounts = accounts =>
   sanitizeWith(accounts, [
     'id',
     'item_id',
-    'user_id',
     'name',
     'mask',
     'official_name',
@@ -37,7 +36,6 @@ const sanitizeAccounts = accounts =>
     'unofficial_currency_code',
     'type',
     'subtype',
-    'created_at',
     'updated_at',
   ]);
 
@@ -47,7 +45,15 @@ const sanitizeAccounts = accounts =>
  * @param {(Object|Object[])} items a single item or an array of items.
  */
 const sanitizeItems = items =>
-  sanitizeWith(items, ['id', 'user_id', 'plaid_institution_id', 'status']);
+  sanitizeWith(items, ['id', 'plaid_institution_id', 'status']);
+
+function sanitizeItem(item) {
+  const sanitizedItem = {
+    id: item.id,
+    plaid_institution_id: item.plaid_institution_id,
+    status: item.status,
+  };
+}
 
 function sanitizeUserObject(user) {
   const sanitizedUser = {

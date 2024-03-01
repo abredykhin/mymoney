@@ -9,8 +9,6 @@ import SwiftUI
 
 struct HomeView: View {
     
-    @EnvironmentObject var userSessionService: UserSessionService
-
     var body: some View {
         TabView {
             OverviewView()

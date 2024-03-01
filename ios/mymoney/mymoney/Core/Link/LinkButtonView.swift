@@ -10,18 +10,16 @@ import LinkKit
 
 @MainActor
 struct LinkButtonView : View {
-    @ObservedObject var linkViewModel: LinkViewModel
-    
-    init(user: User) {
-        linkViewModel = LinkViewModel(user: user)
-    }
+    @EnvironmentObject var userAccount: UserAccount
+    @EnvironmentObject var bankAccountsManager: BankAccountsManager
+    @State private var linkViewModel: LinkViewModel = LinkViewModel()
     
     var body: some View {
         ZStack(alignment: .leading) {
             Button {
                 Task {
                     debugPrint("Add new account pressed!")
-                    await linkViewModel.getLinkToken()
+                    try? await linkViewModel.getLinkToken()
                 }
             } label: {
                 Text("Link new account")
@@ -33,6 +31,10 @@ struct LinkButtonView : View {
                     .padding(.horizontal)
                     .shadow(radius: 2)
             }
+        }
+        .onAppear() {
+            linkViewModel.bankAccountsManager = self.bankAccountsManager
+            linkViewModel.client = self.userAccount.client
         }
         .sheet(
             isPresented: $linkViewModel.shouldShowLink,
@@ -53,4 +55,9 @@ struct LinkButtonView : View {
             }
         )
     }
+}
+
+#Preview {
+    LinkButtonView()
+        .withPreviewEnv()
 }

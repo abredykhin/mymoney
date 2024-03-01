@@ -13,11 +13,11 @@ import HTTPTypes
 struct AuthenticationMiddleware {
 
     /// The value for the `Authorization` header field.
-    private let value: String
+    private let token: String?
 
     /// Creates a new middleware.
     /// - Parameter value: The value for the `Authorization` header field.
-    package init(authorizationHeaderFieldValue value: String) { self.value = "Bearer " + value }
+    package init(token: String?) { self.token = token }
 }
 
 extension AuthenticationMiddleware: ClientMiddleware {
@@ -30,7 +30,10 @@ extension AuthenticationMiddleware: ClientMiddleware {
     ) async throws -> (HTTPResponse, HTTPBody?) {
         var request = request
         // Adds the `Authorization` header field with the provided value.
-        request.headerFields[.authorization] = value
+        if let token = self.token {
+            let authHeaderValue = "Bearer " + token
+            request.headerFields[.authorization] = authHeaderValue
+        }
         return try await next(request, body, baseURL)
     }
 }

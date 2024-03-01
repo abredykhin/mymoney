@@ -15,11 +15,13 @@
 		7559CF692B2FBAA700409A9A /* mymoneyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7559CF682B2FBAA700409A9A /* mymoneyUITests.swift */; };
 		7559CF6B2B2FBAA700409A9A /* mymoneyUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7559CF6A2B2FBAA700409A9A /* mymoneyUITestsLaunchTests.swift */; };
 		7559CF792B2FBC9200409A9A /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7559CF782B2FBC9200409A9A /* LinkKit */; };
-		756ECF362B5E47F8001F55A5 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 756ECF352B5E47F8001F55A5 /* User.swift */; };
-		756ECF382B5E4869001F55A5 /* UserSessionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 756ECF372B5E4869001F55A5 /* UserSessionService.swift */; };
+		756ECF362B5E47F8001F55A5 /* UserAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 756ECF352B5E47F8001F55A5 /* UserAccount.swift */; };
 		756ECF3A2B5E4911001F55A5 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 756ECF392B5E4911001F55A5 /* LoginView.swift */; };
 		756ECF3D2B5E4DEE001F55A5 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 756ECF3C2B5E4DEE001F55A5 /* HomeView.swift */; };
 		7576F7912B6577FD006083F4 /* UserRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7576F7902B6577FD006083F4 /* UserRepository.swift */; };
+		75A1C1A72B902791008D07FF /* View+Previews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75A1C1A62B902791008D07FF /* View+Previews.swift */; };
+		75A1C1AB2B914BDB008D07FF /* MockBankAccountsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75A1C1AA2B914BDB008D07FF /* MockBankAccountsManager.swift */; };
+		75A1C1AD2B914C64008D07FF /* MockUserAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75A1C1AC2B914C63008D07FF /* MockUserAccount.swift */; };
 		75BADADF2B8330E4001701E2 /* OpenAPIURLSession in Frameworks */ = {isa = PBXBuildFile; productRef = 75BADADE2B8330E4001701E2 /* OpenAPIURLSession */; };
 		75BADAE22B833115001701E2 /* OpenAPIRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = 75BADAE12B833115001701E2 /* OpenAPIRuntime */; };
 		75BADAE72B833229001701E2 /* openapi.yml in Resources */ = {isa = PBXBuildFile; fileRef = 75BADAE62B833229001701E2 /* openapi.yml */; };
@@ -29,11 +31,10 @@
 		75BADAF72B841109001701E2 /* View+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADAF62B841109001701E2 /* View+Extensions.swift */; };
 		75BADB012B842147001701E2 /* OverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB002B842147001701E2 /* OverviewView.swift */; };
 		75BADB042B842174001701E2 /* TransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB032B842174001701E2 /* TransactionsView.swift */; };
-		75BADB062B8422EB001701E2 /* AccountsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB052B8422EB001701E2 /* AccountsView.swift */; };
-		75BADB0A2B842354001701E2 /* AccountsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB092B842354001701E2 /* AccountsViewModel.swift */; };
-		75BADB0C2B84238A001701E2 /* AccountsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB0B2B84238A001701E2 /* AccountsRepository.swift */; };
+		75BADB062B8422EB001701E2 /* BankAccountsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB052B8422EB001701E2 /* BankAccountsView.swift */; };
+		75BADB0A2B842354001701E2 /* BankAccountsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB092B842354001701E2 /* BankAccountsManager.swift */; };
+		75BADB0C2B84238A001701E2 /* BankAccountsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB0B2B84238A001701E2 /* BankAccountsRepository.swift */; };
 		75BADB0E2B8423E0001701E2 /* Client+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB0D2B8423E0001701E2 /* Client+Extensions.swift */; };
-		75BADB122B844CC2001701E2 /* ItemsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB112B844CC2001701E2 /* ItemsRepository.swift */; };
 		75BADB152B84667D001701E2 /* AuthMiddleware.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB142B84667D001701E2 /* AuthMiddleware.swift */; };
 		75BADB1B2B85AC2A001701E2 /* LinkButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB1A2B85AC2A001701E2 /* LinkButtonView.swift */; };
 		75BADB1D2B85B01E001701E2 /* LinkController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BADB1C2B85B01E001701E2 /* LinkController.swift */; };
@@ -69,22 +70,23 @@
 		7559CF642B2FBAA700409A9A /* mymoneyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = mymoneyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7559CF682B2FBAA700409A9A /* mymoneyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mymoneyUITests.swift; sourceTree = "<group>"; };
 		7559CF6A2B2FBAA700409A9A /* mymoneyUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mymoneyUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		756ECF352B5E47F8001F55A5 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
-		756ECF372B5E4869001F55A5 /* UserSessionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSessionService.swift; sourceTree = "<group>"; };
+		756ECF352B5E47F8001F55A5 /* UserAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAccount.swift; sourceTree = "<group>"; };
 		756ECF392B5E4911001F55A5 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		756ECF3C2B5E4DEE001F55A5 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		7576F7902B6577FD006083F4 /* UserRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserRepository.swift; sourceTree = "<group>"; };
+		75A1C1A62B902791008D07FF /* View+Previews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Previews.swift"; sourceTree = "<group>"; };
+		75A1C1AA2B914BDB008D07FF /* MockBankAccountsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockBankAccountsManager.swift; sourceTree = "<group>"; };
+		75A1C1AC2B914C63008D07FF /* MockUserAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockUserAccount.swift; sourceTree = "<group>"; };
 		75BADAE62B833229001701E2 /* openapi.yml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.yaml; path = openapi.yml; sourceTree = "<group>"; };
 		75BADAE82B8332BE001701E2 /* openapi-generator-config.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = "openapi-generator-config.yaml"; sourceTree = "<group>"; };
 		75BADAF42B8410EB001701E2 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		75BADAF62B841109001701E2 /* View+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Extensions.swift"; sourceTree = "<group>"; };
 		75BADB002B842147001701E2 /* OverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewView.swift; sourceTree = "<group>"; };
 		75BADB032B842174001701E2 /* TransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsView.swift; sourceTree = "<group>"; };
-		75BADB052B8422EB001701E2 /* AccountsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsView.swift; sourceTree = "<group>"; };
-		75BADB092B842354001701E2 /* AccountsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsViewModel.swift; sourceTree = "<group>"; };
-		75BADB0B2B84238A001701E2 /* AccountsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsRepository.swift; sourceTree = "<group>"; };
+		75BADB052B8422EB001701E2 /* BankAccountsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountsView.swift; sourceTree = "<group>"; };
+		75BADB092B842354001701E2 /* BankAccountsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountsManager.swift; sourceTree = "<group>"; };
+		75BADB0B2B84238A001701E2 /* BankAccountsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountsRepository.swift; sourceTree = "<group>"; };
 		75BADB0D2B8423E0001701E2 /* Client+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Client+Extensions.swift"; sourceTree = "<group>"; };
-		75BADB112B844CC2001701E2 /* ItemsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemsRepository.swift; sourceTree = "<group>"; };
 		75BADB142B84667D001701E2 /* AuthMiddleware.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMiddleware.swift; sourceTree = "<group>"; };
 		75BADB1A2B85AC2A001701E2 /* LinkButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkButtonView.swift; sourceTree = "<group>"; };
 		75BADB1C2B85B01E001701E2 /* LinkController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkController.swift; sourceTree = "<group>"; };
@@ -186,7 +188,7 @@
 			isa = PBXGroup;
 			children = (
 				75BADB192B85AC1D001701E2 /* Link */,
-				75BADB082B842342001701E2 /* Accounts */,
+				75BADB082B842342001701E2 /* BankAccounts */,
 				756ECF332B5E47DE001F55A5 /* Auth */,
 				756ECF3B2B5E4DD0001F55A5 /* Home */,
 			);
@@ -196,7 +198,6 @@
 		756ECF332B5E47DE001F55A5 /* Auth */ = {
 			isa = PBXGroup;
 			children = (
-				756ECF372B5E4869001F55A5 /* UserSessionService.swift */,
 				756ECF392B5E4911001F55A5 /* LoginView.swift */,
 			);
 			path = Auth;
@@ -205,11 +206,9 @@
 		756ECF342B5E47EF001F55A5 /* Model */ = {
 			isa = PBXGroup;
 			children = (
-				756ECF352B5E47F8001F55A5 /* User.swift */,
-				7576F7902B6577FD006083F4 /* UserRepository.swift */,
-				75BADB0B2B84238A001701E2 /* AccountsRepository.swift */,
-				75BADB112B844CC2001701E2 /* ItemsRepository.swift */,
-				75BADB142B84667D001701E2 /* AuthMiddleware.swift */,
+				75A1C1A42B8EB725008D07FF /* Repository */,
+				75BADB092B842354001701E2 /* BankAccountsManager.swift */,
+				756ECF352B5E47F8001F55A5 /* UserAccount.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -224,23 +223,43 @@
 			path = Home;
 			sourceTree = "<group>";
 		};
+		75A1C1A42B8EB725008D07FF /* Repository */ = {
+			isa = PBXGroup;
+			children = (
+				7576F7902B6577FD006083F4 /* UserRepository.swift */,
+				75BADB0B2B84238A001701E2 /* BankAccountsRepository.swift */,
+			);
+			path = Repository;
+			sourceTree = "<group>";
+		};
+		75A1C1A92B914BCB008D07FF /* Mocks */ = {
+			isa = PBXGroup;
+			children = (
+				75A1C1AA2B914BDB008D07FF /* MockBankAccountsManager.swift */,
+				75A1C1AC2B914C63008D07FF /* MockUserAccount.swift */,
+			);
+			path = Mocks;
+			sourceTree = "<group>";
+		};
 		75BADAF22B8410CB001701E2 /* Util */ = {
 			isa = PBXGroup;
 			children = (
+				75A1C1A92B914BCB008D07FF /* Mocks */,
+				75BADB142B84667D001701E2 /* AuthMiddleware.swift */,
 				75BADAF42B8410EB001701E2 /* Logger.swift */,
 				75BADAF62B841109001701E2 /* View+Extensions.swift */,
 				75BADB0D2B8423E0001701E2 /* Client+Extensions.swift */,
+				75A1C1A62B902791008D07FF /* View+Previews.swift */,
 			);
 			path = Util;
 			sourceTree = "<group>";
 		};
-		75BADB082B842342001701E2 /* Accounts */ = {
+		75BADB082B842342001701E2 /* BankAccounts */ = {
 			isa = PBXGroup;
 			children = (
-				75BADB052B8422EB001701E2 /* AccountsView.swift */,
-				75BADB092B842354001701E2 /* AccountsViewModel.swift */,
+				75BADB052B8422EB001701E2 /* BankAccountsView.swift */,
 			);
-			path = Accounts;
+			path = BankAccounts;
 			sourceTree = "<group>";
 		};
 		75BADB192B85AC1D001701E2 /* Link */ = {
@@ -399,7 +418,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				756ECF382B5E4869001F55A5 /* UserSessionService.swift in Sources */,
 				75BADB1D2B85B01E001701E2 /* LinkController.swift in Sources */,
 				75BADB152B84667D001701E2 /* AuthMiddleware.swift in Sources */,
 				75BADB1B2B85AC2A001701E2 /* LinkButtonView.swift in Sources */,
@@ -407,17 +425,19 @@
 				75BADAF72B841109001701E2 /* View+Extensions.swift in Sources */,
 				7559CF4F2B2FBAA600409A9A /* ContentView.swift in Sources */,
 				75BADB012B842147001701E2 /* OverviewView.swift in Sources */,
+				75A1C1AD2B914C64008D07FF /* MockUserAccount.swift in Sources */,
 				7559CF4D2B2FBAA600409A9A /* mymoneyApp.swift in Sources */,
-				75BADB122B844CC2001701E2 /* ItemsRepository.swift in Sources */,
-				75BADB0A2B842354001701E2 /* AccountsViewModel.swift in Sources */,
+				75BADB0A2B842354001701E2 /* BankAccountsManager.swift in Sources */,
 				75BADB042B842174001701E2 /* TransactionsView.swift in Sources */,
 				75BADB232B85D5BE001701E2 /* LinkViewModel.swift in Sources */,
+				75A1C1A72B902791008D07FF /* View+Previews.swift in Sources */,
 				7576F7912B6577FD006083F4 /* UserRepository.swift in Sources */,
 				756ECF3D2B5E4DEE001F55A5 /* HomeView.swift in Sources */,
-				75BADB062B8422EB001701E2 /* AccountsView.swift in Sources */,
+				75BADB062B8422EB001701E2 /* BankAccountsView.swift in Sources */,
 				756ECF3A2B5E4911001F55A5 /* LoginView.swift in Sources */,
-				75BADB0C2B84238A001701E2 /* AccountsRepository.swift in Sources */,
-				756ECF362B5E47F8001F55A5 /* User.swift in Sources */,
+				75BADB0C2B84238A001701E2 /* BankAccountsRepository.swift in Sources */,
+				75A1C1AB2B914BDB008D07FF /* MockBankAccountsManager.swift in Sources */,
+				756ECF362B5E47F8001F55A5 /* UserAccount.swift in Sources */,
 				75BADAF52B8410EB001701E2 /* Logger.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

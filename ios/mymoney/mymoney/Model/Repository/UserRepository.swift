@@ -8,21 +8,9 @@
 import Foundation
 import OpenAPIRuntime
 import OpenAPIURLSession
-import SwiftUI
-
-enum ApiError: Error {
-    case unathorized(String)
-    case genericError(String)
-}
 
 class UserRepository {
-    private let client: Client
-
-    init(token: String) {
-        client = Client(serverURL: Client.getServerUrl(), transport: URLSessionTransport(), middlewares: [AuthenticationMiddleware(authorizationHeaderFieldValue: token)])
-    }
-    
-    func login(username: String, password: String) async throws -> User {
+    static func login(client: Client, username: String, password: String) async throws -> User {
         Logger.w("Requesting user login for \(username)")
         let response = try await client.userLogin(.init(body: .urlEncodedForm(.init(username: username, password: password))))
         
@@ -45,7 +33,7 @@ class UserRepository {
         }
     }
     
-    func register(username: String, password: String) async throws -> User {
+    static func register(client: Client, username: String, password: String) async throws -> User {
         Logger.w("Requesting user registration for \(username)")
         let response = try await client.userRegister(.init(body: .urlEncodedForm(.init(username: username, password: password))))
         

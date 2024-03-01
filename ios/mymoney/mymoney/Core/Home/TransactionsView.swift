@@ -10,8 +10,6 @@ import SwiftUI
 
 struct TransactionsView: View {
     
-    @EnvironmentObject var userSessionService: UserSessionService
-
     var body: some View {
         Text(verbatim: "Transactions")
     }

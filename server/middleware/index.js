@@ -47,7 +47,7 @@ const asyncWrapper = fn => (req, res, next) => {
  */
 const errorHandler = (err, req, res, next) => {
   console.log("We've got an error!");
-  console.log(err);
+  //console.log(err);
   let error = err;
 
   // handle errors from the Plaid api.
