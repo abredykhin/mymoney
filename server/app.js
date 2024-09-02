@@ -32,8 +32,12 @@ app.get('/status', (request, response) => {
 app.use('/users', auth);
 app.use('/link-event', linkEvents);
 app.use('/link-token', linkTokens);
-app.use(errorHandler);
 app.use(verifyToken);
 // The rest of routes require token
 app.use('/users', users);
 app.use('/items', items);
+
+app.use((err, req, res, next) => {
+  console.error('Error caught:', err);
+  errorHandler(err, req, res, next);
+});
