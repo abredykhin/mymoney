@@ -25,5 +25,5 @@ class BankAccountsManager: ObservableObject {
         } catch  {
             Logger.e("Unable to refresh accounts: \(error)")
         }
-    }
+    }    
 }

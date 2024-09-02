@@ -4,9 +4,10 @@ COPY ["package.json", "/opt/server/"]
 COPY ["package-lock.json", "/opt/server/"]
 
 WORKDIR /opt/server
+COPY ["package.json", "package-lock.json", "./"]
 
 RUN npm cache clean --force && rm -rf node_modules && npm install
 
-COPY ["./", "/opt/server/"]
+COPY . .
 
 CMD ["npm", "start"]

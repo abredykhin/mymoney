@@ -1,0 +1,841 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		757ABF352C18195100DF8CA8 /* BabloApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF342C18195100DF8CA8 /* BabloApp.swift */; };
+		757ABF372C18195100DF8CA8 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF362C18195100DF8CA8 /* ContentView.swift */; };
+		757ABF3B2C18195300DF8CA8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 757ABF3A2C18195300DF8CA8 /* Assets.xcassets */; };
+		757ABF3F2C18195300DF8CA8 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 757ABF3E2C18195300DF8CA8 /* Preview Assets.xcassets */; };
+		757ABF492C18195400DF8CA8 /* BabloTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CA8 /* BabloTests.swift */; };
+		757ABF532C18195400DF8CA8 /* BabloUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF522C18195400DF8CA8 /* BabloUITests.swift */; };
+		757ABF552C18195400DF8CA8 /* BabloUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */; };
+		757ABF632C18198F00DF8CA8 /* openapi-generator-config.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 757ABF622C18198F00DF8CA8 /* openapi-generator-config.yaml */; };
+		757ABF642C18198F00DF8CA8 /* openapi.yml in Resources */ = {isa = PBXBuildFile; fileRef = 757ABF612C18198F00DF8CA8 /* openapi.yml */; };
+		757ABF6D2C181B3800DF8CA8 /* OpenAPIURLSession in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF6C2C181B3800DF8CA8 /* OpenAPIURLSession */; };
+		757ABF6F2C181B3F00DF8CA8 /* OpenAPIRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF6E2C181B3F00DF8CA8 /* OpenAPIRuntime */; };
+		757ABF712C181B4600DF8CA8 /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF702C181B4600DF8CA8 /* LinkKit */; };
+		757ABF772C181C3100DF8CA8 /* AuthMiddleware.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF762C181C3100DF8CA8 /* AuthMiddleware.swift */; };
+		757ABF792C181C3D00DF8CA8 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF782C181C3D00DF8CA8 /* Logger.swift */; };
+		757ABF7B2C181C4200DF8CA8 /* View+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */; };
+		757ABF7D2C181C4A00DF8CA8 /* Client+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF7C2C181C4A00DF8CA8 /* Client+Extensions.swift */; };
+		757ABF7F2C181C5200DF8CA8 /* View+Previews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF7E2C181C5200DF8CA8 /* View+Previews.swift */; };
+		757ABF822C181C8500DF8CA8 /* MockBankAccountsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF812C181C8500DF8CA8 /* MockBankAccountsManager.swift */; };
+		757ABF852C181CD100DF8CA8 /* BankAccountsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF842C181CD100DF8CA8 /* BankAccountsManager.swift */; };
+		757ABF872C181D3400DF8CA8 /* UserAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF862C181D3400DF8CA8 /* UserAccount.swift */; };
+		757ABF8A2C181DCC00DF8CA8 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF892C181DCC00DF8CA8 /* Valet */; };
+		757ABF8F2C1822CD00DF8CA8 /* ColorType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF8E2C1822C900DF8CA8 /* ColorType.swift */; };
+		757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF922C18243100DF8CA8 /* WelcomeView.swift */; };
+		7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F2972C86470400BCCDE6 /* HomeView.swift */; };
+		7590F29E2C86471D00BCCDE6 /* LinkViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29C2C86471D00BCCDE6 /* LinkViewModel.swift */; };
+		7590F29F2C86471D00BCCDE6 /* LinkController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29B2C86471D00BCCDE6 /* LinkController.swift */; };
+		7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */; };
+		7590F2A72C865B9F00BCCDE6 /* BankAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F2A62C865B9F00BCCDE6 /* BankAccountView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		757ABF452C18195400DF8CA8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 757ABF292C18195100DF8CA8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 757ABF302C18195100DF8CA8;
+			remoteInfo = Bablo;
+		};
+		757ABF4F2C18195400DF8CA8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 757ABF292C18195100DF8CA8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 757ABF302C18195100DF8CA8;
+			remoteInfo = Bablo;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		757ABF312C18195100DF8CA8 /* Bablo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bablo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		757ABF342C18195100DF8CA8 /* BabloApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloApp.swift; sourceTree = "<group>"; };
+		757ABF362C18195100DF8CA8 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		757ABF3A2C18195300DF8CA8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		757ABF3C2C18195300DF8CA8 /* Bablo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Bablo.entitlements; sourceTree = "<group>"; };
+		757ABF3E2C18195300DF8CA8 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		757ABF442C18195400DF8CA8 /* BabloTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabloTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		757ABF482C18195400DF8CA8 /* BabloTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloTests.swift; sourceTree = "<group>"; };
+		757ABF4E2C18195400DF8CA8 /* BabloUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabloUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		757ABF522C18195400DF8CA8 /* BabloUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloUITests.swift; sourceTree = "<group>"; };
+		757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		757ABF612C18198F00DF8CA8 /* openapi.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = openapi.yml; sourceTree = "<group>"; };
+		757ABF622C18198F00DF8CA8 /* openapi-generator-config.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = "openapi-generator-config.yaml"; sourceTree = "<group>"; };
+		757ABF762C181C3100DF8CA8 /* AuthMiddleware.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMiddleware.swift; sourceTree = "<group>"; };
+		757ABF782C181C3D00DF8CA8 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
+		757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Extensions.swift"; sourceTree = "<group>"; };
+		757ABF7C2C181C4A00DF8CA8 /* Client+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Client+Extensions.swift"; sourceTree = "<group>"; };
+		757ABF7E2C181C5200DF8CA8 /* View+Previews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Previews.swift"; sourceTree = "<group>"; };
+		757ABF812C181C8500DF8CA8 /* MockBankAccountsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockBankAccountsManager.swift; sourceTree = "<group>"; };
+		757ABF842C181CD100DF8CA8 /* BankAccountsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountsManager.swift; sourceTree = "<group>"; };
+		757ABF862C181D3400DF8CA8 /* UserAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAccount.swift; sourceTree = "<group>"; };
+		757ABF8E2C1822C900DF8CA8 /* ColorType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorType.swift; sourceTree = "<group>"; };
+		757ABF922C18243100DF8CA8 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		7590F2972C86470400BCCDE6 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkButtonView.swift; sourceTree = "<group>"; };
+		7590F29B2C86471D00BCCDE6 /* LinkController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkController.swift; sourceTree = "<group>"; };
+		7590F29C2C86471D00BCCDE6 /* LinkViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkViewModel.swift; sourceTree = "<group>"; };
+		7590F2A62C865B9F00BCCDE6 /* BankAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		757ABF2E2C18195100DF8CA8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				757ABF712C181B4600DF8CA8 /* LinkKit in Frameworks */,
+				757ABF8A2C181DCC00DF8CA8 /* Valet in Frameworks */,
+				757ABF6F2C181B3F00DF8CA8 /* OpenAPIRuntime in Frameworks */,
+				757ABF6D2C181B3800DF8CA8 /* OpenAPIURLSession in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		757ABF412C18195400DF8CA8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		757ABF4B2C18195400DF8CA8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		757ABF282C18195100DF8CA8 = {
+			isa = PBXGroup;
+			children = (
+				757ABF332C18195100DF8CA8 /* Bablo */,
+				757ABF472C18195400DF8CA8 /* BabloTests */,
+				757ABF512C18195400DF8CA8 /* BabloUITests */,
+				757ABF322C18195100DF8CA8 /* Products */,
+				757ABF6B2C181B3800DF8CA8 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		757ABF322C18195100DF8CA8 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				757ABF312C18195100DF8CA8 /* Bablo.app */,
+				757ABF442C18195400DF8CA8 /* BabloTests.xctest */,
+				757ABF4E2C18195400DF8CA8 /* BabloUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		757ABF332C18195100DF8CA8 /* Bablo */ = {
+			isa = PBXGroup;
+			children = (
+				757ABF912C18242900DF8CA8 /* UI */,
+				757ABF342C18195100DF8CA8 /* BabloApp.swift */,
+				757ABF362C18195100DF8CA8 /* ContentView.swift */,
+				757ABF832C181CC300DF8CA8 /* Model */,
+				757ABF902C18232E00DF8CA8 /* Design */,
+				757ABF742C181C2600DF8CA8 /* Util */,
+				7590F29D2C86471D00BCCDE6 /* Link */,
+				757ABF612C18198F00DF8CA8 /* openapi.yml */,
+				757ABF622C18198F00DF8CA8 /* openapi-generator-config.yaml */,
+				757ABF3A2C18195300DF8CA8 /* Assets.xcassets */,
+				757ABF3C2C18195300DF8CA8 /* Bablo.entitlements */,
+				757ABF3D2C18195300DF8CA8 /* Preview Content */,
+			);
+			path = Bablo;
+			sourceTree = "<group>";
+		};
+		757ABF3D2C18195300DF8CA8 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				757ABF3E2C18195300DF8CA8 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		757ABF472C18195400DF8CA8 /* BabloTests */ = {
+			isa = PBXGroup;
+			children = (
+				757ABF482C18195400DF8CA8 /* BabloTests.swift */,
+			);
+			path = BabloTests;
+			sourceTree = "<group>";
+		};
+		757ABF512C18195400DF8CA8 /* BabloUITests */ = {
+			isa = PBXGroup;
+			children = (
+				757ABF522C18195400DF8CA8 /* BabloUITests.swift */,
+				757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */,
+			);
+			path = BabloUITests;
+			sourceTree = "<group>";
+		};
+		757ABF6B2C181B3800DF8CA8 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		757ABF742C181C2600DF8CA8 /* Util */ = {
+			isa = PBXGroup;
+			children = (
+				757ABF802C181C5500DF8CA8 /* Mock */,
+				757ABF7E2C181C5200DF8CA8 /* View+Previews.swift */,
+				757ABF7C2C181C4A00DF8CA8 /* Client+Extensions.swift */,
+				757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */,
+				757ABF782C181C3D00DF8CA8 /* Logger.swift */,
+				757ABF762C181C3100DF8CA8 /* AuthMiddleware.swift */,
+			);
+			path = Util;
+			sourceTree = "<group>";
+		};
+		757ABF802C181C5500DF8CA8 /* Mock */ = {
+			isa = PBXGroup;
+			children = (
+				757ABF812C181C8500DF8CA8 /* MockBankAccountsManager.swift */,
+			);
+			path = Mock;
+			sourceTree = "<group>";
+		};
+		757ABF832C181CC300DF8CA8 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				757ABF862C181D3400DF8CA8 /* UserAccount.swift */,
+				757ABF842C181CD100DF8CA8 /* BankAccountsManager.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		757ABF902C18232E00DF8CA8 /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				757ABF8E2C1822C900DF8CA8 /* ColorType.swift */,
+			);
+			path = Design;
+			sourceTree = "<group>";
+		};
+		757ABF912C18242900DF8CA8 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				757ABF922C18243100DF8CA8 /* WelcomeView.swift */,
+				7590F2972C86470400BCCDE6 /* HomeView.swift */,
+				7590F2A62C865B9F00BCCDE6 /* BankAccountView.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		7590F29D2C86471D00BCCDE6 /* Link */ = {
+			isa = PBXGroup;
+			children = (
+				7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */,
+				7590F29B2C86471D00BCCDE6 /* LinkController.swift */,
+				7590F29C2C86471D00BCCDE6 /* LinkViewModel.swift */,
+			);
+			path = Link;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		757ABF302C18195100DF8CA8 /* Bablo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 757ABF582C18195400DF8CA8 /* Build configuration list for PBXNativeTarget "Bablo" */;
+			buildPhases = (
+				757ABF2D2C18195100DF8CA8 /* Sources */,
+				757ABF2E2C18195100DF8CA8 /* Frameworks */,
+				757ABF2F2C18195100DF8CA8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				757ABF6A2C181B1700DF8CA8 /* PBXTargetDependency */,
+			);
+			name = Bablo;
+			packageProductDependencies = (
+				757ABF6C2C181B3800DF8CA8 /* OpenAPIURLSession */,
+				757ABF6E2C181B3F00DF8CA8 /* OpenAPIRuntime */,
+				757ABF702C181B4600DF8CA8 /* LinkKit */,
+				757ABF892C181DCC00DF8CA8 /* Valet */,
+			);
+			productName = Bablo;
+			productReference = 757ABF312C18195100DF8CA8 /* Bablo.app */;
+			productType = "com.apple.product-type.application";
+		};
+		757ABF432C18195400DF8CA8 /* BabloTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 757ABF5B2C18195400DF8CA8 /* Build configuration list for PBXNativeTarget "BabloTests" */;
+			buildPhases = (
+				757ABF402C18195400DF8CA8 /* Sources */,
+				757ABF412C18195400DF8CA8 /* Frameworks */,
+				757ABF422C18195400DF8CA8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				757ABF462C18195400DF8CA8 /* PBXTargetDependency */,
+			);
+			name = BabloTests;
+			productName = BabloTests;
+			productReference = 757ABF442C18195400DF8CA8 /* BabloTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		757ABF4D2C18195400DF8CA8 /* BabloUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 757ABF5E2C18195400DF8CA8 /* Build configuration list for PBXNativeTarget "BabloUITests" */;
+			buildPhases = (
+				757ABF4A2C18195400DF8CA8 /* Sources */,
+				757ABF4B2C18195400DF8CA8 /* Frameworks */,
+				757ABF4C2C18195400DF8CA8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				757ABF502C18195400DF8CA8 /* PBXTargetDependency */,
+			);
+			name = BabloUITests;
+			productName = BabloUITests;
+			productReference = 757ABF4E2C18195400DF8CA8 /* BabloUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		757ABF292C18195100DF8CA8 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					757ABF302C18195100DF8CA8 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					757ABF432C18195400DF8CA8 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 757ABF302C18195100DF8CA8;
+					};
+					757ABF4D2C18195400DF8CA8 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 757ABF302C18195100DF8CA8;
+					};
+				};
+			};
+			buildConfigurationList = 757ABF2C2C18195100DF8CA8 /* Build configuration list for PBXProject "Bablo" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 757ABF282C18195100DF8CA8;
+			packageReferences = (
+				757ABF652C181A7C00DF8CA8 /* XCRemoteSwiftPackageReference "plaid-link-ios" */,
+				757ABF662C181A9900DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-urlsession" */,
+				757ABF672C181AA800DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-runtime" */,
+				757ABF682C181AC600DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-generator" */,
+				757ABF882C181DAF00DF8CA8 /* XCRemoteSwiftPackageReference "Valet" */,
+			);
+			productRefGroup = 757ABF322C18195100DF8CA8 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				757ABF302C18195100DF8CA8 /* Bablo */,
+				757ABF432C18195400DF8CA8 /* BabloTests */,
+				757ABF4D2C18195400DF8CA8 /* BabloUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		757ABF2F2C18195100DF8CA8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				757ABF3F2C18195300DF8CA8 /* Preview Assets.xcassets in Resources */,
+				757ABF3B2C18195300DF8CA8 /* Assets.xcassets in Resources */,
+				757ABF632C18198F00DF8CA8 /* openapi-generator-config.yaml in Resources */,
+				757ABF642C18198F00DF8CA8 /* openapi.yml in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		757ABF422C18195400DF8CA8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		757ABF4C2C18195400DF8CA8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		757ABF2D2C18195100DF8CA8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				757ABF372C18195100DF8CA8 /* ContentView.swift in Sources */,
+				757ABF852C181CD100DF8CA8 /* BankAccountsManager.swift in Sources */,
+				7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */,
+				757ABF822C181C8500DF8CA8 /* MockBankAccountsManager.swift in Sources */,
+				757ABF8F2C1822CD00DF8CA8 /* ColorType.swift in Sources */,
+				757ABF7F2C181C5200DF8CA8 /* View+Previews.swift in Sources */,
+				757ABF872C181D3400DF8CA8 /* UserAccount.swift in Sources */,
+				757ABF772C181C3100DF8CA8 /* AuthMiddleware.swift in Sources */,
+				757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */,
+				7590F29E2C86471D00BCCDE6 /* LinkViewModel.swift in Sources */,
+				7590F29F2C86471D00BCCDE6 /* LinkController.swift in Sources */,
+				7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */,
+				757ABF352C18195100DF8CA8 /* BabloApp.swift in Sources */,
+				7590F2A72C865B9F00BCCDE6 /* BankAccountView.swift in Sources */,
+				757ABF7B2C181C4200DF8CA8 /* View+Extensions.swift in Sources */,
+				757ABF7D2C181C4A00DF8CA8 /* Client+Extensions.swift in Sources */,
+				757ABF792C181C3D00DF8CA8 /* Logger.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		757ABF402C18195400DF8CA8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				757ABF492C18195400DF8CA8 /* BabloTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		757ABF4A2C18195400DF8CA8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				757ABF532C18195400DF8CA8 /* BabloUITests.swift in Sources */,
+				757ABF552C18195400DF8CA8 /* BabloUITestsLaunchTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		757ABF462C18195400DF8CA8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 757ABF302C18195100DF8CA8 /* Bablo */;
+			targetProxy = 757ABF452C18195400DF8CA8 /* PBXContainerItemProxy */;
+		};
+		757ABF502C18195400DF8CA8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 757ABF302C18195100DF8CA8 /* Bablo */;
+			targetProxy = 757ABF4F2C18195400DF8CA8 /* PBXContainerItemProxy */;
+		};
+		757ABF6A2C181B1700DF8CA8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 757ABF692C181B1700DF8CA8 /* OpenAPIGenerator */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		757ABF562C18195400DF8CA8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		757ABF572C18195400DF8CA8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		757ABF592C18195400DF8CA8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Bablo/Bablo.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"Bablo/Preview Content\"";
+				DEVELOPMENT_TEAM = 7TZFJZHHX2;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.babloapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		757ABF5A2C18195400DF8CA8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Bablo/Bablo.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"Bablo/Preview Content\"";
+				DEVELOPMENT_TEAM = 7TZFJZHHX2;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.babloapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+		757ABF5C2C18195400DF8CA8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = antonbredykhin.BabloTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Bablo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Bablo";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		757ABF5D2C18195400DF8CA8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = antonbredykhin.BabloTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Bablo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Bablo";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+		757ABF5F2C18195400DF8CA8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = antonbredykhin.BabloUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = Bablo;
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		757ABF602C18195400DF8CA8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = antonbredykhin.BabloUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = Bablo;
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		757ABF2C2C18195100DF8CA8 /* Build configuration list for PBXProject "Bablo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				757ABF562C18195400DF8CA8 /* Debug */,
+				757ABF572C18195400DF8CA8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		757ABF582C18195400DF8CA8 /* Build configuration list for PBXNativeTarget "Bablo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				757ABF592C18195400DF8CA8 /* Debug */,
+				757ABF5A2C18195400DF8CA8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		757ABF5B2C18195400DF8CA8 /* Build configuration list for PBXNativeTarget "BabloTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				757ABF5C2C18195400DF8CA8 /* Debug */,
+				757ABF5D2C18195400DF8CA8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		757ABF5E2C18195400DF8CA8 /* Build configuration list for PBXNativeTarget "BabloUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				757ABF5F2C18195400DF8CA8 /* Debug */,
+				757ABF602C18195400DF8CA8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		757ABF652C181A7C00DF8CA8 /* XCRemoteSwiftPackageReference "plaid-link-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/plaid/plaid-link-ios";
+			requirement = {
+				kind = exactVersion;
+				version = 5.5.1;
+			};
+		};
+		757ABF662C181A9900DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-urlsession" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-openapi-urlsession.git";
+			requirement = {
+				kind = exactVersion;
+				version = 1.0.1;
+			};
+		};
+		757ABF672C181AA800DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-runtime" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-openapi-runtime.git";
+			requirement = {
+				kind = exactVersion;
+				version = 1.4.0;
+			};
+		};
+		757ABF682C181AC600DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-generator" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-openapi-generator.git";
+			requirement = {
+				kind = exactVersion;
+				version = 1.2.1;
+			};
+		};
+		757ABF882C181DAF00DF8CA8 /* XCRemoteSwiftPackageReference "Valet" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Square/Valet";
+			requirement = {
+				kind = exactVersion;
+				version = 4.3.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		757ABF692C181B1700DF8CA8 /* OpenAPIGenerator */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 757ABF682C181AC600DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-generator" */;
+			productName = "plugin:OpenAPIGenerator";
+		};
+		757ABF6C2C181B3800DF8CA8 /* OpenAPIURLSession */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 757ABF662C181A9900DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-urlsession" */;
+			productName = OpenAPIURLSession;
+		};
+		757ABF6E2C181B3F00DF8CA8 /* OpenAPIRuntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 757ABF672C181AA800DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-runtime" */;
+			productName = OpenAPIRuntime;
+		};
+		757ABF702C181B4600DF8CA8 /* LinkKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 757ABF652C181A7C00DF8CA8 /* XCRemoteSwiftPackageReference "plaid-link-ios" */;
+			productName = LinkKit;
+		};
+		757ABF892C181DCC00DF8CA8 /* Valet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 757ABF882C181DAF00DF8CA8 /* XCRemoteSwiftPackageReference "Valet" */;
+			productName = Valet;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 757ABF292C18195100DF8CA8 /* Project object */;
+}

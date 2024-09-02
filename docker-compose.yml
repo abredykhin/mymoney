@@ -14,7 +14,7 @@ services:
     image: postgres:16.2
     restart: unless-stopped
     ports:
-      - 5435:5435
+      - 5432:5432
     env_file: ./.env
     volumes:
       - ./db-data:/var/lib/postgres
@@ -40,7 +40,7 @@ services:
       PLAID_DEVELOPMENT_REDIRECT_URI:
       PLAID_ENV:
       PORT: 5001
-      DB_PORT: 5435
+      DB_PORT: 5432
       DB_HOST_NAME: postgresdb
       NODE_ENV: development
     depends_on:
@@ -48,8 +48,8 @@ services:
     stdin_open: true
     tty: true
     volumes:
-#      - ./server:/opt/server   <- Breaks bccrypt and discouraged generally
-#      - /opt/server/app/node_modules # anonymous volume for node_modules only
+      - ./server:/opt/server  # <- Breaks bccrypt and discouraged generally
+      - /opt/server/node_modules # anonymous volume for node_modules only
 
 networks:
   app-network:

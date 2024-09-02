@@ -34,38 +34,6 @@
             endingLineNumber = "22"
             landmarkName = "refreshAccounts(client:)"
             landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "0A3C4038-93E6-4AEA-8AF3-EA202A8D8982 - 69fe6a089a5d3cb9"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(3) suspend resume partial function for static mymoney.BankAccountsRepository.refreshAccounts(client: mymoney.Client) async throws -&gt; Swift.Array&lt;mymoney.Components.Schemas.Account&gt;"
-                  moduleName = "mymoney"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/abredykhin/ws/mymoney/ios/mymoney/mymoney/Model/Repository/BankAccountsRepository.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "23"
-                  endingLineNumber = "23"
-                  offsetFromSymbolStart = "184">
-               </Location>
-               <Location
-                  uuid = "0A3C4038-93E6-4AEA-8AF3-EA202A8D8982 - 69fe6a089a5d3cb9"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(3) suspend resume partial function for static mymoney.BankAccountsRepository.refreshAccounts(client: mymoney.Client) async throws -&gt; Swift.Array&lt;mymoney.Components.Schemas.Account&gt;"
-                  moduleName = "mymoney"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/abredykhin/ws/mymoney/ios/mymoney/mymoney/Model/Repository/BankAccountsRepository.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "23"
-                  endingLineNumber = "23"
-                  offsetFromSymbolStart = "208">
-               </Location>
-            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

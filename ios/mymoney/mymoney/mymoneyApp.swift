@@ -11,7 +11,8 @@ import SwiftUI
 struct mymoneyApp: App {
     @StateObject var userAccount = UserAccount()
     @StateObject var bankAccountManager = BankAccountsManager()
-    
+    @State var theme = Theme.shared
+
     var body: some Scene {
         WindowGroup {
             ContentView()
