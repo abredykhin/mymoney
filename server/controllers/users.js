@@ -15,7 +15,7 @@ const registerUser = async req => {
   // Checking if the user already exists
   const oldUser = await usersQueries.retrieveUserByUsername(username);
   if (oldUser) {
-    return next(Boom.conflict('User Already Exist. Please Login.'))
+    return next(Boom.conflict('User Already Exist. Please Login.'));
   }
 
   console.log('No existing users with same username.');
@@ -40,7 +40,7 @@ const loginUser = async req => {
   if (user && (await bcrypt.compare(password, user.password))) {
     return user;
   } else {
-    return next.Boom.unauthorized('User not found!'));
+    return next.Boom.unauthorized('User not found!');
   }
 };
 
