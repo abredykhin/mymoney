@@ -7,9 +7,13 @@ const linkEvents = require('./routes/linkEvents');
 const linkTokens = require('./routes/linkTokens');
 const items = require('./routes/items');
 const { errorHandler } = require('./middleware');
+const path = require('path'); // Add this line
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Serve static files
+app.use('/.well-known', express.static(path.join(__dirname, 'static')));
 
 app.listen(PORT, () => {
   console.log('Server Listening on PORT:', PORT);
