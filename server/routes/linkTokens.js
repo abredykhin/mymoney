@@ -2,7 +2,7 @@
  * @file Defines the route for link token creation.
  */
 
-const { asyncWrapper } = require('../middleware');
+const { asyncWrapper, verifyToken } = require('../middleware');
 
 const express = require('express');
 const plaid = require('../plaid/plaid');
@@ -26,6 +26,7 @@ const isProd = PLAID_ENV == 'production';
 
 router.post(
   '/',
+  verifyToken,
   asyncWrapper(async (req, res) => {
     console.log('Requesting Link token...');
     try {

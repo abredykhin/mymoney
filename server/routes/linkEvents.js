@@ -5,7 +5,7 @@
 const express = require('express');
 
 const { createLinkEvent } = require('../db/queries');
-const { asyncWrapper } = require('../middleware');
+const { asyncWrapper, verifyToken } = require('../middleware');
 
 const router = express.Router();
 
@@ -21,6 +21,7 @@ const router = express.Router();
  */
 router.post(
   '/',
+  verifyToken,
   asyncWrapper(async (req, res) => {
     await createLinkEvent(req.body);
     res.sendStatus(200);

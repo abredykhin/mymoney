@@ -3,7 +3,7 @@ const { retrieveAccountsByUserId } = require('../db/queries/accounts');
 const { retrieveItemsByUser } = require('../db/queries/items');
 const { retrieveTransactionsByUserId } = require('../db/queries/transactions');
 const { sanitizeItems, sanitizeAccounts } = require('../utils/sanitize');
-const { asyncWrapper } = require('../middleware');
+const { asyncWrapper, verifyToken } = require('../middleware');
 
 const router = express.Router();
 
@@ -15,6 +15,7 @@ const router = express.Router();
  */
 router.get(
   '/:userId/items',
+  verifyToken,
   asyncWrapper(async (req, res) => {
     const userId = req.userId;
     console.log(`Retrieving user items for user ${userId}`);
@@ -31,6 +32,7 @@ router.get(
  */
 router.get(
   '/accounts',
+  verifyToken,
   asyncWrapper(async (req, res) => {
     const userId = req.userId;
     console.log(`Retrieving user accounts for user ${userId}`);
@@ -48,6 +50,7 @@ router.get(
  */
 router.get(
   '/transactions',
+  verifyToken,
   asyncWrapper(async (req, res) => {
     const userId = req.userId;
     console.log(`Retrieving user transactions for user ${userId}`);

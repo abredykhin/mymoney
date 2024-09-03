@@ -15,7 +15,7 @@ const {
   deleteItem,
   updateItemStatus,
 } = require('../db/queries');
-const { asyncWrapper } = require('../middleware');
+const { asyncWrapper, verifyToken } = require('../middleware');
 const plaid = require('../plaid/plaid');
 const {
   sanitizeAccounts,
@@ -39,6 +39,7 @@ const router = express.Router();
  */
 router.post(
   '/',
+  verifyToken,
   asyncWrapper(async (req, res) => {
     console.log('Creating a new item');
     const { publicToken, institutionId } = req.body;
@@ -112,6 +113,7 @@ router.post(
  */
 router.get(
   '/:itemId',
+  verifyToken,
   asyncWrapper(async (req, res) => {
     const { itemId } = req.params;
     const item = await retrieveItemById(itemId);
@@ -127,6 +129,7 @@ router.get(
  */
 router.put(
   '/:itemId',
+  verifyToken,
   asyncWrapper(async (req, res) => {
     const { itemId } = req.params;
     const { status } = req.body;
@@ -163,6 +166,7 @@ router.put(
  */
 router.delete(
   '/:itemId',
+  verifyToken,
   asyncWrapper(async (req, res) => {
     const { itemId } = req.params;
     const { plaid_access_token: accessToken } = await retrieveItemById(itemId);
@@ -193,6 +197,7 @@ router.delete(
  */
 router.get(
   '/:itemId/accounts',
+  verifyToken,
   asyncWrapper(async (req, res) => {
     const { itemId } = req.params;
     const accounts = await retrieveAccountsByItemId(itemId);
@@ -208,6 +213,7 @@ router.get(
  */
 router.get(
   '/:itemId/transactions',
+  verifyToken,
   asyncWrapper(async (req, res) => {
     const { itemId } = req.params;
     const transactions = await retrieveTransactionsByItemId(itemId);
@@ -226,6 +232,7 @@ router.get(
  */
 router.post(
   '/sandbox/item/reset_login',
+  verifyToken,
   asyncWrapper(async (req, res) => {
     const { itemId } = req.body;
     const { plaid_access_token: accessToken } = await retrieveItemById(itemId);

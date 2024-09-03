@@ -6,7 +6,7 @@ const users = require('./routes/users');
 const linkEvents = require('./routes/linkEvents');
 const linkTokens = require('./routes/linkTokens');
 const items = require('./routes/items');
-const { errorHandler, verifyToken } = require('./middleware');
+const { errorHandler } = require('./middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,7 +30,6 @@ app.get('/status', (request, response) => {
 });
 
 app.use('/users', auth);
-app.use(verifyToken);
 app.use('/link-event', linkEvents);
 app.use('/link-token', linkTokens);
 // The rest of routes require token
