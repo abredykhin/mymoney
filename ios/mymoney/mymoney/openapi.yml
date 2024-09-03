@@ -5,7 +5,7 @@ info:
 servers:
   - url: http://babloapp.com:5001
     description: Main (production) server
-  - url: http://localhost:3000
+  - url: http://localhost:5001
     description: Localhost dev server
 paths:
   /users/register:

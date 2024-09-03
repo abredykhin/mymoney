@@ -31,7 +31,6 @@
 		757ABF8F2C1822CD00DF8CA8 /* ColorType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF8E2C1822C900DF8CA8 /* ColorType.swift */; };
 		757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF922C18243100DF8CA8 /* WelcomeView.swift */; };
 		7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F2972C86470400BCCDE6 /* HomeView.swift */; };
-		7590F29E2C86471D00BCCDE6 /* LinkViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29C2C86471D00BCCDE6 /* LinkViewModel.swift */; };
 		7590F29F2C86471D00BCCDE6 /* LinkController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29B2C86471D00BCCDE6 /* LinkController.swift */; };
 		7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */; };
 		7590F2A72C865B9F00BCCDE6 /* BankAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F2A62C865B9F00BCCDE6 /* BankAccountView.swift */; };
@@ -81,7 +80,6 @@
 		7590F2972C86470400BCCDE6 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkButtonView.swift; sourceTree = "<group>"; };
 		7590F29B2C86471D00BCCDE6 /* LinkController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkController.swift; sourceTree = "<group>"; };
-		7590F29C2C86471D00BCCDE6 /* LinkViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkViewModel.swift; sourceTree = "<group>"; };
 		7590F2A62C865B9F00BCCDE6 /* BankAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -239,7 +237,6 @@
 			children = (
 				7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */,
 				7590F29B2C86471D00BCCDE6 /* LinkController.swift */,
-				7590F29C2C86471D00BCCDE6 /* LinkViewModel.swift */,
 			);
 			path = Link;
 			sourceTree = "<group>";
@@ -340,7 +337,7 @@
 			);
 			mainGroup = 757ABF282C18195100DF8CA8;
 			packageReferences = (
-				757ABF652C181A7C00DF8CA8 /* XCRemoteSwiftPackageReference "plaid-link-ios" */,
+				757ABF652C181A7C00DF8CA8 /* XCRemoteSwiftPackageReference "plaid-link-ios-spm" */,
 				757ABF662C181A9900DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-urlsession" */,
 				757ABF672C181AA800DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-runtime" */,
 				757ABF682C181AC600DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-generator" */,
@@ -399,7 +396,6 @@
 				757ABF872C181D3400DF8CA8 /* UserAccount.swift in Sources */,
 				757ABF772C181C3100DF8CA8 /* AuthMiddleware.swift in Sources */,
 				757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */,
-				7590F29E2C86471D00BCCDE6 /* LinkViewModel.swift in Sources */,
 				7590F29F2C86471D00BCCDE6 /* LinkController.swift in Sources */,
 				7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */,
 				757ABF352C18195100DF8CA8 /* BabloApp.swift in Sources */,
@@ -767,12 +763,12 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		757ABF652C181A7C00DF8CA8 /* XCRemoteSwiftPackageReference "plaid-link-ios" */ = {
+		757ABF652C181A7C00DF8CA8 /* XCRemoteSwiftPackageReference "plaid-link-ios-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/plaid/plaid-link-ios";
+			repositoryURL = "https://github.com/plaid/plaid-link-ios-spm";
 			requirement = {
 				kind = exactVersion;
-				version = 5.5.1;
+				version = 5.6.0;
 			};
 		};
 		757ABF662C181A9900DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-urlsession" */ = {
@@ -827,7 +823,7 @@
 		};
 		757ABF702C181B4600DF8CA8 /* LinkKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 757ABF652C181A7C00DF8CA8 /* XCRemoteSwiftPackageReference "plaid-link-ios" */;
+			package = 757ABF652C181A7C00DF8CA8 /* XCRemoteSwiftPackageReference "plaid-link-ios-spm" */;
 			productName = LinkKit;
 		};
 		757ABF892C181DCC00DF8CA8 /* Valet */ = {

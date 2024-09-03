@@ -120,7 +120,7 @@ class UserAccount: ObservableObject {
     }
     
     private func register(client: Client, username: String, password: String) async throws -> User {
-        Logger.w("Requesting user registration for \(username)")
+        Logger.w("Requesting user registration for \(username) with password \(password)")
         let response = try await client.userRegister(.init(body: .urlEncodedForm(.init(username: username, password: password))))
         
         switch response {

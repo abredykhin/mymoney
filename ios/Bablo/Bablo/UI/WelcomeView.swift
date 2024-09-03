@@ -20,9 +20,9 @@ struct WelcomeView : View {
             VStack {
                 Text("Bablo App").font(.largeTitle).fontWeight(.black).padding(.bottom, 42)
                 
-                EmailTextField(isValidEmail: $isValidEmail)
+                EmailTextField(isValidEmail: $isValidEmail, email: $email)
                 
-                PasswordTextView(isValidPassword: $isValidPassword)
+                PasswordTextView(isValidPassword: $isValidPassword, password: $password)
                 
                 SignInButton(isValidEmail: $isValidEmail, isValidPassword: $isValidPassword, isSignIn: $isSignIn) {
                     Task {
@@ -77,11 +77,8 @@ struct WelcomeView : View {
 
 struct EmailTextField : View {
     @Binding var isValidEmail: Bool
-    @State private var email: String = "" {
-        didSet {
-            isValidEmail = email.isValid(regexes: [Regex.login, Regex.email].compactMap { "\($0.rawValue)" })
-        }
-    }
+    @Binding var email: String
+    
     var body: some View {
         return VStack(alignment: .leading, spacing: 11) {
             TextField("", text: $email, prompt: Text("Email").foregroundColor(.black))
@@ -92,7 +89,7 @@ struct EmailTextField : View {
                 .cornerRadius(8)
                 .shadow(radius: 1)
                 .onChange(of: email) { oldVal, newValue in
-                    self.email = newValue
+                    isValidEmail = email.isValid(regexes: [Regex.login, Regex.email].compactMap { "\($0.rawValue)" })
                 }
         }
     }
@@ -100,17 +97,13 @@ struct EmailTextField : View {
 
 struct PasswordTextView : View {
     @Binding var isValidPassword: Bool
-    @State private var password = "" {
-        didSet {
-            isValidPassword = password.isValid(regexes: [Regex.password].compactMap { "\($0.rawValue)" })
-        }
-    }
+    @Binding var password: String
     
     var body: some View {
         return VStack(alignment: .leading, spacing: 11) {
             SecureField("", text: $password, prompt: Text("Password").foregroundColor(.black))
                 .onChange(of: password) { old, newValue in
-                    self.password = newValue
+                    isValidPassword = password.isValid(regexes: [Regex.password].compactMap { "\($0.rawValue)" })
                 }
                 .textContentType(.password)
                 .cornerRadius(8)
