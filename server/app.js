@@ -30,9 +30,9 @@ app.get('/status', (request, response) => {
 });
 
 app.use('/users', auth);
+app.use(verifyToken);
 app.use('/link-event', linkEvents);
 app.use('/link-token', linkTokens);
-app.use(verifyToken);
 // The rest of routes require token
 app.use('/users', users);
 app.use('/items', items);

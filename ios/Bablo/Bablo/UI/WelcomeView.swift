@@ -163,5 +163,4 @@ enum Regex: String {
 
 #Preview {
     WelcomeView()
-        .withPreviewEnv()
 }

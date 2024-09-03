@@ -5,6 +5,8 @@
 const express = require('express');
 const Boom = require('@hapi/boom');
 const {
+  createInstitution,
+  retrieveInstitutionById,
   retrieveItemById,
   retrieveItemByPlaidInstitutionId,
   retrieveAccountsByItemId,
@@ -56,7 +58,27 @@ router.post(
       });
     }
 
-    console.log('Talking to Plaid to exchange tokens...');
+    console.log('Asking Plaid for info on institution...');
+    const institution = await plaid.client.institutionsGetById({
+      client_id: '',
+      secret: '',
+      institution_id: institutionId,
+      country_codes: ['US'],
+      options: {
+        include_optional_metadata: true,
+      },
+    });
+    console.log('Received institution info. Storing in database...');
+
+    await createInstitution(
+      institution.institution_id,
+      institution.name,
+      institution.primary_color,
+      institution.url,
+      institution.logo
+    );
+
+    console.log('Exchanging tokens with Plaid...');
     // exchange the public token for a private access token and store with the item.
     const response = await plaid.itemPublicTokenExchange({
       public_token: publicToken,

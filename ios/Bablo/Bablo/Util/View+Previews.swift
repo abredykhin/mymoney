@@ -7,9 +7,9 @@
 
 import SwiftUI
 
-@MainActor
-extension View {
-    func withPreviewEnv() -> some View {
-        environmentObject(MockBankAccountsManager())
-    }
-}
+//@MainActor
+//extension View {
+//    func withPreviewEnv() -> some View {
+//        environmentObject(MockBankAccountsManager())
+//    }
+//}

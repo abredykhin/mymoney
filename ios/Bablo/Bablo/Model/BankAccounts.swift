@@ -7,27 +7,25 @@
 
 import Foundation
 import SwiftUI
+import OpenAPIRuntime
+import OpenAPIURLSession
+
+typealias BankAccount = Components.Schemas.Account
 
 @MainActor
-class BankAccountsManager: ObservableObject {
+class BankAccounts: ObservableObject {    
     @Published var accounts: [BankAccount] = []
-    var client: Client? = nil
-    
+    private let userAccount: UserAccount = UserAccount.shared
+    private var client: Client? = nil
+        
     func refreshAccounts() async throws {
         Logger.d("Refreshing accounts")
+        updateClient()
         guard let client = client else {
             Logger.e("Client is not set!")
             return
         }
         
-        do {
-            self.accounts = try await refreshAccountsInternal(client: client)
-        } catch  {
-            Logger.e("Unable to refresh accounts: \(error)")
-        }
-    }
-    
-    private func refreshAccountsInternal(client: Client) async throws -> [BankAccount] {
         Logger.d("Querying server for accounts")
         let response = try await client.getUserAccounts()
         
@@ -36,12 +34,16 @@ class BankAccountsManager: ObservableObject {
             switch (json.body) {
             case .json(let accounts):
                 Logger.i("Received \(accounts.count) accounts from server")
-                return accounts
+                self.accounts = accounts
             }
         case .undocumented(_, _):
             Logger.e("Failed to retrieve accounts from server")
             throw URLError(.badURL)
             
         }
+    }
+    
+    private func updateClient() {
+        client = userAccount.client.map(\.self)
     }
 }

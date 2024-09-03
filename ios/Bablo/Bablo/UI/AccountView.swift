@@ -1,5 +1,5 @@
 //
-//  BankAccountView.swift
+//  AccountView.swift
 //  Bablo
 //
 //  Created by Anton Bredykhin on 9/2/24.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct BankAccountView: View {
+struct AccountView : View {
     @State var account: BankAccount
     
     var body: some View {
@@ -25,9 +25,9 @@ struct BankAccountView: View {
     }
 }
 
-struct BankAccountView_Previews: PreviewProvider {
+struct AccountView_Previews: PreviewProvider {
     static let account = BankAccount(id: 0, item_id: 1, name: "Account", current_balance: 100.0, iso_currency_code: "USD", _type: "checking", updated_at: .now)
     static var previews: some View {
-        BankAccountView(account: account)
+        AccountView(account: account)
     }
 }

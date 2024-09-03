@@ -8,20 +8,16 @@
 import Foundation
 import SwiftUI
 
-struct HomeView: View {
-    @EnvironmentObject var bankAccountsManager: BankAccountsManager
+struct HomeView: View {    
+    @EnvironmentObject var bankAccounts: BankAccounts
     
     var body: some View {
         ScrollView {
             LinkButtonView()
                 .padding(.top)
-            LazyVStack(alignment: .leading) {
-                ForEach(bankAccountsManager.accounts) { account in
-                    BankAccountView(account: account)
-                }
-            }
+            BankAccountListView()
         }.task {
-            try? await bankAccountsManager.refreshAccounts()
+            try? await bankAccounts.refreshAccounts()
         }
     }
 }

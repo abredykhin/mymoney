@@ -12,7 +12,7 @@ import LinkKit
 struct LinkButtonView : View {
     @State var shouldPresentLink = false
     @StateObject var userAccount = UserAccount.shared
-    @EnvironmentObject var bankAccountsManager: BankAccountsManager
+    @EnvironmentObject var bankAccounts: BankAccounts
     @State var linkController: LinkController? = nil
     
     var body: some View {
@@ -61,14 +61,14 @@ struct LinkButtonView : View {
                         let handler = Plaid.create(config)
                         switch handler {
                         case .success(let handler):
-                                let tmp = LinkController(handler: handler)
-                            DispatchQueue.main.async {
-                                self.linkController = tmp
+//                                let tmp = LinkController(handler: handler)
+//                            DispatchQueue.main.async {
+                            self.linkController = LinkController(handler: handler)
                                 
-                                if let ctrl =  self.linkController {
+//                                if let ctrl =  self.linkController {
                                     Logger.i("LinkController initialized")
-                                }
-                            }
+//                                }
+//                            }
                         case .failure(let error):
                             Logger.e("Failed to init Plaid: \(error)")
                         }
@@ -114,7 +114,7 @@ struct LinkButtonView : View {
         let response = try await client.saveNewItem(body: .urlEncodedForm(.init(institutionId: institutionId, publicToken: token)))
         switch(response) {
         case .ok(_):
-            try? await bankAccountsManager.refreshAccounts()
+            try? await bankAccounts.refreshAccounts()
             break
         case .undocumented(_, _):
             throw URLError(.badServerResponse)

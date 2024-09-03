@@ -42,7 +42,15 @@ const {
   deleteAssetByAssetId,
 } = require('./assets');
 
+const {
+  createInstitution,
+  retrieveInstitutionById,
+} = require('./institutions');
+
 module.exports = {
+  // // institutions
+  createInstitution,
+  retrieveInstitutionById,
   // // accounts
   createAccounts,
   retrieveAccountByPlaidAccountId,

@@ -104,6 +104,34 @@ AS
     items_table;
 
 
+CREATE TABLE institutions_table
+(
+  id SERIAL PRIMARY KEY,
+  institution_id text UNIQUE NOT NULL,
+  name text NOT NULL,
+  primary_color text,
+  url text,
+  logo text
+);
+
+CREATE TRIGGER institutions_updated_at_timestamp
+BEFORE UPDATE ON institutions_table
+FOR EACH ROW
+EXECUTE PROCEDURE trigger_set_timestamp();
+
+CREATE VIEW institutions
+AS
+  SELECT
+    id,
+    institution_id,
+    name,
+    primary_color,
+    url,
+    logo
+  FROM
+    institutions_table;    
+
+
 -- -- ASSETS
 -- -- This table is used to store the assets associated with each user. The view returns the same data
 -- -- as the table, we're just using both to maintain consistency with our other tables.
@@ -184,11 +212,15 @@ AS
     a.type,
     a.subtype,
     a.created_at,
-    a.updated_at
+    a.updated_at,
+  -- Add columns from the institutions view here
+    ins.name AS institution_name,
+    ins.primary_color AS institution_primary_color     
   FROM
     accounts_table a
-    LEFT JOIN items i ON i.id = a.item_id;
-
+    LEFT JOIN items i ON i.id = a.item_id
+-- Join with the institutions view
+    LEFT JOIN institutions ins ON i.plaid_institution_id = ins.institution_id;
 
 -- TRANSACTIONS
 -- This table is used to store the transactions associated with each account. The view returns all

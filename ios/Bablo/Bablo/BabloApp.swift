@@ -11,7 +11,7 @@ import SwiftData
 @main
 struct BabloApp: App {
     @StateObject var userAccount = UserAccount.shared
-    @StateObject var bankAccountManager = BankAccountsManager()
+    @StateObject var bankAccounts = BankAccounts()
     
         //    var sharedModelContainer: ModelContainer = {
         //        let schema = Schema([
@@ -30,12 +30,9 @@ struct BabloApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(userAccount)
-                .environmentObject(bankAccountManager)
+                .environmentObject(bankAccounts)
                 .task {
                     userAccount.checkCurrentUser()
-                }
-                .onChange(of: userAccount.currentUser) {
-                    bankAccountManager.client = userAccount.client
                 }
         }
         
