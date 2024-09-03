@@ -32,6 +32,7 @@ services:
     restart: unless-stopped
     ports:
       - 5001:5001
+      - 80:5001
     environment:
       PLAID_CLIENT_ID:
       PLAID_SECRET_SANDBOX:
