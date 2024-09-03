@@ -4,10 +4,11 @@ DO
 $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'anton') THEN
-        CREATE ROLE anton;
+        CREATE ROLE anton LOGIN;
     END IF;
 END
 $$;
+ALTER ROLE anton WITH LOGIN CREATEDB;
 
 CREATE DATABASE mymoney;
 GRANT ALL PRIVILEGES ON DATABASE mymoney TO anton;
