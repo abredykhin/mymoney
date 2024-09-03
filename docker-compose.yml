@@ -50,6 +50,7 @@ services:
     volumes:
       - ./server:/opt/server  # <- Breaks bccrypt and discouraged generally
       - /opt/server/node_modules # anonymous volume for node_modules only
+      - ./server/static:/opt/server/static # Mount the static folder only
 
 networks:
   app-network:
