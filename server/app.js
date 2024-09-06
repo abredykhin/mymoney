@@ -1,6 +1,7 @@
 const express = require('express');
 const logger = require('morgan');
 const cors = require('cors');
+const fs = require('fs');
 const auth = require('./routes/auth');
 const users = require('./routes/users');
 const linkEvents = require('./routes/linkEvents');
@@ -10,11 +11,12 @@ const { errorHandler } = require('./middleware');
 const path = require('path'); // Add this line
 const http = require('http');
 const https = require('https');
-require('dotenv').config(); // Load .env file
+require('dotenv').config();
+console.log('NODE_ENV:', process.env.APP_ENV);
 
 const app = express();
-const PORT = process.env.PORT || 5001;
-const isProduction = process.env.NODE_ENV === 'production';
+const PORT = process.env.PORT || 3000;
+const isProduction = process.env.APP_ENV === 'production';
 
 // Serve static files
 app.use('/.well-known', express.static(path.join(__dirname, 'static')));
@@ -52,9 +54,11 @@ const startHttpsServer = () => {
 
 // Start both HTTP and HTTPS
 if (isProduction) {
+  console.log('Starting in production mode');
   startHttpsServer();
   startHttpServer(); // Optionally serve HTTP for non-SSL requests
 } else {
+  console.log('Starting in dev mode');
   startHttpServer(); // In development, only serve HTTP
 }
 
