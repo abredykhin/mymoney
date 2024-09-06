@@ -52,7 +52,8 @@ services:
       - ./server:/opt/server  # <- Breaks bccrypt and discouraged generally
       - /opt/server/node_modules # anonymous volume for node_modules only
       - ./server/static:/opt/server/static # Mount the static folder only
-
+      - ${SSL_CERT_PATH}:${SSL_CERT_PATH}:ro
+      - ${SSL_KEY_PATH}:${SSL_KEY_PATH}:ro
 networks:
   app-network:
     driver: bridge
