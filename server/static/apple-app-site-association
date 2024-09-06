@@ -3,7 +3,7 @@
         "apps": [],
       "details": [
            {
-             "appIDs": [ "7TZFJZHHX2.com.babloapp" ],
+             "appIDs": [ "7TZFJZHHX2.com.babloapp.mymoney" ],
              "components": [
                {
                   "/": "/plaid/redirect/*",
