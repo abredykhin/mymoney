@@ -8,16 +8,55 @@ const linkTokens = require('./routes/linkTokens');
 const items = require('./routes/items');
 const { errorHandler } = require('./middleware');
 const path = require('path'); // Add this line
+const http = require('http');
+const https = require('https');
+require('dotenv').config(); // Load .env file
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5001;
+const isProduction = process.env.NODE_ENV === 'production';
 
 // Serve static files
 app.use('/.well-known', express.static(path.join(__dirname, 'static')));
 
-app.listen(PORT, () => {
-  console.log('Server Listening on PORT:', PORT);
-});
+// app.listen(PORT, () => {
+//   console.log('Server Listening on PORT:', PORT);
+// });
+
+// Function to start the HTTP server
+const startHttpServer = () => {
+  http.createServer(app).listen(PORT, () => {
+    console.log(`HTTP Server running on port ${PORT}`);
+  });
+};
+
+// Function to start the HTTPS server
+const startHttpsServer = () => {
+  const certKey = process.env.SSL_KEY_PATH; // Read from .env
+  const certFullChain = process.env.SSL_CERT_PATH; // Read from .env
+
+  // Check if certificate files exist
+  if (fs.existsSync(certKey) && fs.existsSync(certFullChain)) {
+    const options = {
+      key: fs.readFileSync(certKey),
+      cert: fs.readFileSync(certFullChain),
+    };
+
+    https.createServer(options, app).listen(443, () => {
+      console.log('HTTPS Server running on port 443');
+    });
+  } else {
+    console.log('SSL certificates not found. HTTPS server not started.');
+  }
+};
+
+// Start both HTTP and HTTPS
+if (isProduction) {
+  startHttpsServer();
+  startHttpServer(); // Optionally serve HTTP for non-SSL requests
+} else {
+  startHttpServer(); // In development, only serve HTTP
+}
 
 app.use(logger('dev'));
 app.use(cors());
