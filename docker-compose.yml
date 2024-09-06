@@ -33,6 +33,7 @@ services:
     ports:
       - 5001:5001
       - 80:5001
+      - 443:443
     environment:
       PLAID_CLIENT_ID:
       PLAID_SECRET_SANDBOX:
