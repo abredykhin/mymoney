@@ -98,7 +98,7 @@ router.post(
 
     // Make an initial call to fetch transactions and enable SYNC_UPDATES_AVAILABLE webhook sending
     // for this item.
-    updateTransactions(itemId).then(() => {
+    await updateTransactions(itemId).then(() => {
       // Notify frontend to reflect any transactions changes.
       // TODO:
       //req.io.emit('NEW_TRANSACTIONS_DATA', { itemId: newItem.id });
