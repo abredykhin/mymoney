@@ -60,7 +60,7 @@ router.post(
     }
 
     console.log('Asking Plaid for info on institution...');
-    const institution = await plaid.client.institutionsGetById({
+    const institutionResponse = await plaid.client.institutionsGetById({
       client_id: '',
       secret: '',
       institution_id: institutionId,
@@ -69,14 +69,17 @@ router.post(
         include_optional_metadata: true,
       },
     });
+
+    console.log(institutionResponse);
+    console.log(JSON.stringify(institutionResponse.data.institution, null, 2));
     console.log('Received institution info. Storing in database...');
 
     await createInstitution(
-      institution.institution_id,
-      institution.name,
-      institution.primary_color,
-      institution.url,
-      institution.logo
+      institutionResponse.data.institution.institution_id,
+      institutionResponse.data.institution.name,
+      institutionResponse.data.institution.primary_color,
+      institutionResponse.data.institution.url,
+      institutionResponse.data.institution.logo
     );
 
     console.log('Exchanging tokens with Plaid...');
