@@ -34,6 +34,7 @@
 		7590F29F2C86471D00BCCDE6 /* LinkController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29B2C86471D00BCCDE6 /* LinkController.swift */; };
 		7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */; };
 		7590F2A72C865B9F00BCCDE6 /* BankAccountListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F2A62C865B9F00BCCDE6 /* BankAccountListView.swift */; };
+		75F529662C8D696100629F2B /* Modifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75F529652C8D696100629F2B /* Modifiers.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,6 +82,7 @@
 		7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkButtonView.swift; sourceTree = "<group>"; };
 		7590F29B2C86471D00BCCDE6 /* LinkController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkController.swift; sourceTree = "<group>"; };
 		7590F2A62C865B9F00BCCDE6 /* BankAccountListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountListView.swift; sourceTree = "<group>"; };
+		75F529652C8D696100629F2B /* Modifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Modifiers.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -192,6 +194,7 @@
 				757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */,
 				757ABF782C181C3D00DF8CA8 /* Logger.swift */,
 				757ABF762C181C3100DF8CA8 /* AuthMiddleware.swift */,
+				75F529652C8D696100629F2B /* Modifiers.swift */,
 			);
 			path = Util;
 			sourceTree = "<group>";
@@ -390,6 +393,7 @@
 				757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */,
 				7590F29F2C86471D00BCCDE6 /* LinkController.swift in Sources */,
 				7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */,
+				75F529662C8D696100629F2B /* Modifiers.swift in Sources */,
 				757ABF352C18195100DF8CA8 /* BabloApp.swift in Sources */,
 				7590F2A72C865B9F00BCCDE6 /* BankAccountListView.swift in Sources */,
 				757ABF7B2C181C4200DF8CA8 /* View+Extensions.swift in Sources */,
@@ -768,7 +772,7 @@
 			repositoryURL = "https://github.com/apple/swift-openapi-urlsession.git";
 			requirement = {
 				kind = exactVersion;
-				version = 1.0.1;
+				version = 1.0.2;
 			};
 		};
 		757ABF672C181AA800DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-runtime" */ = {
@@ -776,7 +780,7 @@
 			repositoryURL = "https://github.com/apple/swift-openapi-runtime.git";
 			requirement = {
 				kind = exactVersion;
-				version = 1.4.0;
+				version = 1.5.0;
 			};
 		};
 		757ABF682C181AC600DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-generator" */ = {
@@ -784,7 +788,7 @@
 			repositoryURL = "https://github.com/apple/swift-openapi-generator.git";
 			requirement = {
 				kind = exactVersion;
-				version = 1.2.1;
+				version = 1.3.0;
 			};
 		};
 		757ABF882C181DAF00DF8CA8 /* XCRemoteSwiftPackageReference "Valet" */ = {

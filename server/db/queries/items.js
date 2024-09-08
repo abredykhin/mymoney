@@ -31,6 +31,10 @@ const createItem = async (
         (user_id, plaid_access_token, plaid_item_id, plaid_institution_id, status)
       VALUES
         ($1, $2, $3, $4, $5)
+      ON CONFLICT (plaid_item_id) DO UPDATE SET
+        plaid_access_token = EXCLUDED.plaid_access_token,
+        plaid_institution_id = EXCLUDED.plaid_institution_id,
+        status = EXCLUDED.status        
       RETURNING
         *;
     `,

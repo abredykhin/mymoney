@@ -29,8 +29,11 @@ const createInstitution = async (
         (institution_id, name, primary_color, url, logo)
       VALUES
         ($1, $2, $3, $4, $5)
-      ON CONFLICT(institution_id)
-      DO NOTHING        
+      ON CONFLICT(institution_id) DO UPDATE SET
+        name = EXCLUDED.name,
+        primary_color = EXCLUDED.primary_color,
+        url = EXCLUDED.url,
+        logo = EXCLUDED.logo       
       RETURNING *;
     `,
     values: [institutionId, name, primaryColor, url, logo],

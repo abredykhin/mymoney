@@ -11,7 +11,7 @@ struct AccountView : View {
     @State var account: BankAccount
     
     var body: some View {
-        VStack(alignment: .leading) {
+//        VStack(alignment: .leading) {
             HStack(alignment: .center) {
                 Text(account.name)
                     .font(.title)
@@ -19,9 +19,11 @@ struct AccountView : View {
                 Text(account.current_balance, format: .currency(code: account.iso_currency_code))
                     .font(.title)
                     .fontWeight(.medium)
+                Spacer()
             }
-            .padding(.bottom, 2)
-        }
+            .padding(10)
+            .cardBackground()
+//        }
     }
 }
 

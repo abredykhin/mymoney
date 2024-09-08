@@ -112,6 +112,16 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Account'
+        '401':
+          description: Unauthorized access
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid username or password
   /link-token:
     post:
       summary: Generates a Link token

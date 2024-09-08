@@ -14,3 +14,9 @@ extension View {
         return EmptyView()
     }
 }
+
+extension View {
+    func cardBackground() -> some View {
+        modifier(CardBackground())
+    }
+}

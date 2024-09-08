@@ -36,6 +36,9 @@ class BankAccounts: ObservableObject {
                 Logger.i("Received \(accounts.count) accounts from server")
                 self.accounts = accounts
             }
+        case .unauthorized(_):
+            userAccount.signOut()
+            throw URLError(.userAuthenticationRequired)
         case .undocumented(_, _):
             Logger.e("Failed to retrieve accounts from server")
             throw URLError(.badURL)

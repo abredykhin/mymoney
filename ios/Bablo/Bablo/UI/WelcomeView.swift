@@ -45,6 +45,7 @@ struct WelcomeView : View {
                 }
                 
                 if showError {
+                    Spacer()
                     Text("Incorrect password. Please try again.")
                         .foregroundColor(Color.red)
                         .padding()

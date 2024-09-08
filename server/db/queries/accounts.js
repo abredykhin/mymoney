@@ -14,6 +14,7 @@ const db = require('../');
  */
 const createAccounts = async (plaidItemId, accounts) => {
   console.log(`Storing accounts in db for plaid item: ${plaidItemId}`);
+
   const { id: itemId } = await retrieveItemByPlaidItemId(plaidItemId);
   const pendingQueries = accounts.map(async account => {
     const {

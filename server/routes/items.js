@@ -52,12 +52,6 @@ router.post(
       institutionId,
       userId
     );
-    if (existingItem) {
-      console.log('Item already linked at this institution!');
-      throw Boom('You have already linked an item at this institution.', {
-        statusCode: 409,
-      });
-    }
 
     console.log('Asking Plaid for info on institution...');
     const institutionResponse = await plaid.client.institutionsGetById({

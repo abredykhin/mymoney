@@ -112,7 +112,8 @@ CREATE TABLE institutions_table
   name text NOT NULL,
   primary_color text,
   url text,
-  logo text
+  logo text,
+  updated_at timestamptz default now()
 );
 
 CREATE TRIGGER institutions_updated_at_timestamp
@@ -128,7 +129,8 @@ AS
     name,
     primary_color,
     url,
-    logo
+    logo,
+    updated_at
   FROM
     institutions_table;    
 
