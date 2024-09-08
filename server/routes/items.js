@@ -53,8 +53,8 @@ router.post(
       userId
     );
     if (existingItem) {
-      console.log('Duplicate institution!');
-      throw new Boom('You have already linked an item at this institution.', {
+      console.log('Item already linked at this institution!');
+      throw Boom('You have already linked an item at this institution.', {
         statusCode: 409,
       });
     }
@@ -70,7 +70,7 @@ router.post(
       },
     });
 
-    console.log(institutionResponse);
+    console.log(institutionResponse.data.institution);
     console.log(JSON.stringify(institutionResponse.data.institution, null, 2));
     console.log('Received institution info. Storing in database...');
 

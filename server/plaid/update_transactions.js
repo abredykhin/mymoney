@@ -69,6 +69,7 @@ const fetchTransactionUpdates = async plaidItemId => {
  * @param {string} plaidItemId the Plaid ID for the item.
  */
 const updateTransactions = async plaidItemId => {
+  console.log(`Querying Plaid for transactions in plaid item: ${plaidItemId}`);
   // Fetch new transactions from plaid api.
   const { added, modified, removed, cursor, accessToken } =
     await fetchTransactionUpdates(plaidItemId);
@@ -81,7 +82,11 @@ const updateTransactions = async plaidItemId => {
     data: { accounts },
   } = await plaid.accountsGet(request);
 
+  console.log(
+    `Got the response. Added: ${added.length}, modified: ${modified.length}, removed: ${removed.length}`
+  );
   // Update the DB.
+
   await createAccounts(plaidItemId, accounts);
   await createOrUpdateTransactions(added.concat(modified));
   await deleteTransactions(removed);

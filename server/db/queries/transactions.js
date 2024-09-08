@@ -11,6 +11,9 @@ const db = require('../');
  * @param {Object[]} transactions an array of transactions.
  */
 const createOrUpdateTransactions = async transactions => {
+  console.log('Storing transactions in db...');
+  console.log(transactions);
+
   const pendingQueries = transactions.map(async transaction => {
     const {
       account_id: plaidAccountId,
@@ -26,10 +29,11 @@ const createOrUpdateTransactions = async transactions => {
       pending,
       account_owner: accountOwner,
     } = transaction;
-    const { id: accountId } = await retrieveAccountByPlaidAccountId(
-      plaidAccountId
-    );
-    const [category, subcategory] = categories;
+    const { id: accountId } =
+      await retrieveAccountByPlaidAccountId(plaidAccountId);
+    const [category, subcategory] = Array.isArray(categories)
+      ? categories
+      : [categories, null];
     try {
       const query = {
         text: `
@@ -142,6 +146,7 @@ const retrieveTransactionsByUserId = async userId => {
  * @param {string[]} plaidTransactionIds the Plaid IDs of the transactions.
  */
 const deleteTransactions = async plaidTransactionIds => {
+  console.log('Removing deleted transactions...');
   const pendingQueries = plaidTransactionIds.map(async transactionId => {
     const query = {
       text: 'DELETE FROM transactions_table WHERE plaid_transaction_id = $1',

@@ -21,6 +21,7 @@ const createInstitution = async (
   url,
   logo
 ) => {
+  console.log(`Storing institution ${institutionId} in db`);
   const query = {
     // RETURNING is a Postgres-specific clause that returns a list of the inserted items.
     text: `
@@ -45,6 +46,8 @@ const createInstitution = async (
  * @returns {Object} an institution.
  */
 const retrieveInstitutionById = async itemId => {
+  console.log(`Querying db for institution ${institutionId}`);
+
   const query = {
     text: 'SELECT * FROM institutions WHERE institution_id = $1',
     values: [institutionId],

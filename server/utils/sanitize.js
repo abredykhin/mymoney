@@ -47,13 +47,8 @@ const sanitizeAccounts = accounts =>
 const sanitizeItems = items =>
   sanitizeWith(items, ['id', 'plaid_institution_id', 'status']);
 
-function sanitizeItem(item) {
-  const sanitizedItem = {
-    id: item.id,
-    plaid_institution_id: item.plaid_institution_id,
-    status: item.status,
-  };
-}
+const sanitizeItem = item =>
+  pick(item, ['id'], 'plaid_institution_id', 'status');
 
 function sanitizeUserObject(user) {
   const sanitizedUser = {
@@ -94,6 +89,7 @@ const isValidItemStatus = status => validItemStatuses.has(status);
 module.exports = {
   toArray,
   sanitizeAccounts,
+  sanitizeItem,
   sanitizeItems,
   sanitizeUsers,
   sanitizeTransactions,

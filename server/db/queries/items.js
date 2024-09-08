@@ -19,6 +19,8 @@ const createItem = async (
   plaidItemId,
   userId
 ) => {
+  console.log(`Storing item ${plaidItemId} in db after succsessful link`);
+
   // this method only gets called on successfully linking an item.
   // We know the status is good.
   const status = 'good';
@@ -45,6 +47,8 @@ const createItem = async (
  * @returns {Object} an item.
  */
 const retrieveItemById = async itemId => {
+  console.log(`Querying db for item ${itemId}`);
+
   const query = {
     text: 'SELECT * FROM items WHERE id = $1',
     values: [itemId],
@@ -79,8 +83,7 @@ const retrieveItemByPlaidAccessToken = async accessToken => {
  */
 const retrieveItemByPlaidInstitutionId = async (plaidInstitutionId, userId) => {
   const query = {
-    text:
-      'SELECT * FROM items WHERE plaid_institution_id = $1 AND user_id = $2',
+    text: 'SELECT * FROM items WHERE plaid_institution_id = $1 AND user_id = $2',
     values: [plaidInstitutionId, userId],
   };
   const { rows: existingItems } = await db.query(query);
@@ -138,7 +141,9 @@ const updateItemStatus = async (itemId, status) => {
  * @param {string} itemId the Plaid item ID of the item.
  * @param {string} transactionsCursor latest observed transactions cursor on this item.
  */
- const updateItemTransactionsCursor = async (itemId, transactionsCursor) => {
+const updateItemTransactionsCursor = async (itemId, transactionsCursor) => {
+  console.log(`Storing transactions cursor for item ${itemId}`);
+
   const query = {
     text: 'UPDATE items SET transactions_cursor = $1 WHERE plaid_item_id = $2',
     values: [transactionsCursor, itemId],
