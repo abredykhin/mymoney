@@ -52,6 +52,7 @@ router.post(
         language: 'en',
         //        webhook: httpTunnel.public_url + '/services/webhook',
         access_token: accessToken,
+        redirect_uri: 'https://babloapp.com/plaid/redirect/index.html',
       };
       // If user has entered a redirect uri in the .env file
       // if (redirect_uri.indexOf('http') === 0) {
