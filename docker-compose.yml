@@ -8,7 +8,8 @@ volumes:
   pg_sandbox_data:
   pg_development_data:
   server_data:
-
+  db_data:
+  
 services:
   postgresdb:
     image: postgres:16.2

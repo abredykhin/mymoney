@@ -22,10 +22,6 @@ const isProduction = process.env.APP_ENV === 'production';
 // Serve static files
 app.use('/.well-known', express.static(path.join(__dirname, 'static')));
 
-// app.listen(PORT, () => {
-//   console.log('Server Listening on PORT:', PORT);
-// });
-
 // Function to start the HTTP server
 const startHttpServer = () => {
   http.createServer(app).listen(PORT, () => {
