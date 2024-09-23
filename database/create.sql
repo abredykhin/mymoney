@@ -83,7 +83,7 @@ CREATE TABLE items_table
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   transactions_cursor text,
-  is_active INTEGER NOT NULL DEFAULT 1,
+  is_active INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TRIGGER items_updated_at_timestamp
@@ -102,7 +102,8 @@ AS
     status,
     created_at,
     updated_at,
-    transactions_cursor
+    transactions_cursor,
+    bank_name
   FROM
     items_table;
 

@@ -19,13 +19,7 @@ services:
     env_file: ./.env
     volumes:
       - ./db-data:/var/lib/postgres
-      - ./database/create.sql:/docker-entrypoint-initdb.d/create.sql
-
-  adminer:
-    image: adminer:4.8.1
-    restart: always
-    ports:
-      - 8080:8080      
+      - ./database/create.sql:/docker-entrypoint-initdb.d/create.sql   
 
   server:
     build: ./server
@@ -54,8 +48,6 @@ services:
       - ./server:/opt/server  # <- Breaks bccrypt and discouraged generally
       - /opt/server/node_modules # anonymous volume for node_modules only
       - ./server/static:/opt/server/static # Mount the static folder only
-      - ${SSL_CERT_PATH}:${SSL_CERT_PATH}:ro
-      - ${SSL_KEY_PATH}:${SSL_KEY_PATH}:ro
 networks:
   app-network:
     driver: bridge
