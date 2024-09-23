@@ -1,3 +1,3 @@
 #!/bin/zsh
 
-docker-compose down -v --remove-orphans && docker-compose -f docer-compose.yml -f docker-compose.prod.yml up --build -d
+docker-compose down -v --remove-orphans && docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
