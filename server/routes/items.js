@@ -25,7 +25,7 @@ const {
   isValidItemStatus,
   validItemStatuses,
 } = require('../utils/sanitize');
-const updateTransactions = require('../plaid/update_transactions');
+const syncTransactions = require('../plaid/syncTransactions');
 
 const router = express.Router();
 
@@ -92,7 +92,7 @@ router.post(
 
     // Make an initial call to fetch transactions and enable SYNC_UPDATES_AVAILABLE webhook sending
     // for this item.
-    await updateTransactions(itemId).then(() => {
+    await syncTransactions(itemId).then(() => {
       // Notify frontend to reflect any transactions changes.
       // TODO:
       //req.io.emit('NEW_TRANSACTIONS_DATA', { itemId: newItem.id });

@@ -9,15 +9,17 @@ import Foundation
 import SwiftUI
 
 struct HomeView: View {    
-    @EnvironmentObject var bankAccounts: BankAccounts
+    @EnvironmentObject var bankAccountsService: BankAccountsService
     
     var body: some View {
         ScrollView {
             LinkButtonView()
                 .padding(.top)
             BankAccountListView()
+        }.refreshable {
+            try? await bankAccountsService.refreshAccounts()
         }.task {
-            try? await bankAccounts.refreshAccounts()
+            try? await bankAccountsService.refreshAccounts()
         }
     }
 }

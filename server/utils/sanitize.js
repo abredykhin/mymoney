@@ -45,7 +45,7 @@ const sanitizeAccounts = accounts =>
  * @param {(Object|Object[])} items a single item or an array of items.
  */
 const sanitizeItems = items =>
-  sanitizeWith(items, ['id', 'plaid_institution_id', 'status']);
+  sanitizeWith(items, ['id', 'plaid_institution_id', 'status', 'bank_name']);
 
 const sanitizeItem = item =>
   pick(item, ['id'], 'plaid_institution_id', 'status');

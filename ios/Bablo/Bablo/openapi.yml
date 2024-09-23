@@ -3,7 +3,7 @@ info:
   title: Bablo app API.
   version: 1.0.0
 servers:
-  - url: http://babloapp.com:5001
+  - url: https://babloapp.com
     description: Main (production) server
   - url: http://localhost:5001
     description: Localhost dev server
@@ -96,32 +96,30 @@ paths:
                   error:
                     type: string
                     example: Missing username or password
-  /users/accounts:
+  /banksWithAccounts:
     get:
-      summary: List user accounts
+      summary: List user banks and accounts
       operationId: getUserAccounts
       description: Retrieves a list of all accounts for the user
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Account'
-        '401':
-          description: Unauthorized access
+          description: Successful operation. Returns a list of banks and their associated accounts.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  error:
-                    type: string
-                    example: Invalid username or password
+                  banks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Bank'
+                    minItems: 0
+        '401':
+          description: Unauthorized. The user is not authenticated.
+        '500':
+          description: Internal server error. An unexpected error occurred on the server.
   /link-token:
     post:
       summary: Generates a Link token
@@ -212,6 +210,23 @@ components:
           type: string
         status:
           type: string
+    Bank:
+      type: object
+      required:
+        - id
+        - bank_name
+        - accounts      
+      properties:
+        id:
+          type: integer
+          description: The unique identifier of the bank.
+        bank_name:
+          type: string
+          description: The name of the bank.
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Account'  # Reference the existing 'accounts' schema          
     Account:
       type: object
       required: [id, item_id, name, current_balance, iso_currency_code, type, updated_at]

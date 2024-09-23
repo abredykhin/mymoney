@@ -10,11 +10,12 @@ import SwiftUI
 import OpenAPIRuntime
 import OpenAPIURLSession
 
+typealias Bank = Components.Schemas.Bank
 typealias BankAccount = Components.Schemas.Account
 
 @MainActor
-class BankAccounts: ObservableObject {    
-    @Published var accounts: [BankAccount] = []
+class BankAccountsService: ObservableObject {
+    @Published var bankAccounts: [Bank] = []
     private let userAccount: UserAccount = UserAccount.shared
     private var client: Client? = nil
         
@@ -32,9 +33,9 @@ class BankAccounts: ObservableObject {
         switch (response) {
         case .ok(let json):
             switch (json.body) {
-            case .json(let accounts):
-                Logger.i("Received \(accounts.count) accounts from server")
-                self.accounts = accounts
+            case .json(let bodyJson):
+                Logger.i("Received \(bodyJson.banks?.count ?? 0) banks from server")
+                self.bankAccounts = bodyJson.banks ?? []
             }
         case .unauthorized(_):
             userAccount.signOut()
@@ -42,7 +43,8 @@ class BankAccounts: ObservableObject {
         case .undocumented(_, _):
             Logger.e("Failed to retrieve accounts from server")
             throw URLError(.badURL)
-            
+        case .internalServerError(_):
+            Logger.e("Failed to retrieve accounts from server")
         }
     }
     

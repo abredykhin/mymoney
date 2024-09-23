@@ -12,7 +12,7 @@ import LinkKit
 struct LinkButtonView : View {
     @State var shouldPresentLink = false
     @StateObject var userAccount = UserAccount.shared
-    @EnvironmentObject var bankAccounts: BankAccounts
+    @EnvironmentObject var bankAccountsService: BankAccountsService
     @State var linkController: LinkController? = nil
     
     var body: some View {
@@ -114,7 +114,7 @@ struct LinkButtonView : View {
         let response = try await client.saveNewItem(body: .urlEncodedForm(.init(institutionId: institutionId, publicToken: token)))
         switch(response) {
         case .ok(_):
-            try? await bankAccounts.refreshAccounts()
+            try? await bankAccountsService.refreshAccounts()
             break
         case .undocumented(_, _):
             throw URLError(.badServerResponse)

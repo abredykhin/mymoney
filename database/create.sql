@@ -75,13 +75,15 @@ CREATE TABLE items_table
 (
   id SERIAL PRIMARY KEY,
   user_id integer REFERENCES users_table(id) ON DELETE CASCADE,
+  bank_name text,
   plaid_access_token text UNIQUE NOT NULL,
   plaid_item_id text UNIQUE NOT NULL,
   plaid_institution_id text NOT NULL,
   status text NOT NULL,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  transactions_cursor text
+  transactions_cursor text,
+  is_active INTEGER NOT NULL DEFAULT 1,
 );
 
 CREATE TRIGGER items_updated_at_timestamp

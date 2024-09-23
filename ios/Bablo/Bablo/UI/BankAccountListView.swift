@@ -8,23 +8,24 @@
 import SwiftUI
 
 struct BankAccountListView: View {
-    @EnvironmentObject var bankAccounts: BankAccounts
+    @EnvironmentObject var bankAccountsService: BankAccountsService
     
     var body: some View {
-        LazyVStack(alignment: .leading) {
-            ForEach(bankAccounts.accounts, id: \.id) {account in
-                AccountView(account: account)
+        ScrollView {
+            LazyVStack(alignment: .leading) {
+                ForEach(bankAccountsService.bankAccounts, id: \.id) { bank in
+                    BankView(bank: bank)
+                }
             }
-        }.task {
-            try? await bankAccounts.refreshAccounts()
         }
     }
 }
 
 struct BankAccountListView_Previews: PreviewProvider {
     static let account = BankAccount(id: 0, item_id: 1, name: "Account", current_balance: 100.0, iso_currency_code: "USD", _type: "checking", updated_at: .now)
+    static let banks = [Bank(id: 0, bank_name: "A Bank", accounts: [account])]
     static var previews: some View {
         BankAccountListView()
-            //        BankAccountView(account: account)
+            .environmentObject(BankAccountsService())
     }
 }

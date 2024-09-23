@@ -4,6 +4,7 @@ const cors = require('cors');
 const fs = require('fs');
 const auth = require('./routes/auth');
 const users = require('./routes/users');
+const banks = require('./routes/banks');
 const linkEvents = require('./routes/linkEvents');
 const linkTokens = require('./routes/linkTokens');
 const items = require('./routes/items');
@@ -79,6 +80,7 @@ app.use('/link-token', linkTokens);
 // The rest of routes require token
 app.use('/users', users);
 app.use('/items', items);
+app.use('/banks', banks);
 
 app.use((err, req, res, next) => {
   console.error('Error caught:', err);

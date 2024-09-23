@@ -15,6 +15,7 @@ const db = require('../');
  */
 const createItem = async (
   plaidInstitutionId,
+  bank_name,
   plaidAccessToken,
   plaidItemId,
   userId
@@ -28,12 +29,11 @@ const createItem = async (
     // RETURNING is a Postgres-specific clause that returns a list of the inserted items.
     text: `
       INSERT INTO items_table
-        (user_id, plaid_access_token, plaid_item_id, plaid_institution_id, status)
+        (user_id, plaid_access_token, plaid_item_id, plaid_institution_id, status, bank_name)
       VALUES
-        ($1, $2, $3, $4, $5)
+        ($1, $2, $3, $4, $5, $6)
       ON CONFLICT (plaid_item_id) DO UPDATE SET
-        plaid_access_token = EXCLUDED.plaid_access_token,
-        plaid_institution_id = EXCLUDED.plaid_institution_id,
+        plaid_access_token = EXCLUDED.plaid_access_token,        
         status = EXCLUDED.status        
       RETURNING
         *;
