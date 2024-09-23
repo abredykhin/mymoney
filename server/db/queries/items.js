@@ -15,10 +15,10 @@ const db = require('../');
  */
 const createItem = async (
   plaidInstitutionId,
-  bank_name,
   plaidAccessToken,
   plaidItemId,
-  userId
+  userId,
+  bankName
 ) => {
   console.log(`Storing item ${plaidItemId} in db after succsessful link`);
 
@@ -38,7 +38,14 @@ const createItem = async (
       RETURNING
         *;
     `,
-    values: [userId, plaidAccessToken, plaidItemId, plaidInstitutionId, status],
+    values: [
+      userId,
+      plaidAccessToken,
+      plaidItemId,
+      plaidInstitutionId,
+      status,
+      bankName,
+    ],
   };
   const { rows } = await db.query(query);
   return rows[0];

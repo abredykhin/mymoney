@@ -61,18 +61,14 @@ struct LinkButtonView : View {
                         let handler = Plaid.create(config)
                         switch handler {
                         case .success(let handler):
-//                                let tmp = LinkController(handler: handler)
-//                            DispatchQueue.main.async {
                             self.linkController = LinkController(handler: handler)
-                                
-//                                if let ctrl =  self.linkController {
                                     Logger.i("LinkController initialized")
-//                                }
-//                            }
                         case .failure(let error):
                             Logger.e("Failed to init Plaid: \(error)")
                         }
                     }
+                case .unauthorized:
+                    userAccount.signOut()
                 case .undocumented(statusCode: let statusCode, _):
                     Logger.e("Recieved error from server. statusCode = \(statusCode)")
                         //throw URLError(.badServerResponse)

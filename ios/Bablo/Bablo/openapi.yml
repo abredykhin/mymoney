@@ -96,7 +96,7 @@ paths:
                   error:
                     type: string
                     example: Missing username or password
-  /banksWithAccounts:
+  /banks/accounts:
     get:
       summary: List user banks and accounts
       operationId: getUserAccounts
@@ -133,6 +133,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LinkTokenResponse'
+        '401':
+          description: Unauthorized. The user is not authenticated.                
   /items:
     post:
       summary: Saves new Plaid Item.
@@ -229,14 +231,11 @@ components:
             $ref: '#/components/schemas/Account'  # Reference the existing 'accounts' schema          
     Account:
       type: object
-      required: [id, item_id, name, current_balance, iso_currency_code, type, updated_at]
+      required: [id, name, current_balance, iso_currency_code, type, updated_at]
       properties:
         id:
           type: integer
           description: Unique identifier for the account
-        item_id:
-          type: integer
-          description: ID of the linked item
         name:
           type: string
           description: User-defined name for the account

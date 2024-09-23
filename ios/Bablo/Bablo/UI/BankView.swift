@@ -20,6 +20,7 @@ struct BankView : View {
             LazyVStack {
                 ForEach(bank.accounts, id: \.id) {account in
                     BankAccountView(account: account)
+                        .padding(.bottom, 4)
                 }
             }
         }
@@ -27,7 +28,7 @@ struct BankView : View {
 }
 
 struct BankView_Previews: PreviewProvider {
-    static let account = BankAccount(id: 0, item_id: 1, name: "Account", current_balance: 100.0, iso_currency_code: "USD", _type: "checking", updated_at: .now)
+    static let account = BankAccount(id: 0, name: "Account", current_balance: 100.0, iso_currency_code: "USD", _type: "checking", updated_at: .now)
     static let bank = Bank(id: 0, bank_name: "A Bank", accounts: [account])
     static var previews: some View {
         BankView(bank: bank)

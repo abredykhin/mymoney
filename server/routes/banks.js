@@ -10,12 +10,14 @@ const router = express.Router();
  * Retrieves all banks and accounts associated with a single user.
  */
 router.get(
-  '/banksWithAccounts',
+  '/accounts',
   verifyToken,
   asyncWrapper(async (req, res) => {
     const userId = req.userId;
-    console.log(`Retrieving user items for user ${userId}`);
+    console.log(`Querying db for items for user ${userId}`);
     const items = await retrieveItemsByUser(userId);
+
+    console.log(`Got ${items.length} banks from db`);
 
     const banksWithAccounts = await Promise.all(
       items.map(async item => {
@@ -25,8 +27,11 @@ router.get(
           accounts: [],
         };
 
+        console.log(`Querying db for accounts at bank ${bank.id}`);
+
         // Fetch accounts for the current item
         const accounts = await retrieveAccountsByItemId(item.id);
+        console.log(`Got ${accounts.length} accounts`);
 
         // Add relevant account details to the bank object
         bank.accounts = accounts.map(account =>
@@ -40,17 +45,21 @@ router.get(
             'iso_currency_code',
             'type',
             'subtype',
+            'updated_at',
+            'created_at',
           ])
         );
 
+        console.log(`Processed accounts`);
         return bank;
       })
     );
 
-    const result =
-      banksWithAccounts.length > 0
-        ? { banks: banksWithAccounts }
-        : { banks: [] };
+    console.log(`Checking the result`);
+    const result = banksWithAccounts.length > 0 ? banksWithAccounts : [];
+
+    console.log(`Sending the response to client`);
+    console.log(JSON.stringify(result, null, 2));
     res.json({ banks: result });
   })
 );

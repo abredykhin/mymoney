@@ -87,7 +87,8 @@ router.post(
       institutionId,
       accessToken,
       itemId,
-      userId
+      userId,
+      institutionResponse.data.institution.name
     );
 
     // Make an initial call to fetch transactions and enable SYNC_UPDATES_AVAILABLE webhook sending

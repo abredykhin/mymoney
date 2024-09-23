@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		755F88862C86B8D200BEE12A /* BanklAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 755F88852C86B8D200BEE12A /* BanklAccountView.swift */; };
+		755F88862C86B8D200BEE12A /* BankAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 755F88852C86B8D200BEE12A /* BankAccountView.swift */; };
 		757ABF352C18195100DF8CA8 /* BabloApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF342C18195100DF8CA8 /* BabloApp.swift */; };
 		757ABF372C18195100DF8CA8 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF362C18195100DF8CA8 /* ContentView.swift */; };
 		757ABF3B2C18195300DF8CA8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 757ABF3A2C18195300DF8CA8 /* Assets.xcassets */; };
@@ -56,7 +56,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		755F88852C86B8D200BEE12A /* BanklAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BanklAccountView.swift; sourceTree = "<group>"; };
+		755F88852C86B8D200BEE12A /* BankAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountView.swift; sourceTree = "<group>"; };
 		757ABF312C18195100DF8CA8 /* Bablo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bablo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		757ABF342C18195100DF8CA8 /* BabloApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloApp.swift; sourceTree = "<group>"; };
 		757ABF362C18195100DF8CA8 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -224,7 +224,7 @@
 				757ABF922C18243100DF8CA8 /* WelcomeView.swift */,
 				7590F2972C86470400BCCDE6 /* HomeView.swift */,
 				7590F2A62C865B9F00BCCDE6 /* BankAccountListView.swift */,
-				755F88852C86B8D200BEE12A /* BanklAccountView.swift */,
+				755F88852C86B8D200BEE12A /* BankAccountView.swift */,
 				75BB90CA2CA0E30E00D197A6 /* BankView.swift */,
 			);
 			path = UI;
@@ -388,7 +388,7 @@
 				757ABF372C18195100DF8CA8 /* ContentView.swift in Sources */,
 				757ABF852C181CD100DF8CA8 /* BankAccountsService.swift in Sources */,
 				7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */,
-				755F88862C86B8D200BEE12A /* BanklAccountView.swift in Sources */,
+				755F88862C86B8D200BEE12A /* BankAccountView.swift in Sources */,
 				757ABF8F2C1822CD00DF8CA8 /* ColorType.swift in Sources */,
 				757ABF7F2C181C5200DF8CA8 /* View+Previews.swift in Sources */,
 				75BB90CB2CA0E30E00D197A6 /* BankView.swift in Sources */,

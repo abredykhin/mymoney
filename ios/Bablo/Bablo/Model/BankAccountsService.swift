@@ -28,23 +28,28 @@ class BankAccountsService: ObservableObject {
         }
         
         Logger.d("Querying server for accounts")
-        let response = try await client.getUserAccounts()
-        
-        switch (response) {
-        case .ok(let json):
-            switch (json.body) {
-            case .json(let bodyJson):
-                Logger.i("Received \(bodyJson.banks?.count ?? 0) banks from server")
-                self.bankAccounts = bodyJson.banks ?? []
+        do {
+            let response = try await client.getUserAccounts()
+            
+            switch (response) {
+            case .ok(let json):
+                switch (json.body) {
+                case .json(let bodyJson):
+                    Logger.i("Received \(bodyJson.banks?.count ?? 0) banks from server")
+                    self.bankAccounts = bodyJson.banks ?? []
+                }
+            case .unauthorized(_):
+                userAccount.signOut()
+                throw URLError(.userAuthenticationRequired)
+            case .undocumented(_, _):
+                Logger.e("Failed to retrieve accounts from server")
+                throw URLError(.badURL)
+            case .internalServerError(_):
+                Logger.e("Failed to retrieve accounts from server")
             }
-        case .unauthorized(_):
-            userAccount.signOut()
-            throw URLError(.userAuthenticationRequired)
-        case .undocumented(_, _):
-            Logger.e("Failed to retrieve accounts from server")
-            throw URLError(.badURL)
-        case .internalServerError(_):
-            Logger.e("Failed to retrieve accounts from server")
+        } catch let error {
+            Logger.e("Failed to refresh accounts: \(error)")
+            throw error
         }
     }
     
