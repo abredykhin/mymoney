@@ -1,0 +1,11 @@
+# this file overrides docker-compose.yml. the should be run together, e.g.
+#   docker-compose -f docker-compose.yml -f docker-compose.debug.yml up
+
+version: "3.8"
+
+services:
+  adminer:
+    image: adminer:4.8.1
+    restart: always
+    ports:
+      - 8080:8080

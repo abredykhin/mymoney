@@ -1,11 +1,5 @@
 version: '3.8'
-services:
-  adminer:
-    image: adminer:4.8.1
-    restart: always
-    ports:
-      - 8080:8080   
-      
+services:      
   server:
     volumes:
       - ${SSL_CERT_PATH}:${SSL_CERT_PATH}:ro

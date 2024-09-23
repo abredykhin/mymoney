@@ -5,24 +5,10 @@
 const { asyncWrapper, verifyToken } = require('../middleware');
 
 const express = require('express');
-const plaid = require('../plaid/plaid');
-const fetch = require('node-fetch');
+const plaid = require('../plaid/loggingPlaidClient');
 const { retrieveItemById } = require('../db/queries');
-const {
-  PLAID_SANDBOX_REDIRECT_URI,
-  PLAID_DEVELOPMENT_REDIRECT_URI,
-  PLAID_ENV,
-} = process.env;
 
-const redirect_uri =
-  PLAID_ENV == 'sandbox'
-    ? PLAID_SANDBOX_REDIRECT_URI
-    : PLAID_DEVELOPMENT_REDIRECT_URI;
 const router = express.Router();
-
-const isSandbox = PLAID_ENV == 'sandbox';
-const isDev = PLAID_ENV == 'development';
-const isProd = PLAID_ENV == 'production';
 
 router.post(
   '/',
@@ -50,14 +36,10 @@ router.post(
         products,
         country_codes: ['US'],
         language: 'en',
-        //        webhook: httpTunnel.public_url + '/services/webhook',
+        webhook: 'https://babloapp.com/plaid/webhook',
         access_token: accessToken,
         redirect_uri: 'https://babloapp.com/plaid/redirect/index.html',
       };
-      // If user has entered a redirect uri in the .env file
-      // if (redirect_uri.indexOf('http') === 0) {
-      //   linkTokenParams.redirect_uri = redirect_uri;
-      // }
 
       console.log('Talking to plaid server to get token...');
       const createResponse = await plaid.linkTokenCreate(linkTokenParams);

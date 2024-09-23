@@ -6,7 +6,6 @@ const express = require('express');
 const Boom = require('@hapi/boom');
 const {
   createInstitution,
-  retrieveInstitutionById,
   retrieveItemById,
   retrieveItemByPlaidInstitutionId,
   retrieveAccountsByItemId,
@@ -16,7 +15,7 @@ const {
   updateItemStatus,
 } = require('../db/queries');
 const { asyncWrapper, verifyToken } = require('../middleware');
-const plaid = require('../plaid/plaid');
+const plaid = require('../plaid/loggingPlaidClient');
 const {
   sanitizeAccounts,
   sanitizeItem,

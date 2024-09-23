@@ -97,12 +97,13 @@ const createOrUpdateTransactions = async transactions => {
  * Retrieves all transactions for a single account.
  *
  * @param {number} accountId the ID of the account.
+ * @param {limit} limit how many transactions to return
  * @returns {Object[]} an array of transactions.
  */
 const retrieveTransactionsByAccountId = async accountId => {
   const query = {
-    text: 'SELECT * FROM transactions WHERE account_id = $1 ORDER BY date DESC',
-    values: [accountId],
+    text: 'SELECT * FROM transactions WHERE account_id = $1 ORDER BY date DESC LIMIT = $2',
+    values: [accountId, limit],
   };
   const { rows: transactions } = await db.query(query);
   return transactions;
@@ -113,12 +114,13 @@ const retrieveTransactionsByAccountId = async accountId => {
  *
  *
  * @param {number} itemId the ID of the item.
+ * @param {limit} limit how many transactions to return
  * @returns {Object[]} an array of transactions.
  */
-const retrieveTransactionsByItemId = async itemId => {
+const retrieveTransactionsByItemId = async (itemId, limit) => {
   const query = {
-    text: 'SELECT * FROM transactions WHERE item_id = $1 ORDER BY date DESC',
-    values: [itemId],
+    text: 'SELECT * FROM transactions WHERE item_id = $1 ORDER BY date DESC LIMIT = $2',
+    values: [itemId, limit],
   };
   const { rows: transactions } = await db.query(query);
   return transactions;
@@ -129,12 +131,13 @@ const retrieveTransactionsByItemId = async itemId => {
  *
  *
  * @param {number} userId the ID of the user.
+ * @param {limit} limit how many transactions to return
  * @returns {Object[]} an array of transactions.
  */
-const retrieveTransactionsByUserId = async userId => {
+const retrieveTransactionsByUserId = async (userId, limit) => {
   const query = {
-    text: 'SELECT * FROM transactions WHERE user_id = $1 ORDER BY date DESC',
-    values: [userId],
+    text: 'SELECT * FROM transactions WHERE user_id = $1 ORDER BY date DESC LIMIT = $2',
+    values: [userId, limit],
   };
   const { rows: transactions } = await db.query(query);
   return transactions;

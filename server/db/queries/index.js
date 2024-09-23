@@ -34,7 +34,7 @@ const {
   retrieveUserById,
   retrieveUserByUsername,
 } = require('./users');
-const { createLinkEvent } = require('./linkEvents');
+const { createLinkEvent } = require('./logs');
 
 const {
   createAsset,

@@ -2,7 +2,7 @@
  * @file Defines helpers for updating transactions on an item
  */
 
-const plaid = require('./plaid');
+const plaid = require('./loggingPlaidClient');
 const {
   retrieveItemByPlaidItemId,
   createAccounts,

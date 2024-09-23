@@ -3,10 +3,9 @@ const logger = require('morgan');
 const cors = require('cors');
 const fs = require('fs');
 const auth = require('./routes/auth');
-const users = require('./routes/users');
 const banks = require('./routes/banks');
-const linkEvents = require('./routes/linkEvents');
 const linkTokens = require('./routes/linkTokens');
+const webhook = require('./routes/webhook');
 const items = require('./routes/items');
 const { errorHandler } = require('./middleware');
 const path = require('path'); // Add this line
@@ -75,10 +74,9 @@ app.get('/status', (request, response) => {
 });
 
 app.use('/users', auth);
-app.use('/link-event', linkEvents);
 app.use('/link-token', linkTokens);
+app.use('/plaid', webhook);
 // The rest of routes require token
-app.use('/users', users);
 app.use('/items', items);
 app.use('/banks', banks);
 

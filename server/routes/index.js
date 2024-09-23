@@ -12,7 +12,7 @@ noAuthRouter.post('/users/login', loginUser);
  * Throws a 404 not found error for all requests.
  */
 noAuthRouter.get('*', (req, res) => {
-  throw new Boom('not found', { statusCode: 404 });
+  throw Boom('not found', { statusCode: 404 });
 });
 
 module.exports = { noAuthRouter, authRouter };
