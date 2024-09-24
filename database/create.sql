@@ -4,11 +4,10 @@ DO
 $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'anton') THEN
-        CREATE ROLE anton LOGIN;
+        CREATE ROLE anton WITH LOGIN CREATEDB;
     END IF;
 END
 $$;
-ALTER ROLE anton WITH LOGIN CREATEDB;
 
 CREATE DATABASE mymoney;
 GRANT ALL PRIVILEGES ON DATABASE mymoney TO anton;
@@ -32,7 +31,7 @@ CREATE TABLE users_table
 (
   id SERIAL PRIMARY KEY,
   username text UNIQUE NOT NULL,
-  password text UNIQUE NOT NULL,
+  password text NOT NULL,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -83,7 +82,7 @@ CREATE TABLE items_table
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   transactions_cursor text,
-  is_active INTEGER NOT NULL DEFAULT 1
+  is_active boolean NOT NULL DEFAULT TRUE
 );
 
 CREATE TRIGGER items_updated_at_timestamp
@@ -170,8 +169,6 @@ AS
     assets_table;
 
 
-
-
 -- ACCOUNTS
 -- This table is used to store the accounts associated with each item. The view returns all the
 -- data from the accounts table and some data from the items view. For more info on the Plaid
@@ -237,18 +234,26 @@ CREATE TABLE transactions_table
 (
   id SERIAL PRIMARY KEY,
   account_id integer REFERENCES accounts_table(id) ON DELETE CASCADE,
-  plaid_transaction_id text UNIQUE NOT NULL,
-  plaid_category_id text,
-  category text,
-  subcategory text,
-  type text NOT NULL,
-  name text NOT NULL,
-  amount numeric(28,10) NOT NULL,
-  iso_currency_code text,
-  unofficial_currency_code text,
+  user_id integer REFERENCES users_table(id),
+  amount numeric(28,10) NOT NULL, 
+  -- ISO-4217 
+  iso_currency_code text,  
   date date NOT NULL,
+  -- YYYY-MM-DD
+  authorized_date date,
+  -- The merchant name or transaction description. Note: This is a legacy field that is not actively maintained. Use merchant_name instead for the merchant name.
+  name text NOT NULL,
+  -- The merchant name, as enriched by Plaid from the name field. This is typically a more human-readable version of the merchant counterparty in the transaction. For some bank transactions (such as checks or account transfers) where there is no meaningful merchant name, this value will be null.
+  merchant_name text,
+  logo_url text,
+  website text,
+  --One of: online, in store, other (transactions that relate to banks, e.g. fees or deposits.)  
+  payment_channel text, 
+  transaction_id text UNIQUE NOT NULL,
+  personal_finance_category text,
+  personal_finance_subcategory text,
   pending boolean NOT NULL,
-  account_owner text,
+  pending_transaction_transaction_id text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -262,27 +267,26 @@ CREATE VIEW transactions
 AS
   SELECT
     t.id,
-    t.plaid_transaction_id,
     t.account_id,
-    a.plaid_account_id,
-    a.item_id,
-    a.plaid_item_id,
-    a.user_id,
-    t.category,
-    t.subcategory,
-    t.type,
-    t.name,
+    t.user_id,
     t.amount,
     t.iso_currency_code,
-    t.unofficial_currency_code,
     t.date,
+    t.authorized_date,
+    t.name,
+    t.merchant_name,
+    t.logo_url,
+    t.website,
+    t.payment_channel,
+    t.transaction_id,
+    t.personal_finance_category,
+    t.personal_finance_subcategory,
     t.pending,
-    t.account_owner,
+    t.pending_transaction_transaction_id,
     t.created_at,
     t.updated_at
   FROM
-    transactions_table t
-    LEFT JOIN accounts a ON t.account_id = a.id;
+    transactions_table t;
 
 
 -- The link_events_table is used to log responses from the Plaid API for client requests to the
@@ -317,3 +321,7 @@ CREATE TABLE plaid_api_events_table
   error_code text,
   created_at timestamptz default now()
 );
+
+CREATE INDEX idx_items_plaid_item_id ON items_table(plaid_item_id);
+CREATE INDEX idx_transactions_transaction_id ON transactions_table(transaction_id);
+CREATE INDEX idx_sessions_token ON sessions_table(token);

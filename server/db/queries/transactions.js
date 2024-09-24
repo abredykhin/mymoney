@@ -14,83 +14,106 @@ const createOrUpdateTransactions = async transactions => {
   console.log('Storing transactions in db...');
   console.log(transactions);
 
-  const pendingQueries = transactions.map(async transaction => {
-    const {
-      account_id: plaidAccountId,
-      transaction_id: plaidTransactionId,
-      category_id: plaidCategoryId,
-      category: categories,
-      transaction_type: transactionType,
-      name: transactionName,
-      amount,
-      iso_currency_code: isoCurrencyCode,
-      unofficial_currency_code: unofficialCurrencyCode,
-      date: transactionDate,
-      pending,
-      account_owner: accountOwner,
-    } = transaction;
-    const { id: accountId } =
-      await retrieveAccountByPlaidAccountId(plaidAccountId);
-    const [category, subcategory] = Array.isArray(categories)
-      ? categories
-      : [categories, null];
-    try {
+  const client = await db.connect(); // Obtain a single client (connection)
+  try {
+    await client.query('BEGIN'); // Start transaction
+
+    for (const transaction of transactions) {
+      const {
+        amount,
+        iso_currency_code,
+        date,
+        authorized_date,
+        name,
+        merchant_name,
+        logo_url,
+        website,
+        payment_channel,
+        transaction_id,
+        pending,
+        pending_transaction_id: pending_transaction_transaction_id,
+      } = transaction;
+
+      // Retrieve the account ID within the same transaction
+      const { id } = await retrieveAccountByPlaidAccountId(
+        transaction.account_id
+      );
+
+      const {
+        primary: personal_finance_category = null,
+        detailed: personal_finance_subcategory = null,
+      } = transaction.personal_finance_category || {};
+
+      // Prepare the SQL query for each transaction
       const query = {
         text: `
           INSERT INTO transactions_table
             (
               account_id,
-              plaid_transaction_id,
-              plaid_category_id,
-              category,
-              subcategory,
-              type,
-              name,
               amount,
               iso_currency_code,
-              unofficial_currency_code,
               date,
+              authorized_date,
+              name,
+              merchant_name,
+              logo_url,
+              website,
+              payment_channel,
+              transaction_id,
+              personal_finance_category,
+              personal_finance_subcategory,
               pending,
-              account_owner
+              pending_transaction_transaction_id
             )
           VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-          ON CONFLICT (plaid_transaction_id) DO UPDATE 
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          ON CONFLICT (transaction_id) DO UPDATE 
             SET 
-              plaid_category_id = EXCLUDED.plaid_category_id,
-              category = EXCLUDED.category,
-              subcategory = EXCLUDED.subcategory,
-              type = EXCLUDED.type,
-              name = EXCLUDED.name,
               amount = EXCLUDED.amount,
-              iso_currency_code = EXCLUDED.iso_currency_code,
-              unofficial_currency_code = EXCLUDED.unofficial_currency_code,
               date = EXCLUDED.date,
+              name = EXCLUDED.name,
+              merchant_name = EXCLUDED.merchant_name,
+              logo_url = EXCLUDED.logo_url,
+              website = EXCLUDED.website,
+              payment_channel = EXCLUDED.payment_channel,
+              personal_finance_category = EXCLUDED.personal_finance_category,
+              personal_finance_subcategory = EXCLUDED.personal_finance_subcategory,
               pending = EXCLUDED.pending,
-              account_owner = EXCLUDED.account_owner;
+              pending_transaction_transaction_id = EXCLUDED.pending_transaction_transaction_id;
         `,
         values: [
-          accountId,
-          plaidTransactionId,
-          plaidCategoryId,
-          category,
-          subcategory,
-          transactionType,
-          transactionName,
+          id,
           amount,
-          isoCurrencyCode,
-          unofficialCurrencyCode,
-          transactionDate,
+          iso_currency_code,
+          date,
+          authorized_date || null,
+          name,
+          merchant_name || null,
+          logo_url || null,
+          website || null,
+          payment_channel,
+          transaction_id,
+          personal_finance_category || null,
+          personal_finance_subcategory || null,
           pending,
-          accountOwner,
+          pending_transaction_transaction_id || null,
         ],
       };
-      await db.query(query);
-    } catch (err) {
-      console.error(err);
+
+      // Execute the query within the transaction
+      await client.query(query);
     }
-  });
-  await Promise.all(pendingQueries);
+
+    await client.query('COMMIT'); // Commit transaction after all queries succeed
+    console.log('All transactions stored successfully');
+    return { success: true };
+  } catch (err) {
+    await client.query('ROLLBACK'); // Rollback transaction in case of error
+    console.error('Error storing transactions, transaction rolled back:', err);
+    return { success: false, error: err };
+  } finally {
+    client.release(); // Release the client back to the pool
+  }
 };
 
 /**
@@ -102,25 +125,8 @@ const createOrUpdateTransactions = async transactions => {
  */
 const retrieveTransactionsByAccountId = async accountId => {
   const query = {
-    text: 'SELECT * FROM transactions WHERE account_id = $1 ORDER BY date DESC LIMIT = $2',
+    text: 'SELECT * FROM transactions WHERE account_id = $1 ORDER BY date DESC LIMIT $2',
     values: [accountId, limit],
-  };
-  const { rows: transactions } = await db.query(query);
-  return transactions;
-};
-
-/**
- * Retrieves all transactions for a single item.
- *
- *
- * @param {number} itemId the ID of the item.
- * @param {limit} limit how many transactions to return
- * @returns {Object[]} an array of transactions.
- */
-const retrieveTransactionsByItemId = async (itemId, limit) => {
-  const query = {
-    text: 'SELECT * FROM transactions WHERE item_id = $1 ORDER BY date DESC LIMIT = $2',
-    values: [itemId, limit],
   };
   const { rows: transactions } = await db.query(query);
   return transactions;
@@ -136,8 +142,25 @@ const retrieveTransactionsByItemId = async (itemId, limit) => {
  */
 const retrieveTransactionsByUserId = async (userId, limit) => {
   const query = {
-    text: 'SELECT * FROM transactions WHERE user_id = $1 ORDER BY date DESC LIMIT = $2',
+    text: 'SELECT * FROM transactions WHERE user_id = $1 ORDER BY date DESC LIMIT $2',
     values: [userId, limit],
+  };
+  const { rows: transactions } = await db.query(query);
+  return transactions;
+};
+
+/**
+ * Retrieves all transactions for a single user.
+ *
+ *
+ * @param {number} userId the ID of the user.
+ * @param {limit} limit how many transactions to return
+ * @returns {Object[]} an array of transactions.
+ */
+const retrieveTransactionsByItemId = async (userId, limit) => {
+  const query = {
+    text: 'SELECT * FROM transactions WHERE item_id = $1 ORDER BY date DESC LIMIT $2',
+    values: [itemId, limit],
   };
   const { rows: transactions } = await db.query(query);
   return transactions;

@@ -62,7 +62,26 @@ router.get(
       accountId,
       limit
     );
-    res.json(sanitizeTransactions(transactions));
+
+    const sanitezedTransactions = transactions.map(account =>
+      _.pick(transaction, [
+        'id',
+        'account_id',
+        'transaction_id',
+        'category_id',
+        'category',
+        'subcategory',
+        'personal_finance_category',
+        'personal_finance_subcategory',
+        'type',
+        'name',
+        'amount',
+        'iso_currency_code',
+        'date',
+        'pending',
+      ])
+    );
+    res.json(sanitezedTransactions);
   })
 );
 

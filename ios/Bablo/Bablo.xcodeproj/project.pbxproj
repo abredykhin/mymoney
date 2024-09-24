@@ -35,6 +35,7 @@
 		7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */; };
 		7590F2A72C865B9F00BCCDE6 /* BankAccountListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F2A62C865B9F00BCCDE6 /* BankAccountListView.swift */; };
 		75BB90CB2CA0E30E00D197A6 /* BankView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BB90CA2CA0E30E00D197A6 /* BankView.swift */; };
+		75E49BA52CA27E67008D72F8 /* TransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E49BA42CA27E67008D72F8 /* TransactionView.swift */; };
 		75F529662C8D696100629F2B /* Modifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75F529652C8D696100629F2B /* Modifiers.swift */; };
 /* End PBXBuildFile section */
 
@@ -84,6 +85,7 @@
 		7590F29B2C86471D00BCCDE6 /* LinkController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkController.swift; sourceTree = "<group>"; };
 		7590F2A62C865B9F00BCCDE6 /* BankAccountListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountListView.swift; sourceTree = "<group>"; };
 		75BB90CA2CA0E30E00D197A6 /* BankView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankView.swift; sourceTree = "<group>"; };
+		75E49BA42CA27E67008D72F8 /* TransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionView.swift; sourceTree = "<group>"; };
 		75F529652C8D696100629F2B /* Modifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Modifiers.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -226,6 +228,7 @@
 				7590F2A62C865B9F00BCCDE6 /* BankAccountListView.swift */,
 				755F88852C86B8D200BEE12A /* BankAccountView.swift */,
 				75BB90CA2CA0E30E00D197A6 /* BankView.swift */,
+				75E49BA42CA27E67008D72F8 /* TransactionView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -390,6 +393,7 @@
 				7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */,
 				755F88862C86B8D200BEE12A /* BankAccountView.swift in Sources */,
 				757ABF8F2C1822CD00DF8CA8 /* ColorType.swift in Sources */,
+				75E49BA52CA27E67008D72F8 /* TransactionView.swift in Sources */,
 				757ABF7F2C181C5200DF8CA8 /* View+Previews.swift in Sources */,
 				75BB90CB2CA0E30E00D197A6 /* BankView.swift in Sources */,
 				757ABF872C181D3400DF8CA8 /* UserAccount.swift in Sources */,
