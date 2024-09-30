@@ -1,5 +1,5 @@
 const express = require('express');
-const logger = require('morgan');
+const morgan = require('morgan');
 const cors = require('cors');
 const fs = require('fs');
 const auth = require('./routes/auth');
@@ -60,7 +60,11 @@ if (isProduction) {
   startHttpServer(); // In development, only serve HTTP
 }
 
-app.use(logger('dev'));
+if (isProduction) {
+  app.use(morgan('common'));
+} else {
+  app.use(morgan('dev'));
+}
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
