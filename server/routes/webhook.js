@@ -7,29 +7,25 @@ const router = express.Router();
 router.post(
   '/webhook',
   asyncWrapper(async (req, res) => {
-    try {
-      debug('**INCOMING WEBHOOK**');
-      console.dir(req.body, { colors: true, depth: null });
-      const product = req.body.webhook_type;
-      const code = req.body.webhook_code;
+    debug('**INCOMING WEBHOOK**');
+    console.dir(req.body, { colors: true, depth: null });
+    const product = req.body.webhook_type;
+    const code = req.body.webhook_code;
 
-      switch (product) {
-        case 'ITEM':
-          debug('Processing item webhook');
-          handleItemWebhook(code, req.body);
-          break;
-        case 'TRANSACTIONS':
-          debug('Processing transactions');
-          handleTxnWebhook(code, req.body);
-          break;
-        default:
-          debug(`Can't handle webhook product ${product}`);
-          break;
-      }
-      res.json({ status: 'received' });
-    } catch (error) {
-      next(error);
+    switch (product) {
+      case 'ITEM':
+        debug('Processing item webhook');
+        handleItemWebhook(code, req.body);
+        break;
+      case 'TRANSACTIONS':
+        debug('Processing transactions');
+        handleTxnWebhook(code, req.body);
+        break;
+      default:
+        debug(`Can't handle webhook product ${product}`);
+        break;
     }
+    res.json({ status: 'received' });
   })
 );
 
