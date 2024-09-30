@@ -11,6 +11,7 @@ const {
   updateItemTransactionsCursor,
 } = require('../db/queries');
 const debug = require('debug')('plaid:syncTransactions');
+const Boom = require('@hapi/boom');
 
 /**
  * Handles the fetching and storing of new, modified, or removed transactions
@@ -62,11 +63,16 @@ const fetchNewSyncData = async plaidItemId => {
   const fetchNewSyncDataDebug = debug.extend('fetchSyncData');
 
   fetchNewSyncDataDebug('Looking up item in db');
-  // get the access token based on the plaid item id
+  const item = await retrieveItemByPlaidItemId(plaidItemId);
+  if (!item) {
+    fetchNewSyncDataDebug('Item not found in db. Aborting sync operation');
+    throw Boom.badRequest('Item not found.');
+  }
+
   const {
     plaid_access_token: accessToken,
     last_transactions_update_cursor: lastCursor,
-  } = await retrieveItemByPlaidItemId(plaidItemId);
+  } = item;
 
   let cursor = lastCursor;
 
@@ -78,7 +84,7 @@ const fetchNewSyncData = async plaidItemId => {
   let hasMore = true;
 
   const batchSize = 100;
-  fetchNewSyncDataDebug('Beginning comms with Plaid');
+  fetchNewSyncDataDebug('Item found. Beginning comms with Plaid');
   try {
     // Iterate through each page of new transaction updates for item
     while (hasMore) {
