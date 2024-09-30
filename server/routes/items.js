@@ -62,9 +62,9 @@ router.post(
       },
     });
 
-    console.log(institutionResponse.data.institution);
-    console.log(JSON.stringify(institutionResponse.data.institution, null, 2));
-    console.log('Received institution info. Storing in database...');
+    console.log(
+      `Received institution info for ${institutionResponse.data.institution.name}. Storing in database...`
+    );
 
     await createInstitution(
       institutionResponse.data.institution.institution_id,
