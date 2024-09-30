@@ -19,8 +19,10 @@ struct BankView : View {
 
             LazyVStack {
                 ForEach(bank.accounts, id: \.id) {account in
-                    BankAccountView(account: account)
-                        .padding(.bottom, 4)
+                    NavigationLink(destination: TransactionListView(account: account)) {
+                        BankAccountView(account: account)
+                            .padding(.bottom, 4)
+                    }
                 }
             }
         }

@@ -12,10 +12,11 @@ import OpenAPIURLSession
 
 typealias Bank = Components.Schemas.Bank
 typealias BankAccount = Components.Schemas.Account
+typealias Transaction = Components.Schemas.Transaction
 
 @MainActor
 class BankAccountsService: ObservableObject {
-    @Published var bankAccounts: [Bank] = []
+    @Published var banksWithAccounts: [Bank] = []
     private let userAccount: UserAccount = UserAccount.shared
     private var client: Client? = nil
         
@@ -36,7 +37,7 @@ class BankAccountsService: ObservableObject {
                 switch (json.body) {
                 case .json(let bodyJson):
                     Logger.i("Received \(bodyJson.banks?.count ?? 0) banks from server")
-                    self.bankAccounts = bodyJson.banks ?? []
+                    self.banksWithAccounts = bodyJson.banks ?? []
                 }
             case .unauthorized(_):
                 userAccount.signOut()

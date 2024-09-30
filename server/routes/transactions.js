@@ -5,6 +5,7 @@ const {
   retrieveTransactionsByAccountId,
 } = require('../db/queries/transactions');
 const { asyncWrapper, verifyToken } = require('../middleware');
+const _ = require('lodash');
 
 const router = express.Router();
 
@@ -55,33 +56,40 @@ router.get(
   '/account',
   verifyToken,
   asyncWrapper(async (req, res) => {
-    const accountId = req.accountId;
-    const limit = req.maxCount ?? 50;
-    console.log(`Retrieving user transactions for account ${accountId}`);
+    const accountId = req.query.accountId;
+    const limit = req.query.maxCount ?? 50;
+    console.log(
+      `Retrieving user transactions for account ${accountId} and maxCount ${limit}`
+    );
     const transactions = await retrieveTransactionsByAccountId(
       accountId,
       limit
     );
 
-    const sanitezedTransactions = transactions.map(account =>
+    const sanitizedTransactions = transactions.map(transaction =>
       _.pick(transaction, [
         'id',
         'account_id',
+        'amount',
+        'iso_currency_code',
+        'date',
+        'authorized_date',
         'transaction_id',
-        'category_id',
-        'category',
         'subcategory',
         'personal_finance_category',
         'personal_finance_subcategory',
         'type',
         'name',
-        'amount',
-        'iso_currency_code',
-        'date',
         'pending',
+        'merchant_name',
+        'logo_url',
+        'website',
+        'payment_channel',
       ])
     );
-    res.json(sanitezedTransactions);
+
+    const response = { transactions: sanitizedTransactions };
+    res.json(response);
   })
 );
 

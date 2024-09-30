@@ -123,7 +123,7 @@ const createOrUpdateTransactions = async transactions => {
  * @param {limit} limit how many transactions to return
  * @returns {Object[]} an array of transactions.
  */
-const retrieveTransactionsByAccountId = async accountId => {
+const retrieveTransactionsByAccountId = async (accountId, limit) => {
   const query = {
     text: 'SELECT * FROM transactions WHERE account_id = $1 ORDER BY date DESC LIMIT $2',
     values: [accountId, limit],

@@ -120,6 +120,39 @@ paths:
           description: Unauthorized. The user is not authenticated.
         '500':
           description: Internal server error. An unexpected error occurred on the server.
+  /transactions/account:
+    get:
+      summary: Retrieves all transactions associated with an account.
+      operationId: getAccountTransactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: accountId
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: maxCount
+          required: false
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: An array of transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                    minItems: 0
+ 
+        '401':
+          description: Unauthorized
   /link-token:
     post:
       summary: Generates a Link token
@@ -271,3 +304,80 @@ components:
           type: string
           format: date-time
           description: Date and time the account was last updated
+    Transaction:
+      type: object
+      required:
+        - account_id
+        - amount
+        - iso_currency_code
+        - date
+        - name
+        - payment_channel
+        - transaction_id
+        - pending      
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: The unique identifier of the transaction (auto-incremented).
+        account_id:
+          type: integer
+          format: int32
+          description: The ID of the associated account.
+        user_id:
+          type: integer
+          format: int32
+          description: The ID of the associated user.
+        amount:
+          type: number
+          format: decimal
+          description: The transaction amount.
+        iso_currency_code:
+          type: string
+          description: The ISO-4217 currency code for the transaction.
+        date:
+          type: string
+          format: date
+          description: The date of the transaction (YYYY-MM-DD).
+        authorized_date:
+          type: string
+          format: date
+          description: The date the transaction was authorized (YYYY-MM-DD).
+        name:
+          type: string
+          description: The legacy merchant name or transaction description.
+        merchant_name:
+          type: string
+          description: The enriched merchant name.
+        logo_url:
+          type: string
+          description: The URL of the merchant's logo.
+        website:
+          type: string
+          description: The URL of the merchant's website.
+        payment_channel:
+          type: string
+          description: The payment channel (online, in store, other).
+        transaction_id:
+          type: string
+          description: The unique transaction ID.
+        personal_finance_category:
+          type: string
+          description: The personal finance category of the transaction.
+        personal_finance_subcategory:
+          type: string
+          description: The personal finance subcategory of the transaction.
+        pending:
+          type: boolean
+          description: Indicates if the transaction is pending.
+        pending_transaction_transaction_id:
+          type: string
+          description: The transaction ID of a related pending transaction.
+        created_at:
+          type: string
+          format: date-time
+          description: The timestamp when the transaction was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: The timestamp when the transaction was last updated.
