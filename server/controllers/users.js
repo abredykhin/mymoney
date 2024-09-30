@@ -1,50 +1,52 @@
 const bcrypt = require('bcrypt');
 const usersQueries = require('../db/queries/users');
 const Boom = require('@hapi/boom');
+const debug = require('debug')('controllers:users');
 
 const registerUser = async req => {
-  console.log('Registering new user.');
-
-  console.log('Request Body:', req.body);
-
+  debug('Registering a new user');
   const { username, password } = req.body;
   if (!(username && password)) {
-    console.log(`Missing username or password: ${username} and ${password}`);
+    debug(`Missing username or password.`);
     throw Boom.badRequest('All inputs are required!');
   }
 
-  console.log('Received non-empty name & password values.');
+  debug('Received non-empty name & password values.');
 
   // Checking if the user already exists
   const oldUser = await usersQueries.retrieveUserByUsername(username);
   if (oldUser) {
-    console.log(`User already exists.`);
+    debug(`User already exists.`);
     throw Boom.conflict('User Already Exist. Please Login.');
   }
 
-  console.log('No existing users with same username.');
-
+  debug('No existing users with same username. Hashing password');
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
-  console.log(`Hashed password: ${hashedPassword}`);
 
+  debug(`Password hashed. Storing user in db...`);
   const user = await usersQueries.createUser(username, hashedPassword);
-  console.log(`New user created with ${username}.`);
 
+  debug(`New user created with ${username}.`);
   return user;
 };
 
 const loginUser = async req => {
+  debug('Attempting to login user.');
   const { username, password } = req.body;
   if (!(username && password)) {
+    debug('Missing username or password.');
     throw Boom.badRequest('All inputs are required.');
   }
 
+  debug('Looking up user in db...');
   const user = await usersQueries.retrieveUserByUsername(username);
   if (user && (await bcrypt.compare(password, user.password))) {
+    debug('User found, and the password is correct.');
     return user;
   } else {
-    throw Boom.unauthorized('User not found!');
+    debug('User not found or password is incorrect');
+    throw Boom.unauthorized('No such user or wrong password!');
   }
 };
 

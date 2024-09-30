@@ -3,6 +3,7 @@ const { retrieveAccountsByItemId } = require('../db/queries/accounts');
 const { retrieveItemsByUser } = require('../db/queries/items');
 const { asyncWrapper, verifyToken } = require('../middleware');
 const _ = require('lodash');
+const debug = require('debug')('routes:banks');
 
 const router = express.Router();
 
@@ -14,10 +15,10 @@ router.get(
   verifyToken,
   asyncWrapper(async (req, res) => {
     const userId = req.userId;
-    console.log(`Querying db for items for user ${userId}`);
+    debug(`Querying db for items for user ${userId}`);
     const items = await retrieveItemsByUser(userId);
 
-    console.log(`Got ${items.length} banks from db`);
+    debug(`Got ${items.length} banks from db. Processing...`);
 
     const banksWithAccounts = await Promise.all(
       items.map(async item => {
@@ -27,11 +28,11 @@ router.get(
           accounts: [],
         };
 
-        console.log(`Querying db for accounts at bank ${bank.id}`);
+        debug(`Looking up accounts at bank ${bank.id}`);
 
         // Fetch accounts for the current item
         const accounts = await retrieveAccountsByItemId(item.id);
-        console.log(`Got ${accounts.length} accounts`);
+        debug(`Got ${accounts.length} accounts`);
 
         // Add relevant account details to the bank object
         bank.accounts = accounts.map(account =>
@@ -50,16 +51,15 @@ router.get(
           ])
         );
 
-        console.log(`Processed accounts`);
+        debug(`Account processed`);
         return bank;
       })
     );
 
-    console.log(`Checking the result`);
     const result = banksWithAccounts.length > 0 ? banksWithAccounts : [];
 
-    console.log(`Sending the response to client`);
-    console.log(JSON.stringify(result, null, 2));
+    debug(`Accounts ready. Sending the result to client`);
+
     res.json({ banks: result });
   })
 );

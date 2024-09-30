@@ -22,8 +22,8 @@ const db = new Pool({
   database: DB_NAME,
   max: 5,
   min: 2,
-  idleTimeoutMillis: 1000, // close idle clients after 1 second
-  connectionTimeoutMillis: 1000, // return an error after 1 second if connection could not be established
+  idleTimeoutMillis: 30000, // close idle clients after 30 second
+  connectionTimeoutMillis: 5000, // return an error after 5 second if connection could not be established
 });
 
 module.exports = db;

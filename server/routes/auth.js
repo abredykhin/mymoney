@@ -3,17 +3,18 @@ const usersController = require('../controllers/users');
 const sessionsController = require('../controllers/sessions');
 const utils = require('../utils/sanitize');
 const { asyncWrapper } = require('../middleware');
+const debug = require('debug')('routes:auth');
 
 const router = express.Router();
 
 router.post(
   '/register',
   asyncWrapper(async (req, res) => {
-    console.log('Register new user route. Uses updated code!');
+    debug('Registering new user.');
     const user = await usersController.registerUser(req);
     const session = await sessionsController.initSession(user.id);
     const userToReturn = utils.sanitizeUserObject(user);
-    console.log('Ready to send data back.');
+    debugg('Registration complete.');
 
     res.status(200).json({
       user: userToReturn,
@@ -25,7 +26,9 @@ router.post(
 router.post(
   '/login',
   asyncWrapper(async (req, res) => {
+    debug('Logging user in.');
     const user = await usersController.loginUser(req);
+    debug('Setting up a new sessions');
     const session = await sessionsController.initSession(user.id);
     const userToReturn = utils.sanitizeUserObject(user);
 
@@ -34,8 +37,7 @@ router.post(
       token: session.token,
     };
 
-    console.dir(returnObj, { depth: null });
-
+    debug('Login successful.');
     res.status(200).json(returnObj);
   })
 );

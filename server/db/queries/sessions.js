@@ -5,8 +5,7 @@
 const db = require('../');
 require('util').inspect.defaultOptions.depth = null;
 
-const createSession = async (token, crsfToken, userId) => {
-  console.log(`Adding new session token to database for ${userId} user`);
+const createSession = async (token, userId) => {
   const query = {
     text: 'INSERT INTO sessions_table (token, user_id) VALUES ($1, $2) RETURNING token;',
     values: [token, userId],
@@ -24,7 +23,6 @@ const expireToken = async token => {
 };
 
 const lookupToken = async token => {
-  console.log(`Looking up token ${token}`);
   const query = {
     text: 'SELECT user_id FROM sessions_table WHERE token = $1;',
     values: [token],

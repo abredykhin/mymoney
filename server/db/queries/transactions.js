@@ -4,15 +4,14 @@
 
 const { retrieveAccountByPlaidAccountId } = require('./accounts');
 const db = require('../');
-
+const debug = require('debug')('db:transactions');
 /**
  * Creates or updates multiple transactions.
  *
  * @param {Object[]} transactions an array of transactions.
  */
 const createOrUpdateTransactions = async transactions => {
-  console.log('Storing transactions in db...');
-  console.log(transactions);
+  debug('Storing transactions in db...');
 
   const client = await db.connect(); // Obtain a single client (connection)
   try {
@@ -105,11 +104,11 @@ const createOrUpdateTransactions = async transactions => {
     }
 
     await client.query('COMMIT'); // Commit transaction after all queries succeed
-    console.log('All transactions stored successfully');
+    debug('All transactions stored successfully');
     return { success: true };
   } catch (err) {
     await client.query('ROLLBACK'); // Rollback transaction in case of error
-    console.error('Error storing transactions, transaction rolled back:', err);
+    debug('Error storing transactions, transaction rolled back:', err);
     return { success: false, error: err };
   } finally {
     client.release(); // Release the client back to the pool
@@ -172,7 +171,6 @@ const retrieveTransactionsByItemId = async (userId, limit) => {
  * @param {string[]} plaidTransactionIds the Plaid IDs of the transactions.
  */
 const deleteTransactions = async plaidTransactionIds => {
-  console.log('Removing deleted transactions...');
   const pendingQueries = plaidTransactionIds.map(async transactionId => {
     const query = {
       text: 'DELETE FROM transactions_table WHERE plaid_transaction_id = $1',

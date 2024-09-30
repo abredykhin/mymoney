@@ -7,14 +7,14 @@ const { asyncWrapper, verifyToken } = require('../middleware');
 const express = require('express');
 const plaid = require('../plaid/loggingPlaidClient');
 const { retrieveItemById } = require('../db/queries');
-
+const debug = require('debug')('routes:linkTokens');
 const router = express.Router();
 
 router.post(
   '/',
   verifyToken,
   asyncWrapper(async (req, res) => {
-    console.log('Requesting Link token...');
+    debug('Requesting Link token...');
     try {
       const userId = req.userId;
       const { itemId } = req.body;
@@ -41,12 +41,12 @@ router.post(
         redirect_uri: 'https://babloapp.com/plaid/redirect/index.html',
       };
 
-      console.log('Talking to plaid server to get token...');
+      debug('Talking to plaid server to get token...');
       const createResponse = await plaid.linkTokenCreate(linkTokenParams);
-      console.log('Got token from plaid server.');
+      debug('Got token from plaid server. Sending the data back to client');
       res.json(createResponse.data);
     } catch (err) {
-      console.log('error while fetching client token', err.response.data);
+      debug('error while fetching client token', err.response.data);
       return res.json(err.response.data);
     }
   })

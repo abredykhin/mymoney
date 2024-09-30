@@ -12,9 +12,10 @@ const { errorHandler } = require('./middleware');
 const path = require('path'); // Add this line
 const http = require('http');
 const https = require('https');
+const debug = require('debug')('app');
 require('dotenv').config();
-console.log('NODE_ENV:', process.env.APP_ENV);
-console.log('SSL cert path:', process.env.SSL_KEY_PATH);
+debug('NODE_ENV:', process.env.APP_ENV);
+debug('SSL cert path:', process.env.SSL_KEY_PATH);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,7 +27,7 @@ app.use('/.well-known', express.static(path.join(__dirname, 'static')));
 // Function to start the HTTP server
 const startHttpServer = () => {
   http.createServer(app).listen(PORT, () => {
-    console.log(`HTTP Server running on port ${PORT}`);
+    debug(`HTTP Server running on port ${PORT}`);
   });
 };
 
@@ -43,20 +44,20 @@ const startHttpsServer = () => {
     };
 
     https.createServer(options, app).listen(443, () => {
-      console.log('HTTPS Server running on port 443');
+      debug('HTTPS Server running on port 443');
     });
   } else {
-    console.log('SSL certificates not found. HTTPS server not started.');
+    debug('SSL certificates not found. HTTPS server not started.');
   }
 };
 
 // Start both HTTP and HTTPS
 if (isProduction) {
-  console.log('Starting in production mode');
+  debug('Starting in production mode');
   startHttpsServer();
   startHttpServer(); // Optionally serve HTTP for non-SSL requests
 } else {
-  console.log('Starting in dev mode');
+  debug('Starting in dev mode');
   startHttpServer(); // In development, only serve HTTP
 }
 

@@ -59,6 +59,7 @@ CREATE TYPE session_token_status AS ENUM ('valid', 'expired');
 
 CREATE TABLE sessions_table
 (
+  session_id SERIAL PRIMARY KEY,  
   token text UNIQUE NOT NULL,
   created_at timestamptz default now(),
   user_id integer REFERENCES users_table(id) ON DELETE CASCADE,

@@ -24,7 +24,7 @@ const {
   validItemStatuses,
 } = require('../utils/sanitize');
 const syncTransactions = require('../plaid/syncTransactions');
-
+const debug = require('debug')('routes:items');
 const router = express.Router();
 
 /**
@@ -39,19 +39,19 @@ router.post(
   '/',
   verifyToken,
   asyncWrapper(async (req, res) => {
-    console.log('Creating a new item');
+    debug('Creating a new item');
     const { publicToken, institutionId } = req.body;
     const userId = req.userId;
-    console.log('All params passed correctly.');
+    debug('All params passed correctly.');
 
     // prevent duplicate items for the same institution per user.
-    console.log('Checking for duplicate item...');
+    debug('Checking for duplicate item...');
     const existingItem = await retrieveItemByPlaidInstitutionId(
       institutionId,
       userId
     );
 
-    console.log('Asking Plaid for info on institution...');
+    debug('Asking Plaid for info on institution...');
     const institutionResponse = await plaid.client.institutionsGetById({
       client_id: '',
       secret: '',
@@ -62,7 +62,7 @@ router.post(
       },
     });
 
-    console.log(
+    debug(
       `Received institution info for ${institutionResponse.data.institution.name}. Storing in database...`
     );
 
@@ -74,13 +74,14 @@ router.post(
       institutionResponse.data.institution.logo
     );
 
-    console.log('Exchanging tokens with Plaid...');
+    debug('Exchanging tokens with Plaid...');
     // exchange the public token for a private access token and store with the item.
     const response = await plaid.itemPublicTokenExchange({
       public_token: publicToken,
     });
     const accessToken = response.data.access_token;
     const itemId = response.data.item_id;
+    debug('Storing item info in db...');
     const newItem = await createItem(
       institutionId,
       accessToken,
@@ -89,14 +90,14 @@ router.post(
       institutionResponse.data.institution.name
     );
 
-    // Make an initial call to fetch transactions and enable SYNC_UPDATES_AVAILABLE webhook sending
-    // for this item.
+    debug('Syncing item transactions...');
     await syncTransactions(itemId).then(() => {
       // Notify frontend to reflect any transactions changes.
       // TODO:
       //req.io.emit('NEW_TRANSACTIONS_DATA', { itemId: newItem.id });
     });
 
+    debug('Item is ready. Sending it back to client.');
     res.json(sanitizeItem(newItem));
   })
 );

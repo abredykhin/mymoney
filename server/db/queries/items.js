@@ -3,7 +3,7 @@
  */
 
 const db = require('../');
-
+const debug = require('debug')('db:items');
 /**
  * Creates a single item.
  *
@@ -20,8 +20,6 @@ const createItem = async (
   userId,
   bankName
 ) => {
-  console.log(`Storing item ${plaidItemId} in db after succsessful link`);
-
   // this method only gets called on successfully linking an item.
   // We know the status is good.
   const status = 'good';
@@ -153,8 +151,6 @@ const updateItemStatus = async (itemId, status) => {
  * @param {string} transactionsCursor latest observed transactions cursor on this item.
  */
 const updateItemTransactionsCursor = async (itemId, transactionsCursor) => {
-  console.log(`Storing transactions cursor for item ${itemId}`);
-
   const query = {
     text: 'UPDATE items SET transactions_cursor = $1 WHERE plaid_item_id = $2',
     values: [transactionsCursor, itemId],

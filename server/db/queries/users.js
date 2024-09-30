@@ -12,7 +12,6 @@ require('util').inspect.defaultOptions.depth = null;
  * @returns {Object} the new user.
  */
 const createUser = async (username, hashedPassword) => {
-  console.log(`Adding user to database: ${username}`);
   const query = {
     // RETURNING is a Postgres-specific clause that returns a list of the inserted items.
     text: 'INSERT INTO users_table (username, password) VALUES ($1, $2) RETURNING *;',
@@ -44,7 +43,6 @@ const deleteUsers = async userId => {
  * @returns {Object} a user.
  */
 const retrieveUserById = async userId => {
-  console.log(`Querying db for user ${userId}`);
   const query = {
     text: 'SELECT * FROM users WHERE id = $1',
     values: [userId],

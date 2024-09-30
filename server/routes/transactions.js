@@ -6,6 +6,7 @@ const {
 } = require('../db/queries/transactions');
 const { asyncWrapper, verifyToken } = require('../middleware');
 const _ = require('lodash');
+const debug = require('debug')('routes:transactions');
 
 const router = express.Router();
 
@@ -20,8 +21,9 @@ router.get(
   asyncWrapper(async (req, res) => {
     const userId = req.userId;
     const limit = req.maxCount ?? 50;
-    console.log(`Retrieving user transactions for user ${userId}`);
+    debug(`Retrieving user transactions for user ${userId}`);
     const transactions = await retrieveTransactionsByUserId(userId, limit);
+    debug('Got all the transactions. Sending them back');
     res.json(sanitizeTransactions(transactions));
   })
 );
@@ -58,14 +60,15 @@ router.get(
   asyncWrapper(async (req, res) => {
     const accountId = req.query.accountId;
     const limit = req.query.maxCount ?? 50;
-    console.log(
-      `Retrieving user transactions for account ${accountId} and maxCount ${limit}`
+    debug(
+      `Looking up user transactions for account ${accountId} and maxCount ${limit}`
     );
     const transactions = await retrieveTransactionsByAccountId(
       accountId,
       limit
     );
 
+    debug('Got the transactions. Processing...');
     const sanitizedTransactions = transactions.map(transaction =>
       _.pick(transaction, [
         'id',
@@ -89,6 +92,7 @@ router.get(
     );
 
     const response = { transactions: sanitizedTransactions };
+    debug('Sending the result back to client');
     res.json(response);
   })
 );
