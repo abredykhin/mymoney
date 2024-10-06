@@ -18,9 +18,9 @@ struct TransactionView : View {
                     .bold()
 
                 Spacer()
-                Text(transaction.amount, format: .currency(code: transaction.iso_currency_code))
+                Text(-transaction.amount, format: .currency(code: transaction.iso_currency_code))
                     .font(.title3)
-                    .foregroundStyle( transaction.amount < 0 ? .red : .teal )
+                    .foregroundStyle( transaction.amount > 0 ? .teal : .red )
                     
 
             }

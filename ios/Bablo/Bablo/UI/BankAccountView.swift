@@ -18,6 +18,7 @@ struct BankAccountView : View {
             Text(account.current_balance, format: .currency(code: account.iso_currency_code))
                 .font(.title)
                 .fontWeight(.medium)
+                .foregroundStyle(account._type == "depository" && account.current_balance > 0 ? .green : .red )
             Spacer()
         }
         .padding(10)
