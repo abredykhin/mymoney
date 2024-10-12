@@ -14,9 +14,12 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                LinkButtonView()
-                    .padding(.top)
-                BankListView()
+                VStack {
+                    BankListView()
+                    Spacer()
+                    LinkButtonView()
+                        .padding(.top)
+                }
             }.refreshable {
                 try? await bankAccountsService.refreshAccounts()
             }.task {

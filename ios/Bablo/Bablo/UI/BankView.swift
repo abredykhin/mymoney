@@ -21,7 +21,6 @@ struct BankView : View {
                 ForEach(bank.accounts, id: \.id) {account in
                     NavigationLink(destination: TransactionListView(account: account)) {
                         BankAccountView(account: account)
-                            .padding(.bottom, 4)
                     }
                 }
             }

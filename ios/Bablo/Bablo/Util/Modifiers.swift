@@ -16,3 +16,10 @@ struct CardBackground: ViewModifier {
             .padding(10)
     }
 }
+
+struct CardBackground_Previews: PreviewProvider {
+    static let account = BankAccount(id: 0, name: "Account", current_balance: 100.0, iso_currency_code: "USD", _type: "checking", updated_at: .now)
+    static var previews: some View {
+        BankAccountView(account: account)
+    }
+}

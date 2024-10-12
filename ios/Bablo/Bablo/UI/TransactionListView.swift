@@ -12,11 +12,10 @@ struct TransactionListView : View {
     @StateObject var transactionsService = TransactionsService()
     
     var body: some View {
-        ScrollView {
-            VStack {
-                Text("Transactions")
-                    .font(.largeTitle)
-                    .padding(.bottom, 12)
+        List {
+            Section(header: Text("Transactions")
+                .font(.title3)
+            ) {
                 
                 LazyVStack {
                     ForEach(transactionsService.transactions, id: \.id) { transaction in

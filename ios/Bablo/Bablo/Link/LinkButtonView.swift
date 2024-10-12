@@ -27,7 +27,7 @@ struct LinkButtonView : View {
                     .foregroundColor(.white)
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(Color.primary)
+                    .background(Color.secondary)
                     .cornerRadius(8)
                     .padding(.horizontal)
                     .shadow(radius: 2)
