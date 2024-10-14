@@ -1,9 +1,10 @@
 const express = require('express');
-const { retrieveAccountsByItemId } = require('../db/queries/accounts');
-const { retrieveItemsByUser } = require('../db/queries/items');
-const { asyncWrapper, verifyToken } = require('../middleware');
 const _ = require('lodash');
 const debug = require('debug')('routes:banks');
+const { retrieveAccountsByItemId } = require('../db/queries/accounts');
+const { retrieveItemsByUser } = require('../db/queries/items');
+const { retrieveInstitutionById } = require('../db/queries/institutions');
+const { asyncWrapper, verifyToken } = require('../middleware');
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.get(
   '/accounts',
   verifyToken,
   asyncWrapper(async (req, res) => {
-    const userId = req.userId;
+    const { userId } = req;
     debug(`Querying db for items for user ${userId}`);
     const items = await retrieveItemsByUser(userId);
 
@@ -27,6 +28,13 @@ router.get(
           bank_name: item.bank_name,
           accounts: [],
         };
+
+        debug('Looking up associated institution');
+        const institution = await retrieveInstitutionById(
+          item.plaid_institution_id
+        );
+        bank.logo = institution.logo;
+        bank.primary_color = institution.primary_color;
 
         debug(`Looking up accounts at bank ${bank.id}`);
 
@@ -51,14 +59,14 @@ router.get(
           ])
         );
 
-        debug(`Account processed`);
+        debug('Account processed');
         return bank;
       })
     );
 
     const result = banksWithAccounts.length > 0 ? banksWithAccounts : [];
 
-    debug(`Accounts ready. Sending the result to client`);
+    debug('Accounts ready. Sending the result to client');
 
     res.json({ banks: result });
   })

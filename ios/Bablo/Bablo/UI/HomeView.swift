@@ -12,15 +12,20 @@ struct HomeView: View {
     @EnvironmentObject var bankAccountsService: BankAccountsService
     
     var body: some View {
-        NavigationStack {
+        NavigationView {
             ScrollView {
-                VStack {
+                VStack(alignment: .leading, spacing: 16) {
                     BankListView()
+                    Spacer()
+                    Divider()
+                    Spacer()
+                    RecentTransactionsView()
                     Spacer()
                     LinkButtonView()
                         .padding(.top)
                 }
-            }.refreshable {
+            }.navigationTitle("Overview")
+            .refreshable {
                 try? await bankAccountsService.refreshAccounts()
             }.task {
                 try? await bankAccountsService.refreshAccounts()

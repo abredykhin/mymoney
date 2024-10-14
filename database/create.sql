@@ -217,14 +217,9 @@ AS
     a.subtype,
     a.created_at,
     a.updated_at,
-  -- Add columns from the institutions view here
-    ins.name AS institution_name,
-    ins.primary_color AS institution_primary_color     
   FROM
     accounts_table a
     LEFT JOIN items i ON i.id = a.item_id
--- Join with the institutions view
-    LEFT JOIN institutions ins ON i.plaid_institution_id = ins.institution_id;
 
 -- TRANSACTIONS
 -- This table is used to store the transactions associated with each account. The view returns all

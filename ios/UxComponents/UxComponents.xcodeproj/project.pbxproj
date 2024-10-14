@@ -16,6 +16,10 @@
 		75E6CC542CBB03A400C779C9 /* Modifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E6CC532CBB03A400C779C9 /* Modifiers.swift */; };
 		75E6CC572CBB03CA00C779C9 /* Transaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E6CC562CBB03C600C779C9 /* Transaction.swift */; };
 		75E6CC592CBB050900C779C9 /* TransactionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E6CC582CBB050900C779C9 /* TransactionListView.swift */; };
+		75E6CC5B2CBB138F00C779C9 /* Bank.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E6CC5A2CBB138F00C779C9 /* Bank.swift */; };
+		75E6CC5F2CBB13CD00C779C9 /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E6CC5E2CBB13CD00C779C9 /* Account.swift */; };
+		75E6CC612CBB152600C779C9 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E6CC602CBB152600C779C9 /* AccountView.swift */; };
+		75E6CC632CBB155D00C779C9 /* Misc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E6CC622CBB155900C779C9 /* Misc.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +34,10 @@
 		75E6CC532CBB03A400C779C9 /* Modifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Modifiers.swift; sourceTree = "<group>"; };
 		75E6CC562CBB03C600C779C9 /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
 		75E6CC582CBB050900C779C9 /* TransactionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionListView.swift; sourceTree = "<group>"; };
+		75E6CC5A2CBB138F00C779C9 /* Bank.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bank.swift; sourceTree = "<group>"; };
+		75E6CC5E2CBB13CD00C779C9 /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
+		75E6CC602CBB152600C779C9 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+		75E6CC622CBB155900C779C9 /* Misc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Misc.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +72,7 @@
 			children = (
 				75E6CC552CBB03BF00C779C9 /* Model */,
 				75E6CC502CBB038300C779C9 /* Util */,
+				75E6CC602CBB152600C779C9 /* AccountView.swift */,
 				75E6CC4E2CBB02E700C779C9 /* TransactionView.swift */,
 				75E6CC582CBB050900C779C9 /* TransactionListView.swift */,
 				75E6CC3E2CBB02BD00C779C9 /* UxComponentsApp.swift */,
@@ -86,6 +95,7 @@
 		75E6CC502CBB038300C779C9 /* Util */ = {
 			isa = PBXGroup;
 			children = (
+				75E6CC622CBB155900C779C9 /* Misc.swift */,
 				75E6CC512CBB038F00C779C9 /* Dates.swift */,
 				75E6CC532CBB03A400C779C9 /* Modifiers.swift */,
 			);
@@ -96,6 +106,8 @@
 			isa = PBXGroup;
 			children = (
 				75E6CC562CBB03C600C779C9 /* Transaction.swift */,
+				75E6CC5A2CBB138F00C779C9 /* Bank.swift */,
+				75E6CC5E2CBB13CD00C779C9 /* Account.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -171,9 +183,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				75E6CC412CBB02BD00C779C9 /* ContentView.swift in Sources */,
+				75E6CC5B2CBB138F00C779C9 /* Bank.swift in Sources */,
 				75E6CC3F2CBB02BD00C779C9 /* UxComponentsApp.swift in Sources */,
 				75E6CC572CBB03CA00C779C9 /* Transaction.swift in Sources */,
+				75E6CC612CBB152600C779C9 /* AccountView.swift in Sources */,
+				75E6CC632CBB155D00C779C9 /* Misc.swift in Sources */,
 				75E6CC4F2CBB02E700C779C9 /* TransactionView.swift in Sources */,
+				75E6CC5F2CBB13CD00C779C9 /* Account.swift in Sources */,
 				75E6CC522CBB038F00C779C9 /* Dates.swift in Sources */,
 				75E6CC592CBB050900C779C9 /* TransactionListView.swift in Sources */,
 				75E6CC542CBB03A400C779C9 /* Modifiers.swift in Sources */,

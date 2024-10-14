@@ -97,4 +97,51 @@ router.get(
   })
 );
 
+/**
+ * Retrieves all transactions associated with an item.
+ *
+ * @param {string} accountId the ID of the account
+ * @param {integer} maxCount query limit
+ * @returns {Object[]} an array of transactions
+ */
+router.get(
+  '/recent',
+  verifyToken,
+  asyncWrapper(async (req, res) => {
+    const { userId } = req;
+    const limit = req.query.maxCount ?? 10;
+    debug(
+      `Looking up recent transactions for all accounts with maxCount ${limit}`
+    );
+    const transactions = await retrieveTransactionsByUserId(userId, limit);
+
+    debug('Got the transactions. Processing...');
+    const sanitizedTransactions = transactions.map(transaction =>
+      _.pick(transaction, [
+        'id',
+        'account_id',
+        'amount',
+        'iso_currency_code',
+        'date',
+        'authorized_date',
+        'transaction_id',
+        'subcategory',
+        'personal_finance_category',
+        'personal_finance_subcategory',
+        'type',
+        'name',
+        'pending',
+        'merchant_name',
+        'logo_url',
+        'website',
+        'payment_channel',
+      ])
+    );
+
+    const response = { transactions: sanitizedTransactions };
+    debug('Sending the result back to client');
+    res.json(response);
+  })
+);
+
 module.exports = router;

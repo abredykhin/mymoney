@@ -18,7 +18,7 @@ const Boom = require('@hapi/boom');
  *
  * @param {string} plaidItemId the Plaid ID for the item.
  */
-const syncTransactions = async plaidItemId => {
+const syncTransactions = async (userId, plaidItemId) => {
   debug(`Starting transaction sync for plaid item: ${plaidItemId}`);
   // Fetch new transactions from plaid api.
   const { added, modified, removed, cursor, accessToken } =
@@ -40,7 +40,7 @@ const syncTransactions = async plaidItemId => {
   debug('Updating accounts data...');
   await createAccounts(plaidItemId, accounts);
   debug('Updating transactions data...');
-  await createOrUpdateTransactions(added.concat(modified));
+  await createOrUpdateTransactions(userId, added.concat(modified));
   debug('Deleting obsolete transactions...');
   await deleteTransactions(removed);
   debug('Updating item transactions cursor');

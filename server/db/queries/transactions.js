@@ -10,7 +10,7 @@ const debug = require('debug')('db:transactions');
  *
  * @param {Object[]} transactions an array of transactions.
  */
-const createOrUpdateTransactions = async transactions => {
+const createOrUpdateTransactions = async (userId, transactions) => {
   debug('Storing transactions in db...');
 
   const client = await db.connect(); // Obtain a single client (connection)
@@ -49,6 +49,7 @@ const createOrUpdateTransactions = async transactions => {
           INSERT INTO transactions_table
             (
               account_id,
+              user_id,
               amount,
               iso_currency_code,
               date,
@@ -82,6 +83,7 @@ const createOrUpdateTransactions = async transactions => {
         `,
         values: [
           id,
+          userId,
           amount,
           iso_currency_code,
           date,
@@ -140,6 +142,8 @@ const retrieveTransactionsByAccountId = async (accountId, limit) => {
  * @returns {Object[]} an array of transactions.
  */
 const retrieveTransactionsByUserId = async (userId, limit) => {
+  debug(`Running db query for transaction for user ${userId}`);
+
   const query = {
     text: 'SELECT * FROM transactions WHERE user_id = $1 ORDER BY date DESC LIMIT $2',
     values: [userId, limit],

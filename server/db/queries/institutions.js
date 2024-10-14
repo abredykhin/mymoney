@@ -49,7 +49,7 @@ const createInstitution = async (
  * @param {number} institutionId the ID of the institution.
  * @returns {Object} an institution.
  */
-const retrieveInstitutionById = async itemId => {
+const retrieveInstitutionById = async institutionId => {
   debug(`Querying db for institution ${institutionId}`);
 
   const query = {

@@ -58,3 +58,14 @@ class BankAccountsService: ObservableObject {
         client = userAccount.client.map(\.self)
     }
 }
+
+// Extension on Bank to decode Base64 to UIImage
+extension Bank {
+    var decodedLogo: UIImage? {
+        guard let logoBase64 = self.logo,
+              let data = Data(base64Encoded: logoBase64, options: .ignoreUnknownCharacters) else {
+            return nil
+        }
+        return UIImage(data: data)
+    }
+}

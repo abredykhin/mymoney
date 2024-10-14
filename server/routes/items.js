@@ -91,7 +91,7 @@ router.post(
     );
 
     debug('Syncing item transactions...');
-    await syncTransactions(itemId).then(() => {
+    await syncTransactions(userId, itemId).then(() => {
       // Notify frontend to reflect any transactions changes.
       // TODO:
       //req.io.emit('NEW_TRANSACTIONS_DATA', { itemId: newItem.id });
