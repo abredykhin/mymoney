@@ -15,6 +15,8 @@ struct HomeView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    TotalBalanceView()
+                    Divider()
                     BankListView()
                     Spacer()
                     Divider()
@@ -24,7 +26,7 @@ struct HomeView: View {
                     LinkButtonView()
                         .padding(.top)
                 }
-            }.navigationTitle("Overview")
+            }
             .refreshable {
                 try? await bankAccountsService.refreshAccounts()
             }.task {
