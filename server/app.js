@@ -4,6 +4,7 @@ const cors = require('cors');
 const fs = require('fs');
 const auth = require('./routes/auth');
 const banks = require('./routes/banks');
+const budget = require('./routes/budget');
 const transactions = require('./routes/transactions');
 const linkTokens = require('./routes/linkTokens');
 const webhook = require('./routes/webhook');
@@ -86,6 +87,7 @@ app.use('/plaid', webhook);
 app.use('/items', items);
 app.use('/banks', banks);
 app.use('/transactions', transactions);
+app.use('/budget', budget);
 
 app.use((err, req, res, next) => {
   console.error('Error caught:', err);
