@@ -21,8 +21,10 @@ struct RecentTransactionsView: View {
                 TransactionView(transaction: transaction)
                     .padding(.horizontal)
             }
-        }.task {
-            try? await transactionsService.fetchRecentTransactions()
+        }.onAppear() {
+            Task {
+                try? await transactionsService.fetchRecentTransactions()
+            }
         }
     }
 }
