@@ -67,4 +67,4 @@ dist/
 .vscode/
 
 # dbdata
-.dbdata
+.dbdata/
