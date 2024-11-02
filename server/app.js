@@ -15,8 +15,6 @@ const http = require('http');
 const https = require('https');
 const debug = require('debug')('app');
 require('dotenv').config();
-debug('NODE_ENV:', process.env.APP_ENV);
-debug('SSL cert path:', process.env.SSL_KEY_PATH);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
