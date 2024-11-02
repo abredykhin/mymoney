@@ -20,9 +20,7 @@ struct TransactionView : View {
                 Spacer()
                 Text(-transaction.amount, format: .currency(code: transaction.iso_currency_code))
                     .font(.title3)
-                    .foregroundStyle( transaction.amount > 0 ? .teal : .red )
-                    
-
+                    .foregroundStyle(getColor())
             }
             HStack(alignment: .top) {
                 Text(formatDate(transaction.authorized_date ?? transaction.date))
@@ -36,6 +34,10 @@ struct TransactionView : View {
                 }
             }
         }.padding(8)
+    }
+    
+    func getColor() -> Color {
+        return transaction.amount > 0 ? .red : .teal
     }
 }
 
