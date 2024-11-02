@@ -12,7 +12,6 @@ struct RecentTransactionsView: View {
     
     var body: some View {
         VStack {
-                // Recent Transactions Section
             Text("Recent Transactions")
                 .font(.title)
                 .padding(.horizontal)

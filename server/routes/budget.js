@@ -1,6 +1,6 @@
 const express = require('express');
 const _ = require('lodash');
-const debug = require('debug')('routes:banks');
+const debug = require('debug')('routes:budget');
 const { retrieveAccountsByItemId } = require('../db/queries/accounts');
 const { retrieveItemsByUser } = require('../db/queries/items');
 const { asyncWrapper, verifyToken } = require('../middleware');
@@ -11,7 +11,7 @@ router.get(
   '/totalBalance',
   verifyToken,
   asyncWrapper(async (req, res) => {
-    const userId = req.params.userId;
+    const { userId } = req;
     debug('Querying db for user items');
     const items = await retrieveItemsByUser(userId);
     let balance = 0;
@@ -53,7 +53,7 @@ router.get(
     }
 
     debug(`Total balance is ${balance}`);
-    res.json({ balance, iso_currency_code: isoCurrencyCode });
+    res.json({ balance: balance, iso_currency_code: isoCurrencyCode });
   })
 );
 

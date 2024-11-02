@@ -122,6 +122,7 @@ const retrieveItemByPlaidItemId = async plaidItemId => {
  * @returns {Object[]} an array of items.
  */
 const retrieveItemsByUser = async userId => {
+  debug(`Running db query for items for user ${userId}`);
   const query = {
     text: 'SELECT * FROM items WHERE user_id = $1',
     values: [userId],

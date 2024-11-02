@@ -19,19 +19,19 @@ struct BankAccountView : View {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .foregroundColor(.primary)
+            Text(account._type.capitalized)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
             
                 // Account Balance
             HStack {
                 Text(account.current_balance, format: .currency(code: account.iso_currency_code))
                     .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(account._type == "depository" && account.current_balance > 0 ? .green : .red)
+                    .foregroundColor(getAccountColor(account))
                 Spacer()
             }
             
                 // Account Type (Optional: To add some visual interest)
-            Text(account._type.capitalized)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
         }
         .padding(20)
         .background(
@@ -52,6 +52,15 @@ struct BankAccountView : View {
             return LinearGradient(gradient: Gradient(colors: [.teal, .green]),
                                   startPoint: .topLeading,
                                   endPoint: .bottomTrailing)
+        }
+    }
+    
+    private func getAccountColor(_ account: BankAccount) -> Color {
+        switch account._type {
+        case "depository", "investment":
+            return account.current_balance > 0 ? .green : .red
+        default:
+            return .red
         }
     }
 }
