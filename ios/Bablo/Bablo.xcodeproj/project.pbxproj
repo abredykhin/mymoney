@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		75579F232CD6F2D800845A62 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75579F222CD6F2D800845A62 /* ProfileView.swift */; };
 		755F88862C86B8D200BEE12A /* BankAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 755F88852C86B8D200BEE12A /* BankAccountView.swift */; };
 		7573DA182CBCD7320004EBE4 /* TotalBalanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7573DA172CBCD7320004EBE4 /* TotalBalanceView.swift */; };
 		7573DA1B2CBCD7B20004EBE4 /* BudgetService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7573DA1A2CBCD7B20004EBE4 /* BudgetService.swift */; };
@@ -64,6 +65,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		75579F222CD6F2D800845A62 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		755F88852C86B8D200BEE12A /* BankAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountView.swift; sourceTree = "<group>"; };
 		7573DA172CBCD7320004EBE4 /* TotalBalanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TotalBalanceView.swift; sourceTree = "<group>"; };
 		7573DA1A2CBCD7B20004EBE4 /* BudgetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetService.swift; sourceTree = "<group>"; };
@@ -132,6 +134,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		75579F212CD6F2B600845A62 /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				75579F222CD6F2D800845A62 /* ProfileView.swift */,
+			);
+			path = Profile;
+			sourceTree = "<group>";
+		};
 		7573DA162CBCD7230004EBE4 /* Budget */ = {
 			isa = PBXGroup;
 			children = (
@@ -249,6 +259,7 @@
 		757ABF912C18242900DF8CA8 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				75579F212CD6F2B600845A62 /* Profile */,
 				7573DA162CBCD7230004EBE4 /* Budget */,
 				75E6CC672CBCC0AF00C779C9 /* Bank */,
 				75E6CC692CBCC0B900C779C9 /* Transaction */,
@@ -456,6 +467,7 @@
 				7573DA1B2CBCD7B20004EBE4 /* BudgetService.swift in Sources */,
 				757ABF772C181C3100DF8CA8 /* AuthMiddleware.swift in Sources */,
 				757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */,
+				75579F232CD6F2D800845A62 /* ProfileView.swift in Sources */,
 				75E49BAC2CA3EACF008D72F8 /* Dates.swift in Sources */,
 				7590F29F2C86471D00BCCDE6 /* LinkController.swift in Sources */,
 				7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */,

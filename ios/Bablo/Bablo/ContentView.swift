@@ -13,7 +13,12 @@ struct ContentView: View {
 
     var body: some View {
         if (userAccount.isSignedIn) {
-            HomeView()
+            TabView {
+                HomeView()
+                    .tabItem {
+                        Label("Overview", systemImage: "house")
+                    }
+            }
         } else {
             WelcomeView()
         }

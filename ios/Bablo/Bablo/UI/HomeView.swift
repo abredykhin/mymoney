@@ -32,6 +32,18 @@ struct HomeView: View {
             }.task {
                 try? await bankAccountsService.refreshAccounts()
             }
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Home")
+                        .font(.headline)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink(destination: ProfileView()) {
+                        Image(systemName: "person.circle")
+                            .font(.title2)
+                    }
+                }
+            }
         }
     }
 }
