@@ -15,7 +15,6 @@ const alignedWithColorsAndTime = winston.format.combine(
   winston.format.colorize(),
   winston.format.timestamp(),
   winston.format.splat(),
-  winston.format.align(),
   winston.format.printf(
     info => `${info.timestamp} ${info.level}: ${info.message}`
   )
