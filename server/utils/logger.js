@@ -3,12 +3,7 @@ const DailyRotateFile = require('winston-daily-rotate-file');
 const path = require('path');
 const fs = require('fs');
 
-const logDir = path.join(__dirname, '../logs');
-
-// Create the logs directory if it doesn't exist
-if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir);
-}
+const logDir = '/opt/server/logs'; // Log to the mounted volume
 
 const logRotationTransport = new DailyRotateFile({
   filename: path.join(logDir, '%DATE%-app.log'),

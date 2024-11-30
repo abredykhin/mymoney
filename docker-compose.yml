@@ -10,6 +10,11 @@ volumes:
   server_data:
   db_data:
   app-logs:
+    driver: local
+    driver_opts:
+      type: none
+      device: /opt/app-logs/  # Replace with your desired path
+      o: bind  
   
 services:
   postgresdb:

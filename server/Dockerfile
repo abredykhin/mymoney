@@ -10,4 +10,7 @@ RUN npm cache clean --force && rm -rf node_modules && npm install
 
 COPY . .
 
+# Ensure logs directory exists
+RUN mkdir -p /opt/server/logs
+
 CMD ["npm", "start"]
