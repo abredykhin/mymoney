@@ -23,7 +23,9 @@
     "pg-promise": "^11.9.1",
     "plaid": "^28.0.0",
     "prettier": "^3.1.1",
-    "winston": "^3.14.2"
+    "supports-color": "^9.4.0",
+    "winston": "^3.14.2",
+    "winston-daily-rotate-file": "5.0.0"
   },
   "devDependencies": {
     "eslint": "^8.56.0",

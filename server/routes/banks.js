@@ -5,6 +5,7 @@ const { retrieveAccountsByItemId } = require('../db/queries/accounts');
 const { retrieveItemsByUser } = require('../db/queries/items');
 const { retrieveInstitutionById } = require('../db/queries/institutions');
 const { asyncWrapper, verifyToken } = require('../middleware');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -17,9 +18,12 @@ router.get(
   asyncWrapper(async (req, res) => {
     const { userId } = req;
     debug(`Querying db for items for user ${userId}`);
+    logger.info(`Querying db for items for user ${userId}`);
+
     const items = await retrieveItemsByUser(userId);
 
     debug(`Got ${items.length} banks from db. Processing...`);
+    logger.info(`Got ${items.length} banks from db. Processing...`);
 
     const banksWithAccounts = await Promise.all(
       items.map(async item => {
@@ -30,6 +34,8 @@ router.get(
         };
 
         debug('Looking up associated institution');
+        logger.info('Looking up associated institution');
+
         const institution = await retrieveInstitutionById(
           item.plaid_institution_id
         );
@@ -37,10 +43,12 @@ router.get(
         bank.primary_color = institution.primary_color;
 
         debug(`Looking up accounts at bank ${bank.id}`);
+        logger.info(`Looking up accounts at bank ${bank.id}`);
 
         // Fetch accounts for the current item
         const accounts = await retrieveAccountsByItemId(item.id);
         debug(`Got ${accounts.length} accounts`);
+        logger.info(`Got ${accounts.length} accounts`);
 
         // Add relevant account details to the bank object
         bank.accounts = accounts.map(account =>
@@ -60,6 +68,7 @@ router.get(
         );
 
         debug('Account processed');
+        logger.info('Account processed');
         return bank;
       })
     );
@@ -67,6 +76,7 @@ router.get(
     const result = banksWithAccounts.length > 0 ? banksWithAccounts : [];
 
     debug('Accounts ready. Sending the result to client');
+    logger.info('Accounts ready. Sending the result to client');
 
     res.json({ banks: result });
   })

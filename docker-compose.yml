@@ -9,6 +9,7 @@ volumes:
   pg_development_data:
   server_data:
   db_data:
+  app-logs:
   
 services:
   postgresdb:
@@ -46,6 +47,7 @@ services:
       - ./server:/opt/server  # <- Breaks bccrypt and discouraged generally
       - /opt/server/node_modules # anonymous volume for node_modules only
       - ./server/static:/opt/server/static # Mount the static folder only
+      - app-logs:/usr/src/app/logs      
 networks:
   app-network:
     driver: bridge

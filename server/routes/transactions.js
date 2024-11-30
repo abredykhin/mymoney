@@ -7,6 +7,7 @@ const {
 const { asyncWrapper, verifyToken } = require('../middleware');
 const _ = require('lodash');
 const debug = require('debug')('routes:transactions');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -22,8 +23,10 @@ router.get(
     const userId = req.userId;
     const limit = req.maxCount ?? 50;
     debug(`Retrieving user transactions for user ${userId}`);
+    logger.info('Retrieving user transactions for user %s', userId);
     const transactions = await retrieveTransactionsByUserId(userId, limit);
     debug('Got all the transactions. Sending them back');
+    logger.info('Got all the transactions. Sending them back');
     res.json(sanitizeTransactions(transactions));
   })
 );
@@ -42,6 +45,7 @@ router.get(
     const itemId = req.itemId;
     const limit = req.maxCount ?? 50;
     console.log(`Retrieving user transactions for item ${itemId}`);
+    logger.info('Retrieving user transactions for item %s', itemId);
     const transactions = await retrieveTransactionsByItemId(itemId, limit);
     res.json(sanitizeTransactions(transactions));
   })
@@ -61,6 +65,9 @@ router.get(
     const accountId = req.query.accountId;
     const limit = req.query.maxCount ?? 50;
     debug(
+      `Looking up user transactions for account ${accountId} and maxCount ${limit}`
+    );
+    logger.info(
       `Looking up user transactions for account ${accountId} and maxCount ${limit}`
     );
     const transactions = await retrieveTransactionsByAccountId(
@@ -93,6 +100,7 @@ router.get(
 
     const response = { transactions: sanitizedTransactions };
     debug('Sending the result back to client');
+    logger.info('Sending the result back to client');
     res.json(response);
   })
 );
@@ -111,6 +119,9 @@ router.get(
     const { userId } = req;
     const limit = req.query.maxCount ?? 10;
     debug(
+      `Looking up recent transactions for all accounts with maxCount ${limit}`
+    );
+    logger.info(
       `Looking up recent transactions for all accounts with maxCount ${limit}`
     );
     const transactions = await retrieveTransactionsByUserId(userId, limit);
@@ -140,6 +151,7 @@ router.get(
 
     const response = { transactions: sanitizedTransactions };
     debug('Sending the result back to client');
+    logger.info('Sending the result back to client');
     res.json(response);
   })
 );

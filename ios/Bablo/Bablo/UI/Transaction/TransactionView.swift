@@ -37,6 +37,7 @@ struct TransactionView : View {
     }
     
     func getColor() -> Color {
+        //switch transaction.x
         return transaction.amount > 0 ? .red : .teal
     }
 }
