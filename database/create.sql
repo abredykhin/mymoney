@@ -264,7 +264,10 @@ AS
   SELECT
     t.id,
     t.account_id,
-    t.user_id,
+    a.user_id,
+    a.plaid_account_id,
+    a.item_id,
+    a.plaid_item_id,
     t.amount,
     t.iso_currency_code,
     t.date,
@@ -282,7 +285,8 @@ AS
     t.created_at,
     t.updated_at
   FROM
-    transactions_table t;
+    transactions_table t
+    LEFT JOIN accounts a ON t.account_id = a.id;
 
 
 -- The link_events_table is used to log responses from the Plaid API for client requests to the

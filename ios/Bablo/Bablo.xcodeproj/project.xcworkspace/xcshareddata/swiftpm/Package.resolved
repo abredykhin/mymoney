@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/plaid/plaid-link-ios-spm",
       "state" : {
-        "revision" : "42726d04a5c6238636d4604698734eebf9b4b113",
-        "version" : "5.6.0"
+        "revision" : "a91f60df31fc89a7d90b08e4581ac27e0ab10ddb",
+        "version" : "6.0.0"
       }
     },
     {
