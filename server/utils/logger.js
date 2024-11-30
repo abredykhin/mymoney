@@ -6,8 +6,8 @@ const fs = require('fs');
 const logDir = path.join(__dirname, '../logs');
 
 // Create the logs directory if it doesn't exist
-if (!fs.existsSync(logDirectory)) {
-  fs.mkdirSync(logDirectory);
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir);
 }
 
 const logRotationTransport = new DailyRotateFile({
