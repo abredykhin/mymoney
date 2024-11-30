@@ -54,7 +54,6 @@ services:
       - ./server/static:/opt/server/static # Mount the static folder only
       - app-logs:/opt/server/logs # Persist logs using the app-logs volume
 
-  # Migration Service
   migrate:
     build: ./server
     env_file: ./.env
@@ -62,8 +61,8 @@ services:
       - postgresdb
     command: knex migrate:latest  # Run migrations
     volumes:
-      - ./server:/opt/server  # Required for migration scripts and knexfile.js
-      - app-logs:/opt/server/logs
+      - ./server:/opt/server:ro  # Mount server directory as read-only
+      - app-logs:/opt/server/logs  # Persist logs using app-logs volume
     networks:
       - app-network
 
