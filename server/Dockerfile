@@ -10,6 +10,8 @@ COPY ["package.json", "package-lock.json", "./"]
 
 RUN npm cache clean --force && rm -rf node_modules && npm install
 RUN npm install -g knex
+# Run migrations
+RUN knex migrate:latest  
 
 COPY . .
 
