@@ -37,6 +37,7 @@
 		7590F29F2C86471D00BCCDE6 /* LinkController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29B2C86471D00BCCDE6 /* LinkController.swift */; };
 		7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */; };
 		7590F2A72C865B9F00BCCDE6 /* BankListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F2A62C865B9F00BCCDE6 /* BankListView.swift */; };
+		759521A02CFD330A00655E7D /* BankDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7595219F2CFD330A00655E7D /* BankDetailView.swift */; };
 		75BB90CB2CA0E30E00D197A6 /* BankView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BB90CA2CA0E30E00D197A6 /* BankView.swift */; };
 		75E49BA52CA27E67008D72F8 /* TransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E49BA42CA27E67008D72F8 /* TransactionView.swift */; };
 		75E49BAA2CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv in Resources */ = {isa = PBXBuildFile; fileRef = 75E49BA92CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv */; };
@@ -95,6 +96,7 @@
 		7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkButtonView.swift; sourceTree = "<group>"; };
 		7590F29B2C86471D00BCCDE6 /* LinkController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkController.swift; sourceTree = "<group>"; };
 		7590F2A62C865B9F00BCCDE6 /* BankListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankListView.swift; sourceTree = "<group>"; };
+		7595219F2CFD330A00655E7D /* BankDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankDetailView.swift; sourceTree = "<group>"; };
 		75BB90CA2CA0E30E00D197A6 /* BankView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankView.swift; sourceTree = "<group>"; };
 		75E49BA42CA27E67008D72F8 /* TransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionView.swift; sourceTree = "<group>"; };
 		75E49BA92CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv */ = {isa = PBXFileReference; lastKnownFileType = text; path = "transactions-personal-finance-category-taxonomy.csv"; sourceTree = "<group>"; };
@@ -292,6 +294,7 @@
 				7590F2A62C865B9F00BCCDE6 /* BankListView.swift */,
 				75BB90CA2CA0E30E00D197A6 /* BankView.swift */,
 				755F88852C86B8D200BEE12A /* BankAccountView.swift */,
+				7595219F2CFD330A00655E7D /* BankDetailView.swift */,
 			);
 			path = Bank;
 			sourceTree = "<group>";
@@ -465,6 +468,7 @@
 				75BB90CB2CA0E30E00D197A6 /* BankView.swift in Sources */,
 				757ABF872C181D3400DF8CA8 /* UserAccount.swift in Sources */,
 				7573DA1B2CBCD7B20004EBE4 /* BudgetService.swift in Sources */,
+				759521A02CFD330A00655E7D /* BankDetailView.swift in Sources */,
 				757ABF772C181C3100DF8CA8 /* AuthMiddleware.swift in Sources */,
 				757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */,
 				75579F232CD6F2D800845A62 /* ProfileView.swift in Sources */,

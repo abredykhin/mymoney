@@ -11,10 +11,10 @@ struct BankAccountView : View {
     @State var account: BankAccount
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading) {
                 // Account Name
             Text(account.name)
-                .font(.title2)
+                .font(.title3)
                 .fontWeight(.bold)
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -22,6 +22,7 @@ struct BankAccountView : View {
             Text(account._type.capitalized)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
+                .padding(.bottom, 4)
             
                 // Account Balance
             HStack {
@@ -33,7 +34,7 @@ struct BankAccountView : View {
             
                 // Account Type (Optional: To add some visual interest)
         }
-        .padding(20)
+        .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.white)

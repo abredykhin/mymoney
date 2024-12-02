@@ -3,18 +3,6 @@
  * @returns { Promise<void> }
  */
 exports.up = async function (knex) {
-  await knex.raw('DROP VIEW IF EXISTS transactions');
-
-  // Drop foreign key constraints if any
-  await knex.schema.alterTable('transactions_table', table => {
-    table.dropForeign('user_id', 'transactions_table_user_id_fkey');
-  });
-
-  // Drop the column
-  knex.schema.alterTable('transactions_table', table => {
-    table.dropColumn('user_id');
-  });
-
   return await knex.raw(`
         CREATE VIEW transactions
         AS
@@ -51,8 +39,4 @@ exports.up = async function (knex) {
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
  */
-exports.down = async function (knex) {
-  return knex.schema.alterTable('items_table', function (table) {
-    table.integer('user_id').references('users_table.id').onDelete('CASCADE');
-  });
-};
+exports.down = function (knex) {};
