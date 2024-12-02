@@ -25,7 +25,7 @@ router.get(
     debug(`Retrieving user transactions for user ${userId}`);
     logger.info('Retrieving user transactions for user %s', userId);
     const transactions = await retrieveTransactionsByUserId(userId, limit);
-    debug('Got all the transactions. Sending them back');
+    debug(`Got ${transactions.length} transactions. Sending them back`);
     logger.info('Got all the transactions. Sending them back');
     res.json(sanitizeTransactions(transactions));
   })
@@ -47,6 +47,7 @@ router.get(
     console.log(`Retrieving user transactions for item ${itemId}`);
     logger.info('Retrieving user transactions for item %s', itemId);
     const transactions = await retrieveTransactionsByItemId(itemId, limit);
+    debug(`Got ${transactions.length} transactions. Sending them back`);
     res.json(sanitizeTransactions(transactions));
   })
 );
@@ -126,7 +127,7 @@ router.get(
     );
     const transactions = await retrieveTransactionsByUserId(userId, limit);
 
-    debug('Got the transactions. Processing...');
+    debug(`Got ${transactions.length} transactions. Processing`);
     const sanitizedTransactions = transactions.map(transaction =>
       _.pick(transaction, [
         'id',

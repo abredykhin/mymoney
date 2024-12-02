@@ -219,7 +219,7 @@ AS
     a.updated_at,
   FROM
     accounts_table a
-    LEFT JOIN items i ON i.id = a.item_id
+    LEFT JOIN items i ON i.id = a.item_id;
 
 -- TRANSACTIONS
 -- This table is used to store the transactions associated with each account. The view returns all

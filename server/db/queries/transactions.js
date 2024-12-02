@@ -46,40 +46,40 @@ const createOrUpdateTransactions = async transactions => {
       // Prepare the SQL query for each transaction
       const query = {
         text: `
-          INSERT INTO transactions_table
-            (
-              account_id,
-              amount,
-              iso_currency_code,
-              date,
-              authorized_date,
-              name,
-              merchant_name,
-              logo_url,
-              website,
-              payment_channel,
-              transaction_id,
-              personal_finance_category,
-              personal_finance_subcategory,
-              pending,
-              pending_transaction_transaction_id
-            )
-          VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-          ON CONFLICT (transaction_id) DO UPDATE 
-            SET 
-              amount = EXCLUDED.amount,
-              date = EXCLUDED.date,
-              name = EXCLUDED.name,
-              merchant_name = EXCLUDED.merchant_name,
-              logo_url = EXCLUDED.logo_url,
-              website = EXCLUDED.website,
-              payment_channel = EXCLUDED.payment_channel,
-              personal_finance_category = EXCLUDED.personal_finance_category,
-              personal_finance_subcategory = EXCLUDED.personal_finance_subcategory,
-              pending = EXCLUDED.pending,
-              pending_transaction_transaction_id = EXCLUDED.pending_transaction_transaction_id;
-        `,
+    INSERT INTO transactions_table
+      (
+        account_id,
+        amount,
+        iso_currency_code,
+        date,
+        authorized_date,
+        name,
+        merchant_name,
+        logo_url,
+        website,
+        payment_channel,
+        transaction_id,
+        personal_finance_category,
+        personal_finance_subcategory,
+        pending,
+        pending_transaction_transaction_id
+      )
+    VALUES
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    ON CONFLICT (transaction_id) DO UPDATE 
+      SET 
+        amount = EXCLUDED.amount,
+        date = EXCLUDED.date,
+        name = EXCLUDED.name,
+        merchant_name = EXCLUDED.merchant_name,
+        logo_url = EXCLUDED.logo_url,
+        website = EXCLUDED.website,
+        payment_channel = EXCLUDED.payment_channel,
+        personal_finance_category = EXCLUDED.personal_finance_category,
+        personal_finance_subcategory = EXCLUDED.personal_finance_subcategory,
+        pending = EXCLUDED.pending,
+        pending_transaction_transaction_id = EXCLUDED.pending_transaction_transaction_id;
+  `,
         values: [
           id,
           amount,
@@ -95,7 +95,7 @@ const createOrUpdateTransactions = async transactions => {
           personal_finance_category || null,
           personal_finance_subcategory || null,
           pending,
-          pending_transaction_transaction_id || null,
+          pending_transaction_transaction_id || null, // $15 is the last value
         ],
       };
 

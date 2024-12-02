@@ -27,6 +27,11 @@ const syncTransactions = async plaidItemId => {
   const { added, modified, removed, cursor, accessToken } =
     await fetchNewSyncData(plaidItemId);
 
+  if (!accessToken) {
+    debug('Failed to sync item. Cutting it short');
+    return;
+  }
+
   const request = {
     access_token: accessToken,
   };
@@ -81,7 +86,7 @@ const fetchNewSyncData = async plaidItemId => {
   if (!item) {
     fetchNewSyncDataDebug('Item not found in db. Aborting sync operation');
     logger.error(`Item not found in db. Aborting sync operation`);
-    return { added, modified, removed, cursor, accessToken };
+    return {};
   }
 
   const {

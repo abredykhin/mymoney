@@ -89,7 +89,7 @@ router.post(
     });
     const accessToken = response.data.access_token;
     const itemId = response.data.item_id;
-    debug('Storing item info in db...');
+    debug(`Storing item ${itemId} info in db...`);
     logger.info('Storing item info in db...');
 
     // store the item in the database.
@@ -101,10 +101,10 @@ router.post(
       institutionResponse.data.institution.name
     );
 
-    debug('Syncing item transactions...');
+    debug(`Syncing item ${itemId} transactions...`);
     logger.info('Syncing item transactions...');
 
-    await syncTransactions(userId, itemId).then(() => {
+    await syncTransactions(itemId).then(() => {
       // Notify frontend to reflect any transactions changes.
       // TODO:
       //req.io.emit('NEW_TRANSACTIONS_DATA', { itemId: newItem.id });
