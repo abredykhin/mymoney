@@ -322,6 +322,21 @@ CREATE TABLE plaid_api_events_table
   created_at timestamptz default now()
 );
 
+CREATE TABLE refresh_jobs (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users_table(id) ON DELETE CASCADE,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+  job_type TEXT NOT NULL CHECK (job_type IN ('manual', 'scheduled')),
+  job_id TEXT UNIQUE,
+  last_refresh_time TIMESTAMPTZ,
+  next_scheduled_time TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  error_message TEXT
+);
+
+CREATE INDEX refresh_jobs_user_id_idx ON refresh_jobs(user_id);
+CREATE INDEX refresh_jobs_status_idx ON refresh_jobs(status);
 CREATE INDEX idx_items_plaid_item_id ON items_table(plaid_item_id);
 CREATE INDEX idx_transactions_transaction_id ON transactions_table(transaction_id);
 CREATE INDEX idx_sessions_token ON sessions_table(token);

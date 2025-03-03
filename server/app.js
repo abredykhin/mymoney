@@ -14,6 +14,7 @@ const path = require('path'); // Add this line
 const http = require('http');
 const https = require('https');
 const debug = require('debug')('app');
+const refreshService = require('./controllers/dataRefresher');
 require('dotenv').config();
 
 const app = express();
@@ -50,6 +51,14 @@ const startHttpsServer = () => {
   }
 };
 
+const initApp = async () => {
+  if (isProduction) {
+    await refreshService.initializeScheduledRefreshes();
+  }
+
+  // You can move more initialization code here if needed
+};
+
 // Start both HTTP and HTTPS
 if (isProduction) {
   debug('Starting in production mode');
@@ -77,6 +86,12 @@ app.get('/status', (request, response) => {
 
   response.send(status);
 });
+
+if (isProduction) {
+  initApp().catch(err => {
+    console.error('Failed to initialize refresh service:', err);
+  });
+}
 
 app.use('/users', auth);
 app.use('/link-token', linkTokens);

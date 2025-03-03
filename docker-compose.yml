@@ -1,4 +1,11 @@
 version: "3.4"
+      DB_PORT: 5432
+      DB_HOST_NAME: postgresdb
+      NODE_ENV: development
+      REDIS_HOST: redis       # Added space after colon
+      REDIS_PORT: 6379       # Added space after colon
+    depends_on:
+      - postgresdb
 
 #x-common-variables: &common-variables
 #  POSTGRES_USER: postgres
@@ -9,6 +16,7 @@ volumes:
   pg_development_data:
   server_data:
   db_data:
+  redis-data:  
   app-logs:
     driver: local
     driver_opts:
@@ -24,6 +32,15 @@ services:
     volumes:
       - ./db-data:/var/lib/postgresql/data
       - ./database/create.sql:/docker-entrypoint-initdb.d/create.sql   
+
+  # Redis service for Bull queue
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
 
   server:
     build: ./server
@@ -44,8 +61,11 @@ services:
       DB_PORT: 5432
       DB_HOST_NAME: postgresdb
       NODE_ENV: development
+      REDIS_HOST: redis
+      REDIS_PORT: 6379      
     depends_on:
       - postgresdb
+      - redis
     stdin_open: true
     tty: true
     volumes:
