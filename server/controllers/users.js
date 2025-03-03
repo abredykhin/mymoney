@@ -76,4 +76,4 @@ const debugChangePassword = async req => {
   }
 };
 
-module.exports = { registerUser, loginUser };
+module.exports = { registerUser, loginUser, debugChangePassword };
