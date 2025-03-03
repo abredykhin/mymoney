@@ -4,7 +4,7 @@
 const Bull = require('bull');
 const debug = require('debug')('services:refresh');
 const logger = require('../utils/logger');
-const refreshQueries = require('../queries/refresh');
+const refreshQueries = require('../db/queries/dataRefresh');
 
 // Create Bull queue with Redis
 const refreshQueue = new Bull('data-refresh', {
