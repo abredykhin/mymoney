@@ -95,11 +95,14 @@ const getProcessingJob = async userId => {
 const updateNextScheduledTime = async (userId, nextScheduledTime) => {
   const query = {
     text: `
-      UPDATE refresh_jobs 
-      SET next_scheduled_time = $2 
-      WHERE user_id = $1 AND status = 'completed'
-      ORDER BY updated_at DESC
-      LIMIT 1
+      UPDATE refresh_jobs
+      SET next_scheduled_time = $2
+      WHERE id = (
+        SELECT id FROM refresh_jobs
+        WHERE user_id = $1 AND status = 'completed'
+        ORDER BY updated_at DESC
+        LIMIT 1
+      )
       RETURNING *;
     `,
     values: [userId, nextScheduledTime],
