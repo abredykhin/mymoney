@@ -74,11 +74,11 @@ router.get(
  * -  total of all debits accross all user accounts
  * -  total of all credits accross all user accounts
  * -  last 5 transactions
- * 
+ *
  * @param userId user id in the request body
  * @param forcedRefresh indicates whethere this request is forced refresh. If so, we make a call to Plaid API to refresh user accounts and transactions.
  */
-router.get('summary', verifyToken, asyncWrapper(async (req, res) => {
-  
-});
+// router.get('summary', verifyToken, asyncWrapper(async (req, res) => {
+
+// });
 module.exports = router;
