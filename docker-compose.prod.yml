@@ -5,7 +5,7 @@ services:
       - ${SSL_CERT_PATH}:${SSL_CERT_PATH}:ro
       - ${SSL_KEY_PATH}:${SSL_KEY_PATH}:ro
     build:
-      context: .
+      context: ./server
       args:
         - NODE_ENV=production
     environment:
