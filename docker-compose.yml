@@ -31,9 +31,6 @@ services:
       - redis-data:/data
     restart: unless-stopped
     command: redis-server --appendonly yes
-    sysctls:
-      - net.core.somaxconn=511
-      - vm.overcommit_memory=1    
 
   server:
     build: ./server
