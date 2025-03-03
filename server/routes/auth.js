@@ -49,7 +49,7 @@ router.post(
 
 if (process.env.NODE_ENV === 'development') {
   router.post(
-    `debug-change-password`,
+    `/debug-change-password`,
     asyncWrapper(async (req, res) => {
       debug('Changing user password.');
       logger.info('Changing user password.');
