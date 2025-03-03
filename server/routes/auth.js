@@ -53,7 +53,7 @@ if (process.env.NODE_ENV === 'development') {
     asyncWrapper(async (req, res) => {
       debug('Changing user password.');
       logger.info('Changing user password.');
-      const user = await usersController.changePassword(req);
+      const user = await usersController.debugChangePassword(req);
       const userToReturn = utils.sanitizeUserObject(user);
       debug('Password changed.');
       logger.info('Password changed.');
