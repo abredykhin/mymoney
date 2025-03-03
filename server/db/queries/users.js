@@ -88,10 +88,25 @@ const retrieveUsers = async () => {
   return users;
 };
 
+/**
+ * Updates user password.
+ *
+ * @returns {Object} a user.
+ */
+const updateUserPassword = async (userId, password) => {
+  const query = {
+    text: 'UPDATE users SET password = $1 WHERE id = $2 RETURNING *',
+    values: [password, userId],
+  };
+  const res = await db.query(query);
+  return res.rows[0];
+};
+
 module.exports = {
   createUser,
   deleteUsers,
   retrieveUserById,
   retrieveUserByUsername,
   retrieveUsers,
+  updateUserPassword,
 };

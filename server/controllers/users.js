@@ -65,7 +65,7 @@ const debugChangePassword = async req => {
     const hashedPassword = await bcrypt.hash(newPassword, salt);
     debug('Password hashed. Updating user in db...');
     const updatedUser = await usersQueries.updateUserPassword(
-      username,
+      user.id,
       hashedPassword
     );
     debug('Password updated.');
