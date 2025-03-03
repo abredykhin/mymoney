@@ -47,4 +47,19 @@ router.post(
   })
 );
 
+if (process.env.NODE_ENV === 'development') {
+  router.post(
+    `debug-change-password`,
+    asyncWrapper(async (req, res) => {
+      debug('Changing user password.');
+      logger.info('Changing user password.');
+      const user = await usersController.changePassword(req);
+      const userToReturn = utils.sanitizeUserObject(user);
+      debug('Password changed.');
+      logger.info('Password changed.');
+      res.status(200).json(userToReturn);
+    })
+  );
+}
+
 module.exports = router;

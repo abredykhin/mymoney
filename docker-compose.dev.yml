@@ -12,4 +12,13 @@ services:
 
   postgresdb:
     ports:
-      - 5432:5432      
+      - 5432:5432
+
+services:
+  server:
+    build:
+      context: .
+      args:
+        - NODE_ENV=development
+      environment:
+        - NODE_ENV=development      

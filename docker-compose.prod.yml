@@ -4,3 +4,9 @@ services:
     volumes:
       - ${SSL_CERT_PATH}:${SSL_CERT_PATH}:ro
       - ${SSL_KEY_PATH}:${SSL_KEY_PATH}:ro
+    build:
+      context: .
+      args:
+        - NODE_ENV=production
+      environment:
+        - NODE_ENV=production        

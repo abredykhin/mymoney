@@ -1,6 +1,8 @@
 FROM node:21-alpine
 
-ENV NODE_ENV=production
+# Use ARG to accept build-time variables
+ARG NODE_ENV=production
+ENV NODE_ENV=$NODE_ENV
 
 WORKDIR /opt/server
 
