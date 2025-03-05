@@ -203,26 +203,56 @@ class RefreshService {
 
   /**
    * Performs manual refresh for all users in the system.
+   * @returns {Promise<Object>} Result of the operation with job IDs
    */
-
   async requestManualRefreshAllUsers() {
     this._log('Requesting manual refresh for all users');
 
     try {
-      // Check if a refresh is already in progress
-      if (await this._isRefreshInProgress()) {
+      // Get all user IDs
+      const userIds = await refreshQueries.getAllUserIds();
+
+      if (userIds.length === 0) {
+        this._log('No users found for refresh');
         return {
           success: false,
-          message: 'A data refresh is already in progress',
+          message: 'No users found for refresh',
         };
       }
-      // Create and schedule the job for all users
-      const jobs = await this._createAndScheduleJobsForAllUsers();
-      this._log(`Manual refresh queued for all users`);
+
+      // Queue refresh jobs for all users
+      const jobResults = [];
+      for (const userId of userIds) {
+        try {
+          // Use the existing requestManualRefresh method for each user
+          const result = await this.requestManualRefresh(userId);
+          jobResults.push({ userId, ...result });
+        } catch (err) {
+          this._log(
+            `Failed to queue refresh for user ${userId}: ${err.message}`,
+            'error'
+          );
+          jobResults.push({
+            userId,
+            success: false,
+            message: `Failed to queue: ${err.message}`,
+          });
+        }
+      }
+
+      // Count successful jobs
+      const successCount = jobResults.filter(job => job.success).length;
+
+      this._log(
+        `Manual refresh queued for ${successCount} out of ${userIds.length} users`
+      );
+
       return {
-        success: true,
-        jobIds: jobs.map(job => job.id),
-        message: 'Refresh has been queued for all users',
+        success: successCount > 0,
+        totalUsers: userIds.length,
+        successfulJobs: successCount,
+        jobResults,
+        message: `Refresh has been queued for ${successCount} out of ${userIds.length} users`,
       };
     } catch (err) {
       this._log(
