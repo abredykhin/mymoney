@@ -112,7 +112,7 @@ const initializeServices = async () => {
 
       // Initialize scheduled refreshes
       await refreshService.initializeScheduledRefreshes();
-
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
       // Trigger immediate refresh for all users
       await refreshService.refreshAllUsers();
 
