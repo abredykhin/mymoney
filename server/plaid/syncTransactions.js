@@ -84,8 +84,12 @@ const fetchNewSyncData = async plaidItemId => {
   fetchNewSyncDataDebug('Looking up item in db');
   const item = await retrieveItemByPlaidItemId(plaidItemId);
   if (!item) {
-    fetchNewSyncDataDebug('Item not found in db. Aborting sync operation');
-    logger.error(`Item not found in db. Aborting sync operation`);
+    fetchNewSyncDataDebug(
+      `Item ${plaidItemId} not found in db. Aborting sync operation`
+    );
+    logger.error(
+      `Item ${plaidItemId} not found in db. Aborting sync operation`
+    );
     return {};
   }
 
@@ -96,7 +100,9 @@ const fetchNewSyncData = async plaidItemId => {
 
   let cursor = lastCursor;
   const batchSize = 100;
-  fetchNewSyncDataDebug('Item found. Beginning comms with Plaid');
+  fetchNewSyncDataDebug(
+    `Item ${plaidItemId} found. Beginning comms with Plaid`
+  );
   try {
     // Iterate through each page of new transaction updates for item
     while (hasMore) {
