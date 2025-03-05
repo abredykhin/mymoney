@@ -108,7 +108,7 @@ const startHttpsServer = () => {
 const initializeServices = async () => {
   if (isProduction) {
     try {
-      debug('Initializing refresh services');
+      debug('Initializing refresh services...');
 
       // Initialize scheduled refreshes
       await refreshService.initializeScheduledRefreshes();
