@@ -11,8 +11,7 @@ WORKDIR /opt/server
 
 COPY . . 
 
-RUN npm cache clean --force && rm -rf node_modules && npm install
-RUN npm install -g knex
+RUN npm install
 
 # Ensure logs directory exists
 RUN mkdir -p /opt/server/logs
