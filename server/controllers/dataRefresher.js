@@ -149,9 +149,17 @@ class RefreshService {
    */
   async _createAndScheduleJob(userId) {
     // Cancel any pending jobs for this user
-    this._log(`Canceling any pending jobs for user ${userId}`);
-    await refreshQueue.clean(0, 'delayed', `userId:${userId}`);
-
+    try {
+      // Cancel any pending jobs for this user
+      this._log(`Canceling any pending jobs for user ${userId}`);
+      await refreshQueue.clean(0, 'delayed', `userId:${userId}`); // Keep this line
+    } catch (error) {
+      // Log the error, but don't let it halt the process
+      this._log(
+        `Error cleaning delayed jobs (likely empty data): ${error.message}`,
+        'error'
+      );
+    }
     // Create a new job record
     this._log(`Creating a new job record for user ${userId}`);
     const newJob = await refreshQueries.createRefreshJob(userId, 'manual');
