@@ -2,6 +2,13 @@ const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
 const fs = require('fs');
+const path = require('path');
+const http = require('http');
+const https = require('https');
+const debug = require('debug')('app');
+require('dotenv').config();
+
+// Routes
 const auth = require('./routes/auth');
 const banks = require('./routes/banks');
 const budget = require('./routes/budget');
@@ -9,100 +16,138 @@ const transactions = require('./routes/transactions');
 const linkTokens = require('./routes/linkTokens');
 const webhook = require('./routes/webhook');
 const items = require('./routes/items');
-const { errorHandler } = require('./middleware');
-const path = require('path'); // Add this line
-const http = require('http');
-const https = require('https');
-const debug = require('debug')('app');
-const refreshService = require('./controllers/dataRefresher');
-require('dotenv').config();
 
+// Middleware and services
+const { errorHandler } = require('./middleware');
+const refreshService = require('./controllers/dataRefresher');
+
+// Configuration
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isProduction = process.env.APP_ENV === 'production';
 
-// Serve static files
-app.use('/.well-known', express.static(path.join(__dirname, 'static')));
+/**
+ * Configures Express middleware and routes
+ */
+const configureApp = () => {
+  // Logging middleware based on environment
+  app.use(morgan(isProduction ? 'common' : 'dev'));
 
-// Function to start the HTTP server
-const startHttpServer = () => {
-  http.createServer(app).listen(PORT, () => {
-    debug(`HTTP Server running on port ${PORT}`);
+  // Standard middleware
+  app.use(cors());
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
+  app.disable('etag');
+
+  // Serve static files
+  app.use('/.well-known', express.static(path.join(__dirname, 'static')));
+
+  // Basic status endpoint
+  app.get('/status', (req, res) => {
+    res.send({ Status: 'Running' });
+  });
+
+  // Register routes
+  app.use('/users', auth);
+  app.use('/link-token', linkTokens);
+  app.use('/plaid', webhook);
+
+  // Routes requiring authentication
+  app.use('/items', items);
+  app.use('/banks', banks);
+  app.use('/transactions', transactions);
+  app.use('/budget', budget);
+
+  // Error handling
+  app.use((err, req, res, next) => {
+    console.error('Error caught:', err);
+    errorHandler(err, req, res, next);
   });
 };
 
-// Function to start the HTTPS server
-const startHttpsServer = () => {
-  const certKey = process.env.SSL_KEY_PATH; // Read from .env
-  const certFullChain = process.env.SSL_CERT_PATH; // Read from .env
+/**
+ * Starts HTTP server
+ */
+const startHttpServer = () => {
+  return new Promise(resolve => {
+    const server = http.createServer(app).listen(PORT, () => {
+      debug(`HTTP Server running on port ${PORT}`);
+      resolve(server);
+    });
+  });
+};
 
-  // Check if certificate files exist
-  if (fs.existsSync(certKey) && fs.existsSync(certFullChain)) {
+/**
+ * Starts HTTPS server if certificates exist
+ */
+const startHttpsServer = () => {
+  const certKey = process.env.SSL_KEY_PATH;
+  const certFullChain = process.env.SSL_CERT_PATH;
+
+  if (!fs.existsSync(certKey) || !fs.existsSync(certFullChain)) {
+    debug('SSL certificates not found. HTTPS server not started.');
+    return Promise.resolve(null);
+  }
+
+  return new Promise(resolve => {
     const options = {
       key: fs.readFileSync(certKey),
       cert: fs.readFileSync(certFullChain),
     };
 
-    https.createServer(options, app).listen(443, () => {
+    const server = https.createServer(options, app).listen(443, () => {
       debug('HTTPS Server running on port 443');
+      resolve(server);
     });
-  } else {
-    debug('SSL certificates not found. HTTPS server not started.');
-  }
-};
-
-const initApp = async () => {
-  if (isProduction) {
-    await refreshService.initializeScheduledRefreshes();
-  }
-
-  // You can move more initialization code here if needed
-};
-
-// Start both HTTP and HTTPS
-if (isProduction) {
-  debug('Starting in production mode');
-  startHttpsServer();
-  startHttpServer(); // Optionally serve HTTP for non-SSL requests
-} else {
-  debug('Starting in dev mode');
-  startHttpServer(); // In development, only serve HTTP
-}
-
-if (isProduction) {
-  app.use(morgan('common'));
-} else {
-  app.use(morgan('dev'));
-}
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.disable('etag');
-
-app.get('/status', (request, response) => {
-  const status = {
-    Status: 'Running',
-  };
-
-  response.send(status);
-});
-
-if (isProduction) {
-  initApp().catch(err => {
-    console.error('Failed to initialize refresh service:', err);
   });
-}
+};
 
-app.use('/users', auth);
-app.use('/link-token', linkTokens);
-app.use('/plaid', webhook);
-// The rest of routes require token
-app.use('/items', items);
-app.use('/banks', banks);
-app.use('/transactions', transactions);
-app.use('/budget', budget);
+/**
+ * Initializes services and scheduled tasks
+ */
+const initializeServices = async () => {
+  if (isProduction) {
+    try {
+      debug('Initializing refresh services');
 
-app.use((err, req, res, next) => {
-  console.error('Error caught:', err);
-  errorHandler(err, req, res, next);
+      // Initialize scheduled refreshes
+      await refreshService.initializeScheduledRefreshes();
+
+      // Trigger immediate refresh for all users
+      await refreshService.refreshAllUsers();
+
+      debug('Refresh services initialized successfully');
+    } catch (err) {
+      console.error('Failed to initialize refresh service:', err);
+    }
+  }
+};
+
+/**
+ * Main application startup function
+ */
+const startApp = async () => {
+  // Configure the Express app
+  configureApp();
+
+  // Start servers based on environment
+  debug(`Starting in ${isProduction ? 'production' : 'dev'} mode`);
+
+  if (isProduction) {
+    await Promise.all([
+      startHttpsServer(),
+      startHttpServer(), // Also start HTTP for redirects/health checks
+    ]);
+  } else {
+    await startHttpServer();
+  }
+
+  // Initialize background services
+  await initializeServices();
+};
+
+// Start the application
+startApp().catch(err => {
+  console.error('Failed to start application:', err);
+  process.exit(1);
 });

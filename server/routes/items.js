@@ -19,11 +19,10 @@ const {
   sanitizeAccounts,
   sanitizeItem,
   sanitizeItems,
-  sanitizeTransactions,
   isValidItemStatus,
   validItemStatuses,
 } = require('../utils/sanitize');
-const syncTransactions = require('../plaid/syncTransactions');
+const syncTransactions = require('../controllers/transactions');
 const debug = require('debug')('routes:items');
 const router = express.Router();
 const logger = require('../utils/logger');

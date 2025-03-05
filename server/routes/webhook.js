@@ -1,6 +1,6 @@
 const express = require('express');
 const { asyncWrapper } = require('../middleware');
-const syncTransactions = require('../plaid/syncTransactions');
+const syncTransactions = require('../controllers/transactions');
 const debug = require('debug')('routes:webhook');
 const router = express.Router();
 const logger = require('../utils/logger');
