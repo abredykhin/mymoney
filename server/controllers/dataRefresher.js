@@ -104,7 +104,7 @@ class RefreshService {
    */
   async _performDataRefresh(userId) {
     debug(`Starting data refresh for user ${userId}`);
-    logger.log(`Performing data refresh for user ${userId}`);
+    logger.info(`Performing data refresh for user ${userId}`);
 
     const plaidItemIds = await db.queryItemsByUser(userId);
 
