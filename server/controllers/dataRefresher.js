@@ -5,7 +5,7 @@ const Bull = require('bull');
 const debug = require('debug')('services:refresh');
 const logger = require('../utils/logger');
 const refreshQueries = require('../db/queries/dataRefresh');
-const itemQueries = require('../db/queries/items');
+const { retrieveItemsByUser } = require('../db/queries/items');
 
 // Create Bull queue with Redis
 const refreshQueue = new Bull('data-refresh', {
@@ -107,7 +107,7 @@ class RefreshService {
     debug(`Starting data refresh for user ${userId}`);
     logger.info(`Performing data refresh for user ${userId}`);
 
-    const plaidItems = await retrieveItemsByUser.retrieveItemsByUser(userId);
+    const plaidItems = await retrieveItemsByUser(userId);
 
     // Invoke sync transactions for each plaid itemId
     for (const plaidItem of plaidItems) {
