@@ -6,6 +6,7 @@ const debug = require('debug')('services:refresh');
 const logger = require('../utils/logger');
 const refreshQueries = require('../db/queries/dataRefresh');
 const { retrieveItemsByUser } = require('../db/queries/items');
+const syncTransactions = require('../controllers/transactions');
 
 // Create Bull queue with Redis
 const refreshQueue = new Bull('data-refresh', {
