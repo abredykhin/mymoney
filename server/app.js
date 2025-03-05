@@ -116,7 +116,7 @@ const initializeServices = async () => {
       // Trigger immediate refresh for all users
       await refreshService.refreshAllUsers();
 
-      debug('Refresh services initialized successfully');
+      debug('Refresh services initialized successfully!');
     } catch (err) {
       console.error('Failed to initialize refresh service:', err);
     }
