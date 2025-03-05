@@ -58,9 +58,17 @@ if (process.env.NODE_ENV === 'production') {
       filename: path.join(logDir, 'rejections.log'),
     })
   );
+
+  // Always add console transport for errors even in production
+  logger.add(
+    new winston.transports.Console({
+      format: alignedWithColorsAndTime,
+      level: 'error', // Only log errors to console in production
+    })
+  );
 }
 
-// Always add console transport for non-production environments
+// Add full console transport for non-production environments
 if (process.env.NODE_ENV !== 'production') {
   logger.add(
     new winston.transports.Console({
@@ -68,5 +76,18 @@ if (process.env.NODE_ENV !== 'production') {
     })
   );
 }
+
+// Add exception and rejection handlers to console in all environments
+logger.exceptions.handle(
+  new winston.transports.Console({
+    format: alignedWithColorsAndTime,
+  })
+);
+
+logger.rejections.handle(
+  new winston.transports.Console({
+    format: alignedWithColorsAndTime,
+  })
+);
 
 module.exports = logger;
