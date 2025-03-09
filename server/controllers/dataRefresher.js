@@ -121,15 +121,20 @@ class RefreshService {
         const adjustedInterval = intervalHours + randomOffset / 60;
 
         await this._scheduleNextRefresh(userId, adjustedInterval);
+        debug(
+          `Initialized scheduled refresh for user ${userId} at ${adjustedInterval}`
+        );
         logger.info(
           `Initialized scheduled refresh for user ${userId} at ${adjustedInterval}`
         );
       }
 
+      debug(`Scheduled refreshes initialized for ${userIds.length} users`);
       logger.info(
         `Scheduled refreshes initialized for ${userIds.length} users`
       );
     } catch (err) {
+      debug(`Failed to initialize scheduled refreshes: ${err.message}`);
       logger.error(`Failed to initialize scheduled refreshes: ${err.message}`);
       throw err;
     }
@@ -161,6 +166,7 @@ class RefreshService {
         errorMessage: status.error_message,
       };
     } catch (err) {
+      debug(`Failed to get refresh status: ${err.message}`);
       logger.error(`Failed to get refresh status: ${err.message}`);
       throw err;
     }
@@ -271,7 +277,7 @@ class RefreshService {
       const job = await this._createAndScheduleJob(userId);
 
       debug(`Manual refresh queued for user ${userId}`);
-      log;
+      logger.info(`Manual refresh queued for user ${userId}`);
       return {
         success: true,
         jobId: job.id,
