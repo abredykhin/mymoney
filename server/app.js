@@ -108,12 +108,10 @@ const startHttpsServer = () => {
 const initializeServices = async () => {
   if (isProduction) {
     try {
-      debug('Initializing refresh services...');
-
-      // Initialize scheduled refreshes
+      debug('Initializing scheduled refreshes');
       await refreshService.initializeScheduledRefreshes();
       await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
-      // Trigger immediate refresh for all users
+      debug('Triggering data refresh for all users');
       await refreshService.refreshAllUsers();
 
       debug('Refresh services initialized successfully!');

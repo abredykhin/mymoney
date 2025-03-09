@@ -129,8 +129,12 @@ const fetchNewSyncData = async plaidItemId => {
       cursor = data.next_cursor;
     }
   } catch (err) {
-    fetchNewSyncDataDebug(`Error fetching transactions: ${err.message}`);
-    logger.error(`Error fetching transactions: ${err.message}`);
+    fetchNewSyncDataDebug(
+      `Error fetching transactions for plaidItemId: ${plaidItemId}: ${err.message}`
+    );
+    logger.error(
+      `Error fetching transactions for plaidItemId: ${plaidItemId}: ${err.message}`
+    );
     cursor = lastCursor;
   }
   return { added, modified, removed, cursor, accessToken };
