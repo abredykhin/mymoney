@@ -94,10 +94,8 @@ const fetchNewSyncData = async plaidItemId => {
     return {};
   }
 
-  const {
-    plaid_access_token: accessToken,
-    last_transactions_update_cursor: lastCursor,
-  } = item;
+  const { plaid_access_token: accessToken, transactions_cursor: lastCursor } =
+    item;
 
   let cursor = lastCursor;
   debugCursor(`Cursor at start of sync: ${cursor}`);
