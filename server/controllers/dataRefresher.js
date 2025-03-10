@@ -222,7 +222,7 @@ class RefreshService {
     try {
       // Cancel any pending jobs for this user
       debug(`Canceling any pending jobs for user ${userId}`);
-      logger(`Canceling any pending jobs for user ${userId}`);
+      logger.info(`Canceling any pending jobs for user ${userId}`);
       await refreshQueue.clean(0, 'delayed', `userId:${userId}`); // Keep this line
     } catch (error) {
       // Log the error, but don't let it halt the process
