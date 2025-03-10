@@ -11,6 +11,7 @@ const {
   updateItemTransactionsCursor,
 } = require('../db/queries');
 const debug = require('debug')('plaid:syncTransactions');
+const debugCursor = require('debug')('plaid:cursorDebug');
 const logger = require('../utils/logger');
 const Boom = require('@hapi/boom');
 
@@ -99,6 +100,8 @@ const fetchNewSyncData = async plaidItemId => {
   } = item;
 
   let cursor = lastCursor;
+  debugCursor(`Cursor at start of sync: ${cursor}`);
+
   const batchSize = 100;
   fetchNewSyncDataDebug(
     `Item ${plaidItemId} found. Beginning comms with Plaid`
@@ -127,6 +130,7 @@ const fetchNewSyncData = async plaidItemId => {
       );
       // Update cursor to the next cursor
       cursor = data.next_cursor;
+      debugCursor(`Updated cursor to ${cursor}`);
     }
   } catch (err) {
     fetchNewSyncDataDebug(
@@ -137,6 +141,7 @@ const fetchNewSyncData = async plaidItemId => {
     );
     cursor = lastCursor;
   }
+  debugCursor(`Finished sync. Returning cursor: ${cursor}`);
   return { added, modified, removed, cursor, accessToken };
 };
 
