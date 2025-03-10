@@ -66,15 +66,6 @@ const retrieveUserByUsername = async username => {
   return res.rows[0];
 };
 
-const retrieveUserByPlaidItemId = async plaidItemId => {
-  const query = {
-    text: 'SELECT * FROM users WHERE plaid_item_id = $1',
-    values: [plaidItemId],
-  };
-  const res = await db.query(query);
-  return res.rows[0];
-};
-
 /**
  * Retrieves all users.
  *

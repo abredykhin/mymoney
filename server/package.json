@@ -4,9 +4,9 @@
   "description": "MyMoney app",
   "main": "app.js",
   "scripts": {
-    "test": "test",
     "start": "nodemon app.js",
-    "debug": "nodemon --inspect=0.0.0.0:9229 app.js"
+    "debug": "nodemon --inspect=0.0.0.0:9229 app.js",
+    "test": "jest"
   },
   "author": "abredykhin",
   "license": "ISC",
@@ -33,6 +33,11 @@
   "devDependencies": {
     "eslint": "8.57.1",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.31.0"
+    "eslint-plugin-import": "^2.31.0",
+    "jest": "^29.7.0",
+    "mock-knex": "^0.4.13",
+    "pg-mock": "^1.0.1",
+    "sinon": "^19.0.2",
+    "supertest": "^7.0.0"
   }
 }
