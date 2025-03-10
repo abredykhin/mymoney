@@ -138,8 +138,10 @@ const retrieveItemsByUser = async userId => {
  * @param {string} status the status of the item.
  */
 const updateItemStatus = async (itemId, status) => {
+  debug(`Running db query to update item status for ${itemId} to ${status}`);
+
   const query = {
-    text: 'UPDATE items SET status = $1 WHERE plaid_item_id = $2',
+    text: 'UPDATE items_table SET status = $1 WHERE plaid_item_id = $2',
     values: [status, itemId],
   };
   await db.query(query);
@@ -152,8 +154,11 @@ const updateItemStatus = async (itemId, status) => {
  * @param {string} transactionsCursor latest observed transactions cursor on this item.
  */
 const updateItemTransactionsCursor = async (itemId, transactionsCursor) => {
+  debug(
+    `Running db query to update item transactions cursor for ${itemId} to ${transactionsCursor}`
+  );
   const query = {
-    text: 'UPDATE items SET transactions_cursor = $1 WHERE plaid_item_id = $2',
+    text: 'UPDATE items_table SET transactions_cursor = $1 WHERE plaid_item_id = $2',
     values: [transactionsCursor, itemId],
   };
   await db.query(query);
