@@ -49,16 +49,37 @@ const asyncWrapper = fn => (req, res, next) => {
  * @param {Object} res the Express response object.
  * @param {Function} next the Express next callback.
  */
+/**
+ * @file Fixed errorHandler function for middleware
+ */
+
 const errorHandler = (err, req, res, next) => {
   const errorHandlerDebug = debug.extend('errorHandler');
-
   errorHandlerDebug('Got an unhandled error!');
   let error = err;
 
   // handle errors from the Plaid api.
   if (error.name === 'PlaidError') {
     errorHandlerDebug('The error came fom Plaid.');
-    error = new Boom(error.error_message, { statusCode: error.status_code });
+    // Use the correct Boom factory function based on status code
+    if (error.status_code === 400) {
+      error = Boom.badRequest(error.error_message);
+    } else if (error.status_code === 401) {
+      error = Boom.unauthorized(error.error_message);
+    } else if (error.status_code === 403) {
+      error = Boom.forbidden(error.error_message);
+    } else if (error.status_code === 404) {
+      error = Boom.notFound(error.error_message);
+    } else if (error.status_code === 409) {
+      error = Boom.conflict(error.error_message);
+    } else if (error.status_code >= 500) {
+      error = Boom.badImplementation(error.error_message);
+    } else {
+      // Default to a generic error with the status code
+      error = Boom.boomify(new Error(error.error_message), {
+        statusCode: error.status_code,
+      });
+    }
   }
 
   // handle standard javascript errors.
@@ -109,7 +130,7 @@ const verifyToken = async (req, res, next) => {
 
     next();
   } else {
-    debug('Auth header is missing.');
+    verifyTokenDebug('Auth header is missing.');
     return next(Boom.unauthorized('Token not found!'));
   }
 };
