@@ -13,7 +13,6 @@ const {
 const debug = require('debug')('plaid:syncTransactions');
 const debugCursor = require('debug')('plaid:cursorDebug');
 const logger = require('../utils/logger');
-const Boom = require('@hapi/boom');
 
 /**
  * Handles the fetching and storing of new, modified, or removed transactions
@@ -73,8 +72,6 @@ const syncTransactions = async plaidItemId => {
  * @returns {Object{}} an object containing transactions and a cursor.
  */
 const fetchNewSyncData = async plaidItemId => {
-  const fetchNewSyncDataDebug = debug.extend('fetchSyncData');
-
   // New transaction updates since "cursor"
   let added = [];
   let modified = [];
@@ -82,12 +79,10 @@ const fetchNewSyncData = async plaidItemId => {
   let removed = [];
   let hasMore = true;
 
-  fetchNewSyncDataDebug('Looking up item in db');
+  debug('Looking up item in db');
   const item = await retrieveItemByPlaidItemId(plaidItemId);
   if (!item) {
-    fetchNewSyncDataDebug(
-      `Item ${plaidItemId} not found in db. Aborting sync operation`
-    );
+    debug(`Item ${plaidItemId} not found in db. Aborting sync operation`);
     logger.error(
       `Item ${plaidItemId} not found in db. Aborting sync operation`
     );
@@ -101,9 +96,7 @@ const fetchNewSyncData = async plaidItemId => {
   debugCursor(`Cursor at start of sync: ${cursor}`);
 
   const batchSize = 100;
-  fetchNewSyncDataDebug(
-    `Item ${plaidItemId} found. Beginning comms with Plaid`
-  );
+  debug(`Item ${plaidItemId} found. Beginning comms with Plaid`);
   try {
     // Iterate through each page of new transaction updates for item
     while (hasMore) {
@@ -115,7 +108,7 @@ const fetchNewSyncData = async plaidItemId => {
           include_personal_finance_category: true,
         },
       };
-      fetchNewSyncDataDebug('Asking Plaid for new sync data');
+      debug('Asking Plaid for new sync data');
       const response = await plaid.transactionsSync(request);
       const data = response.data;
       // Add this page of results
@@ -123,15 +116,13 @@ const fetchNewSyncData = async plaidItemId => {
       modified = modified.concat(data.modified);
       removed = removed.concat(data.removed);
       hasMore = data.has_more;
-      fetchNewSyncDataDebug(
-        `Processed the response. More data available?: ${hasMore}`
-      );
+      debug(`Processed the response. More data available?: ${hasMore}`);
       // Update cursor to the next cursor
       cursor = data.next_cursor;
       debugCursor(`Updated cursor to ${cursor}`);
     }
   } catch (err) {
-    fetchNewSyncDataDebug(
+    debug(
       `Error fetching transactions for plaidItemId: ${plaidItemId}: ${err.message}`
     );
     logger.error(

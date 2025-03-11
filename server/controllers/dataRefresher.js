@@ -64,8 +64,10 @@ class RefreshService {
 
         return { success: true, userId, timestamp: new Date() };
       } catch (error) {
-        debug(`Refresh failed for user ${userId}: ${error.message}`);
-        logger.error(`Refresh failed for user ${userId}: ${error.message}`);
+        debug(`Refresh failed for user ${job.data.userId}: ${error.message}`);
+        logger.error(
+          `Refresh failed for user ${job.data.userId}: ${error.message}`
+        );
         // Update job status to failed
         await refreshQueries.updateJobStatus(
           userId,
@@ -93,8 +95,10 @@ class RefreshService {
     });
 
     refreshQueue.on('failed', (job, error) => {
-      debug(`Refresh failed for user ${userId}: ${error.message}`);
-      logger.error(`Job ${job.id} failed: ${error.message}`);
+      debug(`Refresh failed for user ${job.data.userId}: ${error.message}`);
+      logger.error(
+        `Refresh failed for user ${job.data.userId}: ${error.message}`
+      );
     });
   }
 
@@ -304,6 +308,7 @@ class RefreshService {
 
       if (userIds.length === 0) {
         debug('No users found for refresh');
+        logger.info('No users found for refresh');
         return {
           success: false,
           message: 'No users found for refresh',
