@@ -13,28 +13,15 @@ struct BankListView: View {
 
     var body: some View {
         ScrollView {
-            HStack {
-                Text("Banks")
+            VStack {
+                Text("Accounts")
                     .font(.headline)
                     .padding(.leading)
                 
-                Spacer()
-                
-                Button(action: {
-                    withAnimation {
-                        isExpanded.toggle()
-                    }
-                }) {
-                    Image(systemName: "chevron.down")
-                        .rotationEffect(.degrees(isExpanded ? 0 : -90))
-                        .padding()
-                }
-            }
-            if (isExpanded) {
                 LazyVStack(alignment: .leading) {
                     ForEach(bankAccountsService.banksWithAccounts, id: \.id) { bank in
                         BankView(bank: bank)
-                            .padding(.bottom, 8)
+                            .padding(.bottom, 4)
                     }
                 }
             }

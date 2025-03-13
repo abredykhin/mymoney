@@ -11,36 +11,26 @@ struct BankAccountView : View {
     @State var account: BankAccount
     
     var body: some View {
-        VStack(alignment: .leading) {
-                // Account Name
-            Text(account.name)
-                .font(.title3)
-                .fontWeight(.bold)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .foregroundColor(.primary)
-            Text(account._type.capitalized)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .padding(.bottom, 4)
-            
-                // Account Balance
-            HStack {
-                Text(account.current_balance, format: .currency(code: account.iso_currency_code))
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(getAccountColor(account))
-                Spacer()
+        HStack {
+            VStack(alignment: .leading) {
+                HStack {
+                        // Account Name
+                    Text(account.name)
+                        .font(.body.weight(.semibold).monospaced())
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Text(account.current_balance, format: .currency(code: account.iso_currency_code))
+                        .font(.body.weight(.semibold).monospaced())
+                        .foregroundColor(getAccountColor(account))
+                }
+                Text(account._type.capitalized)
+                    .font(.footnote.monospaced())
+                    .foregroundColor(.secondary)
             }
-            
-                // Account Type (Optional: To add some visual interest)
+            .padding(4)
         }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-        )
-        .padding(.horizontal)
     }
     
     private func getGradient() -> LinearGradient {

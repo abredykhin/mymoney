@@ -14,12 +14,9 @@ struct HomeView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading) {
                     TotalBalanceView()
-                    Divider()
                     BankListView()
-                    Spacer()
-                    Divider()
                     Spacer()
                     RecentTransactionsView()
                     Spacer()

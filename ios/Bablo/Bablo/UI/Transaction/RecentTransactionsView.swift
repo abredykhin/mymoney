@@ -13,14 +13,17 @@ struct RecentTransactionsView: View {
     var body: some View {
         VStack {
             Text("Recent Transactions")
-                .font(.title)
+                .font(.headline.monospaced().weight(.semibold))
                 .padding(.horizontal)
+                .padding(.top, 2)
             
             ForEach(transactionsService.transactions, id: \.id) { transaction in
                 TransactionView(transaction: transaction)
                     .padding(.horizontal)
             }
-        }.onAppear() {
+        }
+        .cardBackground()
+        .onAppear() {
             Task {
                 try? await transactionsService.fetchRecentTransactions()
             }

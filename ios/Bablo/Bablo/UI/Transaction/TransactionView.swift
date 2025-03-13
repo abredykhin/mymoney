@@ -14,26 +14,30 @@ struct TransactionView : View {
         VStack {
             HStack(alignment: .top) {
                 Text(transaction.merchant_name ?? transaction.name)
-                    .font(.title3)
+                    .font(.callout)
+                    .monospaced()
                     .bold()
 
                 Spacer()
                 Text(-transaction.amount, format: .currency(code: transaction.iso_currency_code))
-                    .font(.title3)
+                    .font(.callout)
+                    .monospaced()
                     .foregroundStyle(getColor())
             }
             HStack(alignment: .top) {
                 Text(formatDate(transaction.authorized_date ?? transaction.date))
-                    .font(.body)
+                    .font(.footnote)
+                    .monospaced()
                 
                 Spacer()
                 if (transaction.pending) {
                     Text("Pending")
-                        .font(.body)
+                        .font(.footnote)
+                        .monospaced()
                         .italic()
                 }
             }
-        }.padding(8)
+        }.padding(1)
     }
     
     func getColor() -> Color {

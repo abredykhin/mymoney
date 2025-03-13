@@ -11,19 +11,24 @@ struct TotalBalanceView: View {
     @StateObject var budgetService = BudgetService()
     
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("Total Balance")
-                .font(.subheadline)
-                .foregroundColor(.primary)
-                .lineLimit(1)
-                .padding(.bottom)
-            
-            if let totalBalance = budgetService.totalBalance {
-                Text(totalBalance.balance, format: .currency(code: totalBalance.iso_currency_code))
-                    .font(.largeTitle.bold())
-            }
+        HStack {
+            VStack(alignment: .leading) {
+                Text("Total Balance")
+                    .font(.body)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .padding(.bottom, 2)
+                    .monospaced()
+                
+                if let totalBalance = budgetService.totalBalance {
+                    Text(totalBalance.balance, format: .currency(code: totalBalance.iso_currency_code))
+                        .font(.title3.weight(.medium))
+                        .monospaced()
+                }
+            }.padding()
+            Spacer()
         }
-        .padding()
+        .cardBackground()
         .onAppear() {
             Task {
                 try? await budgetService.fetchTotalBalance()
