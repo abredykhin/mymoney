@@ -22,15 +22,14 @@ services:
       - ./db-data:/var/lib/postgresql/data
       - ./database/create.sql:/docker-entrypoint-initdb.d/create.sql   
 
-  # Redis service for Bull queue
   redis:
     image: redis:alpine
-    ports:
-      - "6379:6379"
     volumes:
       - redis-data:/data
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    networks:
+      - app-network
 
   server:
     build: ./server
