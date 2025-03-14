@@ -6,25 +6,59 @@
     //
 
 import SwiftUI
+import Foundation
 
 struct BankListView: View {
     @EnvironmentObject var bankAccountsService: BankAccountsService
-    @State private var isExpanded: Bool = true
-
+    
+        // Date formatter properly defined
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter
+    }()
+    
     var body: some View {
-        ScrollView {
-            VStack {
-                Text("Accounts")
-                    .font(.headline)
-                    .padding(.leading)
-                
-                LazyVStack(alignment: .leading) {
-                    ForEach(bankAccountsService.banksWithAccounts, id: \.id) { bank in
-                        BankView(bank: bank)
-                            .padding(.bottom, 4)
+        VStack {
+            Text("Accounts")
+                .font(.headline)
+                .padding(.leading)
+            
+            if bankAccountsService.isLoading {
+                ProgressView("Loading accounts...")
+                    .padding()
+            } else if bankAccountsService.banksWithAccounts.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "creditcard.circle")
+                        .font(.system(size: 40))
+                        .foregroundColor(.secondary)
+                    Text("No accounts found")
+                        .foregroundColor(.secondary)
+                    LinkButtonView()
+                        .padding(.top)
+                }
+                .padding(.vertical, 30)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading) {
+                        ForEach(bankAccountsService.banksWithAccounts, id: \.id) { bank in
+                            BankView(bank: bank)
+                                .padding(.bottom, 4)
+                        }
+                    }
+                    
+                    if let lastUpdated = bankAccountsService.lastUpdated {
+                        Text("Last updated: \(dateFormatter.string(from: lastUpdated))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.top)
                     }
                 }
             }
+        }
+        .refreshable {
+            try? await bankAccountsService.refreshAccounts(forceRefresh: true)
         }
     }
 }

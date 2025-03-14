@@ -7,39 +7,70 @@
 
 import Foundation
 import SwiftUI
+import Network
 
-struct HomeView: View {    
+struct HomeView: View {
     @EnvironmentObject var bankAccountsService: BankAccountsService
+    @State private var isOffline = false
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading) {
+                    if bankAccountsService.isUsingCachedData && isOffline {
+                        HStack {
+                            Image(systemName: "wifi.slash")
+                            Text("You're offline. Showing cached data.")
+                            Spacer()
+                            Button("Try Again") {
+                                checkConnectivityAndRefresh()
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        .padding()
+                        .background(Color.yellow.opacity(0.2))
+                        .cornerRadius(8)
+                        .padding(.horizontal)
+                    }
+                    
                     TotalBalanceView()
                     BankListView()
                     Spacer()
                     RecentTransactionsView()
-                    Spacer()
-                    LinkButtonView()
-                        .padding(.top)
+                    Spacer()                    
                 }
             }
             .refreshable {
-                try? await bankAccountsService.refreshAccounts()
-            }.task {
-                try? await bankAccountsService.refreshAccounts()
+                checkConnectivityAndRefresh()
             }
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("Home")
-                        .font(.headline)
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: ProfileView()) {
-                        Image(systemName: "person.circle")
-                            .font(.title2)
-                    }
-                }
+            .task {
+                checkConnectivityAndRefresh(forceRefresh: false)
+            }
+                // Rest of your toolbar code...
+        }
+        .onAppear {
+                // Check network status when view appears
+            checkNetworkStatus()
+        }
+    }
+    
+    private func checkNetworkStatus() {
+            // Using NWPathMonitor to check network status
+        let monitor = NWPathMonitor()
+        let queue = DispatchQueue(label: "NetworkMonitor")
+        
+        monitor.pathUpdateHandler = { path in
+            DispatchQueue.main.async {
+                self.isOffline = path.status != .satisfied
+            }
+        }
+        monitor.start(queue: queue)
+    }
+    
+    private func checkConnectivityAndRefresh(forceRefresh: Bool = true) {
+        Task {
+            if !isOffline || forceRefresh {
+                try? await bankAccountsService.refreshAccounts(forceRefresh: forceRefresh)
             }
         }
     }

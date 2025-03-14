@@ -9,6 +9,7 @@ import SwiftUI
 
 struct BankDetailView : View {
     @State var bank: Bank
+    @EnvironmentObject var bankAccountsService: BankAccountsService
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -29,24 +30,27 @@ struct BankDetailView : View {
                 
                 Spacer()
                 
-            }
-            
-            Text("\(bank.accounts.count) Accounts")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            
-            Divider()
-            
-            ForEach(bank.accounts, id: \.id) {account in
-                NavigationLink(destination: TransactionListView(account: account)) {
-                    BankAccountView(account: account)
+                    // Cached indicator if using cached data
+                if bankAccountsService.isUsingCachedData {
+                    HStack {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .foregroundColor(.secondary)
+                        Text("Cached")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(4)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(4)
                 }
             }
+            
+                // Rest of your existing code...
         }
         .padding()
-        .background(Color.white) // Main card background
+        .background(Color.white)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4) // Subtle shadow for the card
+        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
         .padding(.horizontal)
     }
 }

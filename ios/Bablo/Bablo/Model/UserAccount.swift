@@ -9,6 +9,7 @@ import Foundation
 import Valet
 import OpenAPIRuntime
 import OpenAPIURLSession
+import CoreData
 
 struct User: Identifiable, Codable, Equatable, Sendable {
     let id: String
@@ -75,6 +76,25 @@ class UserAccount: ObservableObject {
         try? valet.removeObject(forKey: "token")
         currentUser = nil
         isSignedIn = false
+        clearCoreDataCache()
+    }
+    
+    private func clearCoreDataCache() {
+        let context = CoreDataStack.shared.viewContext
+        let entityNames = ["BankEntity", "AccountEntity", "TransactionEntity"]
+        
+        for entityName in entityNames {
+            let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
+            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+            
+            do {
+                try context.execute(deleteRequest)
+                try context.save()
+                Logger.i("Cleared \(entityName) cache")
+            } catch {
+                Logger.e("Failed to clear \(entityName) cache: \(error)")
+            }
+        }
     }
     
     private func saveUserData() throws {

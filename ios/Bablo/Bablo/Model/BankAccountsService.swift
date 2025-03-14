@@ -17,11 +17,40 @@ typealias Transaction = Components.Schemas.Transaction
 @MainActor
 class BankAccountsService: ObservableObject {
     @Published var banksWithAccounts: [Bank] = []
+    @Published var isLoading: Bool = false
+    @Published var lastUpdated: Date?
+    @Published var isUsingCachedData: Bool = false
+
     private let userAccount: UserAccount = UserAccount.shared
     private var client: Client? = nil
+    private let bankManager = BankManager()
+    
+    init() {
+        loadCachedData()
+    }
+    
+    func loadCachedData() {
+        let cachedBanks = bankManager.fetchBanks()
+        if !cachedBanks.isEmpty {
+            self.banksWithAccounts = cachedBanks
+            Logger.i("Loaded \(cachedBanks.count) banks from CoreData cache")
+        }
+    }
+    
+    func refreshAccounts(forceRefresh: Bool = false) async throws {
+            // If not forcing refresh and we have recently updated data, return
+        if !forceRefresh, !banksWithAccounts.isEmpty, let lastUpdate = lastUpdated,
+            Date().timeIntervalSince(lastUpdate) < 300 {
+            Logger.i("Using cached data, last updated: \(lastUpdate)")
+            isUsingCachedData = true
+            return
+        }
         
-    func refreshAccounts() async throws {
-        Logger.d("Refreshing accounts")
+        isLoading = true
+        
+        defer {
+            isLoading = false
+        }
         updateClient()
         guard let client = client else {
             Logger.e("Client is not set!")
@@ -37,7 +66,20 @@ class BankAccountsService: ObservableObject {
                 switch (json.body) {
                 case .json(let bodyJson):
                     Logger.i("Received \(bodyJson.banks?.count ?? 0) banks from server")
-                    self.banksWithAccounts = bodyJson.banks ?? []
+                    if let banks = bodyJson.banks {
+                        self.banksWithAccounts = banks
+                        self.lastUpdated = Date()
+                        
+                        // Save to CoreData cache
+                        bankManager.saveBanks(banks)
+                        
+                        // Save accounts for each bank
+                        let accountManager = AccountManager()
+                        for bank in banks {
+                            accountManager.saveAccounts(bank.accounts, for: bank.id)
+                        }
+                        isUsingCachedData = false
+                    }
                 }
             case .unauthorized(_):
                 userAccount.signOut()
@@ -51,7 +93,7 @@ class BankAccountsService: ObservableObject {
         } catch let error {
             Logger.e("Failed to refresh accounts: \(error)")
             throw error
-        }
+        }        
     }
     
     private func updateClient() {

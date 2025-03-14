@@ -11,6 +11,11 @@
 		7549AB502D0E4C7F00313F5C /* LargeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7549AB4F2D0E4C7F00313F5C /* LargeButton.swift */; };
 		75579F232CD6F2D800845A62 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75579F222CD6F2D800845A62 /* ProfileView.swift */; };
 		755F88862C86B8D200BEE12A /* BankAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 755F88852C86B8D200BEE12A /* BankAccountView.swift */; };
+		75668FD72D83CE8C003A3D97 /* BabloModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 75668FD52D83CE8C003A3D97 /* BabloModel.xcdatamodeld */; };
+		75668FDA2D83CFF9003A3D97 /* CoreDataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75668FD92D83CFF9003A3D97 /* CoreDataStack.swift */; };
+		75668FDD2D83D025003A3D97 /* BankManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75668FDC2D83D025003A3D97 /* BankManager.swift */; };
+		75668FDF2D83D538003A3D97 /* AccountsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75668FDE2D83D538003A3D97 /* AccountsManager.swift */; };
+		75668FE22D83D753003A3D97 /* TransactionsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75668FE12D83D753003A3D97 /* TransactionsManager.swift */; };
 		7573DA182CBCD7320004EBE4 /* TotalBalanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7573DA172CBCD7320004EBE4 /* TotalBalanceView.swift */; };
 		7573DA1B2CBCD7B20004EBE4 /* BudgetService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7573DA1A2CBCD7B20004EBE4 /* BudgetService.swift */; };
 		757ABF352C18195100DF8CA8 /* BabloApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF342C18195100DF8CA8 /* BabloApp.swift */; };
@@ -88,6 +93,11 @@
 		7549AB4F2D0E4C7F00313F5C /* LargeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LargeButton.swift; sourceTree = "<group>"; };
 		75579F222CD6F2D800845A62 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		755F88852C86B8D200BEE12A /* BankAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountView.swift; sourceTree = "<group>"; };
+		75668FD62D83CE8C003A3D97 /* BabloModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = BabloModel.xcdatamodel; sourceTree = "<group>"; };
+		75668FD92D83CFF9003A3D97 /* CoreDataStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataStack.swift; sourceTree = "<group>"; };
+		75668FDC2D83D025003A3D97 /* BankManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankManager.swift; sourceTree = "<group>"; };
+		75668FDE2D83D538003A3D97 /* AccountsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsManager.swift; sourceTree = "<group>"; };
+		75668FE12D83D753003A3D97 /* TransactionsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsManager.swift; sourceTree = "<group>"; };
 		7573DA172CBCD7320004EBE4 /* TotalBalanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TotalBalanceView.swift; sourceTree = "<group>"; };
 		7573DA1A2CBCD7B20004EBE4 /* BudgetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetService.swift; sourceTree = "<group>"; };
 		757ABF312C18195100DF8CA8 /* Bablo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bablo.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -202,6 +212,18 @@
 			path = Profile;
 			sourceTree = "<group>";
 		};
+		75668FDB2D83D012003A3D97 /* Cache */ = {
+			isa = PBXGroup;
+			children = (
+				75668FD92D83CFF9003A3D97 /* CoreDataStack.swift */,
+				75668FD52D83CE8C003A3D97 /* BabloModel.xcdatamodeld */,
+				75668FDC2D83D025003A3D97 /* BankManager.swift */,
+				75668FDE2D83D538003A3D97 /* AccountsManager.swift */,
+				75668FE12D83D753003A3D97 /* TransactionsManager.swift */,
+			);
+			path = Cache;
+			sourceTree = "<group>";
+		};
 		7573DA162CBCD7230004EBE4 /* Budget */ = {
 			isa = PBXGroup;
 			children = (
@@ -300,6 +322,7 @@
 		757ABF832C181CC300DF8CA8 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				75668FDB2D83D012003A3D97 /* Cache */,
 				757ABF862C181D3400DF8CA8 /* UserAccount.swift */,
 				757ABF842C181CD100DF8CA8 /* BankAccountsService.swift */,
 				75E49BB22CA3F2DC008D72F8 /* TransactionsService.swift */,
@@ -538,12 +561,14 @@
 				757ABF372C18195100DF8CA8 /* ContentView.swift in Sources */,
 				75F946B02D3C876A0076E91E /* IncomeInputView.swift in Sources */,
 				757ABF852C181CD100DF8CA8 /* BankAccountsService.swift in Sources */,
+				75668FDF2D83D538003A3D97 /* AccountsManager.swift in Sources */,
 				7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */,
 				755F88862C86B8D200BEE12A /* BankAccountView.swift in Sources */,
 				75F946A22D3C85320076E91E /* CategoryRowView.swift in Sources */,
 				7549AB502D0E4C7F00313F5C /* LargeButton.swift in Sources */,
 				75F946992D3C84B10076E91E /* CurrencyTextField.swift in Sources */,
 				757ABF8F2C1822CD00DF8CA8 /* ColorType.swift in Sources */,
+				75668FDA2D83CFF9003A3D97 /* CoreDataStack.swift in Sources */,
 				75F946AE2D3C875A0076E91E /* OnboardingBudgetFooterView.swift in Sources */,
 				75E49BB02CA3ED00008D72F8 /* TransactionListView.swift in Sources */,
 				75E49BA52CA27E67008D72F8 /* TransactionView.swift in Sources */,
@@ -554,8 +579,10 @@
 				75F946A92D3C873C0076E91E /* PeriodPickerView.swift in Sources */,
 				757ABF872C181D3400DF8CA8 /* UserAccount.swift in Sources */,
 				7573DA1B2CBCD7B20004EBE4 /* BudgetService.swift in Sources */,
+				75668FE22D83D753003A3D97 /* TransactionsManager.swift in Sources */,
 				75F946B22D3C87750076E91E /* OnboardingBudgetHeaderView.swift in Sources */,
 				759521A02CFD330A00655E7D /* BankDetailView.swift in Sources */,
+				75668FD72D83CE8C003A3D97 /* BabloModel.xcdatamodeld in Sources */,
 				757ABF772C181C3100DF8CA8 /* AuthMiddleware.swift in Sources */,
 				75F9469F2D3C85240076E91E /* SpendingCategory.swift in Sources */,
 				75C972CC2D13BA33008E6E87 /* OnboardingBudgetView.swift in Sources */,
@@ -567,6 +594,7 @@
 				75C972C82D13B8BB008E6E87 /* OnboardingAccountsView.swift in Sources */,
 				75F529662C8D696100629F2B /* Modifiers.swift in Sources */,
 				757ABF352C18195100DF8CA8 /* BabloApp.swift in Sources */,
+				75668FDD2D83D025003A3D97 /* BankManager.swift in Sources */,
 				7549AB492D0E499600313F5C /* OnboardingStartView.swift in Sources */,
 				75C972CA2D13B8CC008E6E87 /* OnboardingCategoriesView.swift in Sources */,
 				7590F2A72C865B9F00BCCDE6 /* BankListView.swift in Sources */,
@@ -1008,6 +1036,19 @@
 			productName = Valet;
 		};
 /* End XCSwiftPackageProductDependency section */
+
+/* Begin XCVersionGroup section */
+		75668FD52D83CE8C003A3D97 /* BabloModel.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				75668FD62D83CE8C003A3D97 /* BabloModel.xcdatamodel */,
+			);
+			currentVersion = 75668FD62D83CE8C003A3D97 /* BabloModel.xcdatamodel */;
+			path = BabloModel.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = 757ABF292C18195100DF8CA8 /* Project object */;
 }
