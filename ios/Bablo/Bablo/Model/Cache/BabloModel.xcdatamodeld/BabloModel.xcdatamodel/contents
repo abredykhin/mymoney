@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23173.10" systemVersion="24D70" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="AccountEntity" representedClassName="AccountEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="currentBalance" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="isoCurrencyCode" attributeType="String"/>
+        <attribute name="mask" optional="YES" attributeType="String"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="officialName" optional="YES" attributeType="String"/>
+        <attribute name="type" attributeType="String"/>
+        <attribute name="updatedAt" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="bank" maxCount="1" deletionRule="Nullify" destinationEntity="BankEntity" inverseName="accounts" inverseEntity="BankEntity"/>
+        <relationship name="transactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TransactionEntity" inverseName="account" inverseEntity="TransactionEntity"/>
+    </entity>
+    <entity name="BankEntity" representedClassName="BankEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="bankName" attributeType="String"/>
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="logo" optional="YES" attributeType="Binary"/>
+        <attribute name="primaryColor" optional="YES" attributeType="String"/>
+        <relationship name="accounts" toMany="YES" deletionRule="Nullify" destinationEntity="AccountEntity" inverseName="bank" inverseEntity="AccountEntity"/>
+    </entity>
+    <entity name="TransactionEntity" representedClassName="TransactionEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="accountId" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="amount" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="authorizedDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="isoCurrencyCode" attributeType="String"/>
+        <attribute name="logoUrl" optional="YES" attributeType="String"/>
+        <attribute name="merchantName" optional="YES" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="paymentChannel" optional="YES" attributeType="String"/>
+        <attribute name="pending" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="pendingTransactionId" optional="YES" attributeType="String"/>
+        <attribute name="personalFinanceCategory" optional="YES" attributeType="String"/>
+        <attribute name="personalFinanceSubcategory" optional="YES" attributeType="String"/>
+        <attribute name="transactionId" attributeType="String"/>
+        <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="userId" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="website" optional="YES" attributeType="String"/>
+        <relationship name="account" maxCount="1" deletionRule="Nullify" destinationEntity="AccountEntity" inverseName="transactions" inverseEntity="AccountEntity"/>
+    </entity>
+</model>
