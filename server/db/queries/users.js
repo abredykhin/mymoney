@@ -3,7 +3,6 @@
  */
 
 const db = require('../');
-const log = require('../../utils/logger')('db:transactions');
 require('util').inspect.defaultOptions.depth = null;
 
 /**
@@ -13,8 +12,6 @@ require('util').inspect.defaultOptions.depth = null;
  * @returns {Object} the new user.
  */
 const createUser = async (username, hashedPassword) => {
-  log.info(`Creating user ${username}...`);
-
   const query = {
     // RETURNING is a Postgres-specific clause that returns a list of the inserted items.
     text: 'INSERT INTO users_table (username, password) VALUES ($1, $2) RETURNING *;',
@@ -25,14 +22,13 @@ const createUser = async (username, hashedPassword) => {
 };
 
 /**
- * Removes user and related items, accounts and transactions.
+ * Removes users and related items, accounts and transactions.
  *
  *
  * @param {string[]} userId the desired user to be deleted.
  */
 
-const deleteUser = async userId => {
-  log.info(`Deleting user ${userId}...`);
+const deleteUsers = async userId => {
   const query = {
     text: 'DELETE FROM users_table WHERE id = $1;',
     values: [userId],
@@ -47,7 +43,6 @@ const deleteUser = async userId => {
  * @returns {Object} a user.
  */
 const retrieveUserById = async userId => {
-  log.info(`Retrieving user ${userId}...`);
   const query = {
     text: 'SELECT * FROM users WHERE id = $1',
     values: [userId],
@@ -63,7 +58,6 @@ const retrieveUserById = async userId => {
  * @returns {Object} a single user.
  */
 const retrieveUserByUsername = async username => {
-  log.info(`Retrieving user by username ${username}...`);
   const query = {
     text: 'SELECT * FROM users WHERE username = $1',
     values: [username],
@@ -78,7 +72,6 @@ const retrieveUserByUsername = async username => {
  * @returns {Object[]} an array of users.
  */
 const retrieveUsers = async () => {
-  log.info(`Retrieving all users...`);
   const query = {
     text: 'SELECT * FROM users',
   };
@@ -92,7 +85,6 @@ const retrieveUsers = async () => {
  * @returns {Object} a user.
  */
 const updateUserPassword = async (userId, password) => {
-  log.info(`Updating user password for user ${userId}...`);
   const query = {
     text: 'UPDATE users SET password = $1 WHERE id = $2 RETURNING *',
     values: [password, userId],
@@ -103,7 +95,7 @@ const updateUserPassword = async (userId, password) => {
 
 module.exports = {
   createUser,
-  deleteUser,
+  deleteUsers,
   retrieveUserById,
   retrieveUserByUsername,
   retrieveUsers,

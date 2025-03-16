@@ -10,8 +10,10 @@ const {
   deleteTransactions,
   updateItemTransactionsCursor,
 } = require('../db/queries');
-
-const log = require('../utils/logger')('plaid:syncTransactions');
+const debug = require('debug')('plaid:syncTransactions');
+const debugCursor = require('debug')('plaid:cursorDebug');
+const logger = require('../utils/logger');
+const Boom = require('@hapi/boom');
 
 /**
  * Handles the fetching and storing of new, modified, or removed transactions
@@ -19,14 +21,15 @@ const log = require('../utils/logger')('plaid:syncTransactions');
  * @param {string} plaidItemId the Plaid ID for the item.
  */
 const syncTransactions = async plaidItemId => {
-  log.info(`Starting transaction sync for plaid item: ${plaidItemId}`);
+  debug(`Starting transaction sync for plaid item: ${plaidItemId}`);
+  logger.info(`Starting transaction sync for plaid item: ${plaidItemId}`);
 
   // Fetch new transactions from plaid api.
   const { added, modified, removed, cursor, accessToken } =
     await fetchNewSyncData(plaidItemId);
 
   if (!accessToken) {
-    log.error('Failed to sync item. Cutting it short');
+    debug('Failed to sync item. Cutting it short');
     return;
   }
 
@@ -34,24 +37,28 @@ const syncTransactions = async plaidItemId => {
     access_token: accessToken,
   };
 
-  log.info('Got transactions data. Now refresing accounts info from Plaid.');
+  debug('Got transactions data. Now refresing accounts info from Plaid.');
+  logger.info('Got transactions data. Now refresing accounts info from Plaid.');
   const {
     data: { accounts },
   } = await plaid.accountsGet(request);
 
-  log.info(
+  debug(
+    `Ready to update data in db. Transactions added: ${added.length}, modified: ${modified.length}, removed: ${removed.length}`
+  );
+  logger.info(
     `Ready to update data in db. Transactions added: ${added.length}, modified: ${modified.length}, removed: ${removed.length}`
   );
 
-  log.info('Updating accounts data...');
+  debug('Updating accounts data...');
   await createAccounts(plaidItemId, accounts);
-  log.info('Updating transactions data...');
+  debug('Updating transactions data...');
   await createOrUpdateTransactions(added.concat(modified));
-  log.info('Deleting obsolete transactions...');
+  debug('Deleting obsolete transactions...');
   await deleteTransactions(removed);
-  log.info('Updating item transactions cursor');
+  debug('Updating item transactions cursor');
   await updateItemTransactionsCursor(plaidItemId, cursor);
-  log.info('Transaction sync is complete.');
+  debug('Transaction sync is complete.');
   return {
     addedCount: added.length,
     modifiedCount: modified.length,
@@ -66,6 +73,8 @@ const syncTransactions = async plaidItemId => {
  * @returns {Object{}} an object containing transactions and a cursor.
  */
 const fetchNewSyncData = async plaidItemId => {
+  const fetchNewSyncDataDebug = debug.extend('fetchSyncData');
+
   // New transaction updates since "cursor"
   let added = [];
   let modified = [];
@@ -73,10 +82,15 @@ const fetchNewSyncData = async plaidItemId => {
   let removed = [];
   let hasMore = true;
 
+  fetchNewSyncDataDebug('Looking up item in db');
   const item = await retrieveItemByPlaidItemId(plaidItemId);
   if (!item) {
-    log.error(`Item ${plaidItemId} not found in db. Aborting sync operation`);
-
+    fetchNewSyncDataDebug(
+      `Item ${plaidItemId} not found in db. Aborting sync operation`
+    );
+    logger.error(
+      `Item ${plaidItemId} not found in db. Aborting sync operation`
+    );
     return {};
   }
 
@@ -84,10 +98,12 @@ const fetchNewSyncData = async plaidItemId => {
     item;
 
   let cursor = lastCursor;
-  log.info(`Cursor at start of sync: ${cursor}`);
+  debugCursor(`Cursor at start of sync: ${cursor}`);
 
   const batchSize = 100;
-  log.info(`Item ${plaidItemId} found. Beginning comms with Plaid`);
+  fetchNewSyncDataDebug(
+    `Item ${plaidItemId} found. Beginning comms with Plaid`
+  );
   try {
     // Iterate through each page of new transaction updates for item
     while (hasMore) {
@@ -99,7 +115,7 @@ const fetchNewSyncData = async plaidItemId => {
           include_personal_finance_category: true,
         },
       };
-      log.info('Asking Plaid for new sync data');
+      fetchNewSyncDataDebug('Asking Plaid for new sync data');
       const response = await plaid.transactionsSync(request);
       const data = response.data;
       // Add this page of results
@@ -107,19 +123,23 @@ const fetchNewSyncData = async plaidItemId => {
       modified = modified.concat(data.modified);
       removed = removed.concat(data.removed);
       hasMore = data.has_more;
-      log.info(`Processed the response. More data available?: ${hasMore}`);
+      fetchNewSyncDataDebug(
+        `Processed the response. More data available?: ${hasMore}`
+      );
       // Update cursor to the next cursor
       cursor = data.next_cursor;
-      log.info(`Updated cursor to ${cursor}`);
+      debugCursor(`Updated cursor to ${cursor}`);
     }
   } catch (err) {
-    log.error(
+    fetchNewSyncDataDebug(
       `Error fetching transactions for plaidItemId: ${plaidItemId}: ${err.message}`
     );
-
+    logger.error(
+      `Error fetching transactions for plaidItemId: ${plaidItemId}: ${err.message}`
+    );
     cursor = lastCursor;
   }
-  log.info(`Finished sync. Returning cursor: ${cursor}`);
+  debugCursor(`Finished sync. Returning cursor: ${cursor}`);
   return { added, modified, removed, cursor, accessToken };
 };
 

@@ -4,7 +4,7 @@
 
 const { retrieveItemByPlaidItemId } = require('./items');
 const db = require('../');
-const log = require('../../utils/logger')('db:accounts');
+const debug = require('debug')('db:accounts');
 
 /**
  * Creates multiple accounts related to a single item.
@@ -14,7 +14,7 @@ const log = require('../../utils/logger')('db:accounts');
  * @returns {Object[]} an array of new accounts.
  */
 const createAccounts = async (plaidItemId, accounts) => {
-  log.debug(`Storing accounts in db for plaid item: ${plaidItemId}`);
+  debug(`Storing accounts in db for plaid item: ${plaidItemId}`);
 
   const { id: itemId } = await retrieveItemByPlaidItemId(plaidItemId);
   const pendingQueries = accounts.map(async account => {

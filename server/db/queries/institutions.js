@@ -3,7 +3,7 @@
  */
 
 const db = require('../');
-const log = require('../../utils/logger')('db:institutions');
+const debug = require('debug')('db:institutions');
 
 /**
  * Creates a single item.
@@ -22,7 +22,7 @@ const createInstitution = async (
   url,
   logo
 ) => {
-  log.info(`Storing institution ${institutionId} in db`);
+  debug(`Storing institution ${institutionId} in db`);
   const query = {
     // RETURNING is a Postgres-specific clause that returns a list of the inserted items.
     text: `
@@ -50,7 +50,7 @@ const createInstitution = async (
  * @returns {Object} an institution.
  */
 const retrieveInstitutionById = async institutionId => {
-  log.info(`Querying db for institution ${institutionId}`);
+  debug(`Querying db for institution ${institutionId}`);
 
   const query = {
     text: 'SELECT * FROM institutions WHERE institution_id = $1',

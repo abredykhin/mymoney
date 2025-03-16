@@ -5,7 +5,7 @@
 const Boom = require('@hapi/boom');
 const sessionQueries = require('../db/queries/sessions');
 const userQueries = require('../db/queries/users');
-const logger = require('../utils/logger')('middleware');
+const debug = require('debug')('middleware');
 
 /**
  * A higher-order function that wraps an async callback to properly trigger the
@@ -16,18 +16,19 @@ const logger = require('../utils/logger')('middleware');
  */
 const asyncWrapper = fn => (req, res, next) => {
   return Promise.resolve(fn(req, res, next)).catch(error => {
-    logger.error('Caught an error!');
+    const asyncWrapperDebug = debug.extend('asyncWrapper');
+    asyncWrapperDebug('Caught an error!');
 
     if (error.isBoom) {
-      logger.error('The error is boom. Sending it to client directly.');
+      asyncWrapperDebug('The error is boom. Sending it to client directly.');
       // Return the Boom error directly with its appropriate status code
       return res.status(error.output.statusCode).json(error.output.payload);
     } else {
       // Still log the error for debugging
-      logger.error(
+      asyncWrapperDebug(
         'The error is not boom. Will wrap in boom and send to client as 500 error code.'
       );
-      logger.error(error);
+      asyncWrapperDebug(error);
       // Create a Boom error with a 500 status code and a generic message
       const boomError = Boom.internal('Internal Server Error');
       return res
@@ -53,12 +54,13 @@ const asyncWrapper = fn => (req, res, next) => {
  */
 
 const errorHandler = (err, req, res, next) => {
-  logger.error('Got an unhandled error!');
+  const errorHandlerDebug = debug.extend('errorHandler');
+  errorHandlerDebug('Got an unhandled error!');
   let error = err;
 
   // handle errors from the Plaid api.
   if (error.name === 'PlaidError') {
-    logger.error('The error came fom Plaid.');
+    errorHandlerDebug('The error came fom Plaid.');
     // Use the correct Boom factory function based on status code
     if (error.status_code === 400) {
       error = Boom.badRequest(error.error_message);
@@ -82,7 +84,7 @@ const errorHandler = (err, req, res, next) => {
 
   // handle standard javascript errors.
   if (!error.isBoom) {
-    logger.error('Error is standard JS error');
+    errorHandlerDebug('Error is standard JS error');
     error = Boom.boomify(error);
   }
 
@@ -92,40 +94,43 @@ const errorHandler = (err, req, res, next) => {
 };
 
 const verifyToken = async (req, res, next) => {
-  logger.debug('Verifying token...');
+  const verifyTokenDebug = debug.extend('verifyToken');
+
+  verifyTokenDebug('Verifying token...');
   const authHeader = req.headers.authorization;
 
   if (typeof authHeader !== 'undefined') {
-    logger.debug(`Auth header is present.`);
+    verifyTokenDebug(`Auth header is present.`);
     const [header, token] = authHeader.split(' ');
 
     if (!(header && token)) {
-      logger.error(`Unable to split into header/token pair!`);
+      verifyTokenDebug(`But unable to split into header/token pair!`);
       return next(Boom.unauthorized('Token not found!'));
     }
 
-    logger.debug('Looking up user by token');
+    verifyTokenDebug('Looking up user by token');
     const userId = await sessionQueries.lookupToken(token);
     if (!userId) {
       return next(Boom.unauthorized('Token not found!'));
     }
 
-    logger.debug(`Found user ${userId.user_id}. Now looking up full user info`);
-
+    verifyTokenDebug(
+      `Found user ${userId.user_id}. Now looking up full user info`
+    );
     const user = await userQueries.retrieveUserById(userId.user_id);
     if (!user) {
-      logger.error('Weird, but full user info is not found.');
+      verifyTokenDebug('Weird, but full user info is not found.');
       return next(Boom.unauthorized('Token not found!'));
     }
 
-    logger.debug('All good! Verification is complete.');
+    verifyTokenDebug('All good! Verification is complete.');
     req.token = token;
     req.user = user;
     req.userId = user.id;
 
     next();
   } else {
-    logger.error('Auth header is missing.');
+    verifyTokenDebug('Auth header is missing.');
     return next(Boom.unauthorized('Token not found!'));
   }
 };

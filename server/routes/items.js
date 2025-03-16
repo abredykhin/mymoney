@@ -23,9 +23,9 @@ const {
   validItemStatuses,
 } = require('../utils/sanitize');
 const syncTransactions = require('../controllers/transactions');
-
+const debug = require('debug')('routes:items');
 const router = express.Router();
-const logger = require('../utils/logger')('routes:items');
+const logger = require('../utils/logger');
 
 /**
  * First exchanges a public token for a private token via the Plaid API
@@ -39,10 +39,20 @@ router.post(
   '/',
   verifyToken,
   asyncWrapper(async (req, res) => {
+    debug('Creating a new item');
     logger.info('Creating a new item');
     const { publicToken, institutionId } = req.body;
     const userId = req.userId;
 
+    // prevent duplicate items for the same institution per user.
+    debug('Checking for duplicate item...');
+    logger.info('Checking for duplicate item...');
+    const existingItem = await retrieveItemByPlaidInstitutionId(
+      institutionId,
+      userId
+    );
+
+    debug('Asking Plaid for info on institution...');
     logger.info('Asking Plaid for info on institution...');
     const institutionResponse = await plaid.client.institutionsGetById({
       client_id: '',
@@ -54,6 +64,9 @@ router.post(
       },
     });
 
+    debug(
+      `Received institution info for ${institutionResponse.data.institution.name}. Storing in database...`
+    );
     logger.info(
       `Received institution info for ${institutionResponse.data.institution.name}. Storing in database...`
     );
@@ -66,6 +79,7 @@ router.post(
       institutionResponse.data.institution.logo
     );
 
+    debug('Exchanging tokens with Plaid...');
     logger.info('Exchanging tokens with Plaid...');
 
     // exchange the public token for a private access token and store with the item.
@@ -74,7 +88,8 @@ router.post(
     });
     const accessToken = response.data.access_token;
     const itemId = response.data.item_id;
-    logger.info(`Storing item ${itemId} info in db...`);
+    debug(`Storing item ${itemId} info in db...`);
+    logger.info('Storing item info in db...');
 
     // store the item in the database.
     const newItem = await createItem(
@@ -85,7 +100,8 @@ router.post(
       institutionResponse.data.institution.name
     );
 
-    logger.info(`Syncing item ${itemId} transactions...`);
+    debug(`Syncing item ${itemId} transactions...`);
+    logger.info('Syncing item transactions...');
 
     await syncTransactions(itemId).then(() => {
       // Notify frontend to reflect any transactions changes.
@@ -93,6 +109,7 @@ router.post(
       //req.io.emit('NEW_TRANSACTIONS_DATA', { itemId: newItem.id });
     });
 
+    debug('Item is ready. Sending it back to client.');
     logger.info('Item is ready. Sending it back to client.');
     res.json(sanitizeItem(newItem));
   })
@@ -109,7 +126,6 @@ router.get(
   verifyToken,
   asyncWrapper(async (req, res) => {
     const { itemId } = req.params;
-    logger.info(`Retrieving item ${itemId}...`);
     const item = await retrieveItemById(itemId);
     res.json(sanitizeItems(item));
   })
@@ -163,18 +179,14 @@ router.delete(
   verifyToken,
   asyncWrapper(async (req, res) => {
     const { itemId } = req.params;
-    logger.info(`Deleting item ${itemId}...`);
     const { plaid_access_token: accessToken } = await retrieveItemById(itemId);
-
+    /* eslint-disable camelcase */
     try {
       const response = await plaid.itemRemove({
         access_token: accessToken,
       });
       const removed = response.data.removed;
       const status_code = response.data.status_code;
-      logger.info(
-        `Item removed from Plaid API. Removed: ${removed}, Status Code: ${status_code}`
-      );
     } catch (error) {
       if (!removed)
         throw new Boom('Item could not be removed in the Plaid API.', {
@@ -198,7 +210,6 @@ router.get(
   verifyToken,
   asyncWrapper(async (req, res) => {
     const { itemId } = req.params;
-    logger.info(`Retrieving accounts for item ${itemId}...`);
     const accounts = await retrieveAccountsByItemId(itemId);
     res.json(sanitizeAccounts(accounts));
   })

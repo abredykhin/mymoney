@@ -4,14 +4,14 @@
 
 const { retrieveAccountByPlaidAccountId } = require('./accounts');
 const db = require('../');
-const log = require('../../utils/logger')('db:transactions');
+const debug = require('debug')('db:transactions');
 /**
  * Creates or updates multiple transactions.
  *
  * @param {Object[]} transactions an array of transactions.
  */
 const createOrUpdateTransactions = async transactions => {
-  log.info('Storing transactions in db...');
+  debug('Storing transactions in db...');
 
   const client = await db.connect(); // Obtain a single client (connection)
   try {
@@ -104,11 +104,11 @@ const createOrUpdateTransactions = async transactions => {
     }
 
     await client.query('COMMIT'); // Commit transaction after all queries succeed
-    log.info('All transactions stored successfully');
+    debug('All transactions stored successfully');
     return { success: true };
   } catch (err) {
     await client.query('ROLLBACK'); // Rollback transaction in case of error
-    log.error('Error storing transactions, transaction rolled back:', err);
+    debug('Error storing transactions, transaction rolled back:', err);
     return { success: false, error: err };
   } finally {
     client.release(); // Release the client back to the pool
@@ -123,7 +123,6 @@ const createOrUpdateTransactions = async transactions => {
  * @returns {Object[]} an array of transactions.
  */
 const retrieveTransactionsByAccountId = async (accountId, limit) => {
-  log.info(`Retrieving all transactions for account ${accountId}...`);
   const query = {
     text: 'SELECT * FROM transactions WHERE account_id = $1 ORDER BY date DESC LIMIT $2',
     values: [accountId, limit],
@@ -141,7 +140,7 @@ const retrieveTransactionsByAccountId = async (accountId, limit) => {
  * @returns {Object[]} an array of transactions.
  */
 const retrieveTransactionsByUserId = async (userId, limit) => {
-  log.info(`Running db query for transaction for user ${userId}`);
+  debug(`Running db query for transaction for user ${userId}`);
 
   const query = {
     text: 'SELECT * FROM transactions WHERE user_id = $1 ORDER BY date DESC LIMIT $2',
@@ -155,12 +154,11 @@ const retrieveTransactionsByUserId = async (userId, limit) => {
  * Retrieves all transactions for a single user.
  *
  *
- * @param {number} itemId the item ID.
+ * @param {number} userId the ID of the user.
  * @param {limit} limit how many transactions to return
  * @returns {Object[]} an array of transactions.
  */
-const retrieveTransactionsByItemId = async (itemId, limit) => {
-  log.info(`Running db query for transaction for user ${userId}`);
+const retrieveTransactionsByItemId = async (userId, limit) => {
   const query = {
     text: 'SELECT * FROM transactions WHERE item_id = $1 ORDER BY date DESC LIMIT $2',
     values: [itemId, limit],
@@ -175,7 +173,6 @@ const retrieveTransactionsByItemId = async (itemId, limit) => {
  * @param {string[]} plaidTransactionIds the Plaid IDs of the transactions.
  */
 const deleteTransactions = async plaidTransactionIds => {
-  log.info(`Running db query for deleting transactions...`);
   const pendingQueries = plaidTransactionIds.map(async transactionId => {
     const query = {
       text: 'DELETE FROM transactions_table WHERE plaid_transaction_id = $1',
