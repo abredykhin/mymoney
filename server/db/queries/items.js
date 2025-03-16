@@ -3,7 +3,7 @@
  */
 
 const db = require('../');
-const debug = require('debug')('db:items');
+const log = require('../../utils/logger')('db:items');
 /**
  * Creates a single item.
  *
@@ -122,7 +122,7 @@ const retrieveItemByPlaidItemId = async plaidItemId => {
  * @returns {Object[]} an array of items.
  */
 const retrieveItemsByUser = async userId => {
-  debug(`Running db query for items for user ${userId}`);
+  log.debug(`Running db query for items for user ${userId}`);
   const query = {
     text: 'SELECT * FROM items WHERE user_id = $1',
     values: [userId],
@@ -138,7 +138,9 @@ const retrieveItemsByUser = async userId => {
  * @param {string} status the status of the item.
  */
 const updateItemStatus = async (itemId, status) => {
-  debug(`Running db query to update item status for ${itemId} to ${status}`);
+  log.debug(
+    `Running db query to update item status for ${itemId} to ${status}`
+  );
 
   const query = {
     text: 'UPDATE items_table SET status = $1 WHERE plaid_item_id = $2',
@@ -154,9 +156,10 @@ const updateItemStatus = async (itemId, status) => {
  * @param {string} transactionsCursor latest observed transactions cursor on this item.
  */
 const updateItemTransactionsCursor = async (itemId, transactionsCursor) => {
-  debug(
+  log.debug(
     `Running db query to update item transactions cursor for ${itemId} to ${transactionsCursor}`
   );
+
   const query = {
     text: 'UPDATE items_table SET transactions_cursor = $1 WHERE plaid_item_id = $2',
     values: [transactionsCursor, itemId],

@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const https = require('https');
-const debug = require('debug')('app');
+const logger = require('./utils/logger')('app');
 require('dotenv').config();
 
 // Routes
@@ -60,7 +60,7 @@ const configureApp = () => {
 
   // Error handling
   app.use((err, req, res, next) => {
-    console.error('Error caught:', err);
+    logger.error('Error caught:', err);
     errorHandler(err, req, res, next);
   });
 };
@@ -71,7 +71,7 @@ const configureApp = () => {
 const startHttpServer = () => {
   return new Promise(resolve => {
     const server = http.createServer(app).listen(PORT, () => {
-      debug(`HTTP Server running on port ${PORT}`);
+      logger.info(`HTTP Server running on port ${PORT}`);
       resolve(server);
     });
   });
@@ -85,7 +85,7 @@ const startHttpsServer = () => {
   const certFullChain = process.env.SSL_CERT_PATH;
 
   if (!fs.existsSync(certKey) || !fs.existsSync(certFullChain)) {
-    debug('SSL certificates not found. HTTPS server not started.');
+    logger.error('SSL certificates not found. HTTPS server not started.');
     return Promise.resolve(null);
   }
 
@@ -96,7 +96,7 @@ const startHttpsServer = () => {
     };
 
     const server = https.createServer(options, app).listen(443, () => {
-      debug('HTTPS Server running on port 443');
+      logger.info('HTTPS Server running on port 443');
       resolve(server);
     });
   });
@@ -108,15 +108,15 @@ const startHttpsServer = () => {
 const initializeServices = async () => {
   if (isProduction) {
     try {
-      debug('Initializing scheduled refreshes');
+      logger.info('Initializing scheduled refreshes');
       await refreshService.initializeScheduledRefreshes();
       await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
-      debug('Triggering data refresh for all users');
+      logger.info('Triggering data refresh for all users');
       await refreshService.refreshAllUsers();
 
-      debug('Refresh services initialized successfully!');
+      logger.info('Refresh services initialized successfully!');
     } catch (err) {
-      console.error('Failed to initialize refresh service:', err);
+      logger.error('Failed to initialize refresh service:', err);
     }
   }
 };
@@ -129,7 +129,7 @@ const startApp = async () => {
   configureApp();
 
   // Start servers based on environment
-  debug(`Starting in ${isProduction ? 'production' : 'dev'} mode`);
+  logger.debug(`Starting in ${isProduction ? 'production' : 'dev'} mode`);
 
   if (isProduction) {
     await Promise.all([

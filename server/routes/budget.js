@@ -1,10 +1,11 @@
 const express = require('express');
 const _ = require('lodash');
-const debug = require('debug')('routes:budget');
+
 const { retrieveAccountsByItemId } = require('../db/queries/accounts');
 const { retrieveItemsByUser } = require('../db/queries/items');
 const { asyncWrapper, verifyToken } = require('../middleware');
 const logger = require('../utils/logger');
+const log = require('../utils/logger')('routes:budget');
 
 const router = express.Router();
 
@@ -13,21 +14,18 @@ router.get(
   verifyToken,
   asyncWrapper(async (req, res) => {
     const { userId } = req;
-    debug('Querying db for user items');
-    logger.info('Querying db for user items');
+    logger.info(`Requesting total balance for user ${userId}`);
 
     const items = await retrieveItemsByUser(userId);
     let balance = 0;
     let isoCurrencyCode;
 
-    debug(`Got ${items.length} items`);
+    logger.debug(`Got ${items.length} items`);
     for (const item of items) {
-      debug(`Querying db for accounts for item ${item.id}`);
       logger.info(`Querying db for accounts for item ${item.id}`);
 
       const accounts = await retrieveAccountsByItemId(item.id);
 
-      debug(`Got ${accounts.length} accounts`);
       logger.info(`Got ${accounts.length} accounts`);
 
       for (const account of accounts) {
@@ -37,8 +35,8 @@ router.get(
           case 'loan':
             accountBalance =
               -account.current_balance ?? -account.available_balance;
-            debug(`Account type is credit/loan`);
             logger.info(`Account type is credit/loan`);
+
             break;
           case 'investment':
           case 'brokerage':
@@ -46,12 +44,12 @@ router.get(
           case 'other':
             accountBalance =
               account.current_balance ?? account.available_balance;
-            debug(`Account type is depository`);
             logger.info(`Account type is depository`);
+
             break;
           default:
-            debug(`Unhandled account type: ${account.type}`);
-            logger.info(`Unhandled account type: ${account.type}`);
+            log.info(`Unhandled account type: ${account.type}`);
+
             continue;
         }
 
@@ -62,8 +60,8 @@ router.get(
       }
     }
 
-    debug(`Total balance is ${balance}`);
     logger.info(`Total balance is ${balance}`);
+
     res.json({ balance: balance, iso_currency_code: isoCurrencyCode });
   })
 );

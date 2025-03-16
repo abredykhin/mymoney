@@ -1,5 +1,5 @@
 const Boom = require('@hapi/boom');
-const logger = require('./logger');
+const logger = require('./utils/logger')('myapp:utils:errors');
 
 /**
  * A catch-all error handler that sends a formatted JSON response.

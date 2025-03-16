@@ -1,14 +1,14 @@
 const crypto = require('crypto');
 const sessions = require('../db/queries/sessions');
-const debug = require('debug')('controllers:sessions');
+const log = require('../utils/logger')('controllers:sessions');
 
 const initSession = async userId => {
-  debug(`Generating new session for user ${userId}`);
+  log.info(`Generating new session for user ${userId}`);
   const token = crypto.randomBytes(64).toString('hex');
-  debug(`Token generated. Storing session in db.`);
+  log.info(`Token generated. Storing session in db.`);
 
   const session = await sessions.createSession(token, userId);
-  debug('Session created.');
+  log.info('Session created.');
   return session;
 };
 
