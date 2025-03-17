@@ -21,7 +21,9 @@ services:
     volumes:
       - ./db-data:/var/lib/postgresql/data
       - ./database/create.sql:/docker-entrypoint-initdb.d/create.sql   
-
+    networks:
+      - app-network
+      
   redis:
     image: redis:alpine
     volumes:
