@@ -108,6 +108,10 @@ const startHttpsServer = () => {
 const initializeServices = async () => {
   if (isProduction) {
     try {
+      // Add a delay to ensure database and redis are fully initialized
+      debug('Waiting 5 seconds for database and Redis to be ready...');
+      await new Promise(resolve => setTimeout(resolve, 5000)); 
+      
       debug('Initializing scheduled refreshes');
       await refreshService.initializeScheduledRefreshes();
       await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay

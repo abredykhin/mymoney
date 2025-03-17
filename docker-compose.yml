@@ -53,7 +53,10 @@ services:
       DB_HOST_NAME: postgresdb
       NODE_ENV: development
       REDIS_HOST: redis
-      REDIS_PORT: 6379      
+      REDIS_PORT: 6379
+      REDIS_USE_TLS: "false"
+      POSTGRES_HOST: postgresdb
+      POSTGRES_PORT: 5432
     depends_on:
       - postgresdb
       - redis

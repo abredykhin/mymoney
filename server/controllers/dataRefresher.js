@@ -14,7 +14,8 @@ const refreshQueue = new Bull('data-refresh', {
     port: process.env.REDIS_PORT || 6379,
     host: process.env.REDIS_HOST || 'localhost',
     password: process.env.REDIS_PASSWORD,
-    tls: true,
+    // Only use TLS if explicitly configured with env var
+    tls: process.env.REDIS_USE_TLS === 'true',
     enableTLSForSentinelMode: false,
   },
   defaultJobOptions: {
