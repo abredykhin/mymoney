@@ -9,9 +9,14 @@ RUN echo "Building with NODE_ENV=$NODE_ENV"
 
 WORKDIR /opt/server
 
-COPY . . 
+# Copy package files first for better layer caching
+COPY package*.json ./
 
-RUN npm install
+# Install dependencies
+RUN npm install --production=$NODE_ENV
+
+# Then copy the rest of the application
+COPY . .
 
 # Ensure logs directory exists
 RUN mkdir -p /opt/server/logs
