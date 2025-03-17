@@ -39,7 +39,7 @@ function handleTxnWebhook(code, requestBody) {
     case 'SYNC_UPDATES_AVAILABLE':
       debug('Sync updates available. Starting the sync');
       logger.info('Transactions sync updates available. Starting the sync');
-      syncTransactions(requestBody.plaidItemId);
+      syncTransactions(requestBody.item_id);
       break;
     case 'DEFAULT_UPDATE':
     case 'INITIAL_UPDATE':
