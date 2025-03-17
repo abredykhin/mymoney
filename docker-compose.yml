@@ -71,7 +71,7 @@ services:
     depends_on:
       - postgresdb
     networks:
-      - mynetwork
+      - app-network
 
 networks:
   app-network:
