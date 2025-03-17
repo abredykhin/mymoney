@@ -96,6 +96,44 @@ class BankAccountsService: ObservableObject {
         }        
     }
     
+    func deleteItem(itemId: Int) async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
+        updateClient()
+        guard let client = client else {
+            Logger.e("Client is not set!")
+            throw URLError(.badURL)
+        }
+        
+        Logger.d("Deleting item \(itemId) from server")
+        do {
+            let response = try await client.deleteItem(.init(path: .init(itemId: String(itemId))))
+            
+            switch response {
+            case .noContent:
+                // Remove from local cache
+                bankManager.removeBank(withId: itemId)
+                
+                // Remove from published list
+                self.banksWithAccounts.removeAll { $0.id == itemId }
+                Logger.i("Successfully deleted bank item \(itemId)")
+            case .unauthorized(_):
+                userAccount.signOut()
+                throw URLError(.userAuthenticationRequired)
+            case .notFound(_):
+                Logger.e("Item not found on server")
+                throw URLError(.resourceUnavailable)
+            case .undocumented(_, _):
+                Logger.e("Failed to delete item from server")
+                throw URLError(.badServerResponse)
+            }
+        } catch {
+            Logger.e("Failed to delete item: \(error)")
+            throw error
+        }
+    }
+    
     private func updateClient() {
         client = userAccount.client.map(\.self)
     }

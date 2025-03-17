@@ -34,7 +34,7 @@ struct BankView : View {
                 
                 VStack {
                     ForEach(bank.accounts, id: \.id) {account in
-                        NavigationLink(destination: TransactionListView(account: account)) {
+                        NavigationLink(destination: BankAccountDetailView(account: account)) {
                             BankAccountView(account: account)
                         }
                     }

@@ -153,6 +153,38 @@ paths:
  
         '401':
           description: Unauthorized
+  /transactions/item:
+    get:
+      summary: Retrieves all transactions associated with a specific item.
+      operationId: getItemTransactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: itemId
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: maxCount
+          required: false
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: An array of transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                    minItems: 0
+        '401':
+          description: Unauthorized
   /transactions/recent:
     get:
       summary: Retrieves recent transactions associated with all accounts.
@@ -220,6 +252,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Item'
+  /items/{itemId}:
+    delete:
+      summary: Deletes a Plaid Item.
+      operationId: deleteItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          description: ID of the item to delete
+          schema:
+            type: string
+      responses:
+        204:
+          description: Item deleted successfully
+        401:
+          description: Unauthorized
+        404:
+          description: Item not found
                 
   /budget/totalBalance:
     get:

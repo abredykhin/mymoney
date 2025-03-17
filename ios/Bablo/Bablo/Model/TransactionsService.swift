@@ -84,6 +84,62 @@ class TransactionsService: ObservableObject {
         }
     }
     
+    func fetchItemTransactions(_ itemId: String, forceRefresh: Bool = false) async throws {
+        // If not forcing refresh and we have recently updated data, return
+        if !forceRefresh, !transactions.isEmpty, let lastUpdate = lastUpdated,
+            Date().timeIntervalSince(lastUpdate) < 300 {
+            Logger.i("Using cached transactions data, last updated: \(lastUpdate)")
+            isUsingCachedData = true
+            return
+        }
+        
+        isLoading = true
+        
+        defer {
+            isLoading = false
+        }
+        
+        guard let client = UserAccount.shared.client.map(\.self) else {
+            Logger.e("Client is not set!")
+            isLoading = false
+            return
+        }
+        
+        Logger.d("Fetching transactions from server for item \(itemId)")
+        
+        do {
+            let response = try await client.getItemTransactions(query: .init(itemId: itemId))
+            switch (response) {
+            case .ok(let json):
+                switch(json.body) {
+                case .json(let bodyJson):
+                    Logger.i("Successfully fetched \(bodyJson.transactions?.count ?? 0) transactions for item")
+                    if let fetchedTransactions = bodyJson.transactions {
+                        self.transactions = fetchedTransactions
+                        self.isUsingCachedData = false
+                        self.lastUpdated = Date()
+                        
+                        // Group transactions by account_id and save to CoreData cache
+                        let transactionsByAccountId = Dictionary(grouping: fetchedTransactions) { $0.account_id }
+                        
+                        // Save each group
+                        for (accountId, transactions) in transactionsByAccountId {
+                            transactionsManager.saveTransactions(transactions, for: Int(accountId))
+                        }
+                    }
+                }
+            case .unauthorized(_):
+                Logger.w("Unauthorized user. Logging out")
+                UserAccount.shared.signOut()
+            default:
+                Logger.w("Can't handle the response.")
+            }
+        } catch let error {
+            Logger.e("Failed to fetch item transactions: \(error)")
+            throw error
+        }
+    }
+    
     func fetchRecentTransactions(forceRefresh: Bool = false) async throws {
             // Similar pattern as above but for recent transactions
         if !forceRefresh, !transactions.isEmpty, let lastUpdate = lastUpdated,

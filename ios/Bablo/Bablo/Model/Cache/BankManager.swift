@@ -59,6 +59,28 @@ class BankManager {
         }
     }
     
+    func removeBank(withId bankId: Int) {
+        let context = coreDataStack.newBackgroundContext()
+        context.perform {
+            let fetchRequest: NSFetchRequest<BankEntity> = BankEntity.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id == %d", Int64(bankId))
+            
+            do {
+                let results = try context.fetch(fetchRequest)
+                if let bankToRemove = results.first {
+                    // This will cascade delete associated accounts
+                    context.delete(bankToRemove)
+                    try context.save()
+                    Logger.i("Successfully removed bank with ID \(bankId) from CoreData")
+                } else {
+                    Logger.w("Bank with ID \(bankId) not found in CoreData")
+                }
+            } catch {
+                Logger.e("Failed to remove bank from CoreData: \(error)")
+            }
+        }
+    }
+    
     func fetchBanks() -> [Bank] {
         let context = coreDataStack.viewContext
         let fetchRequest: NSFetchRequest<BankEntity> = BankEntity.fetchRequest()
