@@ -175,7 +175,7 @@ const retrieveTransactionsByItemId = async (userId, limit) => {
 const deleteTransactions = async plaidTransactionIds => {
   const pendingQueries = plaidTransactionIds.map(async transactionId => {
     const query = {
-      text: 'DELETE FROM transactions_table WHERE plaid_transaction_id = $1',
+      text: 'DELETE FROM transactions_table WHERE transaction_id = $1',
       values: [transactionId],
     };
     await db.query(query);
