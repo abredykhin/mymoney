@@ -1,10 +1,16 @@
-# Dockerfile.migrate
+# Dockerfile.migrate-db
 FROM node:20-alpine
 
 WORKDIR /opt/server
 
-COPY . . 
+# Copy package files first for better caching
+COPY server/package*.json ./
 
+# Install dependencies
 RUN npm install
 
+# Copy application code
+COPY server/. ./
+
+# Run migrations in production environment
 CMD ["npx", "knex", "migrate:latest", "--env", "production"]
