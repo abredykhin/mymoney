@@ -67,6 +67,8 @@ services:
       - /opt/server/node_modules # anonymous volume for node_modules only
       - ./server/static:/opt/server/static # Mount the static folder only
       - app-logs:/opt/server/logs # Persist logs using the app-logs volume
+    networks:
+      - app-network
 
   migrate-db:
     build:
