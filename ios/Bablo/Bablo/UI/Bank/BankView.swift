@@ -33,7 +33,7 @@ struct BankView : View {
                 }
                 
                 VStack {
-                    ForEach(bank.accounts, id: \.id) {account in
+                    ForEach(bank.accounts.filter { $0.hidden != true }, id: \.id) { account in
                         NavigationLink(destination: BankAccountDetailView(account: account)) {
                             BankAccountView(account: account)
                         }

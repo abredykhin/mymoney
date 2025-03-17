@@ -272,6 +272,45 @@ paths:
           description: Unauthorized
         404:
           description: Item not found
+  
+  /items/accounts/{accountId}/hidden:
+    put:
+      summary: Updates the hidden status of an account.
+      operationId: updateAccountHiddenStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: ID of the account to update
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                hidden:
+                  type: boolean
+                  description: The new hidden status
+              required:
+                - hidden
+      responses:
+        200:
+          description: Account updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Account not found
                 
   /budget/totalBalance:
     get:
@@ -398,6 +437,10 @@ components:
         subtype:
           type: string
           description: Subtype of account (checking, savings, ira, 401k, student, mortgage, credit card, cd, money market)
+        hidden:
+          type: boolean
+          description: Whether the account is hidden in the UI (not included in totals)
+          default: false
         created_at:
           type: string
           format: date-time

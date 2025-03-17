@@ -121,11 +121,11 @@ struct BankAccountDetailView: View {
                 Button(action: {
                     isDeleteAlertShowing = true
                 }) {
-                    Label("Delete", systemImage: "trash")
+                    Label("Hide Account", systemImage: "eye.slash")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
-                .foregroundColor(.red)
+                .foregroundColor(.orange)
             }
             .padding(.horizontal)
             
@@ -203,18 +203,15 @@ struct BankAccountDetailView: View {
         .navigationTitle("Account Details")
         .alert(isPresented: $isDeleteAlertShowing) {
             Alert(
-                title: Text("Delete Account"),
-                message: Text("Are you sure you want to delete this account? This will remove all associated transactions."),
-                primaryButton: .destructive(Text("Delete")) {
+                title: Text("Hide Account"),
+                message: Text("This account will be hidden from your balance totals and account lists. You can unhide it later from settings."),
+                primaryButton: .default(Text("Hide Account")) {
                     Task {
                         do {
-                            // Find the bank that owns this account and delete it
-                            if let bankId = parentBank?.id {
-                                try await bankAccountsService.deleteItem(itemId: bankId)
-                                presentationMode.wrappedValue.dismiss()
-                            }
+                            try await hideAccount()
+                            presentationMode.wrappedValue.dismiss()
                         } catch {
-                            Logger.e("Failed to delete account: \(error)")
+                            Logger.e("Failed to hide account: \(error)")
                         }
                     }
                 },
@@ -256,6 +253,10 @@ struct BankAccountDetailView: View {
                 Logger.e("Failed to load transactions: \(error)")
             }
         }
+    }
+    
+    private func hideAccount() async throws {
+        try await bankAccountsService.updateAccountHiddenStatus(accountId: account.id, hidden: true)
     }
     
     private func getAccountColor(_ account: BankAccount) -> Color {

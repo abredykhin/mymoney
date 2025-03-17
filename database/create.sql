@@ -189,6 +189,7 @@ CREATE TABLE accounts_table
   unofficial_currency_code text,
   type text NOT NULL,
   subtype text NOT NULL,
+  hidden boolean DEFAULT false,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -215,8 +216,9 @@ AS
     a.unofficial_currency_code,
     a.type,
     a.subtype,
+    a.hidden,
     a.created_at,
-    a.updated_at,
+    a.updated_at
   FROM
     accounts_table a
     LEFT JOIN items i ON i.id = a.item_id;

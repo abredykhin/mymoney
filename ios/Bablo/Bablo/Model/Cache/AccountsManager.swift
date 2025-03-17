@@ -80,6 +80,7 @@ class AccountManager {
         accountEntity.mask = account.mask
         accountEntity.officialName = account.official_name
         accountEntity.updatedAt = account.updated_at
+        accountEntity.hidden = account.hidden ?? false
     }
     
     private func updateAccountEntity(_ accountEntity: AccountEntity, with account: BankAccount) {
@@ -90,6 +91,10 @@ class AccountManager {
         accountEntity.mask = account.mask
         accountEntity.officialName = account.official_name
         accountEntity.updatedAt = account.updated_at
+        // Only update hidden status if it's provided
+        if let hidden = account.hidden {
+            accountEntity.hidden = hidden
+        }
     }
     
     private func mapAccountEntityToBankAccount(_ accountEntity: AccountEntity) -> BankAccount {
@@ -101,7 +106,30 @@ class AccountManager {
             current_balance: accountEntity.currentBalance,
             iso_currency_code: accountEntity.isoCurrencyCode ?? "USD",
             _type: accountEntity.type ?? "unknown",
+            hidden: accountEntity.hidden,
             updated_at: accountEntity.updatedAt ?? Date()
         )
+    }
+    
+    func updateAccountHiddenStatus(_ accountId: Int, hidden: Bool) {
+        let context = coreDataStack.newBackgroundContext()
+        
+        context.perform {
+            let fetchRequest: NSFetchRequest<AccountEntity> = AccountEntity.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id == %d", accountId)
+            
+            do {
+                let results = try context.fetch(fetchRequest)
+                if let accountEntity = results.first {
+                    accountEntity.hidden = hidden
+                    try context.save()
+                    Logger.i("Updated account \(accountId) hidden status to \(hidden) in CoreData")
+                } else {
+                    Logger.w("Account with ID \(accountId) not found in CoreData")
+                }
+            } catch {
+                Logger.e("Failed to update account hidden status in CoreData: \(error)")
+            }
+        }
     }
 }

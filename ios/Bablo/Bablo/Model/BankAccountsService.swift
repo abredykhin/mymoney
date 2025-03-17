@@ -134,6 +134,62 @@ class BankAccountsService: ObservableObject {
         }
     }
     
+    func updateAccountHiddenStatus(accountId: Int, hidden: Bool) async throws {
+        updateClient()
+        guard let client = client else {
+            Logger.e("Client is not set!")
+            throw URLError(.badURL)
+        }
+        
+        Logger.d("Updating account \(accountId) hidden status to \(hidden)")
+        do {
+            let response = try await client.updateAccountHiddenStatus(
+                .init(path: .init(accountId: String(accountId))),
+                body: .json(.init(hidden: hidden))
+            )
+            
+            switch response {
+            case .ok(let json):
+                switch json.body {
+                case .json(let updatedAccount):
+                    Logger.i("Successfully updated account hidden status")
+                    
+                    // Update the account in our local list
+                    for (bankIndex, bank) in banksWithAccounts.enumerated() {
+                        if let accountIndex = bank.accounts.firstIndex(where: { $0.id == accountId }) {
+                            var updatedAccounts = bank.accounts
+                            updatedAccounts[accountIndex].hidden = hidden
+                            banksWithAccounts[bankIndex].accounts = updatedAccounts
+                            break
+                        }
+                    }
+                    
+                    // Update local cache
+                    let accountManager = AccountManager()
+                    accountManager.updateAccountHiddenStatus(accountId, hidden: hidden)
+                    
+                    // Refresh accounts to get updated data
+                    try await refreshAccounts(forceRefresh: true)
+                }
+            case .badRequest(_):
+                Logger.e("Bad request when updating account hidden status")
+                throw URLError(.badServerResponse)
+            case .unauthorized(_):
+                userAccount.signOut()
+                throw URLError(.userAuthenticationRequired)
+            case .notFound(_):
+                Logger.e("Account not found")
+                throw URLError(.resourceUnavailable)
+            case .undocumented(_, _):
+                Logger.e("Failed to update account hidden status")
+                throw URLError(.badServerResponse)
+            }
+        } catch {
+            Logger.e("Failed to update account hidden status: \(error)")
+            throw error
+        }
+    }
+    
     private func updateClient() {
         client = userAccount.client.map(\.self)
     }

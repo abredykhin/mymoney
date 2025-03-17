@@ -127,9 +127,49 @@ const retrieveAccountsByUserId = async userId => {
   return accounts;
 };
 
+/**
+ * Updates an account's hidden status
+ *
+ * @param {number} accountId the ID of the account to update
+ * @param {boolean} hidden the new hidden status
+ * @returns {Object} the updated account
+ */
+const updateAccountHiddenStatus = async (accountId, hidden) => {
+  const query = {
+    text: `
+      UPDATE accounts_table
+      SET hidden = $2
+      WHERE id = $1
+      RETURNING *
+    `,
+    values: [accountId, hidden],
+  };
+  const { rows } = await db.query(query);
+  return rows[0];
+};
+
+/**
+ * Retrieves all visible (non-hidden) accounts for a single user.
+ *
+ * @param {number} userId the ID of the user.
+ *
+ * @returns {Object[]} an array of visible accounts.
+ */
+const retrieveVisibleAccountsByUserId = async userId => {
+  console.log(`Querying db for visible accounts for user ${userId}`);
+  const query = {
+    text: 'SELECT * FROM accounts WHERE user_id = $1 AND hidden = false ORDER BY id',
+    values: [userId],
+  };
+  const { rows: accounts } = await db.query(query);
+  return accounts;
+};
+
 module.exports = {
   createAccounts,
   retrieveAccountByPlaidAccountId,
   retrieveAccountsByItemId,
   retrieveAccountsByUserId,
+  updateAccountHiddenStatus,
+  retrieveVisibleAccountsByUserId,
 };

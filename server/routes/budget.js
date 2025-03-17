@@ -31,6 +31,13 @@ router.get(
       logger.info(`Got ${accounts.length} accounts`);
 
       for (const account of accounts) {
+        // Skip hidden accounts
+        if (account.hidden) {
+          debug(`Skipping hidden account ${account.id}`);
+          logger.info(`Skipping hidden account ${account.id}`);
+          continue;
+        }
+        
         let accountBalance;
         switch (account.type) {
           case 'credit':

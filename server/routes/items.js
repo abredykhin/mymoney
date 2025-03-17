@@ -12,6 +12,7 @@ const {
   createItem,
   deleteItem,
   updateItemStatus,
+  updateAccountHiddenStatus,
 } = require('../db/queries');
 const { asyncWrapper, verifyToken } = require('../middleware');
 const plaid = require('../plaid/loggingPlaidClient');
@@ -234,6 +235,47 @@ router.post(
       access_token: accessToken,
     });
     res.json(resetResponse.data);
+  })
+);
+
+/**
+ * Updates the hidden status of an account
+ * 
+ * @param {string} accountId the ID of the account
+ * @param {boolean} hidden the new hidden status
+ * @returns {Object} the updated account
+ */
+router.put(
+  '/accounts/:accountId/hidden',
+  verifyToken,
+  asyncWrapper(async (req, res) => {
+    const { accountId } = req.params;
+    const { hidden } = req.body;
+    
+    if (hidden === undefined) {
+      throw new Boom('Missing hidden parameter', {
+        statusCode: 400,
+      });
+    }
+    
+    if (typeof hidden !== 'boolean') {
+      throw new Boom('Hidden parameter must be a boolean', {
+        statusCode: 400,
+      });
+    }
+    
+    debug(`Updating account ${accountId} hidden status to ${hidden}`);
+    logger.info(`Updating account ${accountId} hidden status to ${hidden}`);
+    
+    const updatedAccount = await updateAccountHiddenStatus(accountId, hidden);
+    
+    if (!updatedAccount) {
+      throw new Boom('Account not found', {
+        statusCode: 404,
+      });
+    }
+    
+    res.json(sanitizeAccounts([updatedAccount])[0]);
   })
 );
 
