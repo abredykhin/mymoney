@@ -143,9 +143,10 @@ class BankAccountsService: ObservableObject {
         
         Logger.d("Updating account \(accountId) hidden status to \(hidden)")
         do {
+            let pathParameters = Operations.updateAccountHiddenStatus.Input.Path(accountId: String(accountId))
+            let requestBody = Operations.updateAccountHiddenStatus.Input.Body.json(.init(hidden: hidden))
             let response = try await client.updateAccountHiddenStatus(
-                .init(path: .init(accountId: String(accountId))),
-                body: .json(.init(hidden: hidden))
+                .init(path: pathParameters, body: requestBody)
             )
             
             switch response {

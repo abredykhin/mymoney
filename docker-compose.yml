@@ -63,6 +63,16 @@ services:
       - ./server/static:/opt/server/static # Mount the static folder only
       - app-logs:/opt/server/logs # Persist logs using the app-logs volume
 
+  migrate-db:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate-db
+    env_file: ./.env
+    depends_on:
+      - postgresdb
+    networks:
+      - mynetwork
+
 networks:
   app-network:
     driver: bridge
