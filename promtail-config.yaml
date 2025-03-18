@@ -25,3 +25,13 @@ scrape_configs:
       - source_labels: ['__meta_docker_container_name']
         regex: '/(.*)'
         target_label: 'container'
+        
+  # New job for NGINX rate limit logs
+  - job_name: nginx_rate_limit
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: nginx
+          log_type: rate_limit
+          __path__: /var/log/nginx/ratelimit.log

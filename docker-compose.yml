@@ -92,12 +92,13 @@ services:
     networks:
       - app-network
 
-  promtail:
+promtail:
     image: grafana/promtail:2.9.2
     container_name: promtail
     restart: unless-stopped
     volumes:
       - app-logs:/var/log/app-logs:ro
+      - ./nginx/logs:/var/log/nginx:ro  # Add this line to share NGINX logs
       - ./promtail-config.yaml:/etc/promtail/config.yml
       - /var/run/docker.sock:/var/run/docker.sock
     command: -config.file=/etc/promtail/config.yml
@@ -141,6 +142,7 @@ services:
       - ./nginx/conf:/etc/nginx/conf.d
       - ${SSL_CERT_PATH}:/etc/nginx/certs/cert.pem:ro
       - ${SSL_KEY_PATH}:/etc/nginx/certs/key.pem:ro
+      - ./nginx/logs:/var/log/nginx  # Add this line for persistent logs
     depends_on:
       - server
       - grafana
