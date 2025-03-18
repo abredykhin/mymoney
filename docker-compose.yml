@@ -34,10 +34,8 @@ services:
     build: ./server
     env_file: ./.env
     restart: unless-stopped
-    ports:
-      - 5001:5001
-      - 80:5001
-      - 443:443
+    # No longer expose ports externally - only accessible within Docker network
+    # No longer expose 80/443 directly - Nginx will handle these
     environment:
       PLAID_CLIENT_ID:
       PLAID_SECRET_SANDBOX:
@@ -112,8 +110,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     restart: unless-stopped
-    ports:
-      - "9273:3000"  # Using non-standard port 9273 externally
+    # Remove external port - Nginx will proxy to it
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
@@ -121,11 +118,30 @@ services:
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
       - GF_AUTH_BASIC_ENABLED=true
       - GF_SECURITY_DISABLE_GRAVATAR=true
+      - GF_SERVER_ROOT_URL=https://%(domain)s/metrics
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       - loki
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ${SSL_CERT_PATH}:/etc/nginx/certs/cert.pem:ro
+      - ${SSL_KEY_PATH}:/etc/nginx/certs/key.pem:ro
+    depends_on:
+      - server
+      - grafana
     networks:
       - app-network
 

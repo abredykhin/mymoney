@@ -1,12 +1,12 @@
 version: '3.8'
 services:      
   server:
-    volumes:
-      - ${SSL_CERT_PATH}:${SSL_CERT_PATH}:ro
-      - ${SSL_KEY_PATH}:${SSL_KEY_PATH}:ro
     build:
       context: ./server
       args:
         - NODE_ENV=production
     environment:
-      - NODE_ENV=production        
+      - NODE_ENV=production
+      
+  nginx:
+    restart: always  # Ensure Nginx always restarts in production

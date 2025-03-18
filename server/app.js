@@ -135,14 +135,8 @@ const startApp = async () => {
   // Start servers based on environment
   debug(`Starting in ${isProduction ? 'production' : 'dev'} mode`);
 
-  if (isProduction) {
-    await Promise.all([
-      startHttpsServer(),
-      startHttpServer(), // Also start HTTP for redirects/health checks
-    ]);
-  } else {
-    await startHttpServer();
-  }
+  // Only start HTTP server - Nginx will handle HTTPS
+  await startHttpServer();
 
   // Initialize background services
   await initializeServices();
