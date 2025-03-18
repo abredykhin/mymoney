@@ -15,7 +15,7 @@ scrape_configs:
           - localhost
         labels:
           job: mymoney
-          __path__: /var/log/app-logs/**/*.log
+          __path__: /var/log/app-logs/**/*
           
   - job_name: container_logs
     docker_sd_configs:

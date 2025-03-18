@@ -5,13 +5,10 @@ volumes:
   pg_development_data:
   server_data:
   db_data:
-  redis-data:  
+  redis-data:
+  loki-data:
+  grafana-data:
   app-logs:
-    driver: local
-    driver_opts:
-      type: none
-      device: /opt/app-logs/  # Replace with your desired path
-      o: bind  
   
 services:
   postgresdb:
@@ -133,7 +130,3 @@ services:
 networks:
   app-network:
     driver: bridge
-
-volumes:
-  loki-data:
-  grafana-data:
