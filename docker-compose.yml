@@ -87,7 +87,7 @@ services:
     container_name: loki
     restart: unless-stopped
     ports:
-      - "3100:3100"
+      - "9184:3100"  # Using non-standard port 9184 externally
     command: -config.file=/etc/loki/local-config.yaml
     volumes:
       - loki-data:/loki
@@ -113,12 +113,17 @@ services:
     container_name: grafana
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "9273:3000"  # Using non-standard port 9273 externally
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      - GF_AUTH_BASIC_ENABLED=true
+      - GF_SERVER_ROOT_URL=https://%(domain)s/metrics/
+      - GF_SECURITY_COOKIE_SECURE=true
+      - GF_SECURITY_DISABLE_GRAVATAR=true
+      - GF_SECURITY_STRICT_TRANSPORT_SECURITY=true
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
