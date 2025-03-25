@@ -10,13 +10,21 @@ import SwiftData
 
 struct ContentView: View {
     @EnvironmentObject var userAccount: UserAccount
+    @StateObject private var transactionsService = TransactionsService()
 
     var body: some View {
         if (userAccount.isSignedIn) {
             TabView {
                 HomeView()
+                    .environmentObject(transactionsService)
                     .tabItem {
-                        Label("Overview", systemImage: "house")
+                        Label("Overview", systemImage: "house.fill")
+                    }
+                
+                AllTransactionsView()
+                    .environmentObject(transactionsService)
+                    .tabItem {
+                        Label("Transactions", systemImage: "list.bullet")
                     }
             }
         } else {

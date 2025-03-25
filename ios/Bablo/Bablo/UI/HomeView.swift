@@ -12,11 +12,19 @@ import Network
 struct HomeView: View {
     @EnvironmentObject var bankAccountsService: BankAccountsService
     @State private var isOffline = false
+    @StateObject private var transactionsService = TransactionsService()
+    @State private var isRefreshing = false
+    @State private var showingProfile = false
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading) {
+                    if isRefreshing {
+                        ProgressView()
+                            .tint(.accentColor)
+                    }
+
                     if bankAccountsService.isUsingCachedData && isOffline {
                         HStack {
                             Image(systemName: "wifi.slash")
@@ -37,6 +45,7 @@ struct HomeView: View {
                     BankListView()
                     Spacer()
                     RecentTransactionsView()
+                        .environmentObject(transactionsService)
                     Spacer()                    
                 }
             }
@@ -46,10 +55,23 @@ struct HomeView: View {
             .task {
                 checkConnectivityAndRefresh(forceRefresh: false)
             }
-                // Rest of your toolbar code...
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showingProfile = true
+                    } label: {
+                        Image(systemName: "person.circle")
+                    }
+                }
+            }
+            .sheet(isPresented: $showingProfile) {
+                NavigationView {
+                    ProfileView()
+                }
+            }
         }
         .onAppear {
-                // Check network status when view appears
+            // Check network status when view appears
             checkNetworkStatus()
         }
     }
@@ -70,7 +92,17 @@ struct HomeView: View {
     private func checkConnectivityAndRefresh(forceRefresh: Bool = true) {
         Task {
             if !isOffline || forceRefresh {
-                try? await bankAccountsService.refreshAccounts(forceRefresh: forceRefresh)
+                isRefreshing = true
+                
+                do {
+                    // Refresh both accounts and transactions
+                    try await bankAccountsService.refreshAccounts(forceRefresh: forceRefresh)
+                    try await transactionsService.fetchRecentTransactions(forceRefresh: forceRefresh)
+                } catch {
+                    Logger.e("Failed to refresh data: \(error)")
+                }
+                
+                isRefreshing = false
             }
         }
     }
