@@ -11,26 +11,57 @@ import SwiftData
 struct ContentView: View {
     @EnvironmentObject var userAccount: UserAccount
     @StateObject private var transactionsService = TransactionsService()
+    @StateObject private var navigationState = NavigationState()
 
     var body: some View {
         if (userAccount.isSignedIn) {
-            TabView {
-                HomeView()
-                    .environmentObject(transactionsService)
-                    .tabItem {
-                        Label("Overview", systemImage: "house.fill")
-                    }
+            TabView(selection: $navigationState.selectedTab) {
+                // Wrap HomeView in NavigationStack for better navigation management
+                NavigationStack(path: $navigationState.homeNavPath) {
+                    HomeView()
+                        .environmentObject(transactionsService)
+                        .environmentObject(navigationState)
+                }
+                .tabItem {
+                    Label("Overview", systemImage: "house.fill")
+                }
+                .tag(TabSelection.home)
                 
-                AllTransactionsView()
-                    .environmentObject(transactionsService)
-                    .tabItem {
-                        Label("Transactions", systemImage: "list.bullet")
-                    }
+                // Wrap AllTransactionsView in NavigationStack
+                NavigationStack(path: $navigationState.transactionsNavPath) {
+                    AllTransactionsView()
+                        .environmentObject(transactionsService)
+                        .environmentObject(navigationState)
+                }
+                .tabItem {
+                    Label("Transactions", systemImage: "list.bullet")
+                }
+                .tag(TabSelection.transactions)
+            }
+            .onChange(of: navigationState.selectedTab) { oldValue, newValue in
+                // Clear navigation stack when switching tabs
+                if newValue == .home {
+                    navigationState.homeNavPath = NavigationPath()
+                } else if newValue == .transactions {
+                    navigationState.transactionsNavPath = NavigationPath()
+                }
             }
         } else {
             WelcomeView()
         }
     }
+}
+
+// Navigation state management
+class NavigationState: ObservableObject {
+    @Published var selectedTab: TabSelection = .home
+    @Published var homeNavPath = NavigationPath()
+    @Published var transactionsNavPath = NavigationPath()
+}
+
+enum TabSelection {
+    case home
+    case transactions
 }
 
 #Preview {

@@ -11,63 +11,69 @@ import Network
 
 struct HomeView: View {
     @EnvironmentObject var bankAccountsService: BankAccountsService
+    @EnvironmentObject var transactionsService: TransactionsService
+    @EnvironmentObject var navigationState: NavigationState
     @State private var isOffline = false
-    @StateObject private var transactionsService = TransactionsService()
     @State private var isRefreshing = false
     @State private var showingProfile = false
     
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(alignment: .leading) {
-                    if isRefreshing {
-                        ProgressView()
-                            .tint(.accentColor)
-                    }
+        ScrollView {
+            VStack(alignment: .leading) {
+                if isRefreshing {
+                    ProgressView()
+                        .tint(.accentColor)
+                }
 
-                    if bankAccountsService.isUsingCachedData && isOffline {
-                        HStack {
-                            Image(systemName: "wifi.slash")
-                            Text("You're offline. Showing cached data.")
-                            Spacer()
-                            Button("Try Again") {
-                                checkConnectivityAndRefresh()
-                            }
-                            .buttonStyle(.bordered)
+                if bankAccountsService.isUsingCachedData && isOffline {
+                    HStack {
+                        Image(systemName: "wifi.slash")
+                        Text("You're offline. Showing cached data.")
+                        Spacer()
+                        Button("Try Again") {
+                            checkConnectivityAndRefresh()
                         }
-                        .padding()
-                        .background(Color.yellow.opacity(0.2))
-                        .cornerRadius(8)
-                        .padding(.horizontal)
+                        .buttonStyle(.bordered)
                     }
-                    
-                    TotalBalanceView()
-                    BankListView()
-                    Spacer()
-                    RecentTransactionsView()
-                        .environmentObject(transactionsService)
-                    Spacer()                    
+                    .padding()
+                    .background(Color.yellow.opacity(0.2))
+                    .cornerRadius(8)
+                    .padding(.horizontal)
+                }
+                
+                TotalBalanceView()
+                BankListView()
+                Spacer()
+                RecentTransactionsView()
+                    .environmentObject(transactionsService)
+                Spacer()                    
+            }
+        }
+        .refreshable {
+            checkConnectivityAndRefresh()
+        }
+        .task {
+            checkConnectivityAndRefresh(forceRefresh: false)
+        }
+        .navigationTitle("Overview")
+        .navigationDestination(for: Bank.self) { bank in
+            BankDetailView(bank: bank)
+        }
+        .navigationDestination(for: BankAccount.self) { account in
+            BankAccountDetailView(account: account)
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showingProfile = true
+                } label: {
+                    Image(systemName: "person.circle")
                 }
             }
-            .refreshable {
-                checkConnectivityAndRefresh()
-            }
-            .task {
-                checkConnectivityAndRefresh(forceRefresh: false)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showingProfile = true
-                    } label: {
-                        Image(systemName: "person.circle")
-                    }
-                }
-            }
-            .sheet(isPresented: $showingProfile) {
-                NavigationView {
-                    ProfileView()
-                }
+        }
+        .sheet(isPresented: $showingProfile) {
+            NavigationView {
+                ProfileView()
             }
         }
         .onAppear {

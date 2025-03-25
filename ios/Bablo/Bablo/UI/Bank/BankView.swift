@@ -11,7 +11,7 @@ struct BankView : View {
     @State var bank: Bank
     
     var body: some View {
-        NavigationLink(destination: BankDetailView(bank: bank)) {
+        NavigationLink(value: bank) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     if let logo = bank.decodedLogo {
@@ -34,7 +34,7 @@ struct BankView : View {
                 
                 VStack {
                     ForEach(bank.accounts.filter { $0.hidden != true }, id: \.id) { account in
-                        NavigationLink(destination: BankAccountDetailView(account: account)) {
+                        NavigationLink(value: account) {
                             BankAccountView(account: account)
                         }
                     }

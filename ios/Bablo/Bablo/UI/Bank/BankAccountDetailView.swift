@@ -200,7 +200,6 @@ struct BankAccountDetailView: View {
             .padding(.bottom)
         }
         .padding(.vertical, 8)
-        .navigationTitle("Account Details")
         .alert(isPresented: $isDeleteAlertShowing) {
             Alert(
                 title: Text("Hide Account"),
