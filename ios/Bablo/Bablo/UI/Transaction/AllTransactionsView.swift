@@ -21,15 +21,15 @@ struct AllTransactionsView: View {
     private var loadMoreIndex: Int {
         let threshold = 0.8
         let index = Int(
-            Double($transactionsService.transactions.count) * threshold
+            Double(transactionsService.transactions.count) * threshold
         )
-        return max(0, min(index, $transactionsService.transactions.count - 1))
+        return max(0, min(index, transactionsService.transactions.count - 1))
     }
     
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                if transactionsService.isLoading && $transactionsService.transactions.isEmpty {
+                if transactionsService.isLoading && transactionsService.transactions.isEmpty {
                     ProgressView()
                         .tint(.accentColor)
                 }
@@ -37,12 +37,12 @@ struct AllTransactionsView: View {
                 if !transactionsService.transactions.isEmpty {
                     ScrollViewReader { proxy in
                         List {
-                            ForEach(transactionsService.transactions, id: \.id) { transaction in
+                            ForEach(Array(zip(transactionsService.transactions.indices, transactionsService.transactions)), id: \.0) { index, transaction in
                                 TransactionView(transaction: transaction)
-                                    .id(transaction.id)
+                                    .id("\(transaction.id ?? 0)-\(index)")
                                     .onAppear {
                                         // If this is the transaction at our threshold point
-                                        if transaction.id == transactionsService.transactions[safe: loadMoreIndex]?.id {
+                                        if index == loadMoreIndex {
                                             preloadNextPage()
                                         }
                                     }

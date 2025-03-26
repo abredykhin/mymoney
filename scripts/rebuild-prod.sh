@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 docker-compose down --remove-orphans
 
 # Build with cache reuse for faster builds
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache=false --pull
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml build --pull
 
 # Start the containers
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
