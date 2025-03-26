@@ -112,19 +112,27 @@ class TransactionsService: ObservableObject {
     
     // MARK: - Public API Methods
     
-    /// Fetches transactions for a specific account
+    /// Fetches transactions for a specific account with optional pagination
     /// - Parameters:
     ///   - accountId: The account ID
-    ///   - forceRefresh: Whether to force a refresh from the server 
+    ///   - forceRefresh: Whether to force a refresh from the server
+    ///   - loadMore: Whether to load the next page of transactions
     ///   - limit: Maximum number of transactions to fetch
-    func fetchAccountTransactions(_ accountId: String, forceRefresh: Bool = false, limit: Int = 50) async throws {
+    func fetchAccountTransactions(_ accountId: String, forceRefresh: Bool = false, loadMore: Bool = false, limit: Int = 50) async throws {
+        if loadMore && !hasNextPage {
+            Logger.i("No more pages to load")
+            return
+        }
+        
         isLoading = true
         defer { isLoading = false }
         
         let options = FetchOptions(
             limit: limit,
+            cursor: loadMore ? paginationInfo?.nextCursor : nil,
             filter: currentFilter,
-            forceRefresh: forceRefresh
+            forceRefresh: forceRefresh,
+            loadMore: loadMore
         )
         
         let result = try await fetchTransactions(
@@ -135,12 +143,14 @@ class TransactionsService: ObservableObject {
         updateState(from: result)
     }
     
-    /// Loads more transactions for pagination with a specific account
+    /// Fetches transactions for a specific item with optional pagination
     /// - Parameters:
-    ///   - accountId: The account ID
+    ///   - itemId: The item ID
+    ///   - forceRefresh: Whether to force a refresh from the server
+    ///   - loadMore: Whether to load the next page of transactions 
     ///   - limit: Maximum number of transactions to fetch
-    func loadMoreAccountTransactions(_ accountId: String, limit: Int = 50) async throws {
-        guard hasNextPage else {
+    func fetchItemTransactions(_ itemId: String, forceRefresh: Bool = false, loadMore: Bool = false, limit: Int = 50) async throws {
+        if loadMore && !hasNextPage {
             Logger.i("No more pages to load")
             return
         }
@@ -150,32 +160,10 @@ class TransactionsService: ObservableObject {
         
         let options = FetchOptions(
             limit: limit,
-            cursor: paginationInfo?.nextCursor,
+            cursor: loadMore ? paginationInfo?.nextCursor : nil,
             filter: currentFilter,
-            loadMore: true
-        )
-        
-        let result = try await fetchTransactions(
-            from: .account(id: accountId),
-            options: options
-        )
-        
-        updateState(from: result)
-    }
-    
-    /// Fetches transactions for a specific item
-    /// - Parameters:
-    ///   - itemId: The item ID
-    ///   - forceRefresh: Whether to force a refresh from the server 
-    ///   - limit: Maximum number of transactions to fetch
-    func fetchItemTransactions(_ itemId: String, forceRefresh: Bool = false, limit: Int = 50) async throws {
-        isLoading = true
-        defer { isLoading = false }
-        
-        let options = FetchOptions(
-            limit: limit,
-            filter: currentFilter,
-            forceRefresh: forceRefresh
+            forceRefresh: forceRefresh,
+            loadMore: loadMore
         )
         
         let result = try await fetchTransactions(
@@ -186,12 +174,13 @@ class TransactionsService: ObservableObject {
         updateState(from: result)
     }
     
-    /// Loads more transactions for pagination with a specific item
+    /// Fetches recent transactions with optional pagination
     /// - Parameters:
-    ///   - itemId: The item ID
+    ///   - forceRefresh: Whether to force a refresh from the server
+    ///   - loadMore: Whether to load the next page of transactions
     ///   - limit: Maximum number of transactions to fetch
-    func loadMoreItemTransactions(_ itemId: String, limit: Int = 50) async throws {
-        guard hasNextPage else {
+    func fetchRecentTransactions(forceRefresh: Bool = false, loadMore: Bool = false, limit: Int = 10) async throws {
+        if loadMore && !hasNextPage {
             Logger.i("No more pages to load")
             return
         }
@@ -201,31 +190,10 @@ class TransactionsService: ObservableObject {
         
         let options = FetchOptions(
             limit: limit,
-            cursor: paginationInfo?.nextCursor,
+            cursor: loadMore ? paginationInfo?.nextCursor : nil,
             filter: currentFilter,
-            loadMore: true
-        )
-        
-        let result = try await fetchTransactions(
-            from: .item(id: itemId),
-            options: options
-        )
-        
-        updateState(from: result)
-    }
-    
-    /// Fetches recent transactions
-    /// - Parameters:
-    ///   - forceRefresh: Whether to force a refresh from the server
-    ///   - limit: Maximum number of transactions to fetch
-    func fetchRecentTransactions(forceRefresh: Bool = false, limit: Int = 10) async throws {
-        isLoading = true
-        defer { isLoading = false }
-        
-        let options = FetchOptions(
-            limit: limit,
-            filter: currentFilter,
-            forceRefresh: forceRefresh
+            forceRefresh: forceRefresh,
+            loadMore: loadMore
         )
         
         let result = try await fetchTransactions(
@@ -236,63 +204,18 @@ class TransactionsService: ObservableObject {
         updateState(from: result)
     }
     
-    /// Loads more recent transactions for pagination
-    /// - Parameter limit: Maximum number of transactions to fetch
-    func loadMoreRecentTransactions(limit: Int = 10) async throws {
-        guard hasNextPage else {
-            Logger.i("No more pages to load")
-            return
-        }
-        
-        isLoading = true
-        defer { isLoading = false }
-        
-        let options = FetchOptions(
-            limit: limit,
-            cursor: paginationInfo?.nextCursor,
-            filter: currentFilter,
-            loadMore: true
-        )
-        
-        let result = try await fetchTransactions(
-            from: .recent,
-            options: options
-        )
-        
-        updateState(from: result)
-    }
-    
-    /// Method to fetch all transactions for the user
+    /// Method to fetch all transactions for the user with optional pagination
     /// - Parameters:
     ///   - forceRefresh: Whether to force a refresh from the server
+    ///   - loadMore: Whether to load the next page of transactions
     ///   - limit: Maximum number of transactions to fetch
-    func fetchAllTransactions(forceRefresh: Bool = false, limit: Int = 50) async throws {
+    func fetchAllTransactions(forceRefresh: Bool = false, loadMore: Bool = false, limit: Int = 50) async throws {
         // Reset pagination state for a new fetch
         if forceRefresh {
             resetPagination()
         }
         
-        isLoading = true
-        defer { isLoading = false }
-        
-        let options = FetchOptions(
-            limit: limit,
-            filter: currentFilter,
-            forceRefresh: forceRefresh
-        )
-        
-        let result = try await fetchTransactions(
-            from: .all,
-            options: options
-        )
-        
-        updateState(from: result)
-    }
-    
-    /// Load more all transactions (used for pagination)
-    /// - Parameter limit: Maximum number of transactions to fetch
-    func loadMoreAllTransactions(limit: Int = 50) async throws {
-        guard hasNextPage, let nextCursor = paginationInfo?.nextCursor else {
+        if loadMore && !hasNextPage {
             Logger.i("No more pages to load")
             return
         }
@@ -302,9 +225,10 @@ class TransactionsService: ObservableObject {
         
         let options = FetchOptions(
             limit: limit,
-            cursor: nextCursor,
+            cursor: loadMore ? paginationInfo?.nextCursor : nil,
             filter: currentFilter,
-            loadMore: true
+            forceRefresh: forceRefresh,
+            loadMore: loadMore
         )
         
         let result = try await fetchTransactions(

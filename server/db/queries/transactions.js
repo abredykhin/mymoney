@@ -219,12 +219,7 @@ const retrieveTransactionsByAccountId = async (accountId, options = {}) => {
   const { rows: countResult } = await db.query(countQuery);
   const totalCount = parseInt(countResult[0].count, 10);
   
-  // For backward compatibility, return just the transactions array if no filtering is applied
-  if (!cursor && !Object.keys(filters).length) {
-    return transactions;
-  }
-  
-  // Return enhanced result with pagination metadata
+  // Always return enhanced result with pagination metadata
   return {
     transactions,
     pagination: {
@@ -252,17 +247,6 @@ const retrieveTransactionsByAccountId = async (accountId, options = {}) => {
  */
 const retrieveTransactionsByUserId = async (userId, options = {}) => {
   debug(`Running db query for transaction for user ${userId}`);
-  
-  // For backward compatibility
-  if (typeof options === 'number') {
-    const limit = options;
-    const query = {
-      text: 'SELECT * FROM transactions WHERE user_id = $1 ORDER BY date DESC LIMIT $2',
-      values: [userId, limit],
-    };
-    const { rows: transactions } = await db.query(query);
-    return transactions;
-  }
   
   const { limit = 50, cursor = null, filters = {} } = options;
   
@@ -353,12 +337,7 @@ const retrieveTransactionsByUserId = async (userId, options = {}) => {
   const { rows: countResult } = await db.query(countQuery);
   const totalCount = parseInt(countResult[0].count, 10);
   
-  // For backward compatibility, return just the transactions array if no filtering is applied
-  if (!cursor && !Object.keys(filters).length) {
-    return transactions;
-  }
-  
-  // Return enhanced result with pagination metadata
+  // Always return enhanced result with pagination metadata
   return {
     transactions,
     pagination: {
@@ -385,17 +364,6 @@ const retrieveTransactionsByUserId = async (userId, options = {}) => {
  * @returns {Object} Object containing transactions array and pagination metadata.
  */
 const retrieveTransactionsByItemId = async (itemId, options = {}) => {
-  // For backward compatibility
-  if (typeof options === 'number') {
-    const limit = options;
-    const query = {
-      text: 'SELECT * FROM transactions WHERE item_id = $1 ORDER BY date DESC LIMIT $2',
-      values: [itemId, limit],
-    };
-    const { rows: transactions } = await db.query(query);
-    return transactions;
-  }
-  
   const { limit = 50, cursor = null, filters = {} } = options;
   
   // Parse cursor if present
@@ -485,12 +453,7 @@ const retrieveTransactionsByItemId = async (itemId, options = {}) => {
   const { rows: countResult } = await db.query(countQuery);
   const totalCount = parseInt(countResult[0].count, 10);
   
-  // For backward compatibility, return just the transactions array if no filtering is applied
-  if (!cursor && !Object.keys(filters).length) {
-    return transactions;
-  }
-  
-  // Return enhanced result with pagination metadata
+  // Always return enhanced result with pagination metadata
   return {
     transactions,
     pagination: {

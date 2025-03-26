@@ -152,7 +152,7 @@ class BankAccountsService: ObservableObject {
             switch response {
             case .ok(let json):
                 switch json.body {
-                case .json(let updatedAccount):
+                case .json(_):
                     Logger.i("Successfully updated account hidden status")
                     
                     // Update the account in our local list

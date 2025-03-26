@@ -231,7 +231,7 @@ struct BankAccountDetailView: View {
     private func refreshData() {
         Task {
             do {
-                try await transactionsService.fetchAccountTransactions(String(account.id), forceRefresh: true)
+                try await transactionsService.fetchAccountTransactions(String(account.id), forceRefresh: true, loadMore: false)
                 withAnimation {
                     isRefreshing = false
                 }
@@ -247,7 +247,7 @@ struct BankAccountDetailView: View {
     private func loadTransactions() {
         Task {
             do {
-                try await transactionsService.fetchAccountTransactions(String(account.id))
+                try await transactionsService.fetchAccountTransactions(String(account.id), forceRefresh: false, loadMore: false)
             } catch {
                 Logger.e("Failed to load transactions: \(error)")
             }

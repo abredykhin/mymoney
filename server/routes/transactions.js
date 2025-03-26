@@ -16,7 +16,7 @@ const router = express.Router();
  * @param {Array} transactions Array of transaction objects
  * @returns {Array} Sanitized transaction objects with consistent fields
  */
-const sanitizeTransactions = (transactions) => {
+const sanitizeTransactions = transactions => {
   return transactions.map(transaction =>
     _.pick(transaction, [
       'id',
@@ -58,38 +58,48 @@ router.get(
     const userId = req.userId;
     const limit = parseInt(req.query.limit ?? 50, 10);
     const cursor = req.query.cursor || null;
-    
+
     // Extract filter params
     const filters = {};
     if (req.query.category) filters.category = req.query.category;
     if (req.query.startDate) filters.startDate = req.query.startDate;
     if (req.query.endDate) filters.endDate = req.query.endDate;
     if (req.query.search) filters.search = req.query.search;
-    
-    debug(`Retrieving user transactions for user ${userId} with pagination and filters`);
-    logger.info(`Retrieving user transactions for user ${userId} with pagination and filters`);
-    
+
+    debug(
+      `Retrieving user transactions for user ${userId} with pagination and filters`
+    );
+    logger.info(
+      `Retrieving user transactions for user ${userId} with pagination and filters`
+    );
+
     const options = {
       limit,
       cursor,
-      filters: Object.keys(filters).length > 0 ? filters : undefined
+      filters: Object.keys(filters).length > 0 ? filters : undefined,
     };
-    
+
     const result = await retrieveTransactionsByUserId(userId, options);
-    
+
     // Handle both new and legacy response formats
     const transactions = Array.isArray(result) ? result : result.transactions;
-    
+
     debug(`Got ${transactions.length} transactions. Processing`);
     const sanitizedTransactions = sanitizeTransactions(transactions);
-    
+
     // Construct response with pagination info if available
     const response = { transactions: sanitizedTransactions };
-    
+
     if (!Array.isArray(result) && result.pagination) {
       response.pagination = result.pagination;
     }
-    
+
+    if (response.pagination) {
+      logger.info(`Pagination available: ${response.pagination}`);
+    } else {
+      logger.info('No pagination available');
+    }
+
     debug('Sending the result back to client');
     logger.info('Sending the result back to client');
     res.json(response);
@@ -115,38 +125,42 @@ router.get(
     const itemId = req.itemId;
     const limit = parseInt(req.query.limit ?? 50, 10);
     const cursor = req.query.cursor || null;
-    
+
     // Extract filter params
     const filters = {};
     if (req.query.category) filters.category = req.query.category;
     if (req.query.startDate) filters.startDate = req.query.startDate;
     if (req.query.endDate) filters.endDate = req.query.endDate;
     if (req.query.search) filters.search = req.query.search;
-    
-    debug(`Retrieving user transactions for item ${itemId} with pagination and filters`);
-    logger.info(`Retrieving user transactions for item ${itemId} with pagination and filters`);
-    
+
+    debug(
+      `Retrieving user transactions for item ${itemId} with pagination and filters`
+    );
+    logger.info(
+      `Retrieving user transactions for item ${itemId} with pagination and filters`
+    );
+
     const options = {
       limit,
       cursor,
-      filters: Object.keys(filters).length > 0 ? filters : undefined
+      filters: Object.keys(filters).length > 0 ? filters : undefined,
     };
-    
+
     const result = await retrieveTransactionsByItemId(itemId, options);
-    
+
     // Handle both new and legacy response formats
     const transactions = Array.isArray(result) ? result : result.transactions;
-    
+
     debug(`Got ${transactions.length} transactions. Processing`);
     const sanitizedTransactions = sanitizeTransactions(transactions);
-    
+
     // Construct response with pagination info if available
     const response = { transactions: sanitizedTransactions };
-    
+
     if (!Array.isArray(result) && result.pagination) {
       response.pagination = result.pagination;
     }
-    
+
     debug('Sending the result back to client');
     logger.info('Sending the result back to client');
     res.json(response);
@@ -172,42 +186,42 @@ router.get(
     const accountId = req.query.accountId;
     const limit = parseInt(req.query.limit ?? 50, 10);
     const cursor = req.query.cursor || null;
-    
+
     // Extract filter params
     const filters = {};
     if (req.query.category) filters.category = req.query.category;
     if (req.query.startDate) filters.startDate = req.query.startDate;
     if (req.query.endDate) filters.endDate = req.query.endDate;
     if (req.query.search) filters.search = req.query.search;
-    
+
     debug(
       `Looking up user transactions for account ${accountId} with limit ${limit}, cursor: ${cursor || 'none'}, filters: ${JSON.stringify(filters)}`
     );
     logger.info(
       `Looking up user transactions for account ${accountId} with limit ${limit}, cursor: ${cursor || 'none'}`
     );
-    
+
     const options = {
       limit,
       cursor,
-      filters: Object.keys(filters).length > 0 ? filters : undefined
+      filters: Object.keys(filters).length > 0 ? filters : undefined,
     };
-    
+
     const result = await retrieveTransactionsByAccountId(accountId, options);
-    
+
     // Handle both new and legacy response formats
     const transactions = Array.isArray(result) ? result : result.transactions;
-    
+
     debug(`Got ${transactions.length} transactions. Processing...`);
     const sanitizedTransactions = sanitizeTransactions(transactions);
 
     // Construct response with pagination info if available
     const response = { transactions: sanitizedTransactions };
-    
+
     if (!Array.isArray(result) && result.pagination) {
       response.pagination = result.pagination;
     }
-    
+
     debug('Sending the result back to client');
     logger.info('Sending the result back to client');
     res.json(response);
@@ -232,42 +246,42 @@ router.get(
     const { userId } = req;
     const limit = parseInt(req.query.limit ?? 10, 10);
     const cursor = req.query.cursor || null;
-    
+
     // Extract filter params
     const filters = {};
     if (req.query.category) filters.category = req.query.category;
     if (req.query.startDate) filters.startDate = req.query.startDate;
     if (req.query.endDate) filters.endDate = req.query.endDate;
     if (req.query.search) filters.search = req.query.search;
-    
+
     debug(
       `Looking up recent transactions for all accounts with limit ${limit}, cursor: ${cursor || 'none'}, filters: ${JSON.stringify(filters)}`
     );
     logger.info(
       `Looking up recent transactions for all accounts with limit ${limit}, cursor: ${cursor || 'none'}`
     );
-    
+
     const options = {
       limit,
       cursor,
-      filters: Object.keys(filters).length > 0 ? filters : undefined
+      filters: Object.keys(filters).length > 0 ? filters : undefined,
     };
-    
+
     const result = await retrieveTransactionsByUserId(userId, options);
-    
+
     // Handle both new and legacy response formats
     const transactions = Array.isArray(result) ? result : result.transactions;
-    
+
     debug(`Got ${transactions.length} transactions. Processing`);
     const sanitizedTransactions = sanitizeTransactions(transactions);
 
     // Construct response with pagination info if available
     const response = { transactions: sanitizedTransactions };
-    
+
     if (!Array.isArray(result) && result.pagination) {
       response.pagination = result.pagination;
     }
-    
+
     debug('Sending the result back to client');
     logger.info('Sending the result back to client');
     res.json(response);

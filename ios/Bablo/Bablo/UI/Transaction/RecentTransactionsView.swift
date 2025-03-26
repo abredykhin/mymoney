@@ -32,7 +32,7 @@ struct RecentTransactionsView: View {
         .cardBackground()
         .onAppear() {
             Task {
-                try? await transactionsService.fetchRecentTransactions(limit: 10)
+                try? await transactionsService.fetchRecentTransactions(forceRefresh: false, loadMore: false, limit: 10)
             }
         }
     }

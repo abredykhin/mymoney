@@ -21,7 +21,6 @@ class BankManager {
                 // First, fetch existing banks to avoid duplicates
             let fetchRequest: NSFetchRequest<BankEntity> = BankEntity.fetchRequest()
             let existingBanks = try? context.fetch(fetchRequest)
-            let existingBankIds = existingBanks?.map { $0.id } ?? []
             
             for bank in banks {
                     // Check if bank already exists
