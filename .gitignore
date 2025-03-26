@@ -69,4 +69,13 @@ dist/
 # dbdata
 .dbdata/
 
+# Xcode user-specific files
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+ios/Bablo/Bablo.xcodeproj/project.xcworkspace/xcuserdata/
+ios/Bablo/Bablo.xcodeproj/xcuserdata/
+ios/UxComponents/UxComponents.xcodeproj/project.xcworkspace/xcuserdata/
+ios/UxComponents/UxComponents.xcodeproj/xcuserdata/
+
 package-lock.json
