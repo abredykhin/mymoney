@@ -122,7 +122,7 @@ paths:
           description: Internal server error. An unexpected error occurred on the server.
   /transactions/account:
     get:
-      summary: Retrieves all transactions associated with an account.
+      summary: Retrieves transactions for an account with cursor-based pagination and filtering.
       operationId: getAccountTransactions
       security:
         - bearerAuth: []
@@ -130,16 +130,51 @@ paths:
         - name: accountId
           required: true
           in: query
+          description: The ID of the account to retrieve transactions for
           schema:
             type: string
-        - name: maxCount
+        - name: limit
           required: false
           in: query
+          description: Maximum number of transactions to return (default 50)
           schema:
             type: integer
+            default: 50
+        - name: cursor
+          required: false
+          in: query
+          description: Pagination cursor in format "date:id" for fetching next page
+          schema:
+            type: string
+        - name: category
+          required: false
+          in: query
+          description: Filter transactions by personal finance category
+          schema:
+            type: string
+        - name: startDate
+          required: false
+          in: query
+          description: Filter transactions on or after this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          required: false
+          in: query
+          description: Filter transactions on or before this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: search
+          required: false
+          in: query
+          description: Search term to filter transaction name or merchant name
+          schema:
+            type: string
       responses:
         '200':
-          description: An array of transactions
+          description: Transactions and pagination metadata
           content:
             application/json:
               schema:
@@ -150,12 +185,13 @@ paths:
                     items:
                       $ref: '#/components/schemas/Transaction'
                     minItems: 0
- 
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
         '401':
           description: Unauthorized
   /transactions/item:
     get:
-      summary: Retrieves all transactions associated with a specific item.
+      summary: Retrieves transactions for an item with cursor-based pagination and filtering.
       operationId: getItemTransactions
       security:
         - bearerAuth: []
@@ -163,16 +199,51 @@ paths:
         - name: itemId
           required: true
           in: query
+          description: The ID of the item to retrieve transactions for
           schema:
             type: string
-        - name: maxCount
+        - name: limit
           required: false
           in: query
+          description: Maximum number of transactions to return (default 50)
           schema:
             type: integer
+            default: 50
+        - name: cursor
+          required: false
+          in: query
+          description: Pagination cursor in format "date:id" for fetching next page
+          schema:
+            type: string
+        - name: category
+          required: false
+          in: query
+          description: Filter transactions by personal finance category
+          schema:
+            type: string
+        - name: startDate
+          required: false
+          in: query
+          description: Filter transactions on or after this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          required: false
+          in: query
+          description: Filter transactions on or before this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: search
+          required: false
+          in: query
+          description: Search term to filter transaction name or merchant name
+          schema:
+            type: string
       responses:
         '200':
-          description: An array of transactions
+          description: Transactions and pagination metadata
           content:
             application/json:
               schema:
@@ -183,23 +254,59 @@ paths:
                     items:
                       $ref: '#/components/schemas/Transaction'
                     minItems: 0
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
         '401':
           description: Unauthorized
   /transactions/recent:
     get:
-      summary: Retrieves recent transactions associated with all accounts.
+      summary: Retrieves recent transactions with cursor-based pagination and filtering.
       operationId: getRecentTransactions
       security:
         - bearerAuth: []
       parameters:
-        - name: maxCount
+        - name: limit
           required: false
           in: query
+          description: Maximum number of transactions to return (default 10)
           schema:
             type: integer
+            default: 10
+        - name: cursor
+          required: false
+          in: query
+          description: Pagination cursor in format "date:id" for fetching next page
+          schema:
+            type: string
+        - name: category
+          required: false
+          in: query
+          description: Filter transactions by personal finance category
+          schema:
+            type: string
+        - name: startDate
+          required: false
+          in: query
+          description: Filter transactions on or after this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          required: false
+          in: query
+          description: Filter transactions on or before this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: search
+          required: false
+          in: query
+          description: Search term to filter transaction name or merchant name
+          schema:
+            type: string
       responses:
         '200':
-          description: An array of transactions
+          description: Transactions and pagination metadata
           content:
             application/json:
               schema:
@@ -210,7 +317,71 @@ paths:
                     items:
                       $ref: '#/components/schemas/Transaction'
                     minItems: 0
- 
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+  /transactions/all:
+    get:
+      summary: Retrieves all user transactions with cursor-based pagination and filtering.
+      operationId: getAllTransactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          required: false
+          in: query
+          description: Maximum number of transactions to return (default 50)
+          schema:
+            type: integer
+            default: 50
+        - name: cursor
+          required: false
+          in: query
+          description: Pagination cursor in format "date:id" for fetching next page
+          schema:
+            type: string
+        - name: category
+          required: false
+          in: query
+          description: Filter transactions by personal finance category
+          schema:
+            type: string
+        - name: startDate
+          required: false
+          in: query
+          description: Filter transactions on or after this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          required: false
+          in: query
+          description: Filter transactions on or before this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: search
+          required: false
+          in: query
+          description: Search term to filter transaction name or merchant name
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transactions and pagination metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                    minItems: 0
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
         '401':
           description: Unauthorized          
   /link-token:
@@ -537,3 +708,19 @@ components:
           format: decimal
         iso_currency_code:
           type: string
+    Pagination:
+      type: object
+      description: Cursor-based pagination metadata
+      properties:
+        totalCount:
+          type: integer
+          description: Total count of items matching the query
+        limit:
+          type: integer
+          description: Number of items requested per page
+        hasMore:
+          type: boolean
+          description: Whether there are more items available to fetch
+        nextCursor:
+          type: string
+          description: Cursor to fetch the next page of results (format "date:id")

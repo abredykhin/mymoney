@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct RecentTransactionsView: View {
-    @EnvironmentObject var transactionsService: TransactionsService
+    @StateObject private var transactionsService = TransactionsService()
     
     var body: some View {
         VStack {
@@ -17,15 +17,22 @@ struct RecentTransactionsView: View {
                 .padding(.horizontal)
                 .padding(.top, 2)
             
-            ForEach(transactionsService.transactions, id: \.id) { transaction in
-                TransactionView(transaction: transaction)
-                    .padding(.horizontal)
+            if transactionsService.transactions.isEmpty && !transactionsService.isLoading {
+                Text("No transactions")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .padding()
+            } else {
+                ForEach(transactionsService.transactions, id: \.id) { transaction in
+                    TransactionView(transaction: transaction)
+                        .padding(.horizontal)
+                }
             }
         }
         .cardBackground()
         .onAppear() {
             Task {
-                try? await transactionsService.fetchRecentTransactions()
+                try? await transactionsService.fetchRecentTransactions(limit: 10)
             }
         }
     }

@@ -10,7 +10,6 @@ import SwiftData
 
 struct ContentView: View {
     @EnvironmentObject var userAccount: UserAccount
-    @StateObject private var transactionsService = TransactionsService()
     @StateObject private var navigationState = NavigationState()
 
     var body: some View {
@@ -19,7 +18,6 @@ struct ContentView: View {
                 // Wrap HomeView in NavigationStack for better navigation management
                 NavigationStack(path: $navigationState.homeNavPath) {
                     HomeView()
-                        .environmentObject(transactionsService)
                         .environmentObject(navigationState)
                 }
                 .tabItem {
@@ -30,7 +28,6 @@ struct ContentView: View {
                 // Wrap AllTransactionsView in NavigationStack
                 NavigationStack(path: $navigationState.transactionsNavPath) {
                     AllTransactionsView()
-                        .environmentObject(transactionsService)
                         .environmentObject(navigationState)
                 }
                 .tabItem {

@@ -8,16 +8,17 @@
 import SwiftUI
 
 struct AllTransactionsView: View {
-    @EnvironmentObject var transactionsService: TransactionsService
+    @StateObject private var transactionsService = TransactionsService()
     @EnvironmentObject var userAccount: UserAccount
     @EnvironmentObject var navigationState: NavigationState
     @State private var isRefreshing = false
     @State private var showingProfile = false
+    @State private var isLoadingMore = false
     
     var body: some View {
         ZStack {
-            VStack {
-                if transactionsService.isLoading {
+            VStack(spacing: 0) {
+                if transactionsService.isLoading && transactionsService.transactions.isEmpty {
                     ProgressView()
                         .tint(.accentColor)
                 }
@@ -25,6 +26,20 @@ struct AllTransactionsView: View {
                 List {
                     ForEach(transactionsService.transactions, id: \.id) { transaction in
                         TransactionView(transaction: transaction)
+                    }
+                    
+                    // Pagination loading trigger and indicator
+                    if transactionsService.hasNextPage {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                                .tint(.accentColor)
+                                .onAppear {
+                                    loadMoreTransactions()
+                                }
+                            Spacer()
+                        }
+                        .padding()
                     }
                 }
                 .listStyle(.plain)
@@ -72,11 +87,28 @@ struct AllTransactionsView: View {
     private func refreshTransactions() async {
         isRefreshing = true
         do {
-            try await transactionsService.fetchRecentTransactions(forceRefresh: true)
+            try await transactionsService.fetchAllTransactions(forceRefresh: true)
         } catch {
             Logger.e("Failed to refresh transactions: \(error)")
         }
         isRefreshing = false
+    }
+    
+    private func loadMoreTransactions() {
+        // Avoid multiple simultaneous pagination requests
+        guard !isLoadingMore && !transactionsService.isLoading && transactionsService.hasNextPage else {
+            return
+        }
+        
+        Task {
+            isLoadingMore = true
+            do {
+                try await transactionsService.loadMoreAllTransactions()
+            } catch {
+                Logger.e("Failed to load more transactions: \(error)")
+            }
+            isLoadingMore = false
+        }
     }
     
     private func handleSignOut() {

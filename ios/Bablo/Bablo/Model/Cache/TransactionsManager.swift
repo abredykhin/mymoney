@@ -79,6 +79,41 @@ class TransactionsManager {
         }
     }
     
+    // New method to support paginated fetching from cache
+    func fetchPaginatedTransactions(limit: Int = 50, offset: Int = 0) -> [Transaction] {
+        let context = coreDataStack.viewContext
+        let fetchRequest: NSFetchRequest<TransactionEntity> = TransactionEntity.fetchRequest()
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        fetchRequest.fetchLimit = limit
+        fetchRequest.fetchOffset = offset
+        
+        do {
+            let transactionEntities = try context.fetch(fetchRequest)
+            return transactionEntities.map { self.mapTransactionEntityToTransaction($0) }
+        } catch {
+            Logger.e("Failed to fetch paginated transactions from CoreData: \(error)")
+            return []
+        }
+    }
+    
+    // New method to support paginated fetching from cache for a specific account
+    func fetchPaginatedTransactions(for accountId: Int, limit: Int = 50, offset: Int = 0) -> [Transaction] {
+        let context = coreDataStack.viewContext
+        let fetchRequest: NSFetchRequest<TransactionEntity> = TransactionEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "accountId == %d", accountId)
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+        fetchRequest.fetchLimit = limit
+        fetchRequest.fetchOffset = offset
+        
+        do {
+            let transactionEntities = try context.fetch(fetchRequest)
+            return transactionEntities.map { self.mapTransactionEntityToTransaction($0) }
+        } catch {
+            Logger.e("Failed to fetch paginated transactions for account from CoreData: \(error)")
+            return []
+        }
+    }
+    
         // Helper methods
     private func configureTransactionEntity(_ entity: TransactionEntity, with transaction: Transaction) {
             // Required fields

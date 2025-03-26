@@ -11,7 +11,7 @@ import Network
 
 struct HomeView: View {
     @EnvironmentObject var bankAccountsService: BankAccountsService
-    @EnvironmentObject var transactionsService: TransactionsService
+    @StateObject private var transactionsService = TransactionsService()
     @EnvironmentObject var navigationState: NavigationState
     @State private var isOffline = false
     @State private var isRefreshing = false
@@ -45,7 +45,6 @@ struct HomeView: View {
                 BankListView()
                 Spacer()
                 RecentTransactionsView()
-                    .environmentObject(transactionsService)
                 Spacer()                    
             }
         }
