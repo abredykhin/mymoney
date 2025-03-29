@@ -8,7 +8,7 @@
 import Foundation
 import LocalAuthentication
 
-class BiometricAuthService {
+class FaceIdAuthService {
     enum BiometricType {
         case none
         case faceID
