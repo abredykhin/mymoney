@@ -10,7 +10,10 @@
 		7521DF1C2D87A52C00856718 /* BankAccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */; };
 		7549AB492D0E499600313F5C /* OnboardingStartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7549AB482D0E499600313F5C /* OnboardingStartView.swift */; };
 		7549AB502D0E4C7F00313F5C /* LargeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7549AB4F2D0E4C7F00313F5C /* LargeButton.swift */; };
-		754B69432D97D19800C0F001 /* FaceIdAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B69422D97D19800C0F001 /* FaceIdAuthService.swift */; };
+		754B69432D97D19800C0F001 /* BiometricAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B69422D97D19800C0F001 /* BiometricAuthService.swift */; };
+		754B69472D97D66F00C0F001 /* AuthenticationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B69462D97D66F00C0F001 /* AuthenticationView.swift */; };
+		754B69492D97D6B800C0F001 /* PasswordFallbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B69482D97D6B800C0F001 /* PasswordFallbackView.swift */; };
+		754B694B2D97D8E500C0F001 /* BiometricsEnrollmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B694A2D97D8E500C0F001 /* BiometricsEnrollmentView.swift */; };
 		75579F232CD6F2D800845A62 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75579F222CD6F2D800845A62 /* ProfileView.swift */; };
 		755F88862C86B8D200BEE12A /* BankAccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 755F88852C86B8D200BEE12A /* BankAccountView.swift */; };
 		75668FD72D83CE8C003A3D97 /* BabloModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 75668FD52D83CE8C003A3D97 /* BabloModel.xcdatamodeld */; };
@@ -95,7 +98,10 @@
 		7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountDetailView.swift; sourceTree = "<group>"; };
 		7549AB482D0E499600313F5C /* OnboardingStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStartView.swift; sourceTree = "<group>"; };
 		7549AB4F2D0E4C7F00313F5C /* LargeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LargeButton.swift; sourceTree = "<group>"; };
-		754B69422D97D19800C0F001 /* FaceIdAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceIdAuthService.swift; sourceTree = "<group>"; };
+		754B69422D97D19800C0F001 /* BiometricAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthService.swift; sourceTree = "<group>"; };
+		754B69462D97D66F00C0F001 /* AuthenticationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationView.swift; sourceTree = "<group>"; };
+		754B69482D97D6B800C0F001 /* PasswordFallbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordFallbackView.swift; sourceTree = "<group>"; };
+		754B694A2D97D8E500C0F001 /* BiometricsEnrollmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricsEnrollmentView.swift; sourceTree = "<group>"; };
 		75579F222CD6F2D800845A62 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		755F88852C86B8D200BEE12A /* BankAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountView.swift; sourceTree = "<group>"; };
 		75668FD62D83CE8C003A3D97 /* BabloModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = BabloModel.xcdatamodel; sourceTree = "<group>"; };
@@ -210,6 +216,16 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		754B69452D97D65800C0F001 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				754B69462D97D66F00C0F001 /* AuthenticationView.swift */,
+				754B69482D97D6B800C0F001 /* PasswordFallbackView.swift */,
+				754B694A2D97D8E500C0F001 /* BiometricsEnrollmentView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
 		75579F212CD6F2B600845A62 /* Profile */ = {
 			isa = PBXGroup;
 			children = (
@@ -321,7 +337,7 @@
 				757ABF762C181C3100DF8CA8 /* AuthMiddleware.swift */,
 				75F529652C8D696100629F2B /* Modifiers.swift */,
 				75E49BAB2CA3EACF008D72F8 /* Dates.swift */,
-				754B69422D97D19800C0F001 /* FaceIdAuthService.swift */,
+				754B69422D97D19800C0F001 /* BiometricAuthService.swift */,
 			);
 			path = Util;
 			sourceTree = "<group>";
@@ -350,6 +366,7 @@
 		757ABF912C18242900DF8CA8 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				754B69452D97D65800C0F001 /* Auth */,
 				7549AB452D0E495200313F5C /* Onboarding */,
 				75579F212CD6F2B600845A62 /* Profile */,
 				7573DA162CBCD7230004EBE4 /* Budget */,
@@ -579,6 +596,7 @@
 				757ABF8F2C1822CD00DF8CA8 /* ColorType.swift in Sources */,
 				75668FDA2D83CFF9003A3D97 /* CoreDataStack.swift in Sources */,
 				75F946AE2D3C875A0076E91E /* OnboardingBudgetFooterView.swift in Sources */,
+				754B694B2D97D8E500C0F001 /* BiometricsEnrollmentView.swift in Sources */,
 				75E49BB02CA3ED00008D72F8 /* TransactionListView.swift in Sources */,
 				75E49BA52CA27E67008D72F8 /* TransactionView.swift in Sources */,
 				7521DF1C2D87A52C00856718 /* BankAccountDetailView.swift in Sources */,
@@ -586,7 +604,7 @@
 				757ABF7F2C181C5200DF8CA8 /* View+Previews.swift in Sources */,
 				75E6CC652CBCBD4500C779C9 /* RecentTransactionsView.swift in Sources */,
 				75BB90CB2CA0E30E00D197A6 /* BankView.swift in Sources */,
-				754B69432D97D19800C0F001 /* FaceIdAuthService.swift in Sources */,
+				754B69432D97D19800C0F001 /* BiometricAuthService.swift in Sources */,
 				75F946A92D3C873C0076E91E /* PeriodPickerView.swift in Sources */,
 				757ABF872C181D3400DF8CA8 /* UserAccount.swift in Sources */,
 				7573DA1B2CBCD7B20004EBE4 /* BudgetService.swift in Sources */,
@@ -598,12 +616,14 @@
 				75F9469F2D3C85240076E91E /* SpendingCategory.swift in Sources */,
 				75C972CC2D13BA33008E6E87 /* OnboardingBudgetView.swift in Sources */,
 				757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */,
+				754B69472D97D66F00C0F001 /* AuthenticationView.swift in Sources */,
 				75579F232CD6F2D800845A62 /* ProfileView.swift in Sources */,
 				75E49BAC2CA3EACF008D72F8 /* Dates.swift in Sources */,
 				7590F29F2C86471D00BCCDE6 /* LinkController.swift in Sources */,
 				7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */,
 				75C972C82D13B8BB008E6E87 /* OnboardingAccountsView.swift in Sources */,
 				75F529662C8D696100629F2B /* Modifiers.swift in Sources */,
+				754B69492D97D6B800C0F001 /* PasswordFallbackView.swift in Sources */,
 				757ABF352C18195100DF8CA8 /* BabloApp.swift in Sources */,
 				75668FDD2D83D025003A3D97 /* BankManager.swift in Sources */,
 				7549AB492D0E499600313F5C /* OnboardingStartView.swift in Sources */,

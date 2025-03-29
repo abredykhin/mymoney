@@ -11,7 +11,9 @@ import SwiftData
 struct ContentView: View {
     @EnvironmentObject var userAccount: UserAccount
     @StateObject private var navigationState = NavigationState()
-
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var previousScenePhase: ScenePhase = .active
+    
     var body: some View {
         if (userAccount.isSignedIn) {
             TabView(selection: $navigationState.selectedTab) {
@@ -42,6 +44,22 @@ struct ContentView: View {
                 } else if newValue == .transactions {
                     navigationState.transactionsNavPath = NavigationPath()
                 }
+            }
+            .onChange(of: scenePhase) {
+                // Check if we're transitioning from background to active
+                if scenePhase == .active && (previousScenePhase == .background || previousScenePhase == .inactive) {
+                    Logger.d("ContentView: App will enter foreground from background")
+                    userAccount.requireBiometricAuth()
+                } else {
+                    Logger
+                        .d(
+                            "ContentView: App is entering \(scenePhase) phase from previous phase: \(previousScenePhase) "
+                        )
+                }
+                previousScenePhase = scenePhase
+            }
+            .onAppear {
+                previousScenePhase = scenePhase
             }
         } else {
             WelcomeView()

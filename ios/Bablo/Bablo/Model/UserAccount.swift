@@ -23,6 +23,12 @@ private enum UserKeys: String {
     case token = "token"
 }
 
+private enum BiometricKeys: String {
+    case isBiometricEnabled = "biometricEnabled"
+    case biometricPromptShown = "biometricPromptShown"
+}
+
+
 @MainActor
 class UserAccount: ObservableObject {
     static let shared = UserAccount()
@@ -30,7 +36,9 @@ class UserAccount: ObservableObject {
     @Published var currentUser: User? = nil
     @Published var client: Client? = nil
     @Published var isSignedIn: Bool = false
-
+    @Published var isBiometricallyAuthenticated = false
+    @Published var isBiometricEnabled = false
+    
     private let valet = Valet.valet(with: Identifier(nonEmpty: "BabloApp")!, accessibility: .whenUnlocked)
     private let noAuthClient: Client = Client(serverURL: Client.getServerUrl(), transport: URLSessionTransport())
     
@@ -77,6 +85,61 @@ class UserAccount: ObservableObject {
         currentUser = nil
         isSignedIn = false
         clearCoreDataCache()
+    }
+    
+    func checkBiometricSettings() {
+        do {
+            if try valet.containsObject(forKey: BiometricKeys.isBiometricEnabled.rawValue) {
+                let stringValue = try valet.string(forKey: BiometricKeys.isBiometricEnabled.rawValue)
+                isBiometricEnabled = (stringValue == "true")
+                Logger.d("UserAccount: Loaded biometric settings - enabled: \(isBiometricEnabled)")
+            } else {
+                isBiometricEnabled = false
+                Logger.d("UserAccount: No biometric settings found, defaulting to disabled")
+            }
+        } catch {
+            Logger.e("Failed to read biometric settings: \(error)")
+            isBiometricEnabled = false
+        }
+    }
+
+    func enableBiometricAuthentication(_ enable: Bool) {
+        do {
+            let stringValue = enable ? "true" : "false"
+            try valet.setString(stringValue, forKey: BiometricKeys.isBiometricEnabled.rawValue)
+            isBiometricEnabled = enable
+            Logger.i("Biometric authentication \(enable ? "enabled" : "disabled")")
+        } catch {
+            Logger.e("Failed to save biometric settings: \(error)")
+        }
+    }
+    
+    func requireBiometricAuth() {
+        Logger.d("UserAccount: Requiring biometric auth - isBiometricEnabled: \(isBiometricEnabled)")
+        if isBiometricEnabled {
+            Logger.d("UserAccount: Set isBiometricallyAuthenticated to false")
+            isBiometricallyAuthenticated = false
+        }
+    }
+    
+    func hasBiometricPromptBeenShown() -> Bool {
+        do {
+            if try valet.containsObject(forKey: BiometricKeys.biometricPromptShown.rawValue) {
+                let stringValue = try valet.string(forKey: BiometricKeys.biometricPromptShown.rawValue)
+                return (stringValue == "true")
+            }
+            return false
+        } catch {
+            return false
+        }
+    }
+    
+    func markBiometricPromptAsShown() {
+        do {
+            try valet.setString("true", forKey: BiometricKeys.biometricPromptShown.rawValue)
+        } catch {
+            Logger.e("Failed to save biometric prompt status: \(error)")
+        }
     }
     
     private func clearCoreDataCache() {
