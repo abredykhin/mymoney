@@ -90,33 +90,19 @@ struct AuthenticationView: View {
     }
     
     func authenticate() {
-        authService.authenticate(reason: "Unlock BabloApp to access your financial data") { result in
-            switch result {
-            case .success:
-                onAuthenticated()
-            case .failure(let error):
-                switch error {
-                case .noHardware:
-                    errorMessage = "This device doesn't support biometric authentication."
-                    showPasswordFallback = true
-                case .notConfigured:
-                    errorMessage = "Please set up Face ID in your device settings first."
-                case .notAvailable:
-                    errorMessage = "Biometric authentication is not available."
-                    showPasswordFallback = true
-                case .authFailed:
-                    errorMessage = "Authentication failed. Please try again."
-                case .userCanceled:
-                    errorMessage = "Authentication was canceled."
-                case .systemCancel:
-                    errorMessage = "Authentication was canceled by the system."
-                case .other:
-                    errorMessage = "Authentication failed. Please try again later."
+        authService.authenticateUser(reason: "Unlock BabloApp to access your financial data") { success in
+            if success {
+                // Update enrollment state if needed
+                if !userAccount.isBiometricEnabled {
+                    Logger.d("AuthenticationView: User used biometrics successfully but enrollment was false. Updating to true.")
+                    userAccount.enableBiometricAuthentication(true)
                 }
                 
-                if error != .userCanceled && error != .systemCancel {
-                    showError = true
-                }
+                // Record successful authentication time will be done in BabloApp
+                onAuthenticated()
+            } else {
+                errorMessage = "Authentication failed. Please try again or use your password."
+                showError = true
             }
         }
     }

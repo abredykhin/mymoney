@@ -39,13 +39,12 @@ struct BiometricEnrollmentView: View {
                 
                 Button("Enable") {
                     // Perform a test authentication to ensure it works
-                    authService.authenticate(reason: "Set up biometric authentication") { result in
-                        switch result {
-                        case .success:
+                    authService.authenticateUser(reason: "Set up biometric authentication") { success in
+                        if (success) {
                             Logger.d("Test biometric auth success. Storing the value")
                             userAccount.enableBiometricAuthentication(true)
                             dismiss()
-                        case .failure:
+                        } else {
                             Logger.d("Test biometric failed. Storing the value")
                             userAccount.enableBiometricAuthentication(false)
                             dismiss()

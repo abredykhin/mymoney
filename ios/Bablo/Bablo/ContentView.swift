@@ -10,6 +10,7 @@ import SwiftData
 
 struct ContentView: View {
     @EnvironmentObject var userAccount: UserAccount
+    @EnvironmentObject var authManager: AuthManager
     @StateObject private var navigationState = NavigationState()
     @Environment(\.scenePhase) private var scenePhase
     @State private var previousScenePhase: ScenePhase = .active
@@ -46,17 +47,19 @@ struct ContentView: View {
                 }
             }
             .onChange(of: scenePhase) {
-                // Check if we're transitioning from background to active
+                Logger.d("ContentView: Scene phase changed from \(previousScenePhase) to \(scenePhase)")
+                
+                // If coming back to active from inactive OR background
                 if scenePhase == .active && (previousScenePhase == .background || previousScenePhase == .inactive) {
-                    Logger.d("ContentView: App will enter foreground from background")
+                    // Always check with auth manager whether auth is needed
                     userAccount.requireBiometricAuth()
-                } else {
-                    Logger
-                        .d(
-                            "ContentView: App is entering \(scenePhase) phase from previous phase: \(previousScenePhase) "
-                        )
                 }
+                
                 previousScenePhase = scenePhase
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                Logger.d("ContentView: App will enter foreground via notification")
+                userAccount.requireBiometricAuth()
             }
             .onAppear {
                 previousScenePhase = scenePhase

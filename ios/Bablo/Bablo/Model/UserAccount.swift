@@ -106,6 +106,7 @@ class UserAccount: ObservableObject {
     func enableBiometricAuthentication(_ enable: Bool) {
         do {
             let stringValue = enable ? "true" : "false"
+            Logger.d("UserAccount: Saving biometric setting: \(stringValue)")
             try valet.setString(stringValue, forKey: BiometricKeys.isBiometricEnabled.rawValue)
             isBiometricEnabled = enable
             Logger.i("Biometric authentication \(enable ? "enabled" : "disabled")")
@@ -115,10 +116,13 @@ class UserAccount: ObservableObject {
     }
     
     func requireBiometricAuth() {
-        Logger.d("UserAccount: Requiring biometric auth - isBiometricEnabled: \(isBiometricEnabled)")
-        if isBiometricEnabled {
-            Logger.d("UserAccount: Set isBiometricallyAuthenticated to false")
+        Logger.d("UserAccount: Checking if auth required - isBiometricEnabled: \(isBiometricEnabled)")
+        
+        if isBiometricEnabled && AuthManager.shared.shouldRequireAuthentication() {
+            Logger.d("UserAccount: Setting isBiometricallyAuthenticated to false")
             isBiometricallyAuthenticated = false
+        } else {
+            Logger.d("UserAccount: Not requiring auth: biometrics \(isBiometricEnabled ? "enabled" : "disabled"), auth check: \(AuthManager.shared.shouldRequireAuthentication())")
         }
     }
     

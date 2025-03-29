@@ -12,6 +12,7 @@ import SwiftData
 struct BabloApp: App {
     @StateObject var userAccount = UserAccount.shared
     @StateObject var bankAccountsService = BankAccountsService()
+    @StateObject var authManager = AuthManager.shared
     @State private var showBiometricEnrollment = false
     @State private var showAuthView = false
     
@@ -25,9 +26,11 @@ struct BabloApp: App {
                     ContentView()
                         .environmentObject(userAccount)
                         .environmentObject(bankAccountsService)
+                        .environmentObject(authManager)
                         .environment(\.managedObjectContext, coreDataStack.viewContext)
-                        .blur(radius: (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated) ? 20 : 0)
+                        .blur(radius: (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated) || showAuthView ? 20 : 0)
                         .animation(.default, value: userAccount.isBiometricallyAuthenticated)
+                        .animation(.default, value: showAuthView)
                         .overlay {
                             if (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated) {
                                 Color.black.opacity(0.01)
@@ -38,19 +41,22 @@ struct BabloApp: App {
                                     }
                             }
                         }
-                        .sheet(isPresented: $showBiometricEnrollment) {
-                            BiometricEnrollmentView()
-                                .environmentObject(userAccount)
-                        }
                         .sheet(isPresented: $showAuthView) {
                             AuthenticationView(onAuthenticated: {
                                 userAccount.isBiometricallyAuthenticated = true
+                                authManager.recordSuccessfulAuthentication()
                                 showAuthView = false
                             }, onSignOut: {
                                 userAccount.signOut()
                                 showAuthView = false
                             })
                             .environmentObject(userAccount)
+                            .interactiveDismissDisabled(true)
+                        }
+                        .sheet(isPresented: $showBiometricEnrollment) {
+                            BiometricEnrollmentView()
+                                .environmentObject(userAccount)
+                                .interactiveDismissDisabled(true)
                         }
                 } else {
                         // Login/welcome view
@@ -62,9 +68,15 @@ struct BabloApp: App {
                 userAccount.checkCurrentUser()
                 userAccount.checkBiometricSettings()
                 
-                // Check if this is the first sign-in and biometrics haven't been configured
+                    // Always require authentication on app launch
+                if userAccount.isSignedIn {
+                    Logger.d("BabloApp: App launched with signed-in user, requiring authentication")
+                    userAccount.requireBiometricAuth() // This will check with AuthManager
+                }
+                
+                    // Check if this is the first sign-in and biometrics haven't been configured
                 if userAccount.isSignedIn && !userAccount.hasBiometricPromptBeenShown() {
-                    // Only show enrollment if device supports biometrics
+                        // Only show enrollment if device supports biometrics
                     let authService = BiometricsAuthService()
                     if authService.biometricType() != .none {
                         showBiometricEnrollment = true
@@ -76,15 +88,16 @@ struct BabloApp: App {
     }
     
     func authenticateWithBiometrics() {
-        Logger.d("BabloApp: Attempting to authenticate with biometrics")
+        Logger.d("BabloApp: Attempting to authenticate user")
         let authService = BiometricsAuthService()
-        authService.authenticate(reason: "Unlock BabloApp to access your financial data") { result in
-            switch result {
-            case .success:
-                Logger.d("BabloApp: Biometric authentication successful")
+        
+        authService.authenticateUser(reason: "Unlock BabloApp to access your financial data") { success in
+            if success {
+                Logger.d("BabloApp: Authentication successful")
                 userAccount.isBiometricallyAuthenticated = true
-            case .failure:
-                Logger.d("BabloApp: Biometric authentication failed")
+                authManager.recordSuccessfulAuthentication()
+            } else {
+                Logger.d("BabloApp: Authentication failed, showing auth view")
                 showAuthView = true
             }
         }
