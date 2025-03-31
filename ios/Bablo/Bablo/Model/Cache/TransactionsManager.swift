@@ -137,7 +137,7 @@ class TransactionsManager {
         entity.personalFinanceSubcategory = transaction.personal_finance_subcategory
         entity.pendingTransactionId = transaction.pending_transaction_transaction_id
         
-            // Date conversions
+        // Date conversions
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         

@@ -154,7 +154,6 @@ struct AllTransactionsView: View {
         
         Task {
             isLoadingMore = true
-            
             do {
                 try await transactionsService.fetchAllTransactions(loadMore: true)
                 loadingError = nil

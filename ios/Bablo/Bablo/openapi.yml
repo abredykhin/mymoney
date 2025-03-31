@@ -630,7 +630,8 @@ components:
         - name
         - payment_channel
         - transaction_id
-        - pending      
+        - pending
+        
       properties:
         id:
           type: integer
