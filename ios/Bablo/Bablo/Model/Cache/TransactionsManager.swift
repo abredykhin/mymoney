@@ -125,7 +125,7 @@ class TransactionsManager {
         entity.transactionId = transaction.transaction_id
         entity.pending = transaction.pending
         
-            // Optional fields
+        // Optional fields
         if let id = transaction.id {
             entity.id = Int64(id)
         }
@@ -137,20 +137,29 @@ class TransactionsManager {
         entity.personalFinanceSubcategory = transaction.personal_finance_subcategory
         entity.pendingTransactionId = transaction.pending_transaction_transaction_id
         
-        // Date conversions
+        // Date conversions with improved ISO-8601 support
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         
-        if let date = dateFormatter.date(from: transaction.date) {
+        // Try ISO-8601 format first
+        let iso8601Formatter = ISO8601DateFormatter()
+        iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        if let date = iso8601Formatter.date(from: transaction.date) {
+            entity.date = date
+        } else if let date = dateFormatter.date(from: transaction.date) {
             entity.date = date
         } else {
             entity.date = Date()
             Logger.w("Could not parse transaction date: \(transaction.date)")
         }
         
-        if let authorizedDateString = transaction.authorized_date,
-           let authorizedDate = dateFormatter.date(from: authorizedDateString) {
-            entity.authorizedDate = authorizedDate
+        if let authorizedDateString = transaction.authorized_date {
+            if let authorizedDate = iso8601Formatter.date(from: authorizedDateString) {
+                entity.authorizedDate = authorizedDate
+            } else if let authorizedDate = dateFormatter.date(from: authorizedDateString) {
+                entity.authorizedDate = authorizedDate
+            }
         }
         
         entity.createdAt = transaction.created_at
@@ -165,17 +174,26 @@ class TransactionsManager {
         entity.personalFinanceCategory = transaction.personal_finance_category
         entity.personalFinanceSubcategory = transaction.personal_finance_subcategory
         
-            // Update the date if it's changed
+            // Update the date if it's changed with improved ISO-8601 support
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         
-        if let date = dateFormatter.date(from: transaction.date) {
+        // Try ISO-8601 format first
+        let iso8601Formatter = ISO8601DateFormatter()
+        iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        if let date = iso8601Formatter.date(from: transaction.date) {
+            entity.date = date
+        } else if let date = dateFormatter.date(from: transaction.date) {
             entity.date = date
         }
         
-        if let authorizedDateString = transaction.authorized_date,
-           let authorizedDate = dateFormatter.date(from: authorizedDateString) {
-            entity.authorizedDate = authorizedDate
+        if let authorizedDateString = transaction.authorized_date {
+            if let authorizedDate = iso8601Formatter.date(from: authorizedDateString) {
+                entity.authorizedDate = authorizedDate
+            } else if let authorizedDate = dateFormatter.date(from: authorizedDateString) {
+                entity.authorizedDate = authorizedDate
+            }
         }
         
         entity.createdAt = transaction.created_at

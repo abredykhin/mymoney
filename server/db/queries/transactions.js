@@ -139,10 +139,13 @@ const retrieveTransactionsByAccountId = async (accountId, options = {}) => {
   if (cursor) {
     try {
       const [dateStr, idStr] = cursor.split(':');
-      cursorDate = dateStr;
+      // Convert the date string to a proper date format for PostgreSQL
+      const parsedDate = new Date(dateStr);
+      cursorDate = parsedDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
       cursorId = parseInt(idStr, 10);
+      debug(`Parsed cursor date: ${cursorDate}, id: ${cursorId} from original: ${cursor}`);
     } catch (err) {
-      debug(`Invalid cursor format: ${cursor}`);
+      debug(`Invalid cursor format: ${cursor}, error: ${err.message}`);
     }
   }
   
@@ -204,7 +207,10 @@ const retrieveTransactionsByAccountId = async (accountId, options = {}) => {
   let nextCursor = null;
   if (transactions.length > 0) {
     const lastTx = transactions[transactions.length - 1];
-    nextCursor = `${lastTx.date}:${lastTx.id}`;
+    // Format the date consistently using ISO string to ensure it can be properly parsed
+    const formattedDate = new Date(lastTx.date).toISOString();
+    nextCursor = `${formattedDate}:${lastTx.id}`;
+    debug(`Generated nextCursor: ${nextCursor} for last transaction id: ${lastTx.id}`);
   }
   
   // Get total count for this filter set (for pagination metadata)
@@ -257,10 +263,13 @@ const retrieveTransactionsByUserId = async (userId, options = {}) => {
   if (cursor) {
     try {
       const [dateStr, idStr] = cursor.split(':');
-      cursorDate = dateStr;
+      // Convert the date string to a proper date format for PostgreSQL
+      const parsedDate = new Date(dateStr);
+      cursorDate = parsedDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
       cursorId = parseInt(idStr, 10);
+      debug(`Parsed cursor date: ${cursorDate}, id: ${cursorId} from original: ${cursor}`);
     } catch (err) {
-      debug(`Invalid cursor format: ${cursor}`);
+      debug(`Invalid cursor format: ${cursor}, error: ${err.message}`);
     }
   }
   
@@ -322,7 +331,10 @@ const retrieveTransactionsByUserId = async (userId, options = {}) => {
   let nextCursor = null;
   if (transactions.length > 0) {
     const lastTx = transactions[transactions.length - 1];
-    nextCursor = `${lastTx.date}:${lastTx.id}`;
+    // Format the date consistently using ISO string to ensure it can be properly parsed
+    const formattedDate = new Date(lastTx.date).toISOString();
+    nextCursor = `${formattedDate}:${lastTx.id}`;
+    debug(`Generated nextCursor: ${nextCursor} for last transaction id: ${lastTx.id}`);
   }
   
   // Get total count for this filter set (for pagination metadata)
@@ -373,10 +385,13 @@ const retrieveTransactionsByItemId = async (itemId, options = {}) => {
   if (cursor) {
     try {
       const [dateStr, idStr] = cursor.split(':');
-      cursorDate = dateStr;
+      // Convert the date string to a proper date format for PostgreSQL
+      const parsedDate = new Date(dateStr);
+      cursorDate = parsedDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
       cursorId = parseInt(idStr, 10);
+      debug(`Parsed cursor date: ${cursorDate}, id: ${cursorId} from original: ${cursor}`);
     } catch (err) {
-      debug(`Invalid cursor format: ${cursor}`);
+      debug(`Invalid cursor format: ${cursor}, error: ${err.message}`);
     }
   }
   
@@ -438,7 +453,10 @@ const retrieveTransactionsByItemId = async (itemId, options = {}) => {
   let nextCursor = null;
   if (transactions.length > 0) {
     const lastTx = transactions[transactions.length - 1];
-    nextCursor = `${lastTx.date}:${lastTx.id}`;
+    // Format the date consistently using ISO string to ensure it can be properly parsed
+    const formattedDate = new Date(lastTx.date).toISOString();
+    nextCursor = `${formattedDate}:${lastTx.id}`;
+    debug(`Generated nextCursor: ${nextCursor} for last transaction id: ${lastTx.id}`);
   }
   
   // Get total count for this filter set (for pagination metadata)
