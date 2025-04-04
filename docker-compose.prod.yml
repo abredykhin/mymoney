@@ -1,4 +1,9 @@
 version: '3.8'
+
+volumes:
+  loki-data:
+  grafana-data:
+
 services:      
   server:
     build:
@@ -10,6 +15,9 @@ services:
       
   nginx:
     restart: always  # Ensure Nginx always restarts in production
+    depends_on:
+      - server
+      - grafana    
 
   # Logging infrastructure
   loki:

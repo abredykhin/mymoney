@@ -115,372 +115,19 @@ const createOrUpdateTransactions = async transactions => {
   }
 };
 
-/**
- * Retrieves transactions for a single account with cursor-based pagination and optional filtering.
- *
- * @param {number} accountId The ID of the account.
- * @param {Object} options Pagination and filtering options.
- * @param {number} options.limit How many transactions to return (default: 50).
- * @param {string} options.cursor Pagination cursor in format "date:id" (optional).
- * @param {Object} options.filters Filter criteria (optional).
- * @param {string} options.filters.category Filter by personal finance category.
- * @param {string} options.filters.startDate Filter transactions on or after this date.
- * @param {string} options.filters.endDate Filter transactions on or before this date.
- * @param {string} options.filters.search Search term for transaction name or merchant name.
- * @returns {Object} Object containing transactions array and pagination metadata.
- */
 const retrieveTransactionsByAccountId = async (accountId, options = {}) => {
-  const { limit = 50, cursor = null, filters = {} } = options;
-  
-  // Parse cursor if present
-  let cursorDate = null;
-  let cursorId = null;
-  
-  if (cursor) {
-    try {
-      const [dateStr, idStr] = cursor.split(':');
-      // Convert the date string to a proper date format for PostgreSQL
-      const parsedDate = new Date(dateStr);
-      cursorDate = parsedDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-      cursorId = parseInt(idStr, 10);
-      debug(`Parsed cursor date: ${cursorDate}, id: ${cursorId} from original: ${cursor}`);
-    } catch (err) {
-      debug(`Invalid cursor format: ${cursor}, error: ${err.message}`);
-    }
-  }
-  
-  // Build query conditions and parameters
-  let conditions = ['account_id = $1'];
-  let params = [accountId];
-  let paramCount = 1;
-  
-  // Add filter conditions
-  if (filters.category) {
-    paramCount++;
-    conditions.push(`personal_finance_category = $${paramCount}`);
-    params.push(filters.category);
-  }
-  
-  if (filters.startDate) {
-    paramCount++;
-    conditions.push(`date >= $${paramCount}`);
-    params.push(filters.startDate);
-  }
-  
-  if (filters.endDate) {
-    paramCount++;
-    conditions.push(`date <= $${paramCount}`);
-    params.push(filters.endDate);
-  }
-  
-  if (filters.search) {
-    paramCount++;
-    const searchParam = `%${filters.search}%`;
-    conditions.push(`(name ILIKE $${paramCount} OR merchant_name ILIKE $${paramCount})`);
-    params.push(searchParam);
-  }
-  
-  // Add cursor condition if present
-  if (cursorDate && cursorId) {
-    conditions.push(`(date < $${paramCount+1} OR (date = $${paramCount+1} AND id < $${paramCount+2}))`);
-    params.push(cursorDate, cursorId);
-    paramCount += 2;
-  }
-  
-  // Add limit parameter
-  paramCount++;
-  
-  // Build the complete query
-  const query = {
-    text: `
-      SELECT * FROM transactions 
-      WHERE ${conditions.join(' AND ')} 
-      ORDER BY date DESC, id DESC 
-      LIMIT $${paramCount}
-    `,
-    values: [...params, limit],
-  };
-  
-  const { rows: transactions } = await db.query(query);
-  
-  // Generate next cursor
-  let nextCursor = null;
-  if (transactions.length > 0) {
-    const lastTx = transactions[transactions.length - 1];
-    // Format the date consistently using ISO string to ensure it can be properly parsed
-    const formattedDate = new Date(lastTx.date).toISOString();
-    nextCursor = `${formattedDate}:${lastTx.id}`;
-    debug(`Generated nextCursor: ${nextCursor} for last transaction id: ${lastTx.id}`);
-  }
-  
-  // Get total count for this filter set (for pagination metadata)
-  const countConditions = conditions.filter(c => !c.includes('(date <'));
-  const countParams = params.filter((_, i) => i < (cursorDate && cursorId ? paramCount - 3 : paramCount - 1));
-  
-  const countQuery = {
-    text: `SELECT COUNT(*) FROM transactions WHERE ${countConditions.join(' AND ')}`,
-    values: countParams,
-  };
-  
-  const { rows: countResult } = await db.query(countQuery);
-  const totalCount = parseInt(countResult[0].count, 10);
-  
-  // Always return enhanced result with pagination metadata
-  return {
-    transactions,
-    pagination: {
-      totalCount,
-      limit,
-      hasMore: transactions.length === limit,
-      nextCursor
-    }
-  };
+  debug(`Retrieving transactions for account ${accountId}`);
+  return _retrieveTransactions('account_id', accountId, options);
 };
 
-/**
- * Retrieves transactions for a single user with cursor-based pagination and optional filtering.
- *
- * @param {number} userId The ID of the user.
- * @param {Object} options Pagination and filtering options.
- * @param {number} options.limit How many transactions to return (default: 50).
- * @param {string} options.cursor Pagination cursor in format "date:id" (optional).
- * @param {Object} options.filters Filter criteria (optional).
- * @param {string} options.filters.category Filter by personal finance category.
- * @param {string} options.filters.startDate Filter transactions on or after this date.
- * @param {string} options.filters.endDate Filter transactions on or before this date.
- * @param {string} options.filters.search Search term for transaction name or merchant name.
- * @returns {Object} Object containing transactions array and pagination metadata.
- */
 const retrieveTransactionsByUserId = async (userId, options = {}) => {
-  debug(`Running db query for transaction for user ${userId}`);
-  
-  const { limit = 50, cursor = null, filters = {} } = options;
-  
-  // Parse cursor if present
-  let cursorDate = null;
-  let cursorId = null;
-  
-  if (cursor) {
-    try {
-      const [dateStr, idStr] = cursor.split(':');
-      // Convert the date string to a proper date format for PostgreSQL
-      const parsedDate = new Date(dateStr);
-      cursorDate = parsedDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-      cursorId = parseInt(idStr, 10);
-      debug(`Parsed cursor date: ${cursorDate}, id: ${cursorId} from original: ${cursor}`);
-    } catch (err) {
-      debug(`Invalid cursor format: ${cursor}, error: ${err.message}`);
-    }
-  }
-  
-  // Build query conditions and parameters
-  let conditions = ['user_id = $1'];
-  let params = [userId];
-  let paramCount = 1;
-  
-  // Add filter conditions
-  if (filters.category) {
-    paramCount++;
-    conditions.push(`personal_finance_category = $${paramCount}`);
-    params.push(filters.category);
-  }
-  
-  if (filters.startDate) {
-    paramCount++;
-    conditions.push(`date >= $${paramCount}`);
-    params.push(filters.startDate);
-  }
-  
-  if (filters.endDate) {
-    paramCount++;
-    conditions.push(`date <= $${paramCount}`);
-    params.push(filters.endDate);
-  }
-  
-  if (filters.search) {
-    paramCount++;
-    const searchParam = `%${filters.search}%`;
-    conditions.push(`(name ILIKE $${paramCount} OR merchant_name ILIKE $${paramCount})`);
-    params.push(searchParam);
-  }
-  
-  // Add cursor condition if present
-  if (cursorDate && cursorId) {
-    conditions.push(`(date < $${paramCount+1} OR (date = $${paramCount+1} AND id < $${paramCount+2}))`);
-    params.push(cursorDate, cursorId);
-    paramCount += 2;
-  }
-  
-  // Add limit parameter
-  paramCount++;
-  
-  // Build the complete query
-  const query = {
-    text: `
-      SELECT * FROM transactions 
-      WHERE ${conditions.join(' AND ')} 
-      ORDER BY date DESC, id DESC 
-      LIMIT $${paramCount}
-    `,
-    values: [...params, limit],
-  };
-  
-  const { rows: transactions } = await db.query(query);
-  
-  // Generate next cursor
-  let nextCursor = null;
-  if (transactions.length > 0) {
-    const lastTx = transactions[transactions.length - 1];
-    // Format the date consistently using ISO string to ensure it can be properly parsed
-    const formattedDate = new Date(lastTx.date).toISOString();
-    nextCursor = `${formattedDate}:${lastTx.id}`;
-    debug(`Generated nextCursor: ${nextCursor} for last transaction id: ${lastTx.id}`);
-  }
-  
-  // Get total count for this filter set (for pagination metadata)
-  const countConditions = conditions.filter(c => !c.includes('(date <'));
-  const countParams = params.filter((_, i) => i < (cursorDate && cursorId ? paramCount - 3 : paramCount - 1));
-  
-  const countQuery = {
-    text: `SELECT COUNT(*) FROM transactions WHERE ${countConditions.join(' AND ')}`,
-    values: countParams,
-  };
-  
-  const { rows: countResult } = await db.query(countQuery);
-  const totalCount = parseInt(countResult[0].count, 10);
-  
-  // Always return enhanced result with pagination metadata
-  return {
-    transactions,
-    pagination: {
-      totalCount,
-      limit,
-      hasMore: transactions.length === limit,
-      nextCursor
-    }
-  };
+  debug(`Retrieving transactions for user ${userId}`);
+  return _retrieveTransactions('user_id', userId, options);
 };
 
-/**
- * Retrieves transactions for a single item with cursor-based pagination and optional filtering.
- *
- * @param {number} itemId The ID of the item.
- * @param {Object} options Pagination and filtering options.
- * @param {number} options.limit How many transactions to return (default: 50).
- * @param {string} options.cursor Pagination cursor in format "date:id" (optional).
- * @param {Object} options.filters Filter criteria (optional).
- * @param {string} options.filters.category Filter by personal finance category.
- * @param {string} options.filters.startDate Filter transactions on or after this date.
- * @param {string} options.filters.endDate Filter transactions on or before this date.
- * @param {string} options.filters.search Search term for transaction name or merchant name.
- * @returns {Object} Object containing transactions array and pagination metadata.
- */
 const retrieveTransactionsByItemId = async (itemId, options = {}) => {
-  const { limit = 50, cursor = null, filters = {} } = options;
-  
-  // Parse cursor if present
-  let cursorDate = null;
-  let cursorId = null;
-  
-  if (cursor) {
-    try {
-      const [dateStr, idStr] = cursor.split(':');
-      // Convert the date string to a proper date format for PostgreSQL
-      const parsedDate = new Date(dateStr);
-      cursorDate = parsedDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-      cursorId = parseInt(idStr, 10);
-      debug(`Parsed cursor date: ${cursorDate}, id: ${cursorId} from original: ${cursor}`);
-    } catch (err) {
-      debug(`Invalid cursor format: ${cursor}, error: ${err.message}`);
-    }
-  }
-  
-  // Build query conditions and parameters
-  let conditions = ['item_id = $1'];
-  let params = [itemId];
-  let paramCount = 1;
-  
-  // Add filter conditions
-  if (filters.category) {
-    paramCount++;
-    conditions.push(`personal_finance_category = $${paramCount}`);
-    params.push(filters.category);
-  }
-  
-  if (filters.startDate) {
-    paramCount++;
-    conditions.push(`date >= $${paramCount}`);
-    params.push(filters.startDate);
-  }
-  
-  if (filters.endDate) {
-    paramCount++;
-    conditions.push(`date <= $${paramCount}`);
-    params.push(filters.endDate);
-  }
-  
-  if (filters.search) {
-    paramCount++;
-    const searchParam = `%${filters.search}%`;
-    conditions.push(`(name ILIKE $${paramCount} OR merchant_name ILIKE $${paramCount})`);
-    params.push(searchParam);
-  }
-  
-  // Add cursor condition if present
-  if (cursorDate && cursorId) {
-    conditions.push(`(date < $${paramCount+1} OR (date = $${paramCount+1} AND id < $${paramCount+2}))`);
-    params.push(cursorDate, cursorId);
-    paramCount += 2;
-  }
-  
-  // Add limit parameter
-  paramCount++;
-  
-  // Build the complete query
-  const query = {
-    text: `
-      SELECT * FROM transactions 
-      WHERE ${conditions.join(' AND ')} 
-      ORDER BY date DESC, id DESC 
-      LIMIT $${paramCount}
-    `,
-    values: [...params, limit],
-  };
-  
-  const { rows: transactions } = await db.query(query);
-  
-  // Generate next cursor
-  let nextCursor = null;
-  if (transactions.length > 0) {
-    const lastTx = transactions[transactions.length - 1];
-    // Format the date consistently using ISO string to ensure it can be properly parsed
-    const formattedDate = new Date(lastTx.date).toISOString();
-    nextCursor = `${formattedDate}:${lastTx.id}`;
-    debug(`Generated nextCursor: ${nextCursor} for last transaction id: ${lastTx.id}`);
-  }
-  
-  // Get total count for this filter set (for pagination metadata)
-  const countConditions = conditions.filter(c => !c.includes('(date <'));
-  const countParams = params.filter((_, i) => i < (cursorDate && cursorId ? paramCount - 3 : paramCount - 1));
-  
-  const countQuery = {
-    text: `SELECT COUNT(*) FROM transactions WHERE ${countConditions.join(' AND ')}`,
-    values: countParams,
-  };
-  
-  const { rows: countResult } = await db.query(countQuery);
-  const totalCount = parseInt(countResult[0].count, 10);
-  
-  // Always return enhanced result with pagination metadata
-  return {
-    transactions,
-    pagination: {
-      totalCount,
-      limit,
-      hasMore: transactions.length === limit,
-      nextCursor
-    }
-  };
+  debug(`Retrieving transactions for item ${itemId}`);
+  return _retrieveTransactions('item_id', itemId, options);
 };
 
 /**
@@ -498,6 +145,156 @@ const deleteTransactions = async plaidTransactionIds => {
   });
   await Promise.all(pendingQueries);
 };
+
+/**
+ * Internal helper function to retrieve transactions based on a dynamic ID field.
+ * Handles filtering, pagination (cursor), sorting, and counting.
+ * (Assumes 'date' column in DB is of type DATE)
+ * ... (rest of JSDoc) ...
+ */
+const _retrieveTransactions = async (idFieldName, idValue, options = {}) => {
+  const { limit = 50, cursor = null, filters = {} } = options;
+
+  let cursorDate = null; // YYYY-MM-DD formatted string
+  let cursorId = null;   // Parsed integer ID
+
+  // --- 1. Parse Cursor ---
+  if (cursor) {
+    try {
+      const lastColonIndex = cursor.lastIndexOf(':');
+      if (lastColonIndex <= 0 || lastColonIndex === cursor.length - 1) {
+        throw new Error('Cursor does not appear to contain a date and ID separated by a colon.');
+      }
+      const dateStr = cursor.substring(0, lastColonIndex);
+      const idStr = cursor.substring(lastColonIndex + 1);
+
+      // Even if dateStr includes time, new Date() parses it.
+      const parsedDate = new Date(dateStr);
+      if (isNaN(parsedDate.getTime())) {
+        throw new Error(`Invalid time value obtained after parsing date string: ${dateStr}`);
+      }
+
+      // *** CHANGE HERE: Format back to YYYY-MM-DD for DATE column comparison ***
+      cursorDate = parsedDate.toISOString().split('T')[0];
+
+      cursorId = parseInt(idStr, 10);
+      if (isNaN(cursorId)) {
+        throw new Error(`Invalid number format obtained after parsing ID string: ${idStr}`);
+      }
+      debug(`Parsed cursor: date='${cursorDate}', id=${cursorId} from original='${cursor}'`);
+
+    } catch (err) {
+      debug(`Invalid cursor format or content: ${cursor}, error: ${err.message}. Proceeding without cursor.`);
+      cursorDate = null;
+      cursorId = null;
+    }
+  }
+
+  // --- 2. Build Base Conditions & Parameters (without cursor) ---
+  let conditions = [`${idFieldName} = $1`]; // Use dynamic field name
+  let params = [idValue];                  // Use dynamic ID value
+  let paramCount = 1;
+
+  // Add filter conditions (Checks like date >= $N and date <= $N work fine with DATE type and YYYY-MM-DD strings)
+  if (filters.category) {
+    paramCount++;
+    conditions.push(`personal_finance_category = $${paramCount}`);
+    params.push(filters.category);
+  }
+  if (filters.startDate) {
+    paramCount++;
+    conditions.push(`date >= $${paramCount}`);
+    params.push(filters.startDate); // Assuming startDate is also YYYY-MM-DD
+  }
+  if (filters.endDate) {
+    paramCount++;
+    conditions.push(`date <= $${paramCount}`);
+    params.push(filters.endDate); // Assuming endDate is also YYYY-MM-DD
+  }
+   if (filters.search) {
+    paramCount++;
+    const searchParam = `%${filters.search}%`;
+    conditions.push(`(name ILIKE $${paramCount} OR merchant_name ILIKE $${paramCount})`);
+    params.push(searchParam);
+  }
+
+  // --- Store base conditions/params for the COUNT query ---
+  const countConditions = [...conditions];
+  const countParams = [...params];
+
+  // --- 3. Add Cursor Condition (if applicable) ---
+  if (cursorDate && cursorId) {
+    // Comparison (date < $N OR (date = $N AND id < $N)) is correct for DATE type
+    // using the YYYY-MM-DD formatted cursorDate string.
+    conditions.push(`(date < $${paramCount + 1} OR (date = $${paramCount + 1} AND id < $${paramCount + 2}))`);
+    params.push(cursorDate, cursorId);
+    paramCount += 2;
+  }
+
+  // --- 4. Prepare and Execute Main Query ---
+  paramCount++; // Increment for the LIMIT parameter placeholder
+  const query = {
+    text: `
+      SELECT * FROM transactions
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY date DESC, id DESC
+      LIMIT $${paramCount}
+    `,
+    values: [...params, limit],
+  };
+
+  debug(`Executing query: ${query.text.replace(/\s+/g, ' ').trim()} with values: ${JSON.stringify(query.values)}`);
+  const { rows: transactions } = await db.query(query);
+
+  // --- 5. Generate Next Cursor ---
+  // (This part remains unchanged - it correctly gets YYYY-MM-DD from lastTx.date)
+  let nextCursor = null;
+  if (transactions.length === limit) {
+    const lastTx = transactions[transactions.length - 1];
+     if (lastTx && lastTx.date && lastTx.id) {
+        const lastTxDate = new Date(lastTx.date); // Convert DB date (likely Date obj or YYYY-MM-DD string) to Date obj
+        if (!isNaN(lastTxDate.getTime())) {
+             // Format consistently to YYYY-MM-DD for the cursor string
+             const formattedDate = lastTxDate.toISOString().split('T')[0];
+             nextCursor = `${formattedDate}:${lastTx.id}`;
+             debug(`Generated nextCursor: ${nextCursor} from last tx id: ${lastTx.id}, date: ${formattedDate}`);
+        } else {
+            debug(`Warning: Invalid date found in last transaction (id: ${lastTx.id}), cannot generate nextCursor.`);
+        }
+    } else {
+         debug(`Warning: Last transaction missing date or id, cannot generate nextCursor.`);
+    }
+  } else {
+     debug(`Not generating nextCursor, retrieved transactions (${transactions.length}) less than limit (${limit})`);
+  }
+
+
+  // --- 6. Prepare and Execute Count Query ---
+  // (Remains unchanged)
+   const countQuery = {
+    text: `SELECT COUNT(*) FROM transactions WHERE ${countConditions.join(' AND ')}`,
+    values: countParams,
+  };
+  debug(`Executing count query: ${countQuery.text.replace(/\s+/g, ' ').trim()} with values: ${JSON.stringify(countQuery.values)}`);
+  const { rows: countResult } = await db.query(countQuery);
+  const totalCount = parseInt(countResult[0].count, 10);
+
+
+  // --- 7. Format and Return Result ---
+  // (Remains unchanged)
+  const result = {
+    transactions,
+    pagination: {
+      totalCount,
+      limit,
+      hasMore: nextCursor !== null,
+      nextCursor,
+    },
+  };
+  debug(`Returning ${transactions.length} transactions for ${idFieldName}=${idValue}. Total count: ${totalCount}. Has more: ${result.pagination.hasMore}.`);
+  return result;
+};
+
 
 module.exports = {
   createOrUpdateTransactions,

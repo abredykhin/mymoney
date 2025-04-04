@@ -77,46 +77,18 @@ const startHttpServer = () => {
   });
 };
 
-/**
- * Starts HTTPS server if certificates exist
- */
-const startHttpsServer = () => {
-  const certKey = process.env.SSL_KEY_PATH;
-  const certFullChain = process.env.SSL_CERT_PATH;
-
-  if (!fs.existsSync(certKey) || !fs.existsSync(certFullChain)) {
-    debug('SSL certificates not found. HTTPS server not started.');
-    return Promise.resolve(null);
-  }
-
-  return new Promise(resolve => {
-    const options = {
-      key: fs.readFileSync(certKey),
-      cert: fs.readFileSync(certFullChain),
-    };
-
-    const server = https.createServer(options, app).listen(443, () => {
-      debug('HTTPS Server running on port 443');
-      resolve(server);
-    });
-  });
-};
 
 /**
  * Initializes services and scheduled tasks
  */
 const initializeServices = async () => {
   if (isProduction) {
-    try {
-      // Add a delay to ensure database and redis are fully initialized
-      debug('Waiting 5 seconds for database and Redis to be ready...');
-      await new Promise(resolve => setTimeout(resolve, 5000)); 
-      
+    try {      
       debug('Initializing scheduled refreshes');
-      await refreshService.initializeScheduledRefreshes();
+      //await refreshService.initializeScheduledRefreshes();
       await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
       debug('Triggering data refresh for all users');
-      await refreshService.refreshAllUsers();
+      //await refreshService.refreshAllUsers();
 
       debug('Refresh services initialized successfully!');
     } catch (err) {

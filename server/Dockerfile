@@ -13,7 +13,7 @@ WORKDIR /opt/server
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --production=$NODE_ENV
+RUN npm install
 
 # Then copy the rest of the application
 COPY . .

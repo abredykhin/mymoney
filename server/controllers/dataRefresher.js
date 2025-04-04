@@ -33,7 +33,7 @@ const refreshQueue = new Bull('data-refresh', {
  */
 class RefreshService {
   constructor() {
-    this.setupQueue();
+    //this.setupQueue();
   }
 
   /**
