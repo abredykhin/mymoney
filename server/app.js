@@ -1,10 +1,8 @@
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
-const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const https = require('https');
 const debug = require('debug')('app');
 require('dotenv').config();
 
@@ -19,12 +17,13 @@ const items = require('./routes/items');
 
 // Middleware and services
 const { errorHandler } = require('./middleware');
-const refreshService = require('./controllers/dataRefresher');
+const { createAndInitializeRefreshService } = require('./controllers/dataRefresher');
 
 // Configuration
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isProduction = process.env.APP_ENV === 'production';
+let refreshServiceInstance; 
 
 /**
  * Configures Express middleware and routes
@@ -84,16 +83,17 @@ const startHttpServer = () => {
 const initializeServices = async () => {
   if (isProduction) {
     try {      
-      debug('Initializing scheduled refreshes');
-      //await refreshService.initializeScheduledRefreshes();
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
-      debug('Triggering data refresh for all users');
-      //await refreshService.refreshAllUsers();
+      debug('Initializing RefreshService...');
+      refreshServiceInstance = await createAndInitializeRefreshService(); 
 
+      await refreshServiceInstance.initializeScheduledRefreshes();
       debug('Refresh services initialized successfully!');
     } catch (err) {
       console.error('Failed to initialize refresh service:', err);
+      process.exit(1); 
     }
+  } else {
+    debug('Skipping refresh service initialization in non-production mode.');
   }
 };
 

@@ -2,7 +2,6 @@
  * @file Service for managing data refresh operations.
  */
 const Bull = require('bull');
-const debug = require('debug')('services:refresh');
 const logger = require('../utils/logger');
 const refreshQueries = require('../db/queries/dataRefresh');
 const { retrieveItemsByUser } = require('../db/queries/items');
@@ -33,41 +32,43 @@ const refreshQueue = new Bull('data-refresh', {
  */
 class RefreshService {
   constructor() {
-    //this.setupQueue();
+    logger.info('RefreshService instance created.');
+  }
+
+  async initialize() {
+    await this._cleanQueueOnStartup();
+    this._setupQueue();
+    logger.info('RefreshService fully initialized and queue processor attached.');
+    return this;
   }
 
   /**
    * Sets up the Bull queue and event handlers.
    */
-  setupQueue() {
+  _setupQueue() {
     // Process jobs
     refreshQueue.process(async job => {
       const { userId, jobType } = job.data;
 
-      debug(`Processing data refresh job for user ${userId}`);
       logger.info(`Processing data refresh job for user ${userId}`);
 
       try {
         // Update job status to processing
         await refreshQueries.updateJobStatus(userId, job.id, 'processing');
 
-        debug(`Starting ${jobType} refresh for user ${userId}`);
         logger.info(`Starting ${jobType} refresh for user ${userId}`);
 
         // Perform the actual data refresh
         await this._performDataRefresh(userId);
 
         // Update job status to completed
-        debug(`Data refresh completed for user ${userId}`);
         logger.info(`Data refresh completed for user ${userId}`);
         await refreshQueries.updateJobStatus(userId, job.id, 'completed');
 
-        debug(`Completed ${jobType} refresh for user ${userId}`);
         logger.info(`Completed ${jobType} refresh for user ${userId}`);
 
         return { success: true, userId, timestamp: new Date() };
       } catch (error) {
-        debug(`Refresh failed for user ${userId}: ${error.message}`);
         logger.error(`Refresh failed for user ${userId}: ${error.message}`);
         // Update job status to failed
         await refreshQueries.updateJobStatus(
@@ -85,20 +86,36 @@ class RefreshService {
       const { userId, jobType } = job.data;
       if (jobType === 'scheduled') {
         // Schedule the next refresh if this was a scheduled refresh
-        debug(
-          `Scheduling next refresh for user ${userId} after ${jobType} job completed`
-        );
         logger.info(
           `Scheduling next refresh for user ${userId} after ${jobType} job completed`
         );
-        this._scheduleNextRefresh(userId);
+        // Introduce a small delay before scheduling the next one
+        setTimeout(() => {
+            this._scheduleNextRefresh(userId).catch(err => {
+              logger.error(`Failed to schedule next refresh for user ${userId}: ${err.message}`);
+            });
+        }, 100);
       }
     });
 
     refreshQueue.on('failed', (job, error) => {
-      debug(`Refresh failed for user ${userId}: ${error.message}`);
       logger.error(`Job ${job.id} failed: ${error.message}`);
     });
+  }
+
+  async _cleanQueueOnStartup() {
+    try {
+      logger.info('Cleaning data refresh queue state on startup...');
+      const queue = refreshQueue; // Get the queue instance
+      await queue.clean(0, 'active');
+      await queue.clean(0, 'wait');
+      await queue.clean(0, 'delayed');
+      await queue.clean(0, 'completed'); 
+      await queue.clean(0, 'failed');
+      logger.info('Queue data refresh state cleaned.');
+    } catch (error) {
+      logger.error('Error cleaning data refresh queue on startup:', error);
+    }
   }
 
   /**
@@ -108,9 +125,6 @@ class RefreshService {
    * @returns {Promise<void>}
    */
   async initializeScheduledRefreshes(intervalHours = 12) {
-    debug(
-      `Initializing scheduled refreshes with interval of ${intervalHours} hours`
-    );
     logger.info(
       `Initializing scheduled refreshes with interval of ${intervalHours} hours`
     );
@@ -124,20 +138,15 @@ class RefreshService {
         const adjustedInterval = intervalHours + randomOffset / 60;
 
         await this._scheduleNextRefresh(userId, adjustedInterval);
-        debug(
-          `Initialized scheduled refresh for user ${userId} at ${adjustedInterval}`
-        );
         logger.info(
           `Initialized scheduled refresh for user ${userId} at ${adjustedInterval}`
         );
       }
 
-      debug(`Scheduled refreshes initialized for ${userIds.length} users`);
       logger.info(
         `Scheduled refreshes initialized for ${userIds.length} users`
       );
     } catch (err) {
-      debug(`Failed to initialize scheduled refreshes: ${err.message}`);
       logger.error(`Failed to initialize scheduled refreshes: ${err.message}`);
       throw err;
     }
@@ -169,7 +178,6 @@ class RefreshService {
         errorMessage: status.error_message,
       };
     } catch (err) {
-      debug(`Failed to get refresh status: ${err.message}`);
       logger.error(`Failed to get refresh status: ${err.message}`);
       throw err;
     }
@@ -182,7 +190,6 @@ class RefreshService {
    * @returns {Promise<void>}
    */
   async _performDataRefresh(userId) {
-    debug(`Starting data refresh for user ${userId}`);
     logger.info(`Performing data refresh for user ${userId}`);
 
     const plaidItems = await retrieveItemsByUser(userId);
@@ -190,7 +197,6 @@ class RefreshService {
     // Invoke sync transactions for each plaid itemId
     for (const plaidItem of plaidItems) {
       const itemId = plaidItem.plaid_item_id;
-      debug(`Syncing transactions for item ${itemId}`);
       logger.info(`Syncing transactions for item ${itemId}`);
       await syncTransactions(itemId);
     }
@@ -204,9 +210,6 @@ class RefreshService {
   async _isRefreshInProgress(userId) {
     const processingJob = await refreshQueries.getProcessingJob(userId);
     if (processingJob) {
-      debug(
-        `Manual refresh requested but a job is already processing for user ${userId}`
-      );
       logger.info(
         `Manual refresh requested but a job is already processing for user ${userId}`
       );
@@ -224,15 +227,10 @@ class RefreshService {
     // Cancel any pending jobs for this user
     try {
       // Cancel any pending jobs for this user
-      debug(`Canceling any pending jobs for user ${userId}`);
       logger.info(`Canceling any pending jobs for user ${userId}`);
       await refreshQueue.clean(0, 'delayed', `userId:${userId}`); // Keep this line
     } catch (error) {
       // Log the error, but don't let it halt the process
-      debug(
-        `Error cleaning delayed jobs (likely empty data): ${error.message}`,
-        'error'
-      );
       logger.info(
         `Error cleaning delayed jobs (likely empty data): ${error.message}`,
         'error'
@@ -240,12 +238,10 @@ class RefreshService {
     }
 
     // Create a new job record
-    debug(`Creating a new job record for user ${userId}`);
     logger.info(`Creating a new job record for user ${userId}`);
     const newJob = await refreshQueries.createRefreshJob(userId, 'manual');
 
     // Add to Bull queue
-    debug(`Adding job to Bull queue for user ${userId}`);
     logger.info(`Adding job to Bull queue for user ${userId}`);
     const job = await refreshQueue.add(
       { userId, jobType: 'manual', jobDbId: newJob.id },
@@ -264,7 +260,6 @@ class RefreshService {
    * @returns {Promise<Object>} Result of the operation.
    */
   async requestManualRefresh(userId) {
-    debug(`Requesting manual refresh for user ${userId}`);
     logger.info(`Requesting manual refresh for user ${userId}`);
 
     try {
@@ -279,7 +274,6 @@ class RefreshService {
       // Create and schedule the job
       const job = await this._createAndScheduleJob(userId);
 
-      debug(`Manual refresh queued for user ${userId}`);
       logger.info(`Manual refresh queued for user ${userId}`);
       return {
         success: true,
@@ -287,7 +281,6 @@ class RefreshService {
         message: 'Refresh has been queued',
       };
     } catch (err) {
-      debug(`Failed to queue manual refresh: ${err.message}`, 'error');
       logger.info(`Failed to queue manual refresh: ${err.message}`, 'error');
       throw err;
     }
@@ -298,7 +291,6 @@ class RefreshService {
    * @returns {Promise<Object>} Result of the operation with job IDs
    */
   async requestManualRefreshAllUsers() {
-    debug('Requesting manual refresh for all users');
     logger.info('Requesting manual refresh for all users');
 
     try {
@@ -306,7 +298,6 @@ class RefreshService {
       const userIds = await refreshQueries.getAllUserIds();
 
       if (userIds.length === 0) {
-        debug('No users found for refresh');
         return {
           success: false,
           message: 'No users found for refresh',
@@ -321,10 +312,6 @@ class RefreshService {
           const result = await this.requestManualRefresh(userId);
           jobResults.push({ userId, ...result });
         } catch (err) {
-          debug(
-            `Failed to queue refresh for user ${userId}: ${err.message}`,
-            'error'
-          );
           logger.info(
             `Failed to queue refresh for user ${userId}: ${err.message}`,
             'error'
@@ -339,10 +326,6 @@ class RefreshService {
 
       // Count successful jobs
       const successCount = jobResults.filter(job => job.success).length;
-
-      debug(
-        `Manual refresh queued for ${successCount} out of ${userIds.length} users`
-      );
       logger.info(
         `Manual refresh queued for ${successCount} out of ${userIds.length} users`
       );
@@ -355,86 +338,10 @@ class RefreshService {
         message: `Refresh has been queued for ${successCount} out of ${userIds.length} users`,
       };
     } catch (err) {
-      debug(
-        `Failed to request manual refresh for all users: ${err.message}`,
-        'error'
-      );
       logger.info(
         `Failed to request manual refresh for all users: ${err.message}`,
         'error'
       );
-      throw err;
-    }
-  }
-
-  /**
-   * Triggers an immediate data refresh for all users.
-   * Processes users in batches to prevent system overload.
-   *
-   * @param {number} batchSize Number of users to process in each batch (default: 5)
-   * @returns {Promise<void>}
-   */
-  async refreshAllUsers(batchSize = 5) {
-    try {
-      debug('Triggering immediate data refresh for all users');
-      logger.info('Triggering immediate data refresh for all users');
-      const userIds = await refreshQueries.getAllUserIds();
-
-      if (userIds.length === 0) {
-        debug('No users found for refresh');
-        logger.info('No users found for refresh');
-        return;
-      }
-
-      // Process in batches to avoid overwhelming the system
-      for (let i = 0; i < userIds.length; i += batchSize) {
-        const batch = userIds.slice(i, i + batchSize);
-        debug(
-          `Processing refresh batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(userIds.length / batchSize)}`
-        );
-        logger.info(
-          `Processing refresh batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(userIds.length / batchSize)}`
-        );
-
-        // Queue refresh jobs in parallel for this batch
-        await Promise.all(
-          batch.map(userId =>
-            this.requestManualRefresh(userId)
-              .then(result => {
-                if (result.success) {
-                  debug(`Queued refresh for user ${userId}`);
-                  logger.info(`Queued refresh for user ${userId}`);
-                } else {
-                  debug(
-                    `Skipped refresh for user ${userId}: ${result.message}`
-                  );
-                  logger.info(
-                    `Skipped refresh for user ${userId}: ${result.message}`
-                  );
-                }
-              })
-              .catch(err => {
-                debug(
-                  `Failed to queue refresh for user ${userId}: ${err.message}`
-                );
-                logger.error(
-                  `Failed to queue refresh for user ${userId}: ${err.message}`
-                );
-              })
-          )
-        );
-
-        // Small delay between batches to avoid Redis/DB connection spikes
-        if (i + batchSize < userIds.length) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-
-      debug(`Immediate refresh queued for ${userIds.length} users`);
-      logger.info(`Immediate refresh queued for ${userIds.length} users`);
-    } catch (err) {
-      debug(`Error refreshing all users: ${err.message}`);
-      logger.error(`Error refreshing all users: ${err.message}`);
       throw err;
     }
   }
@@ -451,13 +358,8 @@ class RefreshService {
     const nextRunTime = new Date();
     nextRunTime.setHours(nextRunTime.getHours() + intervalHours);
 
-    debug(`Scheduling next refresh for user ${userId} at ${nextRunTime}`);
-    logger.info(`Scheduling next refresh for user ${userId} at ${nextRunTime}`);
-    // Update the next scheduled time in the database
     await refreshQueries.updateNextScheduledTime(userId, nextRunTime);
 
-    debug(`Next scheduled refresh for user ${userId} at ${nextRunTime}`);
-    logger.info(`Next scheduled refresh for user ${userId} at ${nextRunTime}`);
     // Schedule the job
     const job = await refreshQueue.add(
       { userId, jobType: 'scheduled' },
@@ -467,13 +369,16 @@ class RefreshService {
       }
     );
 
-    debug(`Next scheduled refresh for user ${userId} at ${nextRunTime}`);
     logger.info(`Next scheduled refresh for user ${userId} at ${nextRunTime}`);
     return job;
   }
 }
 
-// Create singleton instance
-const refreshService = new RefreshService();
+// Export an async factory function INSTEAD of the instance
+async function createAndInitializeRefreshService() {
+  const service = new RefreshService();
+  await service.initialize();
+  return service;
+}
 
-module.exports = refreshService;
+module.exports = { createAndInitializeRefreshService }; 
