@@ -102,7 +102,6 @@ struct HomeView: View {
                 do {
                     // Refresh both accounts and transactions
                     try await bankAccountsService.refreshAccounts(forceRefresh: forceRefresh)
-                    try await transactionsService.fetchRecentTransactions(forceRefresh: forceRefresh)
                 } catch {
                     Logger.e("Failed to refresh data: \(error)")
                 }
