@@ -10,3 +10,69 @@ services:
       
   nginx:
     restart: always  # Ensure Nginx always restarts in production
+
+  # Logging infrastructure
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "9184:3100"  # Using non-standard port 9184 externally
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/loki
+    networks:
+      - app-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "150m"   # Loki can be chattier, maybe allow larger files
+        max-file: "3"     # Keep more files if needed
+
+  promtail:
+    image: grafana/promtail:2.9.2
+    container_name: promtail
+    restart: unless-stopped
+    volumes:
+      - app-logs:/var/log/app-logs:ro
+      - ./nginx/logs:/var/log/nginx:ro
+      - ./promtail-config.yaml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - app-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m" # Promtail is usually less noisy than Loki
+        max-file: "3"
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      - GF_AUTH_BASIC_ENABLED=true
+      - GF_SECURITY_DISABLE_GRAVATAR=true
+      - GF_SERVER_ROOT_URL=https://babloapp.com/metrics
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_SERVER_DOMAIN=babloapp.com
+      - GF_SERVER_ENFORCE_DOMAIN=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - loki
+    networks:
+      - app-network
+    logging:
+      driver: "json-file" # This is usually the default driver
+      options:
+        max-size: "50m"   # Max size of a single log file (e.g., 10 megabytes)
+        max-file: "3"     # Max number of log files to keep (1 current + 2 rotated)    
