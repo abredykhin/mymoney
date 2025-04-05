@@ -11,85 +11,103 @@ struct AllTransactionsView: View {
     @StateObject private var transactionsService = TransactionsService()
     @EnvironmentObject var userAccount: UserAccount
     @EnvironmentObject var navigationState: NavigationState
-    @State private var isRefreshing = false
+
     @State private var showingProfile = false
-    @State private var isLoadingMore = false
+    @State private var isLoadingMore = false // Keep for bottom indicator logic
     @State private var loadingError: Error?
-    @State private var scrollViewProxy: ScrollViewProxy?
     
-    // Computed index to trigger load more (80% of the way through the list)
-    private var loadMoreIndex: Int {
-        let threshold = 0.8
-        let index = Int(
-            Double(transactionsService.transactions.count) * threshold
-        )
-        return max(0, min(index, transactionsService.transactions.count - 1))
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+    
+    // Group transactions by the start of the day
+    private var groupedTransactions: [Date: [Transaction]] {
+        Dictionary(grouping: transactionsService.transactions) { transaction in
+            let dateFromString = AllTransactionsView.dateFormatter.date(from: transaction.date) // Use the static formatter
+            let validDate = dateFromString ?? Date.distantPast
+            return Calendar.current.startOfDay(for: validDate)
+        }
+    }
+    
+    // Sort the date keys (newest first)
+    private var sortedDates: [Date] {
+        groupedTransactions.keys.sorted(by: >) // Sort descending
+    }
+    
+    // Computed index to trigger load more (based on the original flat list)
+    private var loadMoreThresholdIndex: Int {
+        guard !transactionsService.transactions.isEmpty else { return 0 }
+        // Trigger loading when about 5 items are left
+        return max(0, transactionsService.transactions.count - 5)
     }
     
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                if transactionsService.isLoading && transactionsService.transactions.isEmpty {
+                // Initial loading indicator (full screen)
+                if transactionsService.isLoading && transactionsService.transactions.isEmpty && !isLoadingMore {
                     ProgressView()
                         .tint(.accentColor)
-                }
-                
-                if !transactionsService.transactions.isEmpty {
-                    ScrollViewReader { proxy in
-                        List {
-                            ForEach(Array(zip(transactionsService.transactions.indices, transactionsService.transactions)), id: \.0) { index, transaction in
-                                TransactionView(transaction: transaction)
-                                    .id("\(transaction.id ?? 0)-\(index)")
-                                    .onAppear {
-                                        // If this is the transaction at our threshold point
-                                        if index == loadMoreIndex {
-                                            preloadNextPage()
+                        .frame(maxHeight: .infinity) // Center it
+                } else if !transactionsService.transactions.isEmpty {
+                    List {
+                        // Iterate over sorted dates (days)
+                        ForEach(sortedDates, id: \.self) { date in
+                            // Section for each date
+                            Section {
+                                // Iterate over transactions for THAT date
+                                // Ensure transactions within the day are sorted if needed (e.g., by time descending)
+                                ForEach(groupedTransactions[date] ?? [], id: \.id) { transaction in
+                                    TransactionView(transaction: transaction)
+                                        .onAppear {
+                                            // Check if this transaction is near the end of the *original* list
+                                            if let originalIndex = transactionsService.transactions.firstIndex(where: { $0.id == transaction.id }) {
+                                                if originalIndex >= loadMoreThresholdIndex {
+                                                    preloadNextPage()
+                                                }
+                                            }
                                         }
-                                    }
-                            }
-                            
-                            // Loading indicator at the bottom
-                            if isLoadingMore {
-                                HStack {
-                                    Spacer()
-                                    ProgressView()
-                                        .tint(.accentColor)
-                                    Spacer()
                                 }
-                                .padding()
-                                .id("loadingIndicator")
-                                .listRowSeparator(.hidden)
-                            }
-                            
-                            // Error message if loading failed
-                            if loadingError != nil && !isLoadingMore && transactionsService.hasNextPage {
-                                HStack {
-                                    Spacer()
-                                    Text("Couldn't load more transactions")
-                                        .font(.footnote)
-                                        .foregroundColor(.secondary)
-                                    Spacer()
-                                }
-                                .padding()
-                                .id("errorMessage")
-                                .listRowSeparator(.hidden)
+                            } header: {
+                                Text(formatDate(date))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .fontWeight(.medium)
+                                    .padding(.vertical, 4)
+                                    .textCase(nil)
                             }
                         }
-                        .listStyle(.plain)
-                        .onAppear {
-                            scrollViewProxy = proxy
+                        
+                        // --- Loading Indicator and Error Message at the bottom ---
+                        if isLoadingMore {
+                            bottomLoadingIndicator
+                        } else if loadingError != nil && transactionsService.hasNextPage {
+                            // Show error only if there was an error AND we expect more pages
+                            // Avoid showing error if we simply reached the end
+                            bottomErrorIndicator
                         }
                     }
-                }
-            }
-            
-            if transactionsService.transactions.isEmpty && !transactionsService.isLoading {
-                VStack {
-                    Text("No transactions found")
-                        .font(.headline)
-                    Text("Pull to refresh")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    .listStyle(.plain)
+                    .refreshable {
+                        await refreshTransactions()
+                    }
+                } else if !transactionsService.isLoading { // Empty state (after initial load attempt)
+                    VStack {
+                        Text("No transactions found")
+                            .font(.headline)
+                        Text("Pull to refresh")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxHeight: .infinity)
+                    
+                    ScrollView { EmptyView() }
+                        .refreshable {
+                            await refreshTransactions()
+                        }
                 }
             }
         }
@@ -104,9 +122,7 @@ struct AllTransactionsView: View {
             }
         }
         .sheet(isPresented: $showingProfile) {
-            NavigationView {
-                ProfileView()
-            }
+            NavigationView { ProfileView() }
         }
         .navigationDestination(for: Bank.self) { bank in
             BankDetailView(bank: bank)
@@ -114,70 +130,97 @@ struct AllTransactionsView: View {
         .navigationDestination(for: BankAccount.self) { account in
             BankAccountDetailView(account: account)
         }
-        .refreshable {
-            await refreshTransactions()
-        }
         .task {
-            await refreshTransactions()
+            if transactionsService.transactions.isEmpty {
+                await refreshTransactions()
+            }
         }
     }
     
-    private func refreshTransactions() async {
-        isRefreshing = true
-        loadingError = nil
+    private var bottomLoadingIndicator: some View {
+        HStack {
+            Spacer()
+            ProgressView()
+                .tint(.accentColor)
+            Spacer()
+        }
+        .listRowSeparator(.hidden)
+        .padding(.vertical)
+        .id("loadingIndicator")
+    }
+    
+    private var bottomErrorIndicator: some View {
+        HStack {
+            Spacer()
+            VStack(alignment: .center) {
+                Text("Couldn't load more transactions")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .padding(.bottom, 4)
+                
+                Button("Retry") {
+                    loadMoreTransactions()
+                }
+                .font(.footnote)
+                .buttonStyle(.borderless)
+            }
+            Spacer()
+        }
+        .listRowSeparator(.hidden)
+        .padding(.vertical)
+        .id("errorMessage")
+    }
+    
+    
+    private func formatDate(_ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return "Today"
+        } else if calendar.isDateInYesterday(date) {
+            return "Yesterday"
+        } else {
+            return date.formatted(date: .long, time: .omitted)
+        }
+    }
         
+    private func refreshTransactions() async {
+        loadingError = nil // Clear previous errors on refresh
+        isLoadingMore = false // Ensure bottom indicator isn't stuck
         do {
-            // Reset pagination when pulling to refresh
-            try await transactionsService.fetchAllTransactions(forceRefresh: true, loadMore: false)
+            try await transactionsService.fetchAllTransactions(forceRefresh: true)
         } catch {
             Logger.e("Failed to refresh transactions: \(error)")
             loadingError = error
         }
-        
-        isRefreshing = false
     }
     
     private func preloadNextPage() {
-        Logger.i("preloadNextPage: hasNextPage: \(transactionsService.hasNextPage), isLoadingMore: \(isLoadingMore), isLoading: \(transactionsService.isLoading)")
-
-        // If we're at the threshold and there are more transactions to load
         if transactionsService.hasNextPage && !isLoadingMore && !transactionsService.isLoading {
             loadMoreTransactions()
         }
     }
     
     private func loadMoreTransactions() {
-        // Avoid multiple simultaneous pagination requests
+        // Prevent multiple simultaneous loads
         guard !isLoadingMore && !transactionsService.isLoading && transactionsService.hasNextPage else {
             return
         }
         
         Task {
-            isLoadingMore = true
+            self.loadingError = nil
+            self.isLoadingMore = true
+            
             do {
                 try await transactionsService.fetchAllTransactions(loadMore: true)
-                loadingError = nil
             } catch {
                 Logger.e("Failed to load more transactions: \(error)")
-                loadingError = error
+                self.loadingError = error
             }
             
-            isLoadingMore = false
+            self.isLoadingMore = false
         }
-    }
-    
-    private func handleSignOut() {
-        userAccount.signOut()
-    }
+    }    
 }
-
-// Extension to safely access array elements
-extension Array {
-    subscript(safe index: Index) -> Element? {
-        return indices.contains(index) ? self[index] : nil
-    }
-}
-
 //#Preview("Normal State - With Transactions") {
 //    let service = TransactionsService()
 //    
