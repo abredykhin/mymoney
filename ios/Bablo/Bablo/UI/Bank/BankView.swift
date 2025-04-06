@@ -10,6 +10,10 @@ import SwiftUI
 struct BankView : View {
     @State var bank: Bank
     
+    private var backgroundColor: Color {
+        Color(hex: bank.primary_color) ?? Color.white
+    }
+    
     var body: some View {
         NavigationLink(value: bank) {
             VStack(alignment: .leading, spacing: 12) {
@@ -36,6 +40,7 @@ struct BankView : View {
                     ForEach(bank.accounts.filter { $0.hidden != true }, id: \.id) { account in
                         NavigationLink(value: account) {
                             BankAccountView(account: account)
+//                                .background(backgroundColor)
                         }
                     }
                 }.padding(.leading, 4)
@@ -49,7 +54,12 @@ struct BankView_Previews: PreviewProvider {
     static let account1 = BankAccount(id: 0, name: "Account", current_balance: 100.0, iso_currency_code: "USD", _type: "checking", updated_at: .now)
     static let account2 = BankAccount(id: 0, name: "Account", current_balance: 300.0, iso_currency_code: "USD", _type: "credit", updated_at: .now)
 
-    static let bank = Bank(id: 0, bank_name: "A Bank", accounts: [account1, account2])
+    static let bank = Bank(
+        id: 0,
+        bank_name: "A Bank",
+        primary_color: "#00FFBB",
+        accounts: [account1, account2],
+    )
     static var previews: some View {
         BankView(bank: bank)
     }

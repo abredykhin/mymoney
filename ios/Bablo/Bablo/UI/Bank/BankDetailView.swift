@@ -30,7 +30,7 @@ struct BankDetailView : View {
                 
                 Spacer()
                 
-                    // Cached indicator if using cached data
+                // Cached indicator if using cached data
                 if bankAccountsService.isUsingCachedData {
                     HStack {
                         Image(systemName: "arrow.triangle.2.circlepath")
@@ -45,7 +45,7 @@ struct BankDetailView : View {
                 }
             }
             
-                // Rest of your existing code...
+            BankView(bank: bank)
         }
         .padding()
         .background(Color.white)

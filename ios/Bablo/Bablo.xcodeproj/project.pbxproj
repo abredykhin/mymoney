@@ -52,6 +52,8 @@
 		7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */; };
 		7590F2A72C865B9F00BCCDE6 /* BankListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F2A62C865B9F00BCCDE6 /* BankListView.swift */; };
 		759521A02CFD330A00655E7D /* BankDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7595219F2CFD330A00655E7D /* BankDetailView.swift */; };
+		75B4DF042DA1CD0F00FF3C1C /* Color+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B4DF032DA1CD0F00FF3C1C /* Color+Extensions.swift */; };
+		75B4DF0F2DA2F3EB00FF3C1C /* BankListTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B4DF0E2DA2F3EB00FF3C1C /* BankListTabView.swift */; };
 		75BB90CB2CA0E30E00D197A6 /* BankView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BB90CA2CA0E30E00D197A6 /* BankView.swift */; };
 		75C972C42D13B7D4008E6E87 /* OnboardingWizard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972C32D13B7D4008E6E87 /* OnboardingWizard.swift */; };
 		75C972C62D13B87E008E6E87 /* OnboardingCompleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972C52D13B87E008E6E87 /* OnboardingCompleteView.swift */; };
@@ -141,6 +143,8 @@
 		7590F29B2C86471D00BCCDE6 /* LinkController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkController.swift; sourceTree = "<group>"; };
 		7590F2A62C865B9F00BCCDE6 /* BankListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankListView.swift; sourceTree = "<group>"; };
 		7595219F2CFD330A00655E7D /* BankDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankDetailView.swift; sourceTree = "<group>"; };
+		75B4DF032DA1CD0F00FF3C1C /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
+		75B4DF0E2DA2F3EB00FF3C1C /* BankListTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankListTabView.swift; sourceTree = "<group>"; };
 		75BB90CA2CA0E30E00D197A6 /* BankView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankView.swift; sourceTree = "<group>"; };
 		75C972C32D13B7D4008E6E87 /* OnboardingWizard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWizard.swift; sourceTree = "<group>"; };
 		75C972C52D13B87E008E6E87 /* OnboardingCompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCompleteView.swift; sourceTree = "<group>"; };
@@ -350,6 +354,7 @@
 				757ABF782C181C3D00DF8CA8 /* Logger.swift */,
 				75F529652C8D696100629F2B /* Modifiers.swift */,
 				75E49BAB2CA3EACF008D72F8 /* Dates.swift */,
+				75B4DF032DA1CD0F00FF3C1C /* Color+Extensions.swift */,
 			);
 			path = Util;
 			sourceTree = "<group>";
@@ -398,6 +403,15 @@
 			path = Link;
 			sourceTree = "<group>";
 		};
+		75B4DEF62DA1C46C00FF3C1C /* BankAccount */ = {
+			isa = PBXGroup;
+			children = (
+				755F88852C86B8D200BEE12A /* BankAccountView.swift */,
+				7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */,
+			);
+			path = BankAccount;
+			sourceTree = "<group>";
+		};
 		75E49BA82CA3E62F008D72F8 /* Files */ = {
 			isa = PBXGroup;
 			children = (
@@ -409,10 +423,10 @@
 		75E6CC672CBCC0AF00C779C9 /* Bank */ = {
 			isa = PBXGroup;
 			children = (
-				7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */,
+				75B4DEF62DA1C46C00FF3C1C /* BankAccount */,
+				75B4DF0E2DA2F3EB00FF3C1C /* BankListTabView.swift */,
 				7590F2A62C865B9F00BCCDE6 /* BankListView.swift */,
 				75BB90CA2CA0E30E00D197A6 /* BankView.swift */,
-				755F88852C86B8D200BEE12A /* BankAccountView.swift */,
 				7595219F2CFD330A00655E7D /* BankDetailView.swift */,
 			);
 			path = Bank;
@@ -518,7 +532,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					757ABF302C18195100DF8CA8 = {
 						CreatedOnToolsVersion = 16.0;
@@ -600,6 +614,7 @@
 				757ABF852C181CD100DF8CA8 /* BankAccountsService.swift in Sources */,
 				75668FDF2D83D538003A3D97 /* AccountsManager.swift in Sources */,
 				7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */,
+				75B4DF0F2DA2F3EB00FF3C1C /* BankListTabView.swift in Sources */,
 				755F88862C86B8D200BEE12A /* BankAccountView.swift in Sources */,
 				75F946A22D3C85320076E91E /* CategoryRowView.swift in Sources */,
 				7549AB502D0E4C7F00313F5C /* LargeButton.swift in Sources */,
@@ -649,6 +664,7 @@
 				754B694D2D97EAD100C0F001 /* AuthManager.swift in Sources */,
 				75F946A52D3C85680076E91E /* ExpenseSection.swift in Sources */,
 				7573DA182CBCD7320004EBE4 /* TotalBalanceView.swift in Sources */,
+				75B4DF042DA1CD0F00FF3C1C /* Color+Extensions.swift in Sources */,
 				75C972C62D13B87E008E6E87 /* OnboardingCompleteView.swift in Sources */,
 				757ABF792C181C3D00DF8CA8 /* Logger.swift in Sources */,
 			);
@@ -725,6 +741,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -786,6 +803,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -813,6 +831,7 @@
 				CODE_SIGN_ENTITLEMENTS = Bablo/Bablo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Bablo/Preview Content\"";
 				DEVELOPMENT_TEAM = 7TZFJZHHX2;
 				ENABLE_PREVIEWS = YES;
@@ -853,6 +872,7 @@
 				CODE_SIGN_ENTITLEMENTS = Bablo/Bablo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Bablo/Preview Content\"";
 				DEVELOPMENT_TEAM = 7TZFJZHHX2;
 				ENABLE_PREVIEWS = YES;
@@ -891,6 +911,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
@@ -913,6 +934,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
@@ -934,6 +956,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
@@ -955,6 +978,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;

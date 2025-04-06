@@ -11,7 +11,6 @@ import Foundation
 struct BankListView: View {
     @EnvironmentObject var bankAccountsService: BankAccountsService
     
-        // Date formatter properly defined
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
@@ -20,11 +19,7 @@ struct BankListView: View {
     }()
     
     var body: some View {
-        VStack {
-            Text("Accounts")
-                .font(.headline)
-                .padding(.leading)
-            
+        VStack {        
             if bankAccountsService.isLoading {
                 ProgressView("Loading accounts...")
                     .padding()
@@ -40,6 +35,12 @@ struct BankListView: View {
                 }
                 .padding(.vertical, 30)
             } else {
+                if let lastUpdated = bankAccountsService.lastUpdated {
+                    Text("Last updated: \(dateFormatter.string(from: lastUpdated))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
                 ScrollView {
                     LazyVStack(alignment: .leading) {
                         ForEach(bankAccountsService.banksWithAccounts, id: \.id) { bank in
@@ -47,13 +48,8 @@ struct BankListView: View {
                                 .padding(.bottom, 4)
                         }
                     }
-                    
-                    if let lastUpdated = bankAccountsService.lastUpdated {
-                        Text("Last updated: \(dateFormatter.string(from: lastUpdated))")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.top)
-                    }
+                    LinkButtonView()
+                        .padding()
                 }
             }
         }

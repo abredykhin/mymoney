@@ -42,6 +42,9 @@ struct HomeView: View {
                 }
                 
                 TotalBalanceView()
+                Text("Accounts")
+                    .font(.headline)
+                    .padding(.leading)
                 BankListView()
                 Spacer()
                 RecentTransactionsView()
@@ -82,7 +85,6 @@ struct HomeView: View {
     }
     
     private func checkNetworkStatus() {
-            // Using NWPathMonitor to check network status
         let monitor = NWPathMonitor()
         let queue = DispatchQueue(label: "NetworkMonitor")
         

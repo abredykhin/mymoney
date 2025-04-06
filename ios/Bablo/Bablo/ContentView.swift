@@ -8,9 +8,24 @@
 import SwiftUI
 import SwiftData
 
+// Navigation state management
+class NavigationState: ObservableObject {
+    @Published var selectedTab: TabSelection = .home
+    @Published var homeNavPath = NavigationPath()
+    @Published var transactionsNavPath = NavigationPath()
+    @Published var accounrsNavPath = NavigationPath()
+}
+
+enum TabSelection {
+    case home
+    case transactions
+    case accounts
+}
+
 struct ContentView: View {
     @EnvironmentObject var userAccount: UserAccount
     @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var bankAccountsService: BankAccountsService
     @StateObject private var navigationState = NavigationState()
     @Environment(\.scenePhase) private var scenePhase
     @State private var previousScenePhase: ScenePhase = .active
@@ -37,6 +52,13 @@ struct ContentView: View {
                     Label("Transactions", systemImage: "list.bullet")
                 }
                 .tag(TabSelection.transactions)
+                
+                NavigationStack(path: $navigationState.accounrsNavPath) {
+                    BankListTabView()
+                        .environmentObject(bankAccountsService)
+                }
+                .tabItem {Label("Accounts", systemImage: "dollarsign.bank.building")
+                }.tag(TabSelection.accounts)
             }
             .onChange(of: navigationState.selectedTab) { oldValue, newValue in
                 // Clear navigation stack when switching tabs
@@ -68,18 +90,6 @@ struct ContentView: View {
             WelcomeView()
         }
     }
-}
-
-// Navigation state management
-class NavigationState: ObservableObject {
-    @Published var selectedTab: TabSelection = .home
-    @Published var homeNavPath = NavigationPath()
-    @Published var transactionsNavPath = NavigationPath()
-}
-
-enum TabSelection {
-    case home
-    case transactions
 }
 
 #Preview {
