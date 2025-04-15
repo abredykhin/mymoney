@@ -82,7 +82,7 @@ services:
     container_name: nginx
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "5001:80"
     volumes:
       - ./nginx/conf-local:/etc/nginx/conf.d
     depends_on:
