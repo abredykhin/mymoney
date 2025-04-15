@@ -15,6 +15,13 @@ services:
       
   nginx:
     restart: always  # Ensure Nginx always restarts in production
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf-prod:/etc/nginx/conf.d
+      - ${SSL_CERT_PATH}:/etc/nginx/certs/cert.pem:ro
+      - ${SSL_KEY_PATH}:/etc/nginx/certs/key.pem:ro      
     depends_on:
       - server
       - grafana    

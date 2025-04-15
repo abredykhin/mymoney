@@ -83,14 +83,10 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"
     volumes:
-      - ./nginx/conf:/etc/nginx/conf.d
-      - ${SSL_CERT_PATH}:/etc/nginx/certs/cert.pem:ro
-      - ${SSL_KEY_PATH}:/etc/nginx/certs/key.pem:ro
+      - ./nginx/conf-local:/etc/nginx/conf.d
     depends_on:
       - server
-      - grafana
     networks:
       - app-network
 

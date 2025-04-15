@@ -79,3 +79,6 @@ ios/UxComponents/UxComponents.xcodeproj/project.xcworkspace/xcuserdata/
 ios/UxComponents/UxComponents.xcodeproj/xcuserdata/
 
 package-lock.json
+
+server/production_backup.dump
+
