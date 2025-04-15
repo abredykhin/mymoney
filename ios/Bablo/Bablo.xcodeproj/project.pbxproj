@@ -54,6 +54,7 @@
 		759521A02CFD330A00655E7D /* BankDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7595219F2CFD330A00655E7D /* BankDetailView.swift */; };
 		75B4DF042DA1CD0F00FF3C1C /* Color+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B4DF032DA1CD0F00FF3C1C /* Color+Extensions.swift */; };
 		75B4DF0F2DA2F3EB00FF3C1C /* BankListTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B4DF0E2DA2F3EB00FF3C1C /* BankListTabView.swift */; };
+		75B4DF292DA3107C00FF3C1C /* SpendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B4DF282DA3107C00FF3C1C /* SpendView.swift */; };
 		75BB90CB2CA0E30E00D197A6 /* BankView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BB90CA2CA0E30E00D197A6 /* BankView.swift */; };
 		75C972C42D13B7D4008E6E87 /* OnboardingWizard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972C32D13B7D4008E6E87 /* OnboardingWizard.swift */; };
 		75C972C62D13B87E008E6E87 /* OnboardingCompleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972C52D13B87E008E6E87 /* OnboardingCompleteView.swift */; };
@@ -145,6 +146,7 @@
 		7595219F2CFD330A00655E7D /* BankDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankDetailView.swift; sourceTree = "<group>"; };
 		75B4DF032DA1CD0F00FF3C1C /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
 		75B4DF0E2DA2F3EB00FF3C1C /* BankListTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankListTabView.swift; sourceTree = "<group>"; };
+		75B4DF282DA3107C00FF3C1C /* SpendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendView.swift; sourceTree = "<group>"; };
 		75BB90CA2CA0E30E00D197A6 /* BankView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankView.swift; sourceTree = "<group>"; };
 		75C972C32D13B7D4008E6E87 /* OnboardingWizard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWizard.swift; sourceTree = "<group>"; };
 		75C972C52D13B87E008E6E87 /* OnboardingCompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCompleteView.swift; sourceTree = "<group>"; };
@@ -389,6 +391,7 @@
 				7573DA162CBCD7230004EBE4 /* Budget */,
 				75E6CC672CBCC0AF00C779C9 /* Bank */,
 				75E6CC692CBCC0B900C779C9 /* Transaction */,
+				75B4DF272DA3106900FF3C1C /* Spend */,
 				7590F2972C86470400BCCDE6 /* HomeView.swift */,
 			);
 			path = UI;
@@ -410,6 +413,14 @@
 				7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */,
 			);
 			path = BankAccount;
+			sourceTree = "<group>";
+		};
+		75B4DF272DA3106900FF3C1C /* Spend */ = {
+			isa = PBXGroup;
+			children = (
+				75B4DF282DA3107C00FF3C1C /* SpendView.swift */,
+			);
+			path = Spend;
 			sourceTree = "<group>";
 		};
 		75E49BA82CA3E62F008D72F8 /* Files */ = {
@@ -623,6 +634,7 @@
 				75668FDA2D83CFF9003A3D97 /* CoreDataStack.swift in Sources */,
 				75F946AE2D3C875A0076E91E /* OnboardingBudgetFooterView.swift in Sources */,
 				754B69522D989AC800C0F001 /* Transaction+Extensions.swift in Sources */,
+				75B4DF292DA3107C00FF3C1C /* SpendView.swift in Sources */,
 				754B694B2D97D8E500C0F001 /* BiometricsEnrollmentView.swift in Sources */,
 				75E49BA52CA27E67008D72F8 /* TransactionView.swift in Sources */,
 				7521DF1C2D87A52C00856718 /* BankAccountDetailView.swift in Sources */,

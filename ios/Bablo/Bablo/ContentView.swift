@@ -13,13 +13,15 @@ class NavigationState: ObservableObject {
     @Published var selectedTab: TabSelection = .home
     @Published var homeNavPath = NavigationPath()
     @Published var transactionsNavPath = NavigationPath()
-    @Published var accounrsNavPath = NavigationPath()
+    @Published var accountsNavPath = NavigationPath()
+    @Published var spendNavPath = NavigationPath()
 }
 
 enum TabSelection {
     case home
     case transactions
     case accounts
+    case spend
 }
 
 struct ContentView: View {
@@ -53,12 +55,18 @@ struct ContentView: View {
                 }
                 .tag(TabSelection.transactions)
                 
-                NavigationStack(path: $navigationState.accounrsNavPath) {
+                NavigationStack(path: $navigationState.accountsNavPath) {
                     BankListTabView()
                         .environmentObject(bankAccountsService)
                 }
                 .tabItem {Label("Accounts", systemImage: "dollarsign.bank.building")
                 }.tag(TabSelection.accounts)
+                
+                NavigationStack(path: $navigationState.spendNavPath) {
+                    SpendView()
+                }
+                .tabItem {Label("Spend", systemImage: "banknote")
+                }.tag(TabSelection.spend)
             }
             .onChange(of: navigationState.selectedTab) { oldValue, newValue in
                 // Clear navigation stack when switching tabs

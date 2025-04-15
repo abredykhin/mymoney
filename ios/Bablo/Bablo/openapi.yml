@@ -498,7 +498,66 @@ paths:
                 $ref: '#/components/schemas/TotalBalance'
  
         '401':
-          description: Unauthorized    
+          description: Unauthorized
+  /transactions/breakdown/category:
+    get:
+      summary: Get Spend Breakdown by Category
+      operationId: categoryBreakdown
+      description: |
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: currentDate
+          required: true
+          in: query
+          description: Current date on user device (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date      
+        - name: weekStartDay
+          in: query
+          required: false
+          description: |
+            Specify the starting day of the week for the `weekly_spend` calculation.
+          schema:
+            type: string
+            enum:
+              - sunday
+              - monday
+            default: monday # Explicitly state the default
+          example: sunday
+        # --- Optional Parameters
+        # - name: filterBy
+        #   in: query
+        #   required: false
+        #   description: Specify whether to filter by 'userId' or 'accountId'. Defaults to 'userId'.
+        #   schema:
+        #     type: string
+        #     enum:
+        #       - userId
+        #       - accountId
+        #     default: userId
+        # - name: accountId
+        #   in: query
+        #   required: false
+        #   description: The specific account ID to filter by. Required *only* if `filterBy` is set to `accountId`. User must have permission for this account.
+        #   schema:
+        #     type: integer
+        #     format: int64 # Or int32 depending on your ID size
+        #   example: 12345
+      responses:
+        '200':
+          description: Successful retrieval of spending breakdown. The breakdown array may be empty.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryBreakdownResponse'
+        '400':
+          description: Bad Request - Invalid parameter value (e.g., invalid `weekStartDay` value, missing/invalid `accountId` if that filter is used).
+        '401':
+          description: Unauthorized - Authentication token is missing or invalid.
+        '403':
+          description: Forbidden - User does not have permission.
 components:
   securitySchemes:
     bearerAuth:
@@ -631,7 +690,6 @@ components:
         - payment_channel
         - transaction_id
         - pending
-        
       properties:
         id:
           type: integer
@@ -725,3 +783,40 @@ components:
         nextCursor:
           type: string
           description: Cursor to fetch the next page of results (format "date:id")
+    CategoryBreakdownResponse:
+      type: object
+      properties:
+        breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryBreakdownItem'
+          description: An array of spending breakdowns by category, ordered typically by yearly spend descending. The array might be empty if there are no transactions for the user in the current year.
+      required:
+        - breakdown          
+    CategoryBreakdownItem:
+      type: object
+      properties:
+        category:
+          type: string
+          description: The name of the personal finance category (or 'Uncategorized').
+          example: 'Transportation'
+        weekly_spend:
+          type: number
+          format: decimal
+          description: Total spend in this category for the current week (period defined by 'weekStartDay').
+          example: 75.25
+        monthly_spend:
+          type: number
+          format: decimal
+          description: Total spend in this category for the current calendar month.
+          example: 310.80
+        yearly_spend:
+          type: number
+          format: decimal
+          description: Total spend in this category for the current calendar year.
+          example: 2450.00
+      required:
+        - category
+        - weekly_spend
+        - monthly_spend
+        - yearly_spend

@@ -6,6 +6,8 @@ volumes:
   server_data:
   db_data:
   redis-data:
+  loki-data:
+  grafana-data:
   app-logs:
   
 services:
@@ -32,8 +34,6 @@ services:
     build: ./server
     env_file: ./.env
     restart: unless-stopped
-    # No longer expose ports externally - only accessible within Docker network
-    # No longer expose 80/443 directly - Nginx will handle these
     environment:
       PLAID_CLIENT_ID:
       PLAID_SECRET_SANDBOX:
@@ -90,9 +90,10 @@ services:
       - ${SSL_KEY_PATH}:/etc/nginx/certs/key.pem:ro
     depends_on:
       - server
+      - grafana
     networks:
       - app-network
-      
+
 networks:
   app-network:
     driver: bridge
