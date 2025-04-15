@@ -3,11 +3,13 @@ const {
   retrieveTransactionsByUserId,
   retrieveTransactionsByItemId,
   retrieveTransactionsByAccountId,
+  getSpendBreakdownByCategory  
 } = require('../db/queries/transactions');
 const { asyncWrapper, verifyToken } = require('../middleware');
 const _ = require('lodash');
 const debug = require('debug')('routes:transactions');
 const logger = require('../utils/logger');
+const format =  require('date-fns');
 
 const router = express.Router();
 
@@ -285,6 +287,90 @@ router.get(
     debug('Sending the result back to client');
     logger.info('Sending the result back to client');
     res.json(response);
+  })
+);
+
+/**
+ * Retrieves spending breakdown by category for the authenticated user.
+ * Spends are calculated for the week, month, and year containing the specified date.
+ *
+ * @param {string} [req.query.currentDate] - The date to calculate ranges from (YYYY-MM-DD). Defaults to server's current date.
+ * @param {'sunday' | 'monday'} [req.query.weekStartDay='monday'] - Specify 'sunday' or 'monday'.
+ * @param {'userId' | 'accountId'} [req.query.filterBy='userId'] - Specify 'userId' or 'accountId'. Currently only supports userId via token.
+ * @param {string | number} [req.query.accountId] - If filterBy is 'accountId', provide the account ID.
+ * @returns {Object} Response containing an array of category breakdowns.
+ */
+router.get(
+  '/breakdown/category',
+  verifyToken,
+  asyncWrapper(async (req, res) => {
+    const { userId } = req;
+    let idFieldName = 'user_id';
+    let idValue = userId;
+    let currentDateString;
+
+    // --- 1. Determine and Validate Current Date ---
+    const currentDateQuery = req.query.currentDate;
+    if (currentDateQuery) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(currentDateQuery)) {
+        return res.status(400).json({ message: "Invalid format for currentDate. Use 'YYYY-MM-DD'." });
+      }
+      // Optional: Add further validation to ensure it's a *real* date
+      // For example, using a library like date-fns or moment.js, or basic JS Date parsing
+      // if (isNaN(Date.parse(currentDateQuery))) {
+      //   return res.status(400).json({ message: "Invalid date value for currentDate." });
+      // }
+      currentDateString = currentDateQuery;
+      debug(`Using client-provided date: ${currentDateString}`);
+    } else {
+      // Default to server's current date in 'YYYY-MM-DD' format
+      // Using date-fns for reliable formatting:
+      currentDateString = format(new Date(), 'yyyy-MM-dd');
+      // Or using native JS Date:
+      // const now = new Date();
+      // const year = now.getFullYear();
+      // const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      // const day = now.getDate().toString().padStart(2, '0');
+      // currentDateString = `${year}-${month}-${day}`;
+      debug(`No client date provided, using server's current date: ${currentDateString}`);
+    }
+
+    // --- 2. Determine and Validate Week Start Day ---
+    const weekStartDayQuery = req.query.weekStartDay?.toLowerCase();
+    let weekStartDay = 'monday'; // Default
+    if (weekStartDayQuery === 'sunday') {
+      weekStartDay = 'sunday';
+    } else if (weekStartDayQuery === 'monday') {
+      weekStartDay = 'monday';
+    } else if (weekStartDayQuery) {
+      // If a value was provided but it's invalid
+      return res.status(400).json({ message: "Invalid value for weekStartDay. Use 'sunday' or 'monday'." });
+    }
+
+    // --- 3. Determine ID Field and Value (Optional Account Filtering) ---
+    // NB: Account ID filtering block remains the same, ensure permissions are checked if uncommented.
+    /*
+    if (req.query.filterBy?.toLowerCase() === 'accountid') {
+      // ... (existing accountId logic with permission checks) ...
+      idFieldName = 'account_id';
+      idValue = accountId; // Make sure accountId is defined and validated
+      logger.info(`Generating category breakdown for account ${idValue} (User: ${userId}, Date: ${currentDateString}, Week Start: ${weekStartDay})`);
+    } else { */
+      // Default to user ID
+      logger.info(`Generating category breakdown for user ${idValue} (Date: ${currentDateString}, Week Start: ${weekStartDay})`);
+    /* } */
+
+    // --- 4. Call the Service Function ---
+    // Pass the determined currentDateString
+    const breakdown = await getSpendBreakdownByCategory(
+      idFieldName,
+      idValue,
+      currentDateString, // Pass the validated or default date string
+      weekStartDay
+    );
+
+    debug(`Sending ${breakdown.length} category breakdowns back to client for ${idFieldName} ${idValue} on ${currentDateString}`);
+    res.json({ breakdown }); // Send result wrapped in an object
   })
 );
 

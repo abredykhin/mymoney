@@ -5,6 +5,8 @@
 const { retrieveAccountByPlaidAccountId } = require('./accounts');
 const db = require('../');
 const debug = require('debug')('db:transactions');
+const logger = require('../../utils/logger');
+
 /**
  * Creates or updates multiple transactions.
  *
@@ -144,6 +146,111 @@ const deleteTransactions = async plaidTransactionIds => {
     await db.query(query);
   });
   await Promise.all(pendingQueries);
+};
+
+/**
+ * Retrieves spending breakdown by primary category for the current week (to date), month, and year.
+ * Dates are calculated based on the database's CURRENT_DATE.
+ *
+ * @param {'user_id' | 'account_id'} idFieldName - The column to filter by ('user_id' or 'account_id').
+ * @param {number | string} idValue - The ID of the user or account.
+ * @param {string} currentDateString - The current date from the client in 'YYYY-MM-DD' format.
+ * @param {'sunday' | 'monday'} weekStartDay - Specifies if the week starts on Sunday or Monday. Defaults to 'monday'.
+ * @returns {Promise<Array<{category: string, weekly_spend: number, monthly_spend: number, yearly_spend: number}>>}
+ */
+const getSpendBreakdownByCategory = async (idFieldName, idValue, currentDateString, weekStartDay = 'monday') => {
+    // --- 1. Validate Inputs ---
+    if (idFieldName !== 'user_id' && idFieldName !== 'account_id') {
+        throw new Error('Invalid idFieldName specified. Must be "user_id" or "account_id".');
+    }
+    if (weekStartDay !== 'sunday' && weekStartDay !== 'monday') {
+        debug(`Invalid weekStartDay value "${weekStartDay}", defaulting to "monday".`);
+        weekStartDay = 'monday'; // Default to Monday if invalid value provided
+    }
+    // Basic validation for date string format (can be enhanced)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(currentDateString)) {
+        throw new Error('Invalid currentDateString format. Expected "YYYY-MM-DD".');
+    }
+    const clientDate = currentDateString; // Use the validated string directly for SQL parameter
+
+    // --- 2. Construct SQL Query ---
+    // Note parameter usage: $1 = weekStartDay, $2 = idValue, $3 = clientDate (as text)
+    const sql = `
+    WITH InputDate AS (
+        -- Cast the input date string to a DATE type
+        SELECT $3::date AS today
+    ), DateRanges AS (
+        SELECT
+            today,
+            -- Calculate week start date based on input date and weekStartDay preference
+            CASE
+                WHEN $1 = 'sunday' THEN date_trunc('week', today + interval '1 day')::date - interval '1 day'
+                ELSE date_trunc('week', today)::date
+            END AS week_start_date,
+            -- Calculate week end date (exclusive) - it's the start of the *next* week
+            CASE
+                WHEN $1 = 'sunday' THEN date_trunc('week', today + interval '1 day')::date + interval '6 days' + interval '1 day'
+                ELSE date_trunc('week', today)::date + interval '1 week'
+            END AS week_end_date,
+             -- Calculate month start and end (exclusive) based on input date
+            date_trunc('month', today)::date AS month_start_date,
+            (date_trunc('month', today) + interval '1 month')::date AS month_end_date,
+            -- Calculate year start and end (exclusive) based on input date
+            date_trunc('year', today)::date AS year_start_date,
+            (date_trunc('year', today) + interval '1 year')::date AS year_end_date
+        FROM InputDate
+    )
+    SELECT
+        COALESCE(t.personal_finance_category, 'Uncategorized') AS category,
+        -- Sum amounts within the calculated week range
+        SUM(CASE WHEN t.date >= dr.week_start_date AND t.date < dr.week_end_date THEN t.amount ELSE 0 END)::numeric(28, 2) AS weekly_spend,
+        -- Sum amounts within the calculated month range
+        SUM(CASE WHEN t.date >= dr.month_start_date AND t.date < dr.month_end_date THEN t.amount ELSE 0 END)::numeric(28, 2) AS monthly_spend,
+        -- Sum amounts within the calculated year range
+        SUM(CASE WHEN t.date >= dr.year_start_date AND t.date < dr.year_end_date THEN t.amount ELSE 0 END)::numeric(28, 2) AS yearly_spend
+    FROM
+        transactions t
+    CROSS JOIN DateRanges dr -- Use CROSS JOIN as DateRanges produces a single row
+    WHERE
+        t.${idFieldName} = $2 -- Use $2 for idValue
+        AND t.pending = false
+        -- Filter transactions to be within the relevant year for efficiency
+        AND t.date >= dr.year_start_date
+        AND t.date < dr.year_end_date
+        AND t.amount > 0
+    GROUP BY
+        COALESCE(t.personal_finance_category, 'Uncategorized')
+        -- Include date range boundaries in GROUP BY if needed, though likely not required here
+        -- dr.week_start_date, dr.week_end_date, dr.month_start_date, dr.month_end_date, dr.year_start_date, dr.year_end_date
+    ORDER BY
+        yearly_spend DESC, monthly_spend DESC, weekly_spend DESC;
+    `;
+
+    // Pass weekStartDay, idValue, and clientDate as parameters
+    const params = [weekStartDay, idValue, clientDate];
+
+    // --- 3. Execute Query ---
+    debug(`Executing spend breakdown query for ${idFieldName}=${idValue} (date: ${clientDate}, week starts ${weekStartDay})`);
+    debug(`Query: ${sql.replace(/\s+/g, ' ').trim()}`);
+    debug(`Params: ${JSON.stringify(params)}`);
+
+    try {
+        const { rows } = await db.query(sql, params);
+        debug(`Retrieved ${rows.length} category breakdowns for ${idFieldName}=${idValue} on ${clientDate}.`);
+        // Convert numeric string amounts to numbers
+        return rows.map(row => ({
+            category: row.category,
+            weekly_spend: Number(row.weekly_spend) || 0,
+            monthly_spend: Number(row.monthly_spend) || 0,
+            yearly_spend: Number(row.yearly_spend) || 0,
+        }));
+    } catch (error) {
+        logger.error(`Error fetching spend breakdown for ${idFieldName}=${idValue} on ${clientDate}:`, error);
+        if (error.message) {
+            debug(`SQL Error: ${error.message}`);
+        }
+        throw error; // Re-throw the error for higher-level handling
+    }
 };
 
 /**
@@ -295,11 +402,11 @@ const _retrieveTransactions = async (idFieldName, idValue, options = {}) => {
   return result;
 };
 
-
 module.exports = {
   createOrUpdateTransactions,
   retrieveTransactionsByAccountId,
   retrieveTransactionsByItemId,
   retrieveTransactionsByUserId,
   deleteTransactions,
+  getSpendBreakdownByCategory,
 };
