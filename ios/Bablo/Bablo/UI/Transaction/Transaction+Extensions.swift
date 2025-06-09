@@ -6,11 +6,17 @@
 //
 
 import Foundation
-import SwiftUI // Make sure SwiftUI is imported for SF Symbols access
+import SwiftUI
 
 extension Transaction {
     
-        // Function to get a general icon name based on primary category
+    func getCategoryDescription() -> String {
+        return getTransactionCategoryDescription(
+            transactionCategory: self.personal_finance_category ?? ""
+        )
+    }
+    
+    // Function to get a general icon name based on primary category
     func getCategoryIconName() -> String {
             // Check for primary category
         guard let primaryCategory = self.personal_finance_category else {
@@ -230,5 +236,44 @@ extension Transaction {
             print("Unrecognized detailed category, falling back to primary: \(detailedCategory)")
             return getCategoryIconName()
         }
+    }
+}
+
+func getTransactionCategoryDescription(transactionCategory: String) -> String {
+    switch transactionCategory.uppercased() {
+    case "INCOME":
+        return "Income"
+    case "TRANSFER_IN":
+        return "Incoming money transfer"
+    case "TRANSFER_OUT":
+        return "Outgoing money transfer"
+    case "LOAN_PAYMENTS":
+        return "Loan payments"
+    case "BANK_FEES":
+        return "Bank fees"
+    case "ENTERTAINMENT":
+        return "Entertainment"
+    case "FOOD_AND_DRINK":
+        return "Food and drink"
+    case "GENERAL_MERCHANDISE":
+        return "General goods"
+    case "HOME_IMPROVEMENT":
+        return "Home improvement"
+    case "MEDICAL":
+        return "Healthcare expenses"
+    case "PERSONAL_CARE":
+        return "Personal care"
+    case "GENERAL_SERVICES":
+        return "General services"
+    case "GOVERNMENT_AND_NON_PROFIT":
+        return "Payments to government and non-profit organizations"
+    case "TRANSPORTATION":
+        return "Transportation"
+    case "TRAVEL":
+        return "Travel"
+    case "RENT_AND_UTILITIES":
+        return "Rent and utility services"
+    default:
+        return "Unknown category"
     }
 }

@@ -33,6 +33,15 @@ struct SpendView: View {
         }
     }
 
+    private var sortedSpendBreakdownItems: [CategoryBreakdownItem] {
+        budgetService.spendBreakdownItems
+            .filter { spendValue(for: $0, range: selectedDateRange) != 0 }
+            .sorted {
+                spendValue(for: $0, range: selectedDateRange)
+                    > spendValue(for: $1, range: selectedDateRange)
+            }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading) {
@@ -62,11 +71,15 @@ struct SpendView: View {
                     // Display the data using LazyVStack
                     LazyVStack(spacing: 15) {
                         ForEach(
-                            budgetService.spendBreakdownItems,
+                            sortedSpendBreakdownItems,
                             id: \.category
                         ) { item in
                             HStack {
-                                Text(item.category)
+                                Text(
+                                    getTransactionCategoryDescription(
+                                        transactionCategory: item.category
+                                    )
+                                )
                                 Spacer()
                                 Text(
                                     spendValue(

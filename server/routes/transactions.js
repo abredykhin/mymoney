@@ -305,6 +305,7 @@ router.get(
   verifyToken,
   asyncWrapper(async (req, res) => {
     debug(`Received request for /breakdown/category with query: ${JSON.stringify(req.query)}`); // Log all query params
+    debug(`Received request for /breakdown/category with body: ${JSON.stringify(req.body)}`); // Log all query params    
     const { userId } = req;
     let idFieldName = 'user_id';
     let idValue = userId;
@@ -326,14 +327,9 @@ router.get(
 
     // --- 2. Determine and Validate Week Start Day ---
     const weekStartDayQuery = req.query.weekStartDay?.toLowerCase();
-    let weekStartDay = 'monday'; // Default
-    if (weekStartDayQuery === 'sunday') {
-      weekStartDay = 'sunday';
-    } else if (weekStartDayQuery === 'monday') {
+    let weekStartDay = 'sunday';
+    if (weekStartDayQuery === 'monday') {
       weekStartDay = 'monday';
-    } else if (weekStartDayQuery) {
-      // If a value was provided but it's invalid
-      return res.status(400).json({ message: "Invalid value for weekStartDay. Use 'sunday' or 'monday'." });
     }
 
     // --- 3. Determine ID Field and Value (Optional Account Filtering) ---

@@ -173,80 +173,52 @@ const getSpendBreakdownByCategory = async (idFieldName, idValue, currentDateStri
     }
     const clientDate = currentDateString; // Use the validated string directly for SQL parameter
 
-    // --- DEBUG: Log Date Ranges ---
-    const dateRangeDebugSql = `
-      WITH InputDate AS (
-          -- $1 = weekStartDay, $2 = clientDate (currentDateString)
-          SELECT $2::date AS today
-      ), DateRanges AS (
-          SELECT
-              today,
-              CASE
-                  WHEN $1 = 'sunday' THEN date_trunc('week', today + interval '1 day')::date - interval '1 day'
-                  ELSE date_trunc('week', today)::date
-              END AS week_start_date,
-              CASE
-                  WHEN $1 = 'sunday' THEN date_trunc('week', today + interval '1 day')::date + interval '6 days' + interval '1 day'
-                  ELSE date_trunc('week', today)::date + interval '1 week'
-              END AS week_end_date,
-              date_trunc('month', today)::date AS month_start_date,
-              (date_trunc('month', today) + interval '1 month')::date AS month_end_date,
-              date_trunc('year', today)::date AS year_start_date,
-              (date_trunc('year', today) + interval '1 year')::date AS year_end_date
-          FROM InputDate
-      )
-      SELECT 
-        to_char(week_start_date, 'YYYY-MM-DD') as week_start_date,
-        to_char(week_end_date, 'YYYY-MM-DD') as week_end_date,
-        to_char(month_start_date, 'YYYY-MM-DD') as month_start_date,
-        to_char(month_end_date, 'YYYY-MM-DD') as month_end_date,
-        to_char(year_start_date, 'YYYY-MM-DD') as year_start_date,
-        to_char(year_end_date, 'YYYY-MM-DD') as year_end_date
-      FROM DateRanges;
-    `;
-    const dateRangeDebugParams = [weekStartDay, clientDate];
-    try {
-        const { rows: dateRangeRows } = await db.query(dateRangeDebugSql, dateRangeDebugParams);
-        if (dateRangeRows.length > 0) {
-          const ranges = dateRangeRows[0];
-          debug(`Calculated Date Ranges for input ${clientDate} (week starts ${weekStartDay}):`);
-          debug(`  Today: ${ranges.today}`);
-          debug(`  Weekly Range: ${ranges.week_start_date} (inclusive) to ${ranges.week_end_date} (exclusive)`);
-          debug(`  Monthly Range: ${ranges.month_start_date} (inclusive) to ${ranges.month_end_date} (exclusive)`);
-          debug(`  Yearly Range: ${ranges.year_start_date} (inclusive) to ${ranges.year_end_date} (exclusive)`);
-        }
-    } catch (dateRangeError) {
-        logger.error(`Error fetching date ranges for debugging: ${dateRangeError.message}`);
-        debug(`Error fetching date ranges for debugging: SQL: ${dateRangeDebugSql}, Params: ${JSON.stringify(dateRangeDebugParams)}, Error: ${dateRangeError.message}`);
-    }
-    // --- END DEBUG ---
-
     // --- 2. Construct SQL Query ---
-    // Note parameter usage: $1 = weekStartDay, $2 = idValue, $3 = clientDate (as text)
+    // Parameters: $1 = weekStartDay, $2 = idValue, $3 = clientDate (currentDateString)
     const sql = `
-    WITH InputDate AS (
-        -- Cast the input date string to a DATE type
-        SELECT $3::date AS today
-    ), DateRanges AS (
+    WITH UserInput AS (
+        SELECT
+            $3::date AS today,      -- $3 = clientDate (currentDateString)
+            $1 AS week_start_pref   -- $1 = weekStartDay
+    ),
+    CalculatedActualWeekStart AS (
+        -- This CTE determines the actual start of the week *containing* 'today'
+        -- based on the week_start_pref.
         SELECT
             today,
-            -- Calculate week start date based on input date and weekStartDay preference
+            week_start_pref,
             CASE
-                WHEN $1 = 'sunday' THEN date_trunc('week', today + interval '1 day')::date - interval '1 day'
-                ELSE date_trunc('week', today)::date
+                WHEN week_start_pref = 'sunday' THEN
+                    -- For Sunday start, date_trunc to week after adding 1 day, then subtract 1 day
+                    date_trunc('week', today + interval '1 day')::date - interval '1 day'
+                ELSE
+                    -- For Monday start, date_trunc directly works.
+                    date_trunc('week', today)::date
+            END AS current_actual_week_start
+        FROM UserInput
+    ),
+    DateRanges AS (
+        -- This CTE adjusts the week_start_date if 'today' is the first day of its actual week.
+        -- All end dates are 'today + 1 day' (exclusive) for correct range filtering.
+        SELECT
+            caws.today,
+            CASE
+                -- If 'today' IS the first day of its calculated week,
+                -- then the reporting week_start_date should be 7 days prior.
+                WHEN caws.current_actual_week_start = caws.today THEN
+                    caws.current_actual_week_start - interval '7 days'
+                -- Otherwise, use the calculated actual start of the week.
+                ELSE
+                    caws.current_actual_week_start
             END AS week_start_date,
-            -- Calculate week end date (exclusive) - it's the start of the *next* week
-            CASE
-                WHEN $1 = 'sunday' THEN date_trunc('week', today + interval '1 day')::date + interval '6 days' + interval '1 day'
-                ELSE date_trunc('week', today)::date + interval '1 week'
-            END AS week_end_date,
-             -- Calculate month start and end (exclusive) based on input date
-            date_trunc('month', today)::date AS month_start_date,
-            (date_trunc('month', today) + interval '1 month')::date AS month_end_date,
-            -- Calculate year start and end (exclusive) based on input date
-            date_trunc('year', today)::date AS year_start_date,
-            (date_trunc('year', today) + interval '1 year')::date AS year_end_date
-        FROM InputDate
+            caws.today + interval '1 day' AS week_end_date, -- End of 'today' (exclusive)
+
+            date_trunc('month', caws.today)::date AS month_start_date,
+            caws.today + interval '1 day' AS month_end_date, -- End of 'today' (exclusive)
+
+            date_trunc('year', caws.today)::date AS year_start_date,
+            caws.today + interval '1 day' AS year_end_date -- End of 'today' (exclusive)
+        FROM CalculatedActualWeekStart caws
     )
     SELECT
         COALESCE(t.personal_finance_category, 'Uncategorized') AS category,
@@ -262,25 +234,18 @@ const getSpendBreakdownByCategory = async (idFieldName, idValue, currentDateStri
     WHERE
         t.${idFieldName} = $2 -- Use $2 for idValue
         AND t.pending = false
-        -- Filter transactions to be within the relevant year for efficiency
-        AND t.date >= dr.year_start_date
-        AND t.date < dr.year_end_date
+        -- Filter transactions to be within the relevant year for efficiency (year_start_date to today)
+        AND t.date >= dr.year_start_date 
+        AND t.date < dr.year_end_date   
         AND t.amount > 0
     GROUP BY
         COALESCE(t.personal_finance_category, 'Uncategorized')
-        -- Include date range boundaries in GROUP BY if needed, though likely not required here
-        -- dr.week_start_date, dr.week_end_date, dr.month_start_date, dr.month_end_date, dr.year_start_date, dr.year_end_date
     ORDER BY
         yearly_spend DESC, monthly_spend DESC, weekly_spend DESC;
     `;
 
     // Pass weekStartDay, idValue, and clientDate as parameters
     const params = [weekStartDay, idValue, clientDate];
-
-    // --- 3. Execute Query ---
-    debug(`Executing spend breakdown query for ${idFieldName}=${idValue} (date: ${clientDate}, week starts ${weekStartDay})`);
-    debug(`Query: ${sql.replace(/\s+/g, ' ').trim()}`);
-    debug(`Params: ${JSON.stringify(params)}`);
 
     try {
         const { rows } = await db.query(sql, params);
