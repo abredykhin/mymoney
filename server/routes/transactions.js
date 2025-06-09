@@ -9,7 +9,7 @@ const { asyncWrapper, verifyToken } = require('../middleware');
 const _ = require('lodash');
 const debug = require('debug')('routes:transactions');
 const logger = require('../utils/logger');
-const { format } = require('date-fns');
+const format =  require('date-fns');
 
 const router = express.Router();
 
@@ -304,6 +304,7 @@ router.get(
   '/breakdown/category',
   verifyToken,
   asyncWrapper(async (req, res) => {
+    debug(`Received request for /breakdown/category with query: ${JSON.stringify(req.query)}`); // Log all query params
     const { userId } = req;
     let idFieldName = 'user_id';
     let idValue = userId;
@@ -315,23 +316,11 @@ router.get(
       if (!/^\d{4}-\d{2}-\d{2}$/.test(currentDateQuery)) {
         return res.status(400).json({ message: "Invalid format for currentDate. Use 'YYYY-MM-DD'." });
       }
-      // Optional: Add further validation to ensure it's a *real* date
-      // For example, using a library like date-fns or moment.js, or basic JS Date parsing
-      // if (isNaN(Date.parse(currentDateQuery))) {
-      //   return res.status(400).json({ message: "Invalid date value for currentDate." });
-      // }
+
       currentDateString = currentDateQuery;
       debug(`Using client-provided date: ${currentDateString}`);
     } else {
-      // Default to server's current date in 'YYYY-MM-DD' format
-      // Using date-fns for reliable formatting:
       currentDateString = format(new Date(), 'yyyy-MM-dd');
-      // Or using native JS Date:
-      // const now = new Date();
-      // const year = now.getFullYear();
-      // const month = (now.getMonth() + 1).toString().padStart(2, '0');
-      // const day = now.getDate().toString().padStart(2, '0');
-      // currentDateString = `${year}-${month}-${day}`;
       debug(`No client date provided, using server's current date: ${currentDateString}`);
     }
 
