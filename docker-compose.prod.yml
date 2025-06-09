@@ -3,6 +3,7 @@ version: '3.8'
 volumes:
   loki-data:
   grafana-data:
+  certbot_acme:
 
 services:      
   server:
@@ -14,17 +15,25 @@ services:
       - NODE_ENV=production
       
   nginx:
+    image: nginx:stable-alpine # You can also build a custom one if needed
+    container_name: nginx
     restart: always  # Ensure Nginx always restarts in production
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./nginx/conf-prod:/etc/nginx/conf.d
-      - ${SSL_CERT_PATH}:/etc/nginx/certs/cert.pem:ro
-      - ${SSL_KEY_PATH}:/etc/nginx/certs/key.pem:ro      
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot_acme:/var/www/certbot  
     depends_on:
       - server
       - grafana    
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - certbot_acme:/var/www/certbot
 
   # Logging infrastructure
   loki:
