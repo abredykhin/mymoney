@@ -209,11 +209,11 @@ const getSpendBreakdownByCategory = async (idFieldName, idValue, currentDateStri
         const { rows: dateRangeRows } = await db.query(dateRangeDebugSql, dateRangeDebugParams);
         if (dateRangeRows.length > 0) {
           const ranges = dateRangeRows[0];
-          logger.info(`Calculated Date Ranges for input ${clientDate} (week starts ${weekStartDay}):`);
-          logger.info(`  Today: ${ranges.today}`);
-          logger.info(`  Weekly Range: ${ranges.week_start_date} (inclusive) to ${ranges.week_end_date} (exclusive)`);
-          logger.info(`  Monthly Range: ${ranges.month_start_date} (inclusive) to ${ranges.month_end_date} (exclusive)`);
-          logger.info(`  Yearly Range: ${ranges.year_start_date} (inclusive) to ${ranges.year_end_date} (exclusive)`);
+          debug(`Calculated Date Ranges for input ${clientDate} (week starts ${weekStartDay}):`);
+          debug(`  Today: ${ranges.today}`);
+          debug(`  Weekly Range: ${ranges.week_start_date} (inclusive) to ${ranges.week_end_date} (exclusive)`);
+          debug(`  Monthly Range: ${ranges.month_start_date} (inclusive) to ${ranges.month_end_date} (exclusive)`);
+          debug(`  Yearly Range: ${ranges.year_start_date} (inclusive) to ${ranges.year_end_date} (exclusive)`);
         }
     } catch (dateRangeError) {
         logger.error(`Error fetching date ranges for debugging: ${dateRangeError.message}`);
