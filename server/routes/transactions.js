@@ -9,7 +9,7 @@ const { asyncWrapper, verifyToken } = require('../middleware');
 const _ = require('lodash');
 const debug = require('debug')('routes:transactions');
 const logger = require('../utils/logger');
-const format =  require('date-fns');
+const { format } = require('date-fns');
 
 const router = express.Router();
 
