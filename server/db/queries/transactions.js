@@ -173,6 +173,54 @@ const getSpendBreakdownByCategory = async (idFieldName, idValue, currentDateStri
     }
     const clientDate = currentDateString; // Use the validated string directly for SQL parameter
 
+    // --- DEBUG: Log Date Ranges ---
+    const dateRangeDebugSql = `
+      WITH InputDate AS (
+          -- $1 = weekStartDay, $2 = clientDate (currentDateString)
+          SELECT $2::date AS today
+      ), DateRanges AS (
+          SELECT
+              today,
+              CASE
+                  WHEN $1 = 'sunday' THEN date_trunc('week', today + interval '1 day')::date - interval '1 day'
+                  ELSE date_trunc('week', today)::date
+              END AS week_start_date,
+              CASE
+                  WHEN $1 = 'sunday' THEN date_trunc('week', today + interval '1 day')::date + interval '6 days' + interval '1 day'
+                  ELSE date_trunc('week', today)::date + interval '1 week'
+              END AS week_end_date,
+              date_trunc('month', today)::date AS month_start_date,
+              (date_trunc('month', today) + interval '1 month')::date AS month_end_date,
+              date_trunc('year', today)::date AS year_start_date,
+              (date_trunc('year', today) + interval '1 year')::date AS year_end_date
+          FROM InputDate
+      )
+      SELECT 
+        to_char(week_start_date, 'YYYY-MM-DD') as week_start_date,
+        to_char(week_end_date, 'YYYY-MM-DD') as week_end_date,
+        to_char(month_start_date, 'YYYY-MM-DD') as month_start_date,
+        to_char(month_end_date, 'YYYY-MM-DD') as month_end_date,
+        to_char(year_start_date, 'YYYY-MM-DD') as year_start_date,
+        to_char(year_end_date, 'YYYY-MM-DD') as year_end_date
+      FROM DateRanges;
+    `;
+    const dateRangeDebugParams = [weekStartDay, clientDate];
+    try {
+        const { rows: dateRangeRows } = await db.query(dateRangeDebugSql, dateRangeDebugParams);
+        if (dateRangeRows.length > 0) {
+          const ranges = dateRangeRows[0];
+          logger.info(`Calculated Date Ranges for input ${clientDate} (week starts ${weekStartDay}):`);
+          logger.info(`  Today: ${ranges.today}`);
+          logger.info(`  Weekly Range: ${ranges.week_start_date} (inclusive) to ${ranges.week_end_date} (exclusive)`);
+          logger.info(`  Monthly Range: ${ranges.month_start_date} (inclusive) to ${ranges.month_end_date} (exclusive)`);
+          logger.info(`  Yearly Range: ${ranges.year_start_date} (inclusive) to ${ranges.year_end_date} (exclusive)`);
+        }
+    } catch (dateRangeError) {
+        logger.error(`Error fetching date ranges for debugging: ${dateRangeError.message}`);
+        debug(`Error fetching date ranges for debugging: SQL: ${dateRangeDebugSql}, Params: ${JSON.stringify(dateRangeDebugParams)}, Error: ${dateRangeError.message}`);
+    }
+    // --- END DEBUG ---
+
     // --- 2. Construct SQL Query ---
     // Note parameter usage: $1 = weekStartDay, $2 = idValue, $3 = clientDate (as text)
     const sql = `

@@ -17,10 +17,10 @@ extension NumberFormatter {
     }
 }
 
-struct SpendView : View {
+struct SpendView: View {
     @State private var selectedDateRange: SpendDateRange = .week
     @StateObject private var budgetService = BudgetService()
-    
+
     // Determine which value to display based on the selected range
     private func spendValue(for item: CategoryBreakdownItem, range: SpendDateRange) -> Double {
         switch range {
@@ -32,9 +32,8 @@ struct SpendView : View {
             return item.yearly_spend
         }
     }
-    
+
     var body: some View {
-        // Use a NavigationStack or NavigationView if this is part of a larger flow
         ScrollView {
             VStack(alignment: .leading) {
                 // Use the SpendDateRange's displayName
@@ -45,7 +44,7 @@ struct SpendView : View {
                 }
                 .pickerStyle(.segmented)
                 .padding(.bottom)
-                
+
                 // Show loading or error state
                 if budgetService.isLoadingBreakdown {
                     ProgressView()
@@ -74,7 +73,7 @@ struct SpendView : View {
                                         for: item,
                                         range: selectedDateRange
                                     ),
-                                     format: .currency(code: "USD")
+                                    format: .currency(code: "USD")
                                 )
                                 .monospaced()
                             }
@@ -94,3 +93,11 @@ struct SpendView : View {
         .navigationTitle("Spend")
     }
 }
+
+#if DEBUG
+    struct SpendView_Previews: PreviewProvider {
+        static var previews: some View {
+            SpendView()
+        }
+    }
+#endif
