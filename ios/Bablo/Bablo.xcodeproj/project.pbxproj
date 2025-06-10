@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		751C8E932DF7F45300C38039 /* CategorySpendDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */; };
 		7521DF1C2D87A52C00856718 /* BankAccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */; };
 		7549AB492D0E499600313F5C /* OnboardingStartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7549AB482D0E499600313F5C /* OnboardingStartView.swift */; };
 		7549AB502D0E4C7F00313F5C /* LargeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7549AB4F2D0E4C7F00313F5C /* LargeButton.swift */; };
@@ -99,6 +100,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategorySpendDetailView.swift; sourceTree = "<group>"; };
 		7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountDetailView.swift; sourceTree = "<group>"; };
 		7549AB482D0E499600313F5C /* OnboardingStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStartView.swift; sourceTree = "<group>"; };
 		7549AB4F2D0E4C7F00313F5C /* LargeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LargeButton.swift; sourceTree = "<group>"; };
@@ -418,6 +420,7 @@
 		75B4DF272DA3106900FF3C1C /* Spend */ = {
 			isa = PBXGroup;
 			children = (
+				751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */,
 				75B4DF282DA3107C00FF3C1C /* SpendView.swift */,
 			);
 			path = Spend;
@@ -649,6 +652,7 @@
 				75668FE22D83D753003A3D97 /* TransactionsManager.swift in Sources */,
 				75F946B22D3C87750076E91E /* OnboardingBudgetHeaderView.swift in Sources */,
 				759521A02CFD330A00655E7D /* BankDetailView.swift in Sources */,
+				751C8E932DF7F45300C38039 /* CategorySpendDetailView.swift in Sources */,
 				75668FD72D83CE8C003A3D97 /* BabloModel.xcdatamodeld in Sources */,
 				757ABF772C181C3100DF8CA8 /* AuthMiddleware.swift in Sources */,
 				75F9469F2D3C85240076E91E /* SpendingCategory.swift in Sources */,

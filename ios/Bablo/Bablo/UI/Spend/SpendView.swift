@@ -21,6 +21,8 @@ struct SpendView: View {
     @State private var selectedDateRange: SpendDateRange = .week
     @StateObject private var budgetService = BudgetService()
     @State private var animateBars: Bool = false  // State to control animation trigger
+    @State private var showingDetailSheet = false
+    @State private var selectedCategoryForDetail: String?
 
     // Determine which value to display based on the selected range
     private func spendValue(for item: CategoryBreakdownItem, range: SpendDateRange) -> Double {
@@ -143,6 +145,10 @@ struct SpendView: View {
                                 .padding(.vertical, 10)  // Adjusted padding
                             }
                             .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .onTapGesture {
+                                selectedCategoryForDetail = item.category
+                                showingDetailSheet = true
+                            }
                             // Optional: Give rows a consistent minimum height
                             // .frame(minHeight: 50)
                         }
@@ -151,6 +157,11 @@ struct SpendView: View {
                 Spacer()
             }
             .padding()
+        }
+        .sheet(isPresented: $showingDetailSheet) {
+            if let category = selectedCategoryForDetail {
+                CategorySpendDetailView(category: category)
+            }
         }
         // Use .task with selectedDateRange as id to re-run on change or initial appearance
         .task(id: selectedDateRange) {
@@ -168,7 +179,6 @@ struct SpendView: View {
             // Step 4: After data is fetched and proportions are updated, trigger the animation
             // for bars to grow to their new size.
             // The withAnimation block here will animate the change of `animateBars` from false to true.
-            // DispatchQueue.main.async ensures this UI update is scheduled on the main thread.
             DispatchQueue.main.async {
                 withAnimation(.easeInOut(duration: 0.5).delay(0.05)) {  // Kept delay for visual pause
                     animateBars = true
