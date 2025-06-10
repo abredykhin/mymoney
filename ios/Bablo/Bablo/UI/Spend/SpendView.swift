@@ -160,7 +160,7 @@ struct SpendView: View {
         }
         .sheet(isPresented: $showingDetailSheet) {
             if let category = selectedCategoryForDetail {
-                CategorySpendDetailView(category: category)
+             //   CategorySpendDetailView(category: category)
             }
         }
         // Use .task with selectedDateRange as id to re-run on change or initial appearance
