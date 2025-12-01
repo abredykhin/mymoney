@@ -93,10 +93,10 @@ struct SpendView: View {
                     Text("Error loading breakdown: \(error.localizedDescription)")
                         .foregroundColor(.red)
                         .padding()
-                } else if budgetService.spendBreakdownItems.isEmpty {
-                    Text("No spending data available for the current year.")
-                        .foregroundColor(.secondary)
-                        .padding()
+//                } else if $budgetService.spendBreakdownItems.isEmpty {
+//                    Text("No spending data available for the current year.")
+//                        .foregroundColor(.secondary)
+//                        .padding()
                 } else if sortedSpendBreakdownItems.isEmpty {  // Check sorted list specifically
                     Text("No spending data for the selected period.")
                         .foregroundColor(.secondary)
