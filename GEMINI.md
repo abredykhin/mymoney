@@ -3,23 +3,53 @@
 ## Project Overview
 **MyMoney** (internally referred to as **Bablo**) is a personal finance application designed to help users track their finances, transactions, and budgets.
 
-### High-Level Architecture
-The system consists of three main components:
+### ⚠️ Architecture Migration in Progress
+**The project is currently migrating from Node.js/DigitalOcean to Supabase.**
+
+| Aspect | Legacy (Current) | Target (Supabase) | Status |
+|--------|------------------|-------------------|--------|
+| Backend Runtime | Node.js/Express | Deno Edge Functions | 🟡 In Progress |
+| Database | PostgreSQL (DigitalOcean) | Supabase PostgreSQL | ✅ Migrated |
+| Authentication | Custom (users/sessions tables) | Supabase Auth (JWT) | 🔴 Not Started |
+| Queue/Jobs | Bull + Redis | Edge Functions only | 🟡 Planned |
+| Deployment | Docker on Droplet | Serverless | 🔴 Not Started |
+
+**📖 For detailed migration plan, architecture decisions, and implementation steps, see `SUPABASE.md`**
+
+### High-Level Architecture (Legacy - Being Phased Out)
+The current system consists of three main components:
 1.  **iOS Client:** A native Swift/SwiftUI application ("Bablo") that serves as the user interface.
 2.  **Backend Server:** A Node.js/Express REST API that manages user data, authentication, and business logic.
 3.  **Data Sources:**
     *   **PostgreSQL:** Primary relational database for storing user data, transactions, and configuration.
     *   **Plaid:** External financial API integrator used to securely connect to users' bank accounts and fetch transaction data.
 
-### Infrastructure
-The project uses **Docker** and **Docker Compose** for containerization of the server, database, and Nginx reverse proxy.
+### Target Architecture (Supabase)
+1.  **iOS Client:** Native Swift/SwiftUI app using Supabase SDK
+2.  **Supabase Backend:**
+    *   **Auth:** GoTrue (JWT-based authentication)
+    *   **Database:** PostgreSQL with Row Level Security (RLS)
+    *   **Edge Functions:** Deno-based serverless functions for:
+        - Plaid webhook handling
+        - Transaction syncing
+        - Link token generation
+3.  **Data Sources:**
+    *   **Supabase PostgreSQL:** With RLS policies for multi-tenant security
+    *   **Plaid:** Same external API integration
+
+### Infrastructure (Legacy)
+The current project uses **Docker** and **Docker Compose** for containerization of the server, database, and Nginx reverse proxy.
 -   **Dev/Prod Parity:** Separate compose files for development (`docker-compose.dev.yml`) and production (`docker-compose.prod.yml`).
 -   **Reverse Proxy:** Nginx is used to route traffic.
 
+**Note:** Docker infrastructure will be eliminated in Supabase migration.
+
 ---
 
-## Server Analysis
+## Server Analysis (Legacy - Being Replaced by Supabase Edge Functions)
 *Located in `/server`*
+
+**⚠️ This Node.js/Express backend is being phased out in favor of Supabase Edge Functions. See `SUPABASE.md` for migration plan.**
 
 ### Overview
 Backend service serving as a REST API connecting the mobile client (iOS) with the database and the Plaid financial data aggregator.
@@ -118,10 +148,19 @@ The `ios` directory contains two main projects:
 ---
 
 ## Database Analysis
-*Located in `/database`*
+*Located in `/database` (legacy) and `/supabase/migrations` (new)*
 
-### Overview
+**⚠️ Database schema has been migrated to Supabase with significant changes:**
+- ✅ Migrated to Supabase PostgreSQL with Row Level Security (RLS)
+- ⚠️ `users_table` → `profiles_table` (auth now handled by Supabase Auth)
+- ⚠️ `sessions_table` → Removed (JWT tokens replace custom sessions)
+- ✅ All tables have RLS policies enabled for multi-tenant security
+- **See** `supabase/migrations/` for current schema and `SUPABASE.md` for details
+
+### Overview (Legacy)
 The application uses **PostgreSQL** as its primary relational database. It stores user accounts, session tokens, and financial data synchronized from Plaid.
+
+**Current active schema:** See `supabase/migrations/20250101000000_initial_schema.sql`
 
 ### Schema Structure
 The database schema uses a pattern of physical tables (suffixed with `_table`) and corresponding Views for data access. This abstraction allows for simplified querying and potential schema evolution without breaking application code.
@@ -157,10 +196,15 @@ The database schema uses a pattern of physical tables (suffixed with `_table`) a
 
 ---
 
-## Monitoring & Observability
+## Monitoring & Observability (Legacy - Will Be Replaced)
 *Production only (defined in `docker-compose.prod.yml`)*
 
-### Overview
+**⚠️ This monitoring setup will be replaced by Supabase's built-in observability:**
+- Supabase provides built-in logs for Edge Functions
+- Database metrics available in Supabase Dashboard
+- No need for self-hosted PLG stack in serverless architecture
+
+### Overview (Legacy)
 The application uses the **PLG Stack** (Promtail, Loki, Grafana) for centralized logging and monitoring in production.
 
 ### Components
@@ -188,4 +232,103 @@ The application uses the **PLG Stack** (Promtail, Loki, Grafana) for centralized
 ### Architecture
 *   **Logs Flow:** Node.js App / Nginx -> Files -> Promtail -> Loki -> Grafana.
 *   **Docker Logs Flow:** Docker Daemon -> Promtail -> Loki -> Grafana.
+
+---
+
+## Supabase Setup (New Architecture)
+*Located in `/supabase`*
+
+### Overview
+The new architecture uses **Supabase** as a complete Backend-as-a-Service (BaaS) platform, eliminating the need for self-managed infrastructure.
+
+### Project Structure
+```
+/supabase/
+├── config.toml              # Supabase project configuration
+├── migrations/              # Database migrations (PostgreSQL + RLS)
+│   ├── 20250101000000_initial_schema.sql
+│   └── 20250101000001_enable_rls.sql
+└── functions/               # Edge Functions (Deno/TypeScript)
+    ├── plaid-link-token/    # Generate Plaid Link tokens
+    ├── plaid-webhook/       # Handle Plaid webhooks
+    ├── sync-transactions/   # Sync transactions from Plaid
+    └── [other functions]
+```
+
+### Components
+
+#### 1. Database (Supabase PostgreSQL)
+- **Managed PostgreSQL** with automatic backups and replication
+- **Row Level Security (RLS)** enabled on all tables for multi-tenant data isolation
+- **Schema Changes:**
+  - `users_table` → `profiles_table` (linked to `auth.users` via UUID)
+  - `sessions_table` → Removed (JWT tokens used instead)
+  - All tables have `user_id` as UUID (not integer)
+- **Migrations:** Applied via `supabase db reset` or `supabase db push`
+
+#### 2. Authentication (Supabase Auth / GoTrue)
+- **JWT-based authentication** (no custom session management)
+- **Email/Password signup/login** built-in
+- **Token refresh** handled automatically by SDK
+- **Integration:** `profiles_table` auto-created via trigger on user signup
+
+#### 3. Edge Functions (Deno Runtime)
+- **Serverless functions** running on Deno Deploy
+- **Key Functions:**
+  - `plaid-link-token`: Generate Plaid Link tokens for iOS app
+  - `plaid-webhook`: Receive webhooks from Plaid, trigger syncs
+  - `sync-transactions`: Fetch and batch-insert transactions from Plaid
+  - `total-balance`, `recent-transactions`: Read-only API endpoints
+- **No Queue System:** Uses `ctx.waitUntil()` for background processing
+- **Deployment:** `supabase functions deploy <name>`
+
+#### 4. Local Development
+```bash
+# Start local Supabase (PostgreSQL + Auth + Edge Functions)
+cd supabase && supabase start
+
+# Apply migrations
+supabase db reset
+
+# Test Edge Function locally
+supabase functions serve <name>
+
+# View logs
+supabase functions logs <name>
+```
+
+#### 5. Security (Row Level Security)
+All tables have RLS policies that automatically filter data by `auth.uid()`:
+- **profiles**: Users can only read/update their own profile
+- **items**: Users can only access their own Plaid items
+- **accounts**: Users can only access accounts linked to their items
+- **transactions**: Users can only access their own transactions
+- **institutions**: Public read-only (reference data)
+
+### Key Differences from Legacy
+
+| Aspect | Legacy | Supabase |
+|--------|--------|----------|
+| **Auth** | Custom users/sessions tables | Supabase Auth (JWT) |
+| **User ID** | Integer `SERIAL` | UUID from `auth.users` |
+| **Security** | Application-level filtering | Database-level RLS |
+| **Background Jobs** | Bull + Redis | `ctx.waitUntil()` in Edge Functions |
+| **Deployment** | Docker Compose on Droplet | `supabase functions deploy` |
+| **Logs** | Self-hosted PLG stack | Supabase Dashboard |
+| **Cost** | $12-20/month (Droplet + DB) | $0/month (Free tier) |
+
+### Migration Status
+- ✅ **Phase 1**: Database schema + RLS policies migrated
+- 🟡 **Phase 2**: Authentication (in progress)
+- 🟡 **Phase 3**: Edge Functions (in progress)
+- 🔴 **Phase 4**: iOS client update (not started)
+- 🔴 **Phase 5**: Scheduled sync with pg_cron (optional)
+
+### Critical Implementation Notes
+1. **Batch Inserts Required**: Legacy code uses individual INSERT statements (inefficient). Must use batch inserts in Edge Functions.
+2. **Network I/O vs CPU**: Edge Function CPU limits only apply to compute, not network I/O (Plaid API calls, DB queries).
+3. **No User Migration**: Only test accounts exist in legacy DB, so no actual user migration needed.
+4. **Scale Expectations**: ~300 transactions per sync, <100 users, fits comfortably in free tier.
+
+**📖 For complete migration plan, architecture decisions, gotchas, and implementation steps, see `SUPABASE.md`**
 

@@ -1,6 +1,30 @@
 # MyMoney CLI Commands & Guidelines
 
-## Server Commands
+## 🚀 Supabase Migration (IN PROGRESS)
+**This project is migrating from Node.js/DigitalOcean to Supabase serverless architecture.**
+
+### Quick Reference
+- **Full Migration Plan**: See `SUPABASE.md` for comprehensive details
+- **Status**: Phase 1 complete (database + RLS), Phase 2+ in progress
+- **Local Supabase**: `cd supabase && supabase start`
+- **Reset DB**: `supabase db reset` (applies migrations)
+- **Deploy Function**: `supabase functions deploy <name>`
+
+### Key Changes for LLMs
+- ❌ **DO NOT** suggest Bull/Redis queues or Docker workers (not needed)
+- ❌ **DO NOT** suggest migrating users/sessions (using Supabase Auth)
+- ✅ **DO** use batch database inserts (not individual queries)
+- ✅ **DO** use Edge Functions with `ctx.waitUntil()` for webhooks
+- 📖 **READ** `SUPABASE.md` before making architecture suggestions
+
+### Current Stack
+- **Legacy**: Node.js/Express on DigitalOcean (being phased out)
+- **Target**: Supabase (PostgreSQL + Auth + Edge Functions)
+- **iOS**: Will update to use Supabase SDK
+
+---
+
+## Server Commands (Legacy - being deprecated)
 - **Run Dev Server**: `npm start` or `./scripts/rebuild-dev.sh`
 - **Run in Production**: `./scripts/rebuild-prod.sh`
 - **Run Tests**: `npm test` or `docker-compose exec server npm test`
