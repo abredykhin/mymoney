@@ -93,6 +93,17 @@ const errorHandler = (err, req, res, next) => {
   res.status(statusCode).json(payload);
 };
 
+/**
+ * @deprecated This middleware is part of the legacy authentication system.
+ * It will be removed after full migration to Supabase Auth (Phase 2).
+ *
+ * In Supabase Edge Functions, authentication is handled via:
+ * - JWT tokens in the Authorization header
+ * - supabase.auth.getUser() to retrieve authenticated user
+ * - Row Level Security (RLS) for automatic user-scoped data access
+ *
+ * See SUPABASE.md Phase 2 for migration details.
+ */
 const verifyToken = async (req, res, next) => {
   const verifyTokenDebug = debug.extend('verifyToken');
 

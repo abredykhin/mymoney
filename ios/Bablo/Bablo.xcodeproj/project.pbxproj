@@ -53,6 +53,13 @@
 		7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */; };
 		7590F2A72C865B9F00BCCDE6 /* BankListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F2A62C865B9F00BCCDE6 /* BankListView.swift */; };
 		759521A02CFD330A00655E7D /* BankDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7595219F2CFD330A00655E7D /* BankDetailView.swift */; };
+		759CDE4F2EED1F3300F8BB96 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 759CDE4E2EED1F3300F8BB96 /* Auth */; };
+		759CDE512EED1F3300F8BB96 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 759CDE502EED1F3300F8BB96 /* Functions */; };
+		759CDE532EED1F3300F8BB96 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 759CDE522EED1F3300F8BB96 /* PostgREST */; };
+		759CDE552EED1F3300F8BB96 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 759CDE542EED1F3300F8BB96 /* Realtime */; };
+		759CDE572EED1F3300F8BB96 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 759CDE562EED1F3300F8BB96 /* Storage */; };
+		759CDE5A2EED1F4B00F8BB96 /* SignInWithAppleCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 759CDE592EED1F4B00F8BB96 /* SignInWithAppleCoordinator.swift */; };
+		759CDE5D2EED1F6900F8BB96 /* SupabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 759CDE5C2EED1F6900F8BB96 /* SupabaseManager.swift */; };
 		75B4DF042DA1CD0F00FF3C1C /* Color+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B4DF032DA1CD0F00FF3C1C /* Color+Extensions.swift */; };
 		75B4DF0F2DA2F3EB00FF3C1C /* BankListTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B4DF0E2DA2F3EB00FF3C1C /* BankListTabView.swift */; };
 		75B4DF292DA3107C00FF3C1C /* SpendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B4DF282DA3107C00FF3C1C /* SpendView.swift */; };
@@ -63,6 +70,7 @@
 		75C972CA2D13B8CC008E6E87 /* OnboardingCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972C92D13B8CC008E6E87 /* OnboardingCategoriesView.swift */; };
 		75C972CC2D13BA33008E6E87 /* OnboardingBudgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972CB2D13BA33008E6E87 /* OnboardingBudgetView.swift */; };
 		75CD54C92D92721B0018288D /* AllTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75CD54C82D92721B0018288D /* AllTransactionsView.swift */; };
+		75DC5C6A2EED28EF00CEC681 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 75DC5C692EED28EF00CEC681 /* Supabase */; };
 		75E49BA52CA27E67008D72F8 /* TransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E49BA42CA27E67008D72F8 /* TransactionView.swift */; };
 		75E49BAA2CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv in Resources */ = {isa = PBXBuildFile; fileRef = 75E49BA92CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv */; };
 		75E49BAC2CA3EACF008D72F8 /* Dates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E49BAB2CA3EACF008D72F8 /* Dates.swift */; };
@@ -146,6 +154,8 @@
 		7590F29B2C86471D00BCCDE6 /* LinkController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkController.swift; sourceTree = "<group>"; };
 		7590F2A62C865B9F00BCCDE6 /* BankListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankListView.swift; sourceTree = "<group>"; };
 		7595219F2CFD330A00655E7D /* BankDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankDetailView.swift; sourceTree = "<group>"; };
+		759CDE592EED1F4B00F8BB96 /* SignInWithAppleCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInWithAppleCoordinator.swift; sourceTree = "<group>"; };
+		759CDE5C2EED1F6900F8BB96 /* SupabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseManager.swift; sourceTree = "<group>"; };
 		75B4DF032DA1CD0F00FF3C1C /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
 		75B4DF0E2DA2F3EB00FF3C1C /* BankListTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankListTabView.swift; sourceTree = "<group>"; };
 		75B4DF282DA3107C00FF3C1C /* SpendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendView.swift; sourceTree = "<group>"; };
@@ -180,9 +190,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				75DC5C6A2EED28EF00CEC681 /* Supabase in Frameworks */,
+				759CDE512EED1F3300F8BB96 /* Functions in Frameworks */,
 				757ABF712C181B4600DF8CA8 /* LinkKit in Frameworks */,
+				759CDE532EED1F3300F8BB96 /* PostgREST in Frameworks */,
+				759CDE552EED1F3300F8BB96 /* Realtime in Frameworks */,
 				757ABF8A2C181DCC00DF8CA8 /* Valet in Frameworks */,
 				757ABF6F2C181B3F00DF8CA8 /* OpenAPIRuntime in Frameworks */,
+				759CDE572EED1F3300F8BB96 /* Storage in Frameworks */,
+				759CDE4F2EED1F3300F8BB96 /* Auth in Frameworks */,
 				757ABF6D2C181B3800DF8CA8 /* OpenAPIURLSession in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -229,6 +245,7 @@
 		754B69452D97D65800C0F001 /* Auth */ = {
 			isa = PBXGroup;
 			children = (
+				759CDE592EED1F4B00F8BB96 /* SignInWithAppleCoordinator.swift */,
 				754B69462D97D66F00C0F001 /* AuthenticationView.swift */,
 				754B69482D97D6B800C0F001 /* PasswordFallbackView.swift */,
 				754B694A2D97D8E500C0F001 /* BiometricsEnrollmentView.swift */,
@@ -352,6 +369,7 @@
 		757ABF742C181C2600DF8CA8 /* Util */ = {
 			isa = PBXGroup;
 			children = (
+				759CDE5C2EED1F6900F8BB96 /* SupabaseManager.swift */,
 				754B69502D98996700C0F001 /* Network */,
 				757ABF7E2C181C5200DF8CA8 /* View+Previews.swift */,
 				757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */,
@@ -497,6 +515,12 @@
 				757ABF6E2C181B3F00DF8CA8 /* OpenAPIRuntime */,
 				757ABF702C181B4600DF8CA8 /* LinkKit */,
 				757ABF892C181DCC00DF8CA8 /* Valet */,
+				759CDE4E2EED1F3300F8BB96 /* Auth */,
+				759CDE502EED1F3300F8BB96 /* Functions */,
+				759CDE522EED1F3300F8BB96 /* PostgREST */,
+				759CDE542EED1F3300F8BB96 /* Realtime */,
+				759CDE562EED1F3300F8BB96 /* Storage */,
+				75DC5C692EED28EF00CEC681 /* Supabase */,
 			);
 			productName = Bablo;
 			productReference = 757ABF312C18195100DF8CA8 /* Bablo.app */;
@@ -546,7 +570,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
-				LastUpgradeCheck = 1630;
+				LastUpgradeCheck = 2610;
 				TargetAttributes = {
 					757ABF302C18195100DF8CA8 = {
 						CreatedOnToolsVersion = 16.0;
@@ -576,6 +600,7 @@
 				757ABF672C181AA800DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-runtime" */,
 				757ABF682C181AC600DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-generator" */,
 				757ABF882C181DAF00DF8CA8 /* XCRemoteSwiftPackageReference "Valet" */,
+				759CDE4D2EED1F3300F8BB96 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
 			productRefGroup = 757ABF322C18195100DF8CA8 /* Products */;
 			projectDirPath = "";
@@ -670,6 +695,7 @@
 				75668FDD2D83D025003A3D97 /* BankManager.swift in Sources */,
 				7549AB492D0E499600313F5C /* OnboardingStartView.swift in Sources */,
 				75C972CA2D13B8CC008E6E87 /* OnboardingCategoriesView.swift in Sources */,
+				759CDE5D2EED1F6900F8BB96 /* SupabaseManager.swift in Sources */,
 				7590F2A72C865B9F00BCCDE6 /* BankListView.swift in Sources */,
 				75F9469C2D3C851D0076E91E /* BudgetPeriod.swift in Sources */,
 				757ABF7B2C181C4200DF8CA8 /* View+Extensions.swift in Sources */,
@@ -678,6 +704,7 @@
 				757ABF7D2C181C4A00DF8CA8 /* Client+Extensions.swift in Sources */,
 				75E49BB32CA3F2DC008D72F8 /* TransactionsService.swift in Sources */,
 				754B694D2D97EAD100C0F001 /* AuthManager.swift in Sources */,
+				759CDE5A2EED1F4B00F8BB96 /* SignInWithAppleCoordinator.swift in Sources */,
 				75F946A52D3C85680076E91E /* ExpenseSection.swift in Sources */,
 				7573DA182CBCD7320004EBE4 /* TotalBalanceView.swift in Sources */,
 				75B4DF042DA1CD0F00FF3C1C /* Color+Extensions.swift in Sources */,
@@ -780,6 +807,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -835,6 +863,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -850,7 +879,10 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Bablo/Preview Content\"";
 				DEVELOPMENT_TEAM = 7TZFJZHHX2;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "BabloApp uses Face ID to securely access your financial information.";
@@ -872,10 +904,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.babloapp.mymoney;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
@@ -891,7 +924,10 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Bablo/Preview Content\"";
 				DEVELOPMENT_TEAM = 7TZFJZHHX2;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "BabloApp uses Face ID to securely access your financial information.";
@@ -913,10 +949,11 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.babloapp.mymoney;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
@@ -1093,6 +1130,14 @@
 				version = 4.3.0;
 			};
 		};
+		759CDE4D2EED1F3300F8BB96 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1120,6 +1165,36 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 757ABF882C181DAF00DF8CA8 /* XCRemoteSwiftPackageReference "Valet" */;
 			productName = Valet;
+		};
+		759CDE4E2EED1F3300F8BB96 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 759CDE4D2EED1F3300F8BB96 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		759CDE502EED1F3300F8BB96 /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 759CDE4D2EED1F3300F8BB96 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		759CDE522EED1F3300F8BB96 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 759CDE4D2EED1F3300F8BB96 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		759CDE542EED1F3300F8BB96 /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 759CDE4D2EED1F3300F8BB96 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		759CDE562EED1F3300F8BB96 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 759CDE4D2EED1F3300F8BB96 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		75DC5C692EED28EF00CEC681 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 759CDE4D2EED1F3300F8BB96 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
 		};
 /* End XCSwiftPackageProductDependency section */
 

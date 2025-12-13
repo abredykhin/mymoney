@@ -3,6 +3,7 @@
 //  mymoney
 //
 //  Created by Anton Bredykhin on 1/21/24.
+//  Updated for Supabase Migration - Phase 2
 //
 
 import Foundation
@@ -10,11 +11,26 @@ import Valet
 import OpenAPIRuntime
 import OpenAPIURLSession
 import CoreData
+import Supabase
 
 struct User: Identifiable, Codable, Equatable, Sendable {
     let id: String
     let name: String
     let token: String
+    let email: String?
+
+    /// Create User from Supabase session
+    static func from(session: Session) -> User {
+        let name = session.user.userMetadata["full_name"]?.stringValue ??
+                   session.user.email?.components(separatedBy: "@").first ??
+                   "User"
+        return User(
+            id: session.user.id.uuidString,
+            name: name,
+            token: session.accessToken,
+            email: session.user.email
+        )
+    }
 }
 
 private enum UserKeys: String {
@@ -32,35 +48,106 @@ private enum BiometricKeys: String {
 @MainActor
 class UserAccount: ObservableObject {
     static let shared = UserAccount()
-    
+
     @Published var currentUser: User? = nil
     @Published var client: Client? = nil
     @Published var isSignedIn: Bool = false
     @Published var isBiometricallyAuthenticated = false
     @Published var isBiometricEnabled = false
-    
+
     private let valet = Valet.valet(with: Identifier(nonEmpty: "BabloApp")!, accessibility: .whenUnlocked)
     private let noAuthClient: Client = Client(serverURL: Client.getServerUrl(), transport: URLSessionTransport())
-    
+    private let supabase = SupabaseManager.shared.client
+
     init() {
         client = noAuthClient
+
+        // Listen to Supabase auth state changes
+        Task {
+            await observeAuthStateChanges()
+        }
     }
-    
-    func checkCurrentUser() {
-        Logger.d("Checking if user is logged in. Retrieving data...")
-        if let token = try? valet.string(forKey: UserKeys.token.rawValue), let userId = try? valet.string(forKey: UserKeys.id.rawValue), let userName = try? valet.string(forKey: UserKeys.name.rawValue) {
-            Logger.d("Logged in as \(userName)")
-            let user = User(id: userId, name: userName, token: token)
-            currentUser = user
-            isSignedIn = true
-            updateClient()
-        } else {
-            Logger.e("User is not logged in!")
+
+    /// Observe Supabase auth state changes
+    private func observeAuthStateChanges() async {
+        for await state in supabase.auth.authStateChanges {
+            Logger.d("UserAccount: Auth state changed: \(state.event)")
+
+            switch state.event {
+            case .signedIn:
+                if let session = state.session {
+                    Logger.i("UserAccount: User signed in via Supabase")
+                    await handleSupabaseSession(session)
+                }
+            case .signedOut:
+                Logger.i("UserAccount: User signed out")
+                await MainActor.run {
+                    self.currentUser = nil
+                    self.isSignedIn = false
+                    self.client = noAuthClient
+                }
+            case .tokenRefreshed:
+                if let session = state.session {
+                    Logger.d("UserAccount: Token refreshed")
+                    await handleSupabaseSession(session)
+                }
+            default:
+                break
+            }
+        }
+    }
+
+    /// Handle Supabase session and update user state
+    private func handleSupabaseSession(_ session: Session) async {
+        let user = User.from(session: session)
+
+        await MainActor.run {
+            self.currentUser = user
+            self.isSignedIn = true
+        }
+
+        do {
+            try saveUserData()
+        } catch {
+            Logger.e("UserAccount: Failed to save user data: \(error)")
         }
     }
     
+    func checkCurrentUser() {
+        Logger.d("Checking if user is logged in...")
+
+        Task {
+            // First, check if there's a Supabase session
+            do {
+                let session = try await supabase.auth.session
+                Logger.d("Found active Supabase session")
+                await handleSupabaseSession(session)
+                return
+            } catch {
+                Logger.d("No active Supabase session: \(error)")
+            }
+
+            // Fall back to legacy credentials check (for migration period)
+            if let token = try? valet.string(forKey: UserKeys.token.rawValue),
+               let userId = try? valet.string(forKey: UserKeys.id.rawValue),
+               let userName = try? valet.string(forKey: UserKeys.name.rawValue) {
+                Logger.d("Found legacy credentials for \(userName)")
+                let user = User(id: userId, name: userName, token: token, email: nil)
+                await MainActor.run {
+                    currentUser = user
+                    isSignedIn = true
+                    updateClient()
+                }
+            } else {
+                Logger.d("User is not logged in")
+            }
+        }
+    }
+    
+    /// @deprecated Legacy sign in method - kept for backward compatibility
+    /// Use Sign in with Apple via Supabase instead
     func signIn(email: String, password: String) async throws {
-        Logger.w("Attempting to sign in user \(email)")
+        Logger.w("Attempting to sign in user \(email) (legacy method)")
         if let user = try? await login(client: noAuthClient, username: email, password: password) {
             Logger.d("Signin successfull. Storing user data...")
             currentUser = user
@@ -68,9 +155,11 @@ class UserAccount: ObservableObject {
             try saveUserData()
         }
     }
-    
+
+    /// @deprecated Legacy account creation method - kept for backward compatibility
+    /// Use Sign in with Apple via Supabase instead
     func createAccount(name: String, email: String, password: String) async throws {
-        Logger.w("Attempting to create account for \(email)")
+        Logger.w("Attempting to create account for \(email) (legacy method)")
         if let user = try? await register(client: noAuthClient, username: email, password: password) {
             Logger.d("Create account is successfull. Storing user data...")
             currentUser = user
@@ -81,10 +170,27 @@ class UserAccount: ObservableObject {
     
     func signOut() {
         Logger.w("Signing out the user")
-        try? valet.removeObject(forKey: "token")
-        currentUser = nil
-        isSignedIn = false
-        clearCoreDataCache()
+
+        Task {
+            // Sign out from Supabase
+            do {
+                try await supabase.auth.signOut()
+                Logger.i("Signed out from Supabase")
+            } catch {
+                Logger.e("Failed to sign out from Supabase: \(error)")
+            }
+
+            // Clear legacy credentials
+            try? valet.removeObject(forKey: UserKeys.token.rawValue)
+            try? valet.removeObject(forKey: UserKeys.id.rawValue)
+            try? valet.removeObject(forKey: UserKeys.name.rawValue)
+
+            await MainActor.run {
+                currentUser = nil
+                isSignedIn = false
+                clearCoreDataCache()
+            }
+        }
     }
     
     func checkBiometricSettings() {
@@ -183,16 +289,18 @@ class UserAccount: ObservableObject {
         }
     }
     
+    /// @deprecated Legacy login method - backend is being deprecated
+    /// This method is kept only for backward compatibility during migration
     private func login(client: Client, username: String, password: String) async throws -> User {
-        Logger.w("Requesting user login for \(username)")
+        Logger.w("Requesting user login for \(username) (LEGACY - backend deprecated)")
         let response = try await client.userLogin(.init(body: .urlEncodedForm(.init(username: username, password: password))))
-        
+
         switch response {
         case .ok(okResponse: let okResponse):
             switch okResponse.body {
             case .json(let json):
                 Logger.d("Received OK response for sign in.")
-                return User(id: json.user.id, name: json.user.username, token: json.token)
+                return User(id: json.user.id, name: json.user.username, token: json.token, email: username)
             }
         case .unauthorized(_):
             Logger.e("Received Unathorized response for sign in.")
@@ -205,17 +313,19 @@ class UserAccount: ObservableObject {
             throw URLError(.badServerResponse)
         }
     }
-    
+
+    /// @deprecated Legacy registration method - backend is being deprecated
+    /// This method is kept only for backward compatibility during migration
     private func register(client: Client, username: String, password: String) async throws -> User {
-        Logger.w("Requesting user registration for \(username) with password \(password)")
+        Logger.w("Requesting user registration for \(username) (LEGACY - backend deprecated)")
         let response = try await client.userRegister(.init(body: .urlEncodedForm(.init(username: username, password: password))))
-        
+
         switch response {
         case .ok(okResponse: let okResponse):
             switch okResponse.body {
             case .json(let jsonBody):
                 Logger.d("Received OK response for registration.")
-                return User(id: jsonBody.user.id, name: jsonBody.user.username, token: jsonBody.token)
+                return User(id: jsonBody.user.id, name: jsonBody.user.username, token: jsonBody.token, email: username)
             }
         case .badRequest(_):
             Logger.e("Received BadRequest response for registration.")

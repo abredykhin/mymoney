@@ -3,6 +3,7 @@
 //  Bablo
 //
 //  Created by Anton Bredykhin on 3/29/25.
+//  Updated for Supabase Migration - Phase 2
 //
 
 import SwiftUI
@@ -14,52 +15,97 @@ struct PasswordFallbackView: View {
     @State private var errorMessage = ""
     @State private var showError = false
     @State private var isAuthenticating = false
+    @State private var showMigrationNotice = false
     var onComplete: (Bool) -> Void
-    
+
     var body: some View {
         NavigationView {
             ZStack {
                 VStack(spacing: 20) {
-                    Text("Enter your credentials to continue")
-                        .font(.headline)
-                    
-                    if userAccount.currentUser != nil {
-                        // If we know the email already, show it and just ask for password
-                        Text(userAccount.currentUser?.name ?? "")
+                    // Check if this is a Supabase user (migrated to Apple Sign In)
+                    if isSupabaseUser() {
+                        // Show migration notice for Supabase users
+                        Image(systemName: "applelogo")
+                            .font(.system(size: 60))
+                            .foregroundColor(.primary)
+                            .padding(.bottom)
+
+                        Text("Password Authentication Unavailable")
+                            .font(.headline)
+
+                        Text("Your account uses Sign in with Apple. Please sign out and sign back in with Apple to continue.")
                             .font(.body)
                             .foregroundColor(.secondary)
-                            .padding(.bottom)
+                            .multilineTextAlignment(.center)
+                            .padding()
+
+                        Button("Sign Out") {
+                            userAccount.signOut()
+                            onComplete(false)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.red)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                        .padding(.horizontal)
                     } else {
-                        // Otherwise ask for both email and password
-                        TextField("Email", text: $email)
-                            .textContentType(.emailAddress)
-                            .keyboardType(.emailAddress)
-                            .autocapitalization(.none)
-                            .disableAutocorrection(true)
+                        // Legacy password authentication (for users not yet migrated)
+                        Text("Enter your credentials to continue")
+                            .font(.headline)
+
+                        if userAccount.currentUser != nil {
+                            // If we know the email already, show it and just ask for password
+                            Text(userAccount.currentUser?.name ?? "")
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .padding(.bottom)
+                        } else {
+                            // Otherwise ask for both email and password
+                            TextField("Email", text: $email)
+                                .textContentType(.emailAddress)
+                                .keyboardType(.emailAddress)
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                                .padding(.horizontal)
+                        }
+
+
+                        SecureField("Password", text: $password)
+                            .textContentType(.password)
                             .padding()
                             .background(Color(.systemGray6))
                             .cornerRadius(8)
                             .padding(.horizontal)
-                    }
-                    
-                    SecureField("Password", text: $password)
-                        .textContentType(.password)
+
+                        Button("Authenticate") {
+                            authenticate()
+                        }
                         .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.accentColor)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                         .padding(.horizontal)
-                    
-                    Button("Authenticate") {
-                        authenticate()
+                        .disabled(isAuthenticating)
+
+                        // Show migration reminder for legacy users
+                        VStack(spacing: 8) {
+                            Text("Using old credentials?")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("Consider signing out and using Sign in with Apple for better security.")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.top, 20)
+                        .padding(.horizontal)
                     }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.accentColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                    .padding(.horizontal)
-                    .disabled(isAuthenticating)
-                    
+
                     Spacer()
                 }
                 .padding(.top, 40)
@@ -97,7 +143,24 @@ struct PasswordFallbackView: View {
             }
         }
     }
-    
+
+    /// Check if the current user is using Supabase (Apple Sign In)
+    /// Supabase users have email addresses in a specific format or don't have legacy credentials
+    private func isSupabaseUser() -> Bool {
+        // Check if user's ID is a UUID (Supabase format)
+        // Supabase user IDs are UUIDs, legacy IDs are numeric strings
+        guard let userId = userAccount.currentUser?.id else {
+            return false
+        }
+
+        // If the ID is a valid UUID, it's a Supabase user
+        if UUID(uuidString: userId) != nil {
+            return true
+        }
+
+        return false
+    }
+
     func authenticate() {
         guard !password.isEmpty else {
             errorMessage = "Please enter your password"

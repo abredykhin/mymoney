@@ -123,10 +123,3 @@ struct ProfileView: View {
         userAccount.signOut()
     }
 }
-
-#Preview {
-    let mockAccount = UserAccount()
-    mockAccount.currentUser = User(id: "123", name: "Test User", token: "abc123")
-    return ProfileView()
-        .environmentObject(mockAccount)
-}
