@@ -12,7 +12,7 @@ import LinkKit
 struct LinkButtonView : View {
     @State var shouldPresentLink = false
     @StateObject var userAccount = UserAccount.shared
-    @EnvironmentObject var bankAccountsService: BankAccountsService
+    @EnvironmentObject var accountsService: AccountsService
     @StateObject var plaidService = PlaidService()
     @State var linkController: LinkController? = nil
     @State var isLoadingLinkToken = false
@@ -145,7 +145,7 @@ struct LinkButtonView : View {
         Logger.i("Item saved successfully, refreshing accounts...")
 
         // Refresh accounts to show the new bank connection
-        try? await bankAccountsService.refreshAccounts()
+        try? await accountsService.refreshAccounts()
 
         Logger.i("Accounts refreshed")
     }

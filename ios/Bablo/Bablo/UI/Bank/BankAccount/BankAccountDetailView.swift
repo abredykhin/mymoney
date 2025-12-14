@@ -9,7 +9,7 @@ import SwiftUI
 
 struct BankAccountDetailView: View {
     @State var account: BankAccount
-    @EnvironmentObject var bankAccountsService: BankAccountsService
+    @EnvironmentObject var accountsService: AccountsService
     @StateObject private var transactionsService = TransactionsService()
     @State private var isDeleteAlertShowing = false
     @State private var isRefreshing = false
@@ -25,18 +25,17 @@ struct BankAccountDetailView: View {
     
     // Get parent bank for this account
     private var parentBank: Bank? {
-        bankAccountsService.banksWithAccounts.first { bank in
+        accountsService.banksWithAccounts.first { bank in
             bank.accounts.contains { $0.id == account.id }
         }
     }
     
-    // Get last updated timestamp from either TransactionsService or account
+    // Get last updated timestamp from account
     private var lastUpdatedText: String {
-        if let serviceLastUpdated = transactionsService.lastUpdated {
-            return "Last updated: \(dateFormatter.string(from: serviceLastUpdated))"
+        if let updatedAt = account.updated_at {
+            return "Last updated: \(dateFormatter.string(from: updatedAt))"
         } else {
-            // Fall back to account's update timestamp
-            return "Last updated: \(dateFormatter.string(from: account.updated_at))"
+            return "Last updated: Never"
         }
     }
     
@@ -79,7 +78,7 @@ struct BankAccountDetailView: View {
                     
                     Spacer()
                     
-                    Text(account.current_balance, format: .currency(code: account.iso_currency_code))
+                    Text(account.current_balance, format: .currency(code: account.iso_currency_code ?? "USD"))
                         .font(.title3.bold())
                         .foregroundColor(getAccountColor(account))
                 }
@@ -135,19 +134,8 @@ struct BankAccountDetailView: View {
                     HStack {
                         Text("Transactions")
                             .font(.headline)
-                        
+
                         Spacer()
-                        
-                        // Show cached indicator if applicable
-                        if transactionsService.isUsingCachedData {
-                            Text("Cached")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(4)
-                        }
                     }
                     .padding(.horizontal)
                     .padding(.top, 12)
@@ -231,7 +219,8 @@ struct BankAccountDetailView: View {
     private func refreshData() {
         Task {
             do {
-                try await transactionsService.fetchAccountTransactions(String(account.id), forceRefresh: true, loadMore: false)
+                let options = FetchOptions(limit: 50, offset: 0, forceRefresh: true)
+                try await transactionsService.fetchTransactionsForAccount(accountId: account.id, options: options)
                 withAnimation {
                     isRefreshing = false
                 }
@@ -243,11 +232,12 @@ struct BankAccountDetailView: View {
             }
         }
     }
-    
+
     private func loadTransactions() {
         Task {
             do {
-                try await transactionsService.fetchAccountTransactions(String(account.id), forceRefresh: false, loadMore: false)
+                let options = FetchOptions(limit: 50, offset: 0, forceRefresh: false)
+                try await transactionsService.fetchTransactionsForAccount(accountId: account.id, options: options)
             } catch {
                 Logger.e("Failed to load transactions: \(error)")
             }
@@ -255,7 +245,7 @@ struct BankAccountDetailView: View {
     }
     
     private func hideAccount() async throws {
-        try await bankAccountsService.updateAccountHiddenStatus(accountId: account.id, hidden: true)
+        try await accountsService.toggleAccountVisibility(accountId: account.id, hidden: true)
     }
     
     private func getAccountColor(_ account: BankAccount) -> Color {
@@ -269,12 +259,25 @@ struct BankAccountDetailView: View {
 }
 
 struct BankAccountDetailView_Previews: PreviewProvider {
-    static var account = BankAccount(id: 1, name: "Checking Account", current_balance: 1250.75, iso_currency_code: "USD", _type: "checking", updated_at: .now)
-    
+    static var account = BankAccount(
+        id: 1,
+        item_id: 1,
+        name: "Checking Account",
+        mask: "1234",
+        official_name: "Premier Checking",
+        current_balance: 1250.75,
+        available_balance: 1200.00,
+        _type: "checking",
+        subtype: nil,
+        hidden: false,
+        iso_currency_code: "USD",
+        updated_at: Date.now
+    )
+
     static var previews: some View {
         NavigationView {
             BankAccountDetailView(account: account)
-                .environmentObject(BankAccountsService())
+                .environmentObject(AccountsService())
         }
     }
 }

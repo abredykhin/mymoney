@@ -56,30 +56,28 @@ class PlaidService: ObservableObject {
     /// - Parameters:
     ///   - publicToken: Public token from Plaid Link
     ///   - institutionId: Institution ID from Plaid
-    /// - Note: This currently uses the legacy endpoint. Will be migrated to Edge Function later.
     func saveNewItem(publicToken: String, institutionId: String) async throws {
         Logger.i("PlaidService: Saving new item (institution: \(institutionId))")
 
-        // TODO: Migrate this to a Supabase Edge Function
-        // For now, using legacy endpoint via OpenAPI client
-        guard let client = UserAccount.shared.client else {
-            Logger.e("PlaidService: Client not available")
-            throw URLError(.userAuthenticationRequired)
-        }
+        let body: [String: Any] = [
+            "public_token": publicToken,
+            "institution_id": institutionId
+        ]
 
-        let response = try await client.saveNewItem(
-            body: .urlEncodedForm(.init(
-                institutionId: institutionId,
-                publicToken: publicToken
-            ))
-        )
+        let bodyData = try JSONSerialization.data(withJSONObject: body)
 
-        switch response {
-        case .ok(_):
+        Logger.d("PlaidService: Invoking save-item function")
+
+        do {
+            let _: SaveItemResponse = try await supabase.functions.invoke(
+                "save-item",
+                options: FunctionInvokeOptions(body: bodyData)
+            )
+
             Logger.i("PlaidService: Successfully saved new item")
-        case .undocumented(_, _):
-            Logger.e("PlaidService: Failed to save item - undocumented response")
-            throw URLError(.badServerResponse)
+        } catch {
+            Logger.e("PlaidService: Failed to save item: \(error)")
+            throw PlaidServiceError.saveItemFailed(error.localizedDescription)
         }
     }
 

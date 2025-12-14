@@ -8,15 +8,15 @@
 import SwiftUI
 
 struct BankListTabView: View {
-    @EnvironmentObject var bankAccountsService: BankAccountsService
+    @EnvironmentObject var accountsService: AccountsService
     @EnvironmentObject var navigationState: NavigationState
 
     @State private var showingProfile = false
-    
+
     var body: some View {
         ZStack {
             BankListView()
-                .environmentObject(bankAccountsService)
+                .environmentObject(accountsService)
         }
         .navigationTitle("Accounts")
         .toolbar {

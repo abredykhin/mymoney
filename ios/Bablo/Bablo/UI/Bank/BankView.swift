@@ -8,8 +8,8 @@
 import SwiftUI
 
 struct BankView : View {
-    @State var bank: Bank
-    
+    let bank: Bank  // Changed from @State to let - this is a read-only view
+
     private var backgroundColor: Color {
         Color(hex: bank.primary_color) ?? Color.white
     }
@@ -51,15 +51,45 @@ struct BankView : View {
 }
 
 struct BankView_Previews: PreviewProvider {
-    static let account1 = BankAccount(id: 0, name: "Account", current_balance: 100.0, iso_currency_code: "USD", _type: "checking", updated_at: .now)
-    static let account2 = BankAccount(id: 0, name: "Account", current_balance: 300.0, iso_currency_code: "USD", _type: "credit", updated_at: .now)
+    static let account1 = BankAccount(
+        id: 0,
+        item_id: 1,
+        name: "Account",
+        mask: "1234",
+        official_name: "Checking Account",
+        current_balance: 100.0,
+        available_balance: 95.0,
+        _type: "checking",
+        subtype: nil,
+        hidden: false,
+        iso_currency_code: "USD",
+        updated_at: Date.now
+    )
+
+    static let account2 = BankAccount(
+        id: 1,
+        item_id: 1,
+        name: "Account",
+        mask: "5678",
+        official_name: "Credit Card",
+        current_balance: 300.0,
+        available_balance: 300.0,
+        _type: "credit",
+        subtype: "credit_card",
+        hidden: false,
+        iso_currency_code: "USD",
+        updated_at: Date.now
+    )
 
     static let bank = Bank(
         id: 0,
         bank_name: "A Bank",
+        logo: nil,
         primary_color: "#00FFBB",
-        accounts: [account1, account2],
+        url: nil,
+        accounts: [account1, account2]
     )
+
     static var previews: some View {
         BankView(bank: bank)
     }

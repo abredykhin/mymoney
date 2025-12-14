@@ -9,7 +9,7 @@ import SwiftUI
 
 struct BankDetailView : View {
     @State var bank: Bank
-    @EnvironmentObject var bankAccountsService: BankAccountsService
+    @EnvironmentObject var accountsService: AccountsService
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -29,20 +29,6 @@ struct BankDetailView : View {
                     .lineLimit(2)
                 
                 Spacer()
-                
-                // Cached indicator if using cached data
-                if bankAccountsService.isUsingCachedData {
-                    HStack {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .foregroundColor(.secondary)
-                        Text("Cached")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(4)
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(4)
-                }
             }
             
             BankView(bank: bank)
@@ -56,8 +42,28 @@ struct BankDetailView : View {
 }
 
 struct BankDetailView_Previews: PreviewProvider {
-    static let account = BankAccount(id: 0, name: "Account", current_balance: 100.0, iso_currency_code: "USD", _type: "checking", updated_at: .now)
-    static let bank = Bank(id: 0, bank_name: "A Bank", accounts: [account])
+    static let account = BankAccount(
+        id: 0,
+        item_id: 1,
+        name: "Account",
+        mask: "1234",
+        official_name: "Checking Account",
+        current_balance: 100.0,
+        available_balance: 95.0,
+        _type: "checking",
+        subtype: nil,
+        hidden: false,
+        iso_currency_code: "USD",
+        updated_at: Date.now
+    )
+    static let bank = Bank(
+        id: 0,
+        bank_name: "A Bank",
+        logo: nil,
+        primary_color: nil,
+        url: nil,
+        accounts: [account]
+    )
     static var previews: some View {
         BankView(bank: bank)
     }

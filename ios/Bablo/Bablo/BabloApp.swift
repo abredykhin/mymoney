@@ -11,7 +11,7 @@ import SwiftData
 @main
 struct BabloApp: App {
     @StateObject var userAccount = UserAccount.shared
-    @StateObject var bankAccountsService = BankAccountsService()
+    @StateObject var accountsService = AccountsService()
     @StateObject var authManager = AuthManager.shared
     @State private var showBiometricEnrollment = false
     @State private var showAuthView = false
@@ -25,7 +25,7 @@ struct BabloApp: App {
                         // Always show ContentView, but blur it when authentication is needed
                     ContentView()
                         .environmentObject(userAccount)
-                        .environmentObject(bankAccountsService)
+                        .environmentObject(accountsService)
                         .environmentObject(authManager)
                         .environment(\.managedObjectContext, coreDataStack.viewContext)
                         .blur(radius: (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated) || showAuthView ? 20 : 0)

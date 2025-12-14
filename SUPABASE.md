@@ -623,9 +623,14 @@ interface PlaidItem {
 - [ ] Deploy functions to production
 
 ### Phase 4: Read APIs
-- [ ] Port `/budget/totalBalance`
-- [ ] Port `/transactions/recent`
-- [ ] Port other read endpoints as needed
+- [x] Create AccountsService for direct database access
+- [x] Create TransactionsService for direct database access
+- [x] Create BudgetService for direct database access
+- [x] Update PlaidService to use Edge Functions only
+- [x] Archive legacy OpenAPI-based services
+- [ ] Update iOS views to use new services
+- [ ] Create `accounts_with_banks` database view
+- [ ] Test all data flows end-to-end
 
 ### Phase 5: Optional
 - [ ] Set up pg_cron for daily scheduled sync

@@ -84,7 +84,7 @@ struct AllTransactionsView: View {
                         // --- Loading Indicator and Error Message at the bottom ---
                         if isLoadingMore {
                             bottomLoadingIndicator
-                        } else if loadingError != nil && transactionsService.hasNextPage {
+                        } else if loadingError != nil && (transactionsService.paginationInfo?.hasMore ?? false) {
                             // Show error only if there was an error AND we expect more pages
                             // Avoid showing error if we simply reached the end
                             bottomErrorIndicator
@@ -187,7 +187,7 @@ struct AllTransactionsView: View {
         loadingError = nil // Clear previous errors on refresh
         isLoadingMore = false // Ensure bottom indicator isn't stuck
         do {
-            try await transactionsService.fetchAllTransactions(forceRefresh: true)
+            try await transactionsService.fetchRecentTransactions(forceRefresh: true, loadMore: false)
         } catch {
             Logger.e("Failed to refresh transactions: \(error)")
             loadingError = error
@@ -195,28 +195,28 @@ struct AllTransactionsView: View {
     }
     
     private func preloadNextPage() {
-        if transactionsService.hasNextPage && !isLoadingMore && !transactionsService.isLoading {
+        if (transactionsService.paginationInfo?.hasMore ?? false) && !isLoadingMore && !transactionsService.isLoading {
             loadMoreTransactions()
         }
     }
     
     private func loadMoreTransactions() {
         // Prevent multiple simultaneous loads
-        guard !isLoadingMore && !transactionsService.isLoading && transactionsService.hasNextPage else {
+        guard !isLoadingMore && !transactionsService.isLoading && (transactionsService.paginationInfo?.hasMore ?? false) else {
             return
         }
-        
+
         Task {
             self.loadingError = nil
             self.isLoadingMore = true
-            
+
             do {
-                try await transactionsService.fetchAllTransactions(loadMore: true)
+                try await transactionsService.fetchRecentTransactions(forceRefresh: false, loadMore: true)
             } catch {
                 Logger.e("Failed to load more transactions: \(error)")
                 self.loadingError = error
             }
-            
+
             self.isLoadingMore = false
         }
     }    

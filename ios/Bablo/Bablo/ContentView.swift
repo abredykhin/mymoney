@@ -27,7 +27,7 @@ enum TabSelection {
 struct ContentView: View {
     @EnvironmentObject var userAccount: UserAccount
     @EnvironmentObject var authManager: AuthManager
-    @EnvironmentObject var bankAccountsService: BankAccountsService
+    @EnvironmentObject var accountsService: AccountsService
     @StateObject private var navigationState = NavigationState()
     @Environment(\.scenePhase) private var scenePhase
     @State private var previousScenePhase: ScenePhase = .active
@@ -57,7 +57,7 @@ struct ContentView: View {
                 
                 NavigationStack(path: $navigationState.accountsNavPath) {
                     BankListTabView()
-                        .environmentObject(bankAccountsService)
+                        .environmentObject(accountsService)
                 }
                 .tabItem {Label("Accounts", systemImage: "dollarsign.bank.building")
                 }.tag(TabSelection.accounts)

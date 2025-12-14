@@ -132,21 +132,26 @@ class BankManager {
         let accounts = (bankEntity.accounts as? Set<AccountEntity> ?? []).map { accountEntity -> BankAccount in
             return BankAccount(
                 id: Int(accountEntity.id),
+                item_id: 0, // CoreData doesn't store item_id, use placeholder
                 name: accountEntity.name ?? "",
                 mask: accountEntity.mask,
                 official_name: accountEntity.officialName,
                 current_balance: accountEntity.currentBalance,
-                iso_currency_code: accountEntity.isoCurrencyCode ?? "USD",
+                available_balance: nil, // CoreData doesn't store available_balance
                 _type: accountEntity.type ?? "unknown",
+                subtype: nil, // CoreData doesn't store subtype
+                hidden: accountEntity.hidden,
+                iso_currency_code: accountEntity.isoCurrencyCode ?? "USD",
                 updated_at: accountEntity.updatedAt ?? Date()
             )
         }
-        
+
         return Bank(
             id: Int(bankEntity.id),
             bank_name: bankEntity.bankName ?? "",
             logo: bankEntity.logo?.base64EncodedString(),
             primary_color: bankEntity.primaryColor,
+            url: nil, // CoreData doesn't store bank URL
             accounts: accounts
         )
     }

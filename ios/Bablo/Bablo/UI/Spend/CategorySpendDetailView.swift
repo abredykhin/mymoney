@@ -148,45 +148,72 @@ extension CategorySpendingData {
         let sampleTransactions = [
             // June 2025 transactions
             Transaction(
+                id: 1,
                 account_id: 0,
                 amount: 12.50,
-                iso_currency_code: "USD",
                 date: "2025-06-01",
+                authorized_date: "2025-06-01",
                 name: "McDonalds",
                 merchant_name: "McDonalds",
-                payment_channel: "online",
+                pending: false,
+                category: ["Food and Drink", "Restaurants"],
                 transaction_id: "1",
+                pending_transaction_transaction_id: nil,
+                iso_currency_code: "USD",
+                payment_channel: "online",
+                user_id: nil,
+                logo_url: nil,
+                website: nil,
                 personal_finance_category: "FOOD_AND_DRINK",
                 personal_finance_subcategory: "FOOD_AND_DRINK_FAST_FOOD",
-                pending: false
+                created_at: nil,
+                updated_at: nil
             ),
 
             Transaction(
+                id: 2,
                 account_id: 0,
                 amount: 350.75,
-                iso_currency_code: "USD",
                 date: "2024-12-05",
+                authorized_date: "2024-12-05",
                 name: "Delta Airlines",
                 merchant_name: "Delta Airlines",
-                payment_channel: "online",
+                pending: true,
+                category: ["Travel"],
                 transaction_id: "2",
+                pending_transaction_transaction_id: nil,
+                iso_currency_code: "USD",
+                payment_channel: "online",
+                user_id: nil,
+                logo_url: nil,
+                website: nil,
                 personal_finance_category: "TRAVEL",
-                personal_finance_subcategory: nil,  // This one has no subcategory
-                pending: true
+                personal_finance_subcategory: nil,
+                created_at: nil,
+                updated_at: nil
             ),
 
             Transaction(
+                id: 3,
                 account_id: 0,
                 amount: -2500.00,  // Negative to show as income
-                iso_currency_code: "USD",
                 date: "2024-12-15",
+                authorized_date: "2024-12-15",
                 name: "ACME Corp Payroll",
                 merchant_name: "ACME Corp",
-                payment_channel: "other",
+                pending: false,
+                category: ["Income", "Payroll"],
                 transaction_id: "3",
+                pending_transaction_transaction_id: nil,
+                iso_currency_code: "USD",
+                payment_channel: "other",
+                user_id: nil,
+                logo_url: nil,
+                website: nil,
                 personal_finance_category: "INCOME",
-                personal_finance_subcategory: nil,  // No subcategory
-                pending: false
+                personal_finance_subcategory: nil,
+                created_at: nil,
+                updated_at: nil
             ),
         ]
 

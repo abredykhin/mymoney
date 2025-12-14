@@ -9,7 +9,7 @@ import SwiftUI
 import Foundation
 
 struct BankListView: View {
-    @EnvironmentObject var bankAccountsService: BankAccountsService
+    @EnvironmentObject var accountsService: AccountsService
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -19,11 +19,11 @@ struct BankListView: View {
     }()
     
     var body: some View {
-        VStack {        
-            if bankAccountsService.isLoading {
+        VStack {
+            if accountsService.isLoading {
                 ProgressView("Loading accounts...")
                     .padding()
-            } else if bankAccountsService.banksWithAccounts.isEmpty {
+            } else if accountsService.banksWithAccounts.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "creditcard.circle")
                         .font(.system(size: 40))
@@ -35,15 +35,15 @@ struct BankListView: View {
                 }
                 .padding(.vertical, 30)
             } else {
-                if let lastUpdated = bankAccountsService.lastUpdated {
+                if let lastUpdated = accountsService.lastUpdated {
                     Text("Last updated: \(dateFormatter.string(from: lastUpdated))")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                
+
                 ScrollView {
                     LazyVStack(alignment: .leading) {
-                        ForEach(bankAccountsService.banksWithAccounts, id: \.id) { bank in
+                        ForEach(accountsService.banksWithAccounts, id: \.id) { bank in
                             BankView(bank: bank)
                                 .padding(.bottom, 4)
                         }
@@ -54,16 +54,29 @@ struct BankListView: View {
             }
         }
         .refreshable {
-            try? await bankAccountsService.refreshAccounts(forceRefresh: true)
+            try? await accountsService.refreshAccounts(forceRefresh: true)
         }
     }
 }
 
 struct BankListView_Previews: PreviewProvider {
-    static let account = BankAccount(id: 0, name: "Account", current_balance: 100.0, iso_currency_code: "USD", _type: "checking", updated_at: .now)
-    static let banks = [Bank(id: 0, bank_name: "A Bank", accounts: [account])]
+    static let account = BankAccount(
+        id: 0,
+        item_id: 1,
+        name: "Account",
+        mask: "1234",
+        official_name: "Checking Account",
+        current_balance: 100.0,
+        available_balance: 95.0,
+        _type: "checking",
+        subtype: nil,
+        hidden: false,
+        iso_currency_code: "USD",
+        updated_at: .now
+    )
+    static let banks = [Bank(id: 0, bank_name: "A Bank", logo: nil, primary_color: nil, url: nil, accounts: [account])]
     static var previews: some View {
         BankListView()
-            .environmentObject(BankAccountsService())
+            .environmentObject(AccountsService())
     }
 }

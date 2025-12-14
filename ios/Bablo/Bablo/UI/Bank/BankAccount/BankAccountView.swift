@@ -21,7 +21,7 @@ struct BankAccountView : View {
                         .truncationMode(.tail)
                         .foregroundColor(.primary)
                     Spacer()
-                    Text(account.current_balance, format: .currency(code: account.iso_currency_code))
+                    Text(account.current_balance, format: .currency(code: account.iso_currency_code ?? "USD"))
                         .font(.body.weight(.semibold).monospaced())
                         .foregroundColor(getAccountColor(account))
                 }
@@ -57,7 +57,20 @@ struct BankAccountView : View {
 }
 
 struct BankAccountView_Previews: PreviewProvider {
-    static let account = BankAccount(id: 0, name: "Account", current_balance: 100.0, iso_currency_code: "USD", _type: "checking", updated_at: .now)
+    static let account = BankAccount(
+        id: 0,
+        item_id: 1,
+        name: "Account",
+        mask: "1234",
+        official_name: "Checking Account",
+        current_balance: 100.0,
+        available_balance: 95.0,
+        _type: "checking",
+        subtype: nil,
+        hidden: false,
+        iso_currency_code: "USD",
+        updated_at: .now
+    )
     static var previews: some View {
         BankAccountView(account: account)
     }

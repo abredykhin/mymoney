@@ -10,7 +10,7 @@ import SwiftUI
 import Network
 
 struct HomeView: View {
-    @EnvironmentObject var bankAccountsService: BankAccountsService
+    @EnvironmentObject var accountsService: AccountsService
     @StateObject private var transactionsService = TransactionsService()
     @EnvironmentObject var navigationState: NavigationState
     @State private var isOffline = false
@@ -25,7 +25,7 @@ struct HomeView: View {
                         .tint(.accentColor)
                 }
 
-                if bankAccountsService.isUsingCachedData && isOffline {
+                if isOffline {
                     HStack {
                         Image(systemName: "wifi.slash")
                         Text("You're offline. Showing cached data.")
@@ -103,7 +103,7 @@ struct HomeView: View {
                 
                 do {
                     // Refresh both accounts and transactions
-                    try await bankAccountsService.refreshAccounts(forceRefresh: forceRefresh)
+                    try await accountsService.refreshAccounts(forceRefresh: forceRefresh)
                 } catch {
                     Logger.e("Failed to refresh data: \(error)")
                 }
