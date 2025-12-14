@@ -6,6 +6,9 @@ yarn-debug.log*
 yarn-error.log*
 database/last-cleared.dummy
 db-data/
+config.toml
+
+supabase/config.toml
 
 # Runtime data
 pids
@@ -79,7 +82,11 @@ ios/Bablo/Bablo.xcodeproj/xcuserdata/
 ios/UxComponents/UxComponents.xcodeproj/project.xcworkspace/xcuserdata/
 ios/UxComponents/UxComponents.xcodeproj/xcuserdata/
 
+# Auto-generated config file
+ios/Bablo/Bablo/Util/Config.swift
+
 package-lock.json
 
 server/production_backup.dump
 
+supabase/.env

@@ -17,12 +17,12 @@ class SupabaseManager {
     let client: SupabaseClient
 
     private init() {
-        // Read configuration from Info.plist or environment
-        let supabaseURL = "https://teuyzmreoyganejfvquk.supabase.co"
-        let supabaseAnonKey = "sb_publishable_7ZUYuwTGQ-MaL0l-d7B6DQ_09GHiOLl"
+        // Read configuration from generated Config file (Build Settings)
+        let supabaseURL = Config.supabaseURL
+        let supabaseAnonKey = Config.supabaseAnonKey
 
         guard let url = URL(string: supabaseURL) else {
-            fatalError("Invalid SUPABASE_URL format")
+            fatalError("Invalid SUPABASE_URL format: \(supabaseURL)")
         }
 
         self.client = SupabaseClient(

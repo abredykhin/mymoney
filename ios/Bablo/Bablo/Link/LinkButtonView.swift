@@ -3,37 +3,49 @@
     //  mymoney
     //
     //  Created by Anton Bredykhin on 2/20/24.
+    //  Updated for Supabase Migration - Phase 3
     //
 
 import SwiftUI
 import LinkKit
 
-    //@MainActor
 struct LinkButtonView : View {
     @State var shouldPresentLink = false
     @StateObject var userAccount = UserAccount.shared
     @EnvironmentObject var bankAccountsService: BankAccountsService
+    @StateObject var plaidService = PlaidService()
     @State var linkController: LinkController? = nil
+    @State var isLoadingLinkToken = false
+    @State var showError = false
+    @State var errorMessage = ""
     
     var body: some View {
         ZStack(alignment: .leading) {
             Button {
                 Task {
-                    debugPrint("Add new account pressed!")
-                    shouldPresentLink = true
+                    Logger.d("Add new account pressed!")
+                    await loadLinkToken()
                 }
             } label: {
-                Text("Link new account")
-                    .foregroundColor(.white)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.secondary)
-                    .cornerRadius(8)
-                    .padding(.horizontal)
-                    .shadow(radius: 2)
+                HStack {
+                    if isLoadingLinkToken {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .padding(.trailing, 8)
+                    }
+                    Text(isLoadingLinkToken ? "Loading..." : "Link new account")
+                        .foregroundColor(.white)
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.secondary)
+                .cornerRadius(8)
+                .padding(.horizontal)
+                .shadow(radius: 2)
             }
+            .disabled(isLoadingLinkToken)
         }
-        .sheet (
+        .sheet(
             isPresented: $shouldPresentLink,
             onDismiss: {
                 shouldPresentLink = false
@@ -43,45 +55,64 @@ struct LinkButtonView : View {
                     linkController
                         .ignoresSafeArea(.all)
                 } else {
-                    Text("Error: LinkController not initialized")
+                    VStack(spacing: 16) {
+                        ProgressView()
+                        Text("Initializing Plaid Link...")
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
         )
-        .task {
-            do {
-                Logger.d("Requesting a link token...")
-                let response = try await userAccount.client?.getLinkToken()
-                
-                switch response {
-                case .ok(okResponse: let okResponse):
-                    switch okResponse.body {
-                    case .json(let json):
-                        Logger.i("Received OK response for Link token")
-                        let config = try await generateLinkConfig(linkToken: json.link_token)
-                        let handler = Plaid.create(config)
-                        switch handler {
-                        case .success(let handler):
-                            self.linkController = LinkController(handler: handler)
-                                    Logger.i("LinkController initialized")
-                        case .failure(let error):
-                            Logger.e("Failed to init Plaid: \(error)")
-                        }
-                    }
-                case .unauthorized:
-                    userAccount.signOut()
-                case .undocumented(statusCode: let statusCode, _):
-                    Logger.e("Recieved error from server. statusCode = \(statusCode)")
-                        //throw URLError(.badServerResponse)
-                case .none:
-                    Logger.e("FAIL")
-                        //throw URLError(.badServerResponse)
-                }
-            } catch {
-                Logger.e("Failed to init Plaid: \(error)")
+        .alert("Error", isPresented: $showError) {
+            Button("OK", role: .cancel) {
+                showError = false
             }
+        } message: {
+            Text(errorMessage)
         }
     }
-    
+
+    /// Load link token from Supabase Edge Function and initialize Plaid Link
+    private func loadLinkToken() async {
+        isLoadingLinkToken = true
+        defer { isLoadingLinkToken = false }
+
+        do {
+            Logger.d("Requesting link token from Supabase...")
+
+            // Call Supabase Edge Function to get link token
+            let linkToken = try await plaidService.createLinkToken()
+
+            Logger.i("Received link token: \(linkToken)")
+
+            // Generate Plaid Link configuration
+            let config = try await generateLinkConfig(linkToken: linkToken)
+
+            // Create Plaid handler
+            let handler = Plaid.create(config)
+
+            switch handler {
+            case .success(let handler):
+                self.linkController = LinkController(handler: handler)
+                Logger.i("LinkController initialized successfully")
+
+                // Show the Plaid Link sheet
+                shouldPresentLink = true
+
+            case .failure(let error):
+                Logger.e("Failed to create Plaid handler: \(error)")
+                errorMessage = "Failed to initialize Plaid Link: \(error.localizedDescription)"
+                showError = true
+            }
+
+        } catch {
+            Logger.e("Failed to load link token: \(error)")
+            errorMessage = "Failed to load link token: \(error.localizedDescription)"
+            showError = true
+        }
+    }
+
     private func generateLinkConfig(linkToken: String) async throws -> LinkTokenConfiguration {
         Logger.d("Creating Link config with token \(linkToken)")
         
@@ -103,17 +134,19 @@ struct LinkButtonView : View {
     }
     
     private func saveNewItem(token: String, institutionId: String) async throws {
-        guard let client = userAccount.client else { return }
-        
         Logger.d("Saving new item to server...")
-        
-        let response = try await client.saveNewItem(body: .urlEncodedForm(.init(institutionId: institutionId, publicToken: token)))
-        switch(response) {
-        case .ok(_):
-            try? await bankAccountsService.refreshAccounts()
-            break
-        case .undocumented(_, _):
-            throw URLError(.badServerResponse)
-        }
+
+        // Use PlaidService to save the item
+        try await plaidService.saveNewItem(
+            publicToken: token,
+            institutionId: institutionId
+        )
+
+        Logger.i("Item saved successfully, refreshing accounts...")
+
+        // Refresh accounts to show the new bank connection
+        try? await bankAccountsService.refreshAccounts()
+
+        Logger.i("Accounts refreshed")
     }
 }

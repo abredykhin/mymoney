@@ -70,6 +70,8 @@
 		75C972CA2D13B8CC008E6E87 /* OnboardingCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972C92D13B8CC008E6E87 /* OnboardingCategoriesView.swift */; };
 		75C972CC2D13BA33008E6E87 /* OnboardingBudgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972CB2D13BA33008E6E87 /* OnboardingBudgetView.swift */; };
 		75CD54C92D92721B0018288D /* AllTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75CD54C82D92721B0018288D /* AllTransactionsView.swift */; };
+		75D39A082EEE5C7600866367 /* PlaidService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A062EEE5C7600866367 /* PlaidService.swift */; };
+		75D39A222EEE5F1000866367 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A212EEE5F1000866367 /* Config.swift */; };
 		75DC5C6A2EED28EF00CEC681 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 75DC5C692EED28EF00CEC681 /* Supabase */; };
 		75E49BA52CA27E67008D72F8 /* TransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E49BA42CA27E67008D72F8 /* TransactionView.swift */; };
 		75E49BAA2CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv in Resources */ = {isa = PBXBuildFile; fileRef = 75E49BA92CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv */; };
@@ -166,6 +168,9 @@
 		75C972C92D13B8CC008E6E87 /* OnboardingCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCategoriesView.swift; sourceTree = "<group>"; };
 		75C972CB2D13BA33008E6E87 /* OnboardingBudgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingBudgetView.swift; sourceTree = "<group>"; };
 		75CD54C82D92721B0018288D /* AllTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllTransactionsView.swift; sourceTree = "<group>"; };
+		75D39A062EEE5C7600866367 /* PlaidService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidService.swift; sourceTree = "<group>"; };
+		75D39A212EEE5F1000866367 /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
+		75D39A2A2EEE607200866367 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		75E49BA42CA27E67008D72F8 /* TransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionView.swift; sourceTree = "<group>"; };
 		75E49BA92CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv */ = {isa = PBXFileReference; lastKnownFileType = text; path = "transactions-personal-finance-category-taxonomy.csv"; sourceTree = "<group>"; };
 		75E49BAB2CA3EACF008D72F8 /* Dates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dates.swift; sourceTree = "<group>"; };
@@ -317,8 +322,10 @@
 		757ABF332C18195100DF8CA8 /* Bablo */ = {
 			isa = PBXGroup;
 			children = (
+				75D39A2A2EEE607200866367 /* Info.plist */,
 				757ABF912C18242900DF8CA8 /* UI */,
 				757ABF832C181CC300DF8CA8 /* Model */,
+				75D39A072EEE5C7600866367 /* Services */,
 				757ABF902C18232E00DF8CA8 /* Design */,
 				757ABF742C181C2600DF8CA8 /* Util */,
 				75E49BA82CA3E62F008D72F8 /* Files */,
@@ -377,6 +384,7 @@
 				75F529652C8D696100629F2B /* Modifiers.swift */,
 				75E49BAB2CA3EACF008D72F8 /* Dates.swift */,
 				75B4DF032DA1CD0F00FF3C1C /* Color+Extensions.swift */,
+				75D39A212EEE5F1000866367 /* Config.swift */,
 			);
 			path = Util;
 			sourceTree = "<group>";
@@ -444,6 +452,14 @@
 			path = Spend;
 			sourceTree = "<group>";
 		};
+		75D39A072EEE5C7600866367 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				75D39A062EEE5C7600866367 /* PlaidService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		75E49BA82CA3E62F008D72F8 /* Files */ = {
 			isa = PBXGroup;
 			children = (
@@ -500,6 +516,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 757ABF582C18195400DF8CA8 /* Build configuration list for PBXNativeTarget "Bablo" */;
 			buildPhases = (
+				75DC5C7B2EEE5A0800CEC681 /* ShellScript */,
 				757ABF2D2C18195100DF8CA8 /* Sources */,
 				757ABF2E2C18195100DF8CA8 /* Frameworks */,
 				757ABF2F2C18195100DF8CA8 /* Resources */,
@@ -642,6 +659,27 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		75DC5C7B2EEE5A0800CEC681 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 12;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Bablo/Util/Config.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n  # Generate Config.swift with build settings\n  CONFIG_FILE=\"${SRCROOT}/Bablo/Util/Config.swift\"\n  cat > \"$CONFIG_FILE\" << EOF\n  // Auto-generated file - DO NOT EDIT\n  // Generated from Build Settings\n\n  enum Config {\n      static let supabaseURL = \"${SUPABASE_URL}\"\n      static let supabaseAnonKey = \"${SUPABASE_ANON_KEY}\"\n  }\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		757ABF2D2C18195100DF8CA8 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -679,6 +717,7 @@
 				759521A02CFD330A00655E7D /* BankDetailView.swift in Sources */,
 				751C8E932DF7F45300C38039 /* CategorySpendDetailView.swift in Sources */,
 				75668FD72D83CE8C003A3D97 /* BabloModel.xcdatamodeld in Sources */,
+				75D39A222EEE5F1000866367 /* Config.swift in Sources */,
 				757ABF772C181C3100DF8CA8 /* AuthMiddleware.swift in Sources */,
 				75F9469F2D3C85240076E91E /* SpendingCategory.swift in Sources */,
 				75C972CC2D13BA33008E6E87 /* OnboardingBudgetView.swift in Sources */,
@@ -687,6 +726,7 @@
 				75579F232CD6F2D800845A62 /* ProfileView.swift in Sources */,
 				75E49BAC2CA3EACF008D72F8 /* Dates.swift in Sources */,
 				7590F29F2C86471D00BCCDE6 /* LinkController.swift in Sources */,
+				75D39A082EEE5C7600866367 /* PlaidService.swift in Sources */,
 				7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */,
 				75C972C82D13B8BB008E6E87 /* OnboardingAccountsView.swift in Sources */,
 				75F529662C8D696100629F2B /* Modifiers.swift in Sources */,
@@ -808,6 +848,8 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPABASE_ANON_KEY = sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH;
+				SUPABASE_URL = "http://127.0.0.1:54321";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -864,6 +906,8 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPABASE_ANON_KEY = "sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz";
+				SUPABASE_URL = "https://teuyzmreoyganejfvquk.supabase.co";
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -884,6 +928,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Bablo/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "BabloApp uses Face ID to securely access your financial information.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -904,6 +949,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.babloapp.mymoney;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
+				SUPABASE_URL = "http://192.168.1.71:54321";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -929,6 +975,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Bablo/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "BabloApp uses Face ID to securely access your financial information.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
