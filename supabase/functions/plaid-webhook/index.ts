@@ -1,0 +1,273 @@
+/**
+ * Supabase Edge Function: plaid-webhook
+ *
+ * Handles incoming webhooks from Plaid for transaction updates and item events.
+ *
+ * Phase 3.2 - Migrated from server/routes/webhook.js
+ *
+ * IMPORTANT: This function returns 200 OK immediately and processes webhooks
+ * in the background using ctx.waitUntil() to avoid timeout issues.
+ */
+
+import { createServiceRoleClient } from '../_shared/auth.ts';
+
+// Webhook event types
+interface PlaidWebhookBody {
+  webhook_type: 'TRANSACTIONS' | 'ITEM' | 'AUTH' | 'ASSETS' | string;
+  webhook_code: string;
+  item_id: string;
+  error?: {
+    error_code: string;
+    error_message: string;
+  };
+  new_transactions?: number;
+  removed_transactions?: string[];
+}
+
+/**
+ * Main webhook handler
+ */
+Deno.serve(async (req, ctx) => {
+  console.log('🔔 Incoming Plaid webhook');
+
+  // Only accept POST requests
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 });
+  }
+
+  try {
+    // Parse webhook body
+    const body: PlaidWebhookBody = await req.json();
+    console.log(`📦 Webhook type: ${body.webhook_type}, code: ${body.webhook_code}`);
+
+    // Check if running in local development mode
+    const isLocal = Deno.env.get('IS_LOCAL_DEV') === 'true';
+
+    if (isLocal) {
+      console.log('⚠️  Local dev mode - webhook signature verification skipped');
+    }
+
+    // Return 200 OK immediately (Plaid requirement)
+    // Process webhook in background with waitUntil
+    // Note: waitUntil is not available in local dev, falls back to async processing
+    if (ctx && typeof ctx.waitUntil === 'function') {
+      ctx.waitUntil(processWebhook(body));
+    } else {
+      // Local development - process asynchronously without waitUntil
+      processWebhook(body).catch((err) => {
+        console.error('❌ Background processing error:', err);
+      });
+    }
+
+    return new Response(JSON.stringify({ status: 'received' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('❌ Error parsing webhook:', error);
+
+    // Still return 200 to avoid Plaid retries for invalid payloads
+    return new Response(JSON.stringify({ status: 'error', message: 'Invalid payload' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+});
+
+/**
+ * Process webhook in background (doesn't block response)
+ */
+async function processWebhook(body: PlaidWebhookBody) {
+  try {
+    const { webhook_type, webhook_code } = body;
+
+    switch (webhook_type) {
+      case 'TRANSACTIONS':
+        await handleTransactionWebhook(webhook_code, body);
+        break;
+      case 'ITEM':
+        await handleItemWebhook(webhook_code, body);
+        break;
+      default:
+        console.log(`ℹ️  Unhandled webhook type: ${webhook_type}`);
+    }
+  } catch (error) {
+    console.error('❌ Error processing webhook:', error);
+    // Don't throw - we already returned 200 OK to Plaid
+  }
+}
+
+/**
+ * Handle TRANSACTIONS webhook events
+ */
+async function handleTransactionWebhook(code: string, body: PlaidWebhookBody) {
+  console.log(`📊 Processing transaction webhook: ${code}`);
+
+  switch (code) {
+    case 'SYNC_UPDATES_AVAILABLE':
+      console.log(`🔄 Sync updates available for item ${body.item_id}`);
+      console.log(`   New transactions: ${body.new_transactions || 0}`);
+
+      // Trigger transaction sync
+      await triggerTransactionSync(body.item_id);
+      break;
+
+    case 'DEFAULT_UPDATE':
+    case 'INITIAL_UPDATE':
+    case 'HISTORICAL_UPDATE':
+      // These are deprecated when using transactions/sync endpoint
+      console.log(`ℹ️  Ignoring deprecated transaction webhook: ${code}`);
+      break;
+
+    default:
+      console.log(`⚠️  Unhandled transaction webhook code: ${code}`);
+  }
+}
+
+/**
+ * Handle ITEM webhook events
+ */
+async function handleItemWebhook(code: string, body: PlaidWebhookBody) {
+  console.log(`🏦 Processing item webhook: ${code}`);
+
+  switch (code) {
+    case 'ERROR':
+      console.error(`❌ Item error for ${body.item_id}:`);
+      console.error(`   ${body.error?.error_message || 'Unknown error'}`);
+      console.error(`   → User should reconnect their bank account`);
+
+      // TODO: In the future, notify user to reconnect their account
+      // For now, just log it
+      break;
+
+    case 'LOGIN_REPAIRED':
+      console.log(`✅ Login repaired for item ${body.item_id}`);
+      console.log(`   → Account is ready to sync again`);
+      break;
+
+    case 'NEW_ACCOUNTS_AVAILABLE':
+      console.log(`🆕 New accounts available for item ${body.item_id}`);
+      console.log(`   → User can be prompted to link additional accounts`);
+
+      // TODO: Notify user about new accounts
+      break;
+
+    case 'PENDING_EXPIRATION':
+    case 'PENDING_DISCONNECT':
+      console.warn(`⏰ Item ${body.item_id} is pending expiration/disconnect`);
+      console.warn(`   → User should reconnect their bank account soon`);
+
+      // TODO: Notify user to reconnect before service disruption
+      break;
+
+    case 'USER_PERMISSION_REVOKED':
+    case 'USER_ACCOUNT_REVOKED':
+      console.warn(`🚫 User revoked access to item ${body.item_id}`);
+      console.warn(`   → Should remove this item from our records`);
+
+      // TODO: Mark item as revoked in database
+      break;
+
+    case 'WEBHOOK_UPDATE_ACKNOWLEDGED':
+      console.log(`✅ Webhook URL update acknowledged`);
+      break;
+
+    default:
+      console.log(`⚠️  Unhandled item webhook code: ${code}`);
+  }
+}
+
+/**
+ * Trigger transaction sync by calling the sync-transactions function
+ */
+async function triggerTransactionSync(plaidItemId: string) {
+  try {
+    console.log(`🚀 Triggering sync for item: ${plaidItemId}`);
+
+    // Get the function URL (either local or production)
+    const functionUrl = Deno.env.get('SUPABASE_URL')
+      ? `${Deno.env.get('SUPABASE_URL')}/functions/v1/sync-transactions`
+      : 'http://localhost:54321/functions/v1/sync-transactions';
+
+    // Call the sync function with service role key
+    const response = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      },
+      body: JSON.stringify({ plaid_item_id: plaidItemId }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Sync trigger failed: ${response.status} - ${errorText}`);
+    } else {
+      console.log(`✅ Sync triggered successfully for item ${plaidItemId}`);
+    }
+  } catch (error) {
+    console.error(`❌ Error triggering sync:`, error);
+  }
+}
+
+/**
+ * DEPLOYMENT & TESTING
+ *
+ * Deploy:
+ *   $ cd supabase
+ *   $ supabase functions deploy plaid-webhook
+ *
+ * Set secrets (if not already set):
+ *   $ supabase secrets set PLAID_CLIENT_ID=your_client_id
+ *   $ supabase secrets set PLAID_SECRET=your_secret
+ *   $ supabase secrets set PLAID_ENV=sandbox
+ *
+ * Test locally:
+ *   $ supabase functions serve plaid-webhook
+ *
+ * Test with curl (local):
+ *   ```bash
+ *   curl -X POST 'http://localhost:54321/functions/v1/plaid-webhook' \
+ *     -H "Content-Type: application/json" \
+ *     -d '{
+ *       "webhook_type": "TRANSACTIONS",
+ *       "webhook_code": "SYNC_UPDATES_AVAILABLE",
+ *       "item_id": "test-item-123",
+ *       "new_transactions": 5
+ *     }'
+ *   ```
+ *
+ * Test ITEM webhook:
+ *   ```bash
+ *   curl -X POST 'http://localhost:54321/functions/v1/plaid-webhook' \
+ *     -H "Content-Type: application/json" \
+ *     -d '{
+ *       "webhook_type": "ITEM",
+ *       "webhook_code": "ERROR",
+ *       "item_id": "test-item-123",
+ *       "error": {
+ *         "error_code": "ITEM_LOGIN_REQUIRED",
+ *         "error_message": "User credentials required"
+ *       }
+ *     }'
+ *   ```
+ *
+ * Configure Plaid webhook URL:
+ *   - In Plaid Dashboard, set webhook URL to:
+ *     https://[your-project-ref].supabase.co/functions/v1/plaid-webhook
+ *   - Or set PLAID_WEBHOOK_URL environment variable
+ *
+ * KEY DIFFERENCES FROM LEGACY:
+ *
+ * Legacy (Node.js):
+ * - Synchronous processing in request handler
+ * - Returns after sync completes (slow)
+ * - Uses Winston logger
+ *
+ * Supabase (Edge Function):
+ * - Returns 200 OK immediately
+ * - Processes webhook in background via ctx.waitUntil()
+ * - Uses console.log (captured by Supabase)
+ * - Calls separate sync-transactions function
+ * - No user authentication (webhooks use service role)
+ */

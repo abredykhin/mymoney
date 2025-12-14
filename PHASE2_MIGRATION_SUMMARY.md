@@ -147,9 +147,43 @@ let session = try await supabase.auth.signIn(email: email, password: password)
 - [ ] `ios/Bablo/ViewModels/RegisterViewModel.swift` - Use new auth methods
 - [ ] `ios/Bablo/Services/APIClient.swift` - Update to use Supabase client
 
+**iOS Configuration Setup**:
+
+The iOS app uses a **build-time script** to generate configuration from Build Settings:
+
+1. **Build Settings** store credentials:
+   - `SUPABASE_URL` - Project URL or local dev URL
+   - `SUPABASE_ANON_KEY` - Anonymous/public API key
+
+2. **Build Phase Script** auto-generates `Util/Config.swift`:
+   ```bash
+   # Generates Config.swift from build settings
+   CONFIG_FILE="${SRCROOT}/Bablo/Util/Config.swift"
+   cat > "$CONFIG_FILE" << EOF
+     enum Config {
+         static let supabaseURL = "${SUPABASE_URL}"
+         static let supabaseAnonKey = "${SUPABASE_ANON_KEY}"
+     }
+   EOF
+   ```
+
+3. **SupabaseManager** reads from generated config:
+   ```swift
+   let supabaseURL = Config.supabaseURL
+   let supabaseAnonKey = Config.supabaseAnonKey
+   self.client = SupabaseClient(supabaseURL: url, supabaseKey: supabaseAnonKey)
+   ```
+
+**Benefits**:
+- ✅ Credentials never committed to source control
+- ✅ Easy to switch between local dev and production
+- ✅ Different configs per build configuration (Debug/Release)
+- ✅ No manual file editing needed
+
 **Resources**:
 - [Supabase Swift SDK Docs](https://supabase.com/docs/reference/swift/introduction)
 - [Auth Examples](https://supabase.com/docs/guides/auth/auth-helpers/ios)
+- See `IOS_APPLE_SIGNIN_SETUP.md` for detailed setup instructions
 
 ---
 

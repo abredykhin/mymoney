@@ -53,18 +53,31 @@ The following new files need to be added to your Xcode project:
 
 ---
 
-### Step 3: Configure Supabase Credentials
+### Step 3: Configure Supabase Credentials (Build Settings + Auto-Generated Config)
+
+The iOS app uses a **build-time script** to generate `Config.swift` from Build Settings. This keeps credentials out of source control while making them easy to update.
+
+#### How It Works:
+1. Build Settings store `SUPABASE_URL` and `SUPABASE_ANON_KEY`
+2. A Build Phase script generates `Util/Config.swift` automatically on each build
+3. `SupabaseManager.swift` reads from the generated `Config.swift`
+
+#### Setup Steps:
 
 1. In Xcode, select your project in the Project Navigator
 2. Select the **"Bablo"** target
-3. Go to the **"Info"** tab
-4. Right-click in the "Custom iOS Target Properties" section and select **"Add Row"**
-5. Add these two keys:
+3. Go to the **"Build Settings"** tab
+4. Search for "SUPABASE" in the filter
+5. You should see two custom build settings:
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
 
-   | Key | Type | Value |
-   |-----|------|-------|
-   | `SUPABASE_URL` | String | Your Supabase project URL (e.g., `https://xyzproject.supabase.co`) |
-   | `SUPABASE_ANON_KEY` | String | Your Supabase anonymous key |
+6. Update their values:
+
+   | Build Setting | Value |
+   |--------------|-------|
+   | `SUPABASE_URL` | Your Supabase project URL (e.g., `https://xyzproject.supabase.co`) or `http://localhost:54321` for local dev |
+   | `SUPABASE_ANON_KEY` | Your Supabase anonymous key |
 
 **Where to find these values:**
 - Go to your Supabase Dashboard: https://supabase.com/dashboard
@@ -73,7 +86,45 @@ The following new files need to be added to your Xcode project:
 - Copy the **"Project URL"** → use for `SUPABASE_URL`
 - Copy the **"anon public"** key → use for `SUPABASE_ANON_KEY`
 
-⚠️ **Important**: The anon key is safe to embed in your app - it's designed for client-side use. Row Level Security (RLS) policies protect your data.
+**For local development:**
+- Run `supabase start` in your `supabase/` directory
+- Use `http://127.0.0.1:54321` or your local IP (e.g., `http://192.168.1.71:54321`) for `SUPABASE_URL`
+- Get the anon key from the `supabase start` output
+
+⚠️ **Important**:
+- The anon key is safe to embed in your app - it's designed for client-side use
+- Row Level Security (RLS) policies protect your data
+- `Config.swift` is auto-generated and should NOT be edited manually
+- `Config.swift` is in `.gitignore` to keep credentials out of source control
+
+#### Verify Build Script:
+
+The build phase script that generates Config.swift should already exist:
+
+1. Select the **"Bablo"** target
+2. Go to **"Build Phases"** tab
+3. Look for a "Run Script" phase named something like "Generate Config"
+4. It should contain:
+
+```bash
+# Generate Config.swift with build settings
+CONFIG_FILE="${SRCROOT}/Bablo/Util/Config.swift"
+cat > "$CONFIG_FILE" << EOF
+  // Auto-generated file - DO NOT EDIT
+  // Generated from Build Settings
+
+  enum Config {
+      static let supabaseURL = "${SUPABASE_URL}"
+      static let supabaseAnonKey = "${SUPABASE_ANON_KEY}"
+  }
+EOF
+```
+
+**If the script doesn't exist**, add it:
+1. Click **"+"** → **"New Run Script Phase"**
+2. Drag it to run BEFORE "Compile Sources"
+3. Paste the script above
+4. Name it "Generate Config"
 
 ---
 
