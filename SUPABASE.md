@@ -609,15 +609,18 @@ interface PlaidItem {
 - [ ] Import institutions data
 
 ### Phase 2: Authentication
-- [ ] Create Edge Function for signup (optional - can use Supabase Auth directly)
-- [ ] Update iOS app to use Supabase Auth SDK
-- [ ] Test login/signup flow
+- [x] Create Edge Function for signup (optional - can use Supabase Auth directly)
+- [x] Update iOS app to use Supabase Auth SDK
+- [x] Implement Sign in with Apple via Supabase
+- [x] Archive legacy auth code (users.js, sessions.js)
+- [ ] Test login/signup/logout flow end-to-end
 
 ### Phase 3: Core Functions
-- [ ] Create `plaid-link-token` Edge Function
-- [ ] Create `plaid-webhook` Edge Function
-- [ ] Create `sync-transactions` Edge Function (with batch inserts!)
+- [x] Create `plaid-link-token` Edge Function
+- [x] Create `plaid-webhook` Edge Function
+- [x] Create `sync-transactions` Edge Function (with batch inserts!)
 - [ ] Test webhook → sync flow locally
+- [ ] Deploy functions to production
 
 ### Phase 4: Read APIs
 - [ ] Port `/budget/totalBalance`

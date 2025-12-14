@@ -1,22 +1,39 @@
-const crypto = require('crypto');
-const sessions = require('../db/queries/sessions');
-const debug = require('debug')('controllers:sessions');
+/**
+ * @file Defines the queries for the sessions table/views.
+ */
 
-const initSession = async userId => {
-  debug(`Generating new session for user ${userId}`);
-  const token = crypto.randomBytes(64).toString('hex');
-  debug(`Token generated. Storing session in db.`);
+const db = require('../');
+require('util').inspect.defaultOptions.depth = null;
 
-  const session = await sessions.createSession(token, userId);
-  debug('Session created.');
-  return session;
+const createSession = async (token, userId) => {
+  const query = {
+    text: 'INSERT INTO sessions_table (token, user_id) VALUES ($1, $2) RETURNING token;',
+    values: [token, userId],
+  };
+  const res = await db.query(query);
+  return res.rows[0];
 };
 
 const expireToken = async token => {
-  await sessions.expireToken(token);
+  const query = {
+    text: 'UPDATE sessions_table SET "status" = expired WHERE token = $1;',
+    values: [token],
+  };
+  return await db.query(query);
+};
+
+const lookupToken = async token => {
+  const query = {
+    text: 'SELECT user_id FROM sessions_table WHERE token = $1;',
+    values: [token],
+  };
+
+  const res = await db.query(query);
+  return res.rows[0];
 };
 
 module.exports = {
-  initSession,
+  createSession,
   expireToken,
+  lookupToken,
 };
