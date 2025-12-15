@@ -1,26 +1,67 @@
 # MyMoney CLI Commands & Guidelines
 
 ## 🚀 Supabase Migration (IN PROGRESS)
+
 **This project is migrating from Node.js/DigitalOcean to Supabase serverless architecture.**
 
-### Quick Reference
-- **Full Migration Plan**: See `SUPABASE.md` for comprehensive details
-- **Status**: Phase 1 complete (database + RLS), Phase 2+ in progress
-- **Local Supabase**: `cd supabase && supabase start`
-- **Reset DB**: `supabase db reset` (applies migrations)
-- **Deploy Function**: `supabase functions deploy <name>`
+### Documentation Structure
+- **[SUPABASE.md](./SUPABASE.md)** - Complete migration plan, architecture, and implementation details
+- **[MIGRATION_STATUS.md](./MIGRATION_STATUS.md)** - Current status, progress tracking, and next steps
+- **This file** - Quick reference commands and guidelines
 
-### Key Changes for LLMs
-- ❌ **DO NOT** suggest Bull/Redis queues or Docker workers (not needed)
-- ❌ **DO NOT** suggest migrating users/sessions (using Supabase Auth)
-- ✅ **DO** use batch database inserts (not individual queries)
-- ✅ **DO** use Edge Functions with `ctx.waitUntil()` for webhooks
-- 📖 **READ** `SUPABASE.md` before making architecture suggestions
+### Current Migration Status
+- ✅ **Phase 1**: Database + RLS - **COMPLETE**
+- ✅ **Phase 2**: Authentication (Sign in with Apple) - **COMPLETE**
+- 🟡 **Phase 3**: Edge Functions - **IN PROGRESS** (⚠️ Batch insert blocker)
+- 🟡 **Phase 4**: iOS Services - **IN PROGRESS** (Views update)
+- 🔴 **Phase 5**: Scheduled Sync - **NOT STARTED** (Optional)
+
+**📊 See [MIGRATION_STATUS.md](./MIGRATION_STATUS.md) for detailed status**
+
+### Quick Commands
+```bash
+# Local Development
+cd supabase && supabase start          # Start local Supabase
+supabase db reset                      # Apply migrations
+supabase functions serve               # Serve all functions
+
+# Deployment
+supabase functions deploy <name>       # Deploy function
+supabase secrets set KEY=value         # Set secrets
+
+# Testing
+supabase functions logs <name>         # View logs
+```
+
+### Key Architectural Decisions (READ THIS!)
+
+**⚠️ CRITICAL - DO NOT IGNORE:**
+
+1. **NO Bull/Redis Queues Needed**
+   - Scale: ~300 transactions per sync = ~7 seconds
+   - Use `ctx.waitUntil()` in Edge Functions for background tasks
+   - Network I/O doesn't count toward CPU timeout
+
+2. **MUST Use Batch Inserts**
+   - ❌ NEVER: 300 individual INSERT statements
+   - ✅ ALWAYS: Single batch INSERT for all transactions
+   - See `SUPABASE.md` Section 3.0 for details
+
+3. **No User Migration Needed**
+   - Only test accounts exist in legacy DB
+   - Using Supabase Auth (`auth.users`) for new accounts
+
+4. **Authentication**
+   - ❌ NO custom sessions table
+   - ✅ Supabase Auth with JWT tokens
+   - ✅ Sign in with Apple on iOS
+
+**📖 Always consult [SUPABASE.md](./SUPABASE.md) before making architecture suggestions**
 
 ### Current Stack
-- **Legacy**: Node.js/Express on DigitalOcean (being phased out)
+- **Legacy** (being phased out): Node.js/Express on DigitalOcean
 - **Target**: Supabase (PostgreSQL + Auth + Edge Functions)
-- **iOS**: Will update to use Supabase SDK
+- **iOS**: Native Swift/SwiftUI with Supabase SDK
 
 ---
 
