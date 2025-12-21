@@ -32,15 +32,9 @@
 		757ABF492C18195400DF8CA8 /* BabloTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CA8 /* BabloTests.swift */; };
 		757ABF532C18195400DF8CA8 /* BabloUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF522C18195400DF8CA8 /* BabloUITests.swift */; };
 		757ABF552C18195400DF8CA8 /* BabloUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */; };
-		757ABF632C18198F00DF8CA8 /* openapi-generator-config.yaml in Resources */ = {isa = PBXBuildFile; fileRef = 757ABF622C18198F00DF8CA8 /* openapi-generator-config.yaml */; };
-		757ABF642C18198F00DF8CA8 /* openapi.yml in Resources */ = {isa = PBXBuildFile; fileRef = 757ABF612C18198F00DF8CA8 /* openapi.yml */; };
-		757ABF6D2C181B3800DF8CA8 /* OpenAPIURLSession in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF6C2C181B3800DF8CA8 /* OpenAPIURLSession */; };
-		757ABF6F2C181B3F00DF8CA8 /* OpenAPIRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF6E2C181B3F00DF8CA8 /* OpenAPIRuntime */; };
 		757ABF712C181B4600DF8CA8 /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF702C181B4600DF8CA8 /* LinkKit */; };
-		757ABF772C181C3100DF8CA8 /* AuthMiddleware.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF762C181C3100DF8CA8 /* AuthMiddleware.swift */; };
 		757ABF792C181C3D00DF8CA8 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF782C181C3D00DF8CA8 /* Logger.swift */; };
 		757ABF7B2C181C4200DF8CA8 /* View+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */; };
-		757ABF7D2C181C4A00DF8CA8 /* Client+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF7C2C181C4A00DF8CA8 /* Client+Extensions.swift */; };
 		757ABF7F2C181C5200DF8CA8 /* View+Previews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF7E2C181C5200DF8CA8 /* View+Previews.swift */; };
 		757ABF872C181D3400DF8CA8 /* UserAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF862C181D3400DF8CA8 /* UserAccount.swift */; };
 		757ABF8A2C181DCC00DF8CA8 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF892C181DCC00DF8CA8 /* Valet */; };
@@ -139,12 +133,8 @@
 		757ABF4E2C18195400DF8CA8 /* BabloUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabloUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		757ABF522C18195400DF8CA8 /* BabloUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloUITests.swift; sourceTree = "<group>"; };
 		757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		757ABF612C18198F00DF8CA8 /* openapi.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = openapi.yml; sourceTree = "<group>"; };
-		757ABF622C18198F00DF8CA8 /* openapi-generator-config.yaml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = "openapi-generator-config.yaml"; sourceTree = "<group>"; };
-		757ABF762C181C3100DF8CA8 /* AuthMiddleware.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthMiddleware.swift; sourceTree = "<group>"; };
 		757ABF782C181C3D00DF8CA8 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Extensions.swift"; sourceTree = "<group>"; };
-		757ABF7C2C181C4A00DF8CA8 /* Client+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Client+Extensions.swift"; sourceTree = "<group>"; };
 		757ABF7E2C181C5200DF8CA8 /* View+Previews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Previews.swift"; sourceTree = "<group>"; };
 		757ABF862C181D3400DF8CA8 /* UserAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAccount.swift; sourceTree = "<group>"; };
 		757ABF8E2C1822C900DF8CA8 /* ColorType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorType.swift; sourceTree = "<group>"; };
@@ -201,10 +191,8 @@
 				759CDE532EED1F3300F8BB96 /* PostgREST in Frameworks */,
 				759CDE552EED1F3300F8BB96 /* Realtime in Frameworks */,
 				757ABF8A2C181DCC00DF8CA8 /* Valet in Frameworks */,
-				757ABF6F2C181B3F00DF8CA8 /* OpenAPIRuntime in Frameworks */,
 				759CDE572EED1F3300F8BB96 /* Storage in Frameworks */,
 				759CDE4F2EED1F3300F8BB96 /* Auth in Frameworks */,
-				757ABF6D2C181B3800DF8CA8 /* OpenAPIURLSession in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -259,15 +247,6 @@
 				754B69422D97D19800C0F001 /* BiometricAuthService.swift */,
 			);
 			path = Auth;
-			sourceTree = "<group>";
-		};
-		754B69502D98996700C0F001 /* Network */ = {
-			isa = PBXGroup;
-			children = (
-				757ABF7C2C181C4A00DF8CA8 /* Client+Extensions.swift */,
-				757ABF762C181C3100DF8CA8 /* AuthMiddleware.swift */,
-			);
-			path = Network;
 			sourceTree = "<group>";
 		};
 		75579F212CD6F2B600845A62 /* Profile */ = {
@@ -332,8 +311,6 @@
 				7590F29D2C86471D00BCCDE6 /* Link */,
 				757ABF342C18195100DF8CA8 /* BabloApp.swift */,
 				757ABF362C18195100DF8CA8 /* ContentView.swift */,
-				757ABF612C18198F00DF8CA8 /* openapi.yml */,
-				757ABF622C18198F00DF8CA8 /* openapi-generator-config.yaml */,
 				757ABF3A2C18195300DF8CA8 /* Assets.xcassets */,
 				757ABF3C2C18195300DF8CA8 /* Bablo.entitlements */,
 				757ABF3D2C18195300DF8CA8 /* Preview Content */,
@@ -377,7 +354,6 @@
 			isa = PBXGroup;
 			children = (
 				759CDE5C2EED1F6900F8BB96 /* SupabaseManager.swift */,
-				754B69502D98996700C0F001 /* Network */,
 				757ABF7E2C181C5200DF8CA8 /* View+Previews.swift */,
 				757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */,
 				757ABF782C181C3D00DF8CA8 /* Logger.swift */,
@@ -524,12 +500,9 @@
 			buildRules = (
 			);
 			dependencies = (
-				757ABF6A2C181B1700DF8CA8 /* PBXTargetDependency */,
 			);
 			name = Bablo;
 			packageProductDependencies = (
-				757ABF6C2C181B3800DF8CA8 /* OpenAPIURLSession */,
-				757ABF6E2C181B3F00DF8CA8 /* OpenAPIRuntime */,
 				757ABF702C181B4600DF8CA8 /* LinkKit */,
 				757ABF892C181DCC00DF8CA8 /* Valet */,
 				759CDE4E2EED1F3300F8BB96 /* Auth */,
@@ -613,9 +586,6 @@
 			mainGroup = 757ABF282C18195100DF8CA8;
 			packageReferences = (
 				757ABF652C181A7C00DF8CA8 /* XCRemoteSwiftPackageReference "plaid-link-ios-spm" */,
-				757ABF662C181A9900DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-urlsession" */,
-				757ABF672C181AA800DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-runtime" */,
-				757ABF682C181AC600DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-generator" */,
 				757ABF882C181DAF00DF8CA8 /* XCRemoteSwiftPackageReference "Valet" */,
 				759CDE4D2EED1F3300F8BB96 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
@@ -637,9 +607,7 @@
 			files = (
 				757ABF3F2C18195300DF8CA8 /* Preview Assets.xcassets in Resources */,
 				757ABF3B2C18195300DF8CA8 /* Assets.xcassets in Resources */,
-				757ABF632C18198F00DF8CA8 /* openapi-generator-config.yaml in Resources */,
 				75E49BAA2CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv in Resources */,
-				757ABF642C18198F00DF8CA8 /* openapi.yml in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -719,7 +687,6 @@
 				751C8E932DF7F45300C38039 /* CategorySpendDetailView.swift in Sources */,
 				75668FD72D83CE8C003A3D97 /* BabloModel.xcdatamodeld in Sources */,
 				75D39A222EEE5F1000866367 /* Config.swift in Sources */,
-				757ABF772C181C3100DF8CA8 /* AuthMiddleware.swift in Sources */,
 				75F9469F2D3C85240076E91E /* SpendingCategory.swift in Sources */,
 				75C972CC2D13BA33008E6E87 /* OnboardingBudgetView.swift in Sources */,
 				757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */,
@@ -742,7 +709,6 @@
 				757ABF7B2C181C4200DF8CA8 /* View+Extensions.swift in Sources */,
 				75F946952D3C82930076E91E /* BudgetRowView.swift in Sources */,
 				75CD54C92D92721B0018288D /* AllTransactionsView.swift in Sources */,
-				757ABF7D2C181C4A00DF8CA8 /* Client+Extensions.swift in Sources */,
 				754B694D2D97EAD100C0F001 /* AuthManager.swift in Sources */,
 				759CDE5A2EED1F4B00F8BB96 /* SignInWithAppleCoordinator.swift in Sources */,
 				75F946A52D3C85680076E91E /* ExpenseSection.swift in Sources */,
@@ -782,10 +748,6 @@
 			isa = PBXTargetDependency;
 			target = 757ABF302C18195100DF8CA8 /* Bablo */;
 			targetProxy = 757ABF4F2C18195400DF8CA8 /* PBXContainerItemProxy */;
-		};
-		757ABF6A2C181B1700DF8CA8 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			productRef = 757ABF692C181B1700DF8CA8 /* OpenAPIGenerator */;
 		};
 /* End PBXTargetDependency section */
 
@@ -906,7 +868,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPABASE_ANON_KEY = "sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz";
+				SUPABASE_ANON_KEY = "sb_publishable_7ZUYuwTGQ-MaL0l-d7B6DQ_09GHi0LL";
 				SUPABASE_URL = "https://teuyzmreoyganejfvquk.supabase.co";
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
@@ -996,6 +958,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.babloapp.mymoney;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
+				SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRldXl6bXJlb3lnYW5lamZ2cXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxMjc2ODUsImV4cCI6MjA4MDcwMzY4NX0.stziaS1MMaRqXoZS-4gvmm_BbZId-mg4iitZIcA-doU";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1145,30 +1108,6 @@
 				version = 6.0.0;
 			};
 		};
-		757ABF662C181A9900DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-urlsession" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/apple/swift-openapi-urlsession.git";
-			requirement = {
-				kind = exactVersion;
-				version = 1.0.2;
-			};
-		};
-		757ABF672C181AA800DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-runtime" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/apple/swift-openapi-runtime.git";
-			requirement = {
-				kind = exactVersion;
-				version = 1.5.0;
-			};
-		};
-		757ABF682C181AC600DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-generator" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/apple/swift-openapi-generator.git";
-			requirement = {
-				kind = exactVersion;
-				version = 1.3.0;
-			};
-		};
 		757ABF882C181DAF00DF8CA8 /* XCRemoteSwiftPackageReference "Valet" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Square/Valet";
@@ -1188,21 +1127,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		757ABF692C181B1700DF8CA8 /* OpenAPIGenerator */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 757ABF682C181AC600DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-generator" */;
-			productName = "plugin:OpenAPIGenerator";
-		};
-		757ABF6C2C181B3800DF8CA8 /* OpenAPIURLSession */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 757ABF662C181A9900DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-urlsession" */;
-			productName = OpenAPIURLSession;
-		};
-		757ABF6E2C181B3F00DF8CA8 /* OpenAPIRuntime */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 757ABF672C181AA800DF8CA8 /* XCRemoteSwiftPackageReference "swift-openapi-runtime" */;
-			productName = OpenAPIRuntime;
-		};
 		757ABF702C181B4600DF8CA8 /* LinkKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 757ABF652C181A7C00DF8CA8 /* XCRemoteSwiftPackageReference "plaid-link-ios-spm" */;

@@ -27,7 +27,7 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
     let pending_transaction_transaction_id: String? // For compatibility with old code
     let iso_currency_code: String? // Currency code
     let payment_channel: String? // Payment channel (online, in store, etc.)
-    let user_id: Int64? // User ID (numeric, not String!)
+    let user_id: String? // User ID (UUID string from Supabase auth)
     let logo_url: String? // Merchant logo URL
     let website: String? // Merchant website
     let personal_finance_category: String? // Personal finance category
@@ -64,7 +64,7 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
     var transactionId: String { transaction_id }
     var isoCurrencyCode: String? { iso_currency_code }
     var paymentChannel: String? { payment_channel }
-    var userId: Int64? { user_id }
+    var userId: String? { user_id }
     var logoUrl: String? { logo_url }
     var personalFinanceCategory: String? { personal_finance_category }
     var personalFinanceSubcategory: String? { personal_finance_subcategory }

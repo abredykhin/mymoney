@@ -12,25 +12,31 @@
 ### Current Migration Status
 - ✅ **Phase 1**: Database + RLS - **COMPLETE**
 - ✅ **Phase 2**: Authentication (Sign in with Apple) - **COMPLETE**
-- 🟡 **Phase 3**: Edge Functions - **IN PROGRESS** (⚠️ Batch insert blocker)
-- 🟡 **Phase 4**: iOS Services - **IN PROGRESS** (Views update)
+- ✅ **Phase 3**: Edge Functions - **COMPLETE & DEPLOYED** 🚀
+- ✅ **Phase 4**: iOS Services - **COMPLETE** 🎉
 - 🔴 **Phase 5**: Scheduled Sync - **NOT STARTED** (Optional)
+
+**🎊 CORE MIGRATION COMPLETE! All 4 main phases done. App is now fully on Supabase.**
 
 **📊 See [MIGRATION_STATUS.md](./MIGRATION_STATUS.md) for detailed status**
 
 ### Quick Commands
+**⚠️ IMPORTANT: Run all `supabase` commands from project root (`~/ws/mymoney`), NOT from `~/ws/mymoney/supabase`**
+
 ```bash
 # Local Development
-cd supabase && supabase start          # Start local Supabase
+supabase start                         # Start local Supabase
 supabase db reset                      # Apply migrations
 supabase functions serve               # Serve all functions
 
 # Deployment
+supabase db push                       # Push migrations to production
 supabase functions deploy <name>       # Deploy function
 supabase secrets set KEY=value         # Set secrets
 
 # Testing
 supabase functions logs <name>         # View logs
+supabase migration list                # Show migration status
 ```
 
 ### Key Architectural Decisions (READ THIS!)

@@ -127,7 +127,9 @@ class TransactionsManager {
         entity.pending = transaction.pending
 
         // Optional fields
-        entity.userId = transaction.user_id ?? 0
+        // Note: user_id is now a UUID string in Supabase, but CoreData schema has Int64
+        // Can't convert UUID to Int64, so storing 0 (field not used for offline cache)
+        entity.userId = 0
         entity.merchantName = transaction.merchant_name
         entity.logoUrl = transaction.logo_url
         entity.website = transaction.website
@@ -234,7 +236,7 @@ class TransactionsManager {
             pending_transaction_transaction_id: entity.pendingTransactionId,
             iso_currency_code: entity.isoCurrencyCode ?? "USD",
             payment_channel: entity.paymentChannel ?? "",
-            user_id: entity.userId != 0 ? Int64(entity.userId) : nil,
+            user_id: nil, // CoreData stores Int64, but API uses UUID string - not convertible
             logo_url: entity.logoUrl,
             website: entity.website,
             personal_finance_category: entity.personalFinanceCategory,

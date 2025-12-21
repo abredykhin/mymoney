@@ -16,8 +16,8 @@ This project is migrating from Node.js/DigitalOcean to Supabase serverless archi
 - ✅ Phase 1: Database & Project Initialization - **COMPLETE**
 - ✅ Phase 2: Authentication Replacement - **COMPLETE**
 - ✅ Phase 3: Edge Functions - **COMPLETE & DEPLOYED** 🚀
-- 🟡 Phase 4: Read-Only APIs - **IN PROGRESS**
-- 🔴 Phase 5: Scheduled Sync - **NOT STARTED**
+- ✅ Phase 4: Read-Only APIs - **COMPLETE** 🎉
+- 🔴 Phase 5: Scheduled Sync - **NOT STARTED** (Optional)
 
 ---
 
@@ -95,7 +95,8 @@ This project is migrating from Node.js/DigitalOcean to Supabase serverless archi
 - [x] **Edge Function batch operations** (Supabase SDK `.upsert()`)
 - [x] **Error handling** (rate limits, auth errors, rollback)
 - [x] **Cursor management** (updates only after success)
-- [x] **Production secrets configured** (PLAID_CLIENT_ID, PLAID_SECRET, PLAID_ENV)
+- [x] **Production secrets configured** (PLAID_CLIENT_ID, PLAID_SECRET, PLAID_ENV, PLAID_WEBHOOK_URL)
+- [x] **Webhook URL automatically registered** via linkTokenCreate (no manual Plaid Dashboard config needed)
 
 #### Performance Achievement:
 ```
@@ -110,7 +111,7 @@ Result: 300x fewer queries, 10-15x faster!
 - **Dashboard**: https://supabase.com/dashboard/project/teuyzmreoyganejfvquk/functions
 
 #### Next Steps:
-- [ ] Configure Plaid webhook URL in Plaid Dashboard
+- [x] Configure Plaid webhook URL ✅ (auto-registered via linkTokenCreate)
 - [ ] Test with real Plaid webhook events
 - [ ] Monitor production performance
 
@@ -124,10 +125,11 @@ Result: 300x fewer queries, 10-15x faster!
 
 ---
 
-### 🟡 Phase 4: Read-Only APIs (IN PROGRESS)
+### ✅ Phase 4: Read-Only APIs (COMPLETE)
 
-**Status**: New services created, views need updates
+**Status**: Complete
 **Started**: December 13, 2025
+**Completed**: December 14, 2025
 
 **What's Done:**
 - [x] `AccountsService.swift` created (replaces `BankAccountsService`)
@@ -135,13 +137,23 @@ Result: 300x fewer queries, 10-15x faster!
 - [x] `BudgetService.swift` created
 - [x] Services use direct Supabase queries (no OpenAPI client)
 - [x] PlaidService uses Edge Functions for link tokens
+- [x] **All iOS views already using new services** (were already migrated!)
+- [x] Create `accounts_with_banks` database view - **DEPLOYED Dec 14, 2025**
+- [x] Remove OpenAPI imports from UserAccount.swift
+- [x] Archive OpenAPI middleware files (AuthMiddleware, Client+Extensions)
+- [x] Remove unused OpenAPI client property and methods
 
-**What's Remaining:**
-- [ ] Update iOS views to use new services
-- [ ] Create `accounts_with_banks` database view
-- [ ] Test all data flows end-to-end
-- [ ] Remove OpenAPI client dependency
-- [ ] Archive legacy service files
+**Key Discovery:**
+- iOS views (HomeView, BankListView, AllTransactionsView, etc.) were already using the new services!
+- BabloApp.swift already instantiates `AccountsService()` and injects it
+- No view updates were needed - migration was already done
+
+**Archived Files:**
+- `Archived/phase4-api-migration/BankAccountsService.swift`
+- `Archived/phase4-api-migration/TransactionsService.swift` (old)
+- `Archived/phase4-api-migration/BudgetService.swift` (old)
+- `Archived/phase4-api-migration/Network/AuthMiddleware.swift`
+- `Archived/phase4-api-migration/Network/Client+Extensions.swift`
 
 **Resources:**
 - Migration guide: [IOS_SERVICES_MIGRATION.md](./ios/IOS_SERVICES_MIGRATION.md)
@@ -225,29 +237,36 @@ curl -X POST 'http://127.0.0.1:54321/functions/v1/plaid-webhook' \
 
 ## Critical Next Steps
 
-### Immediate Priorities:
-1. **✅ COMPLETE: Batch insert optimization** - 600 queries reduced to 2 queries!
-   - ✅ Node.js legacy code optimized
-   - ✅ Edge Function implementation complete
-   - ✅ Unit tests created and passing (10/10)
-2. **Test Edge Functions locally** (requires Docker)
-   - Start Supabase locally
-   - Test sync-transactions with curl
-   - Verify performance (<3 seconds)
-3. **Deploy to production**
-   - Deploy Edge Functions
-   - Configure Plaid webhook URL
-   - Monitor logs and performance
+### ✅ Core Migration Complete!
 
-### Medium Term:
-4. **Update iOS views** to use new services (Phase 4)
-5. **Test all data flows** end-to-end with real Plaid accounts
-6. **Remove OpenAPI client** dependency from iOS app
+**All 4 main phases are now COMPLETE:**
+1. ✅ Database & RLS
+2. ✅ Authentication (Sign in with Apple)
+3. ✅ Edge Functions (deployed to production)
+4. ✅ iOS Services (all views migrated)
 
-### Long Term:
-7. **Monitor Edge Function performance** in production
-8. **Set up scheduled sync** (optional, Phase 5)
-9. **Decommission legacy backend** (Node.js/DigitalOcean)
+### Remaining Tasks:
+
+#### High Priority:
+1. ✅ **Plaid webhook URL configured** via `PLAID_WEBHOOK_URL` secret
+   - Automatically registered when users link accounts via `linkTokenCreate`
+   - No manual Plaid Dashboard configuration needed
+2. **End-to-end testing** with real Plaid accounts
+   - Test link account flow
+   - Test transaction sync
+   - Test webhook delivery
+3. **Monitor production performance**
+   - Check Edge Function logs
+   - Verify transaction sync times
+   - Monitor error rates
+
+#### Optional:
+4. **Set up scheduled sync** (Phase 5)
+   - Implement pg_cron for daily sync
+   - OR rely on manual refresh in app
+5. **Decommission legacy backend**
+   - Once confident in Supabase setup
+   - Archive Node.js/DigitalOcean infrastructure
 
 ---
 
@@ -356,8 +375,8 @@ curl -X POST 'http://127.0.0.1:54321/functions/v1/plaid-webhook' \
 | Phase 1: Database | ✅ Complete | Nov 2025 | Dec 7, 2025 | Dec 7, 2025 |
 | Phase 2: Auth | ✅ Complete | Dec 11, 2025 | Dec 13, 2025 | Dec 14, 2025 |
 | Phase 3: Edge Functions | ✅ Complete | Dec 12, 2025 | Dec 14, 2025 | Dec 15, 2025 |
-| Phase 4: Read APIs | 🟡 In Progress | Dec 13, 2025 | TBD | TBD |
-| Phase 5: Scheduled Sync | 🔴 Not Started | TBD | TBD | TBD |
+| Phase 4: Read APIs | ✅ Complete | Dec 13, 2025 | Dec 14, 2025 | Dec 14, 2025 |
+| Phase 5: Scheduled Sync | 🔴 Optional | TBD | TBD | TBD |
 
 ---
 

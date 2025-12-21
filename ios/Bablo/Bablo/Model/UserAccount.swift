@@ -8,8 +8,6 @@
 
 import Foundation
 import Valet
-import OpenAPIRuntime
-import OpenAPIURLSession
 import CoreData
 import Supabase
 
@@ -50,18 +48,14 @@ class UserAccount: ObservableObject {
     static let shared = UserAccount()
 
     @Published var currentUser: User? = nil
-    @Published var client: Client? = nil
     @Published var isSignedIn: Bool = false
     @Published var isBiometricallyAuthenticated = false
     @Published var isBiometricEnabled = false
 
     private let valet = Valet.valet(with: Identifier(nonEmpty: "BabloApp")!, accessibility: .whenUnlocked)
-    private let noAuthClient: Client = Client(serverURL: Client.getServerUrl(), transport: URLSessionTransport())
     private let supabase = SupabaseManager.shared.client
 
     init() {
-        client = noAuthClient
-
         // Listen to Supabase auth state changes
         Task {
             await observeAuthStateChanges()
@@ -84,7 +78,6 @@ class UserAccount: ObservableObject {
                 await MainActor.run {
                     self.currentUser = nil
                     self.isSignedIn = false
-                    self.client = noAuthClient
                 }
             case .tokenRefreshed:
                 if let session = state.session {
@@ -136,7 +129,6 @@ class UserAccount: ObservableObject {
                 await MainActor.run {
                     currentUser = user
                     isSignedIn = true
-                    updateClient()
                 }
             } else {
                 Logger.d("User is not logged in")
@@ -144,28 +136,30 @@ class UserAccount: ObservableObject {
         }
     }
     
-    /// @deprecated Legacy sign in method - kept for backward compatibility
+    /// @deprecated Legacy sign in method - NO LONGER SUPPORTED
     /// Use Sign in with Apple via Supabase instead
     func signIn(email: String, password: String) async throws {
-        Logger.w("Attempting to sign in user \(email) (legacy method)")
-        if let user = try? await login(client: noAuthClient, username: email, password: password) {
-            Logger.d("Signin successfull. Storing user data...")
-            currentUser = user
-            isSignedIn = true
-            try saveUserData()
-        }
+        Logger.e("Legacy sign in attempted for \(email) - method no longer supported")
+        throw NSError(
+            domain: "UserAccount",
+            code: -1,
+            userInfo: [
+                NSLocalizedDescriptionKey: "Legacy password authentication is no longer supported. Please sign out and use Sign in with Apple."
+            ]
+        )
     }
 
-    /// @deprecated Legacy account creation method - kept for backward compatibility
+    /// @deprecated Legacy account creation method - NO LONGER SUPPORTED
     /// Use Sign in with Apple via Supabase instead
     func createAccount(name: String, email: String, password: String) async throws {
-        Logger.w("Attempting to create account for \(email) (legacy method)")
-        if let user = try? await register(client: noAuthClient, username: email, password: password) {
-            Logger.d("Create account is successfull. Storing user data...")
-            currentUser = user
-            isSignedIn = true
-            try saveUserData()
-        }
+        Logger.e("Legacy account creation attempted for \(email) - method no longer supported")
+        throw NSError(
+            domain: "UserAccount",
+            code: -1,
+            userInfo: [
+                NSLocalizedDescriptionKey: "Legacy account creation is no longer supported. Please use Sign in with Apple."
+            ]
+        )
     }
     
     func signOut() {
@@ -276,66 +270,8 @@ class UserAccount: ObservableObject {
             try valet.setString(theUser.name, forKey: UserKeys.name.rawValue)
             try valet.setString(theUser.token, forKey: UserKeys.token.rawValue)
         }
-        updateClient()
     }
     
-    private func updateClient() {
-        if let theUser = currentUser {
-            Logger.i("Updating current client to the auth one")
-            client = Client(serverURL: Client.getServerUrl(), configuration: .init(dateTranscoder: ISO8601DateTranscoder(options: .withFractionalSeconds)), transport: URLSessionTransport(), middlewares: [AuthenticationMiddleware(token: theUser.token)] )
-        } else {
-            Logger.i("Updating current client to the no auth one")
-            client = noAuthClient
-        }
-    }
-    
-    /// @deprecated Legacy login method - backend is being deprecated
-    /// This method is kept only for backward compatibility during migration
-    private func login(client: Client, username: String, password: String) async throws -> User {
-        Logger.w("Requesting user login for \(username) (LEGACY - backend deprecated)")
-        let response = try await client.userLogin(.init(body: .urlEncodedForm(.init(username: username, password: password))))
-
-        switch response {
-        case .ok(okResponse: let okResponse):
-            switch okResponse.body {
-            case .json(let json):
-                Logger.d("Received OK response for sign in.")
-                return User(id: json.user.id, name: json.user.username, token: json.token, email: username)
-            }
-        case .unauthorized(_):
-            Logger.e("Received Unathorized response for sign in.")
-            throw URLError(.userAuthenticationRequired)
-        case .badRequest(_):
-            Logger.e("Received BadRequest response for sign in.")
-            throw URLError(.badURL)
-        case .undocumented(_, _):
-            Logger.e("Received unknown error response for sign in.")
-            throw URLError(.badServerResponse)
-        }
-    }
-
-    /// @deprecated Legacy registration method - backend is being deprecated
-    /// This method is kept only for backward compatibility during migration
-    private func register(client: Client, username: String, password: String) async throws -> User {
-        Logger.w("Requesting user registration for \(username) (LEGACY - backend deprecated)")
-        let response = try await client.userRegister(.init(body: .urlEncodedForm(.init(username: username, password: password))))
-
-        switch response {
-        case .ok(okResponse: let okResponse):
-            switch okResponse.body {
-            case .json(let jsonBody):
-                Logger.d("Received OK response for registration.")
-                return User(id: jsonBody.user.id, name: jsonBody.user.username, token: jsonBody.token, email: username)
-            }
-        case .badRequest(_):
-            Logger.e("Received BadRequest response for registration.")
-            throw URLError(.badURL)
-        case .conflict(_):
-            Logger.e("Received Conflict response for registration.")
-            throw URLError(.userAuthenticationRequired)
-        case .undocumented(_, _):
-            Logger.e("Received unknown error response for registration.")
-            throw URLError(.badServerResponse)
-        }
-    }
+    // Legacy login/register methods removed - backend no longer exists
+    // All authentication now goes through Supabase Auth (Sign in with Apple)
 }

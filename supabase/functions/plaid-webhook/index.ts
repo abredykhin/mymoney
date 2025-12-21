@@ -39,6 +39,7 @@ Deno.serve(async (req, ctx) => {
     // Parse webhook body
     const body: PlaidWebhookBody = await req.json();
     console.log(`📦 Webhook type: ${body.webhook_type}, code: ${body.webhook_code}`);
+    console.log(`📦 Full webhook body:`, JSON.stringify(body));
 
     // Check if running in local development mode
     const isLocal = Deno.env.get('IS_LOCAL_DEV') === 'true';
@@ -183,11 +184,15 @@ async function handleItemWebhook(code: string, body: PlaidWebhookBody) {
 async function triggerTransactionSync(plaidItemId: string) {
   try {
     console.log(`🚀 Triggering sync for item: ${plaidItemId}`);
+    console.log(`📦 Item ID type: ${typeof plaidItemId}, value: "${plaidItemId}"`);
 
     // Get the function URL (either local or production)
     const functionUrl = Deno.env.get('SUPABASE_URL')
       ? `${Deno.env.get('SUPABASE_URL')}/functions/v1/sync-transactions`
       : 'http://localhost:54321/functions/v1/sync-transactions';
+
+    const payload = { plaid_item_id: plaidItemId };
+    console.log(`📤 Sending payload:`, JSON.stringify(payload));
 
     // Call the sync function with service role key
     const response = await fetch(functionUrl, {
@@ -196,7 +201,7 @@ async function triggerTransactionSync(plaidItemId: string) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
       },
-      body: JSON.stringify({ plaid_item_id: plaidItemId }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
