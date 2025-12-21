@@ -249,19 +249,30 @@ class UserAccount: ObservableObject {
     private func clearCoreDataCache() {
         let context = CoreDataStack.shared.viewContext
         let entityNames = ["BankEntity", "AccountEntity", "TransactionEntity"]
-        
+
         for entityName in entityNames {
             let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
             let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-            
+            deleteRequest.resultType = .resultTypeObjectIDs
+
             do {
-                try context.execute(deleteRequest)
+                let result = try context.execute(deleteRequest) as? NSBatchDeleteResult
+                let objectIDArray = result?.result as? [NSManagedObjectID] ?? []
+
+                // Merge the changes into the in-memory context
+                let changes = [NSDeletedObjectsKey: objectIDArray]
+                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [context])
+
                 try context.save()
-                Logger.i("Cleared \(entityName) cache")
+                Logger.i("Cleared \(entityName) cache (\(objectIDArray.count) objects)")
             } catch {
                 Logger.e("Failed to clear \(entityName) cache: \(error)")
             }
         }
+
+        // Reset the context to clear all in-memory objects
+        context.reset()
+        Logger.i("CoreData context reset complete")
     }
     
     private func saveUserData() throws {
