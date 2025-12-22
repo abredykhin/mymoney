@@ -84,6 +84,18 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
     var absoluteAmount: Double {
         abs(amount)
     }
+
+    /// Determines if this transaction is a transfer between accounts
+    /// Transfers should be excluded from income/expense calculations
+    var isTransfer: Bool {
+        // Check if personal_finance_category indicates a transfer
+        if let category = personal_finance_category?.uppercased() {
+            return category.contains("TRANSFER")
+        }
+        // Fallback: check if name contains "Payment" or "Transfer"
+        let name = self.name.uppercased()
+        return name.contains("PAYMENT") || name.contains("TRANSFER")
+    }
 }
 
 /// Pagination metadata

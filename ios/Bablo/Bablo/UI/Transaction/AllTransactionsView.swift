@@ -18,25 +18,133 @@ struct AllTransactionsView: View {
     
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        formatter.dateFormat = "yyyy-MM-dd"
         formatter.locale = Locale(identifier: "en_US_POSIX")
+        // Use local timezone so dates match what's displayed
+        formatter.timeZone = TimeZone.current
         return formatter
     }()
     
-    // Group transactions by the start of the day
-    private var groupedTransactions: [Date: [Transaction]] {
-        Dictionary(grouping: transactionsService.transactions) { transaction in
-            let dateFromString = AllTransactionsView.dateFormatter.date(from: transaction.date) // Use the static formatter
-            let validDate = dateFromString ?? Date.distantPast
-            return Calendar.current.startOfDay(for: validDate)
+    // MARK: - Data Structures for Grouping
+
+    struct MonthKey: Hashable, Comparable {
+        let year: Int
+        let month: Int
+
+        static func < (lhs: MonthKey, rhs: MonthKey) -> Bool {
+            if lhs.year != rhs.year {
+                return lhs.year < rhs.year
+            }
+            return lhs.month < rhs.month
         }
     }
-    
-    // Sort the date keys (newest first)
-    private var sortedDates: [Date] {
-        groupedTransactions.keys.sorted(by: >) // Sort descending
+
+    struct DayKey: Hashable, Comparable {
+        let date: Date
+
+        static func < (lhs: DayKey, rhs: DayKey) -> Bool {
+            lhs.date < rhs.date
+        }
     }
-    
+
+    // Group transactions by month, then by day
+    private var groupedByMonth: [MonthKey: [DayKey: [Transaction]]] {
+        let calendar = Calendar.current
+        var result: [MonthKey: [DayKey: [Transaction]]] = [:]
+
+        for transaction in transactionsService.transactions {
+            let dateFromString = AllTransactionsView.dateFormatter.date(from: transaction.date)
+            let validDate = dateFromString ?? Date.distantPast
+
+            let year = calendar.component(.year, from: validDate)
+            let month = calendar.component(.month, from: validDate)
+            let monthKey = MonthKey(year: year, month: month)
+
+            let dayStart = calendar.startOfDay(for: validDate)
+            let dayKey = DayKey(date: dayStart)
+
+            if result[monthKey] == nil {
+                result[monthKey] = [:]
+            }
+            if result[monthKey]![dayKey] == nil {
+                result[monthKey]![dayKey] = []
+            }
+            result[monthKey]![dayKey]!.append(transaction)
+        }
+
+        return result
+    }
+
+    // Sort month keys (newest first)
+    private var sortedMonths: [MonthKey] {
+        groupedByMonth.keys.sorted(by: >)
+    }
+
+    // Get sorted days for a month (newest first)
+    private func sortedDays(for month: MonthKey) -> [DayKey] {
+        guard let days = groupedByMonth[month] else { return [] }
+        return days.keys.sorted(by: >)
+    }
+
+    // MARK: - Summary Calculations
+
+    struct Summary {
+        let totalIn: Double
+        let totalOut: Double
+    }
+
+    // Calculate summary for a month (excluding transfers)
+    private func monthlySummary(for month: MonthKey) -> Summary {
+        guard let daysInMonth = groupedByMonth[month] else {
+            return Summary(totalIn: 0, totalOut: 0)
+        }
+
+        var totalIn: Double = 0
+        var totalOut: Double = 0
+
+        for (_, transactions) in daysInMonth {
+            for transaction in transactions {
+                // Skip transfers - they don't count as income or expenses
+                if transaction.isTransfer {
+                    continue
+                }
+
+                if transaction.amount > 0 {
+                    totalIn += transaction.amount
+                } else {
+                    totalOut += abs(transaction.amount)
+                }
+            }
+        }
+
+        return Summary(totalIn: totalIn, totalOut: totalOut)
+    }
+
+    // Calculate summary for a specific day (excluding transfers)
+    private func dailySummary(for month: MonthKey, day: DayKey) -> Summary {
+        guard let transactions = groupedByMonth[month]?[day] else {
+            return Summary(totalIn: 0, totalOut: 0)
+        }
+
+        var totalIn: Double = 0
+        var totalOut: Double = 0
+
+        for transaction in transactions {
+            // Skip transfers - they don't count as income or expenses
+            if transaction.isTransfer {
+                continue
+            }
+
+            if transaction.amount > 0 {
+                totalIn += transaction.amount
+            } else {
+                totalOut += abs(transaction.amount)
+            }
+        }
+
+        return Summary(totalIn: totalIn, totalOut: totalOut)
+    }
+
     // Computed index to trigger load more (based on the original flat list)
     private var loadMoreThresholdIndex: Int {
         guard !transactionsService.transactions.isEmpty else { return 0 }
@@ -54,33 +162,102 @@ struct AllTransactionsView: View {
                         .frame(maxHeight: .infinity) // Center it
                 } else if !transactionsService.transactions.isEmpty {
                     List {
-                        // Iterate over sorted dates (days)
-                        ForEach(sortedDates, id: \.self) { date in
-                            // Section for each date
+                        // Iterate over sorted months
+                        ForEach(sortedMonths, id: \.self) { month in
                             Section {
-                                // Iterate over transactions for THAT date
-                                // Ensure transactions within the day are sorted if needed (e.g., by time descending)
-                                ForEach(groupedTransactions[date] ?? [], id: \.id) { transaction in
-                                    TransactionView(transaction: transaction)
-                                        .onAppear {
-                                            // Check if this transaction is near the end of the *original* list
-                                            if let originalIndex = transactionsService.transactions.firstIndex(where: { $0.id == transaction.id }) {
-                                                if originalIndex >= loadMoreThresholdIndex {
-                                                    preloadNextPage()
+                                // Iterate over sorted days in this month
+                                ForEach(sortedDays(for: month), id: \.self) { day in
+                                    // Day sub-section
+                                    Section {
+                                        // Transactions for this day
+                                        ForEach(groupedByMonth[month]?[day] ?? [], id: \.id) { transaction in
+                                            TransactionView(transaction: transaction)
+                                                .onAppear {
+                                                    // Check if this transaction is near the end of the *original* list
+                                                    if let originalIndex = transactionsService.transactions.firstIndex(where: { $0.id == transaction.id }) {
+                                                        if originalIndex >= loadMoreThresholdIndex {
+                                                            preloadNextPage()
+                                                        }
+                                                    }
+                                                }
+                                        }
+                                    } header: {
+                                        // Day header with summary
+                                        let summary = dailySummary(for: month, day: day)
+                                        VStack(alignment: .leading, spacing: 1) {
+                                            Text(formatDayHeader(day))
+                                                .font(.body)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.primary)
+
+                                            // Daily summary below the day name - separate lines
+                                            if summary.totalIn > 0 {
+                                                HStack(spacing: 4) {
+                                                    Text(formatAmount(summary.totalIn))
+                                                        .font(.caption)
+                                                        .foregroundColor(.green)
+                                                    Text("in")
+                                                        .font(.caption)
+                                                        .foregroundColor(.secondary)
+                                                }
+                                            }
+
+                                            if summary.totalOut > 0 {
+                                                HStack(spacing: 4) {
+                                                    Text("-\(formatAmount(summary.totalOut))")
+                                                        .font(.caption)
+                                                        .foregroundColor(.red)
+                                                    Text("out")
+                                                        .font(.caption)
+                                                        .foregroundColor(.secondary)
                                                 }
                                             }
                                         }
+                                        .padding(.vertical, 6)
+                                        .padding(.horizontal, 16)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(Color(.systemGray6))
+                                        .textCase(nil)
+                                    }
                                 }
                             } header: {
-                                Text(formatDate(date))
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .fontWeight(.medium)
-                                    .padding(.vertical, 4)
-                                    .textCase(nil)
+                                // Month header with summary
+                                let summary = monthlySummary(for: month)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(formatMonthHeader(month))
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.primary)
+
+                                    // "In" amount on first line (if > 0)
+                                    if summary.totalIn > 0 {
+                                        HStack(spacing: 4) {
+                                            Text(formatAmount(summary.totalIn))
+                                                .font(.subheadline)
+                                                .foregroundColor(.green)
+                                            Text("in")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+
+                                    // "Out" amount on second line (if > 0)
+                                    if summary.totalOut > 0 {
+                                        HStack(spacing: 4) {
+                                            Text("-\(formatAmount(summary.totalOut))")
+                                                .font(.subheadline)
+                                                .foregroundColor(.red)
+                                            Text("out")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                }
+                                .padding(.vertical, 8)
+                                .textCase(nil)
                             }
                         }
-                        
+
                         // --- Loading Indicator and Error Message at the bottom ---
                         if isLoadingMore {
                             bottomLoadingIndicator
@@ -172,15 +349,38 @@ struct AllTransactionsView: View {
     }
     
     
-    private func formatDate(_ date: Date) -> String {
+    // MARK: - Formatting Helpers
+
+    private func formatMonthHeader(_ month: MonthKey) -> String {
+        let dateComponents = DateComponents(year: month.year, month: month.month)
+        guard let date = Calendar.current.date(from: dateComponents) else {
+            return "Unknown"
+        }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: date)
+    }
+
+    private func formatDayHeader(_ day: DayKey) -> String {
         let calendar = Calendar.current
-        if calendar.isDateInToday(date) {
+        if calendar.isDateInToday(day.date) {
             return "Today"
-        } else if calendar.isDateInYesterday(date) {
+        } else if calendar.isDateInYesterday(day.date) {
             return "Yesterday"
         } else {
-            return date.formatted(date: .long, time: .omitted)
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEE, MMM d"
+            return formatter.string(from: day.date)
         }
+    }
+
+    private func formatAmount(_ amount: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        formatter.maximumFractionDigits = 0
+        return formatter.string(from: NSNumber(value: amount)) ?? "$0"
     }
         
     private func refreshTransactions() async {
@@ -221,119 +421,3 @@ struct AllTransactionsView: View {
         }
     }    
 }
-//#Preview("Normal State - With Transactions") {
-//    let service = TransactionsService()
-//    
-//    // Generate 50 mock transactions
-//    let mockTransactions = (0..<5).map { i in
-//        Transaction(
-//            id: i,
-//            amount: Double.random(in: 5...200),
-//            iso_currency_code: "USD",
-//            authorized_date: "2024-03-\(String(format: "%02d", min(25, i % 25 + 1)))",
-//            date: "2024-03-\(String(format: "%02d", min(25, i % 25 + 1)))",
-//            category: ["Food", "Shopping", "Entertainment", "Transport", "Bills"][i % 5],
-//            pending: i % 10 == 0,
-//            merchant_name: ["Starbucks", "Amazon", "Netflix", "Uber", "Walmart"][i % 5],
-//            name: "Transaction #\(i)"
-//        )
-//    }
-//    
-//    // Set transactions and pagination
-//    service.transactions = mockTransactions
-//    service.paginationInfo = PaginationInfo(totalCount: 100, limit: 50, hasMore: true, nextCursor: "next_page_token")
-//    service.hasNextPage = true
-//    service.isLoading = false
-//    
-//    AllTransactionsView()
-//        .environmentObject(service)
-//        .environmentObject(UserAccount())
-//        .environmentObject(NavigationState())
-//}
-
-//#Preview("Empty State") {
-//    let service = TransactionsService()
-//    
-//    // Empty transactions list
-//    service.transactions = []
-//    service.isLoading = false
-//    
-//    AllTransactionsView()
-//        .environmentObject(service)
-//        .environmentObject(UserAccount())
-//        .environmentObject(NavigationState())
-//}
-
-//#Preview("Loading Error State") {
-//    let service = TransactionsService()
-//    
-//    // Some transactions but with a loading error
-//    let mockTransactions = (0..<5).map { i in
-//        Transaction(
-//            id: i,
-//            amount: Double.random(in: 5...200),
-//            iso_currency_code: "USD",
-//            authorized_date: "2024-03-\(String(format: "%02d", min(25, i % 25 + 1)))",
-//            date: "2024-03-\(String(format: "%02d", min(25, i % 25 + 1)))",
-//            category: ["Food", "Shopping", "Entertainment", "Transport", "Bills"][i % 5],
-//            pending: i % 10 == 0,
-//            merchant_name: ["Starbucks", "Amazon", "Netflix", "Uber", "Walmart"][i % 5],
-//            name: "Transaction #\(i)"
-//        )
-//    }
-//    
-//    service.transactions = mockTransactions
-//    service.paginationInfo = PaginationInfo(totalCount: 100, limit: 50, hasMore: true, nextCursor: "next_page_token")
-//    service.hasNextPage = true
-//    service.isLoading = false
-//    
-//    // Simulate a view with loading error
-//    AllTransactionsView(loadingError: NSError(domain: "TransactionService", code: 500, userInfo: [NSLocalizedDescriptionKey: "Failed to load more transactions"]))
-//        .environmentObject(service)
-//        .environmentObject(UserAccount())
-//        .environmentObject(NavigationState())
-//}
-//
-//#Preview("Initial Loading") {
-//    let service = TransactionsService()
-//    
-//    // Set loading state with empty transactions
-//    service.transactions = []
-//    service.isLoading = true
-//    
-//    AllTransactionsView()
-//        .environmentObject(service)
-//        .environmentObject(UserAccount())
-//        .environmentObject(NavigationState())
-//}
-//
-//#Preview("Loading More") {
-//    let service = TransactionsService()
-//    
-//    // Generate some mock transactions
-//    let mockTransactions = (0..<5).map { i in
-//        Transaction(
-//            id: i,
-//            amount: Double.random(in: 5...200),
-//            iso_currency_code: "USD",
-//            authorized_date: "2024-03-\(String(format: "%02d", min(25, i % 25 + 1)))",
-//            date: "2024-03-\(String(format: "%02d", min(25, i % 25 + 1)))",
-//            category: ["Food", "Shopping", "Entertainment", "Transport", "Bills"][i % 5],
-//            pending: i % 10 == 0,
-//            merchant_name: ["Starbucks", "Amazon", "Netflix", "Uber", "Walmart"][i % 5],
-//            name: "Transaction #\(i)"
-//        )
-//    }
-//    
-//    // Set transactions and pagination with loading indicator
-//    service.transactions = mockTransactions
-//    service.paginationInfo = PaginationInfo(totalCount: 100, limit: 50, hasMore: true, nextCursor: "next_page_token")
-//    service.hasNextPage = true
-//    service.isLoading = false
-//    
-//    // Simulate a view that's loading more
-//    AllTransactionsView(isLoadingMore: true)
-//        .environmentObject(service)
-//        .environmentObject(UserAccount())
-//        .environmentObject(NavigationState())
-//}

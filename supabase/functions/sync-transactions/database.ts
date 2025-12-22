@@ -28,6 +28,7 @@ export async function fetchItemDetails(
     .single();
 
   if (error || !data) {
+    console.error(`❌ Failed to fetch item: ${plaidItemId}`, error?.message);
     throw new Error(`Item not found: ${plaidItemId} - ${error?.message}`);
   }
 

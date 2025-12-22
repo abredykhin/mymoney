@@ -39,15 +39,15 @@ export function createAuthenticatedClient(req: Request): SupabaseClient {
     throw new Error('Missing Authorization header');
   }
 
-  return createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    {
-      global: {
-        headers: { Authorization: authHeader }
-      }
+  // Use custom env vars to work around reserved secret issue
+  const url = Deno.env.get('CUSTOM_SUPABASE_URL') || Deno.env.get('SUPABASE_URL')!;
+  const anonKey = Deno.env.get('CUSTOM_ANON_KEY') || Deno.env.get('SUPABASE_ANON_KEY')!;
+
+  return createClient(url, anonKey, {
+    global: {
+      headers: { Authorization: authHeader }
     }
-  );
+  });
 }
 
 /**
@@ -69,10 +69,11 @@ export function createAuthenticatedClient(req: Request): SupabaseClient {
  * ```
  */
 export function createServiceRoleClient(): SupabaseClient {
-  return createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  );
+  // Use custom env vars to work around reserved secret issue
+  const url = Deno.env.get('CUSTOM_SUPABASE_URL') || Deno.env.get('SUPABASE_URL')!;
+  const key = Deno.env.get('CUSTOM_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+  return createClient(url, key);
 }
 
 /**

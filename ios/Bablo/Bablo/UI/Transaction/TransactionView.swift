@@ -15,15 +15,16 @@ struct TransactionView: View {
             HStack(alignment: .center) {
                 Image(systemName: transaction.getDetailedCategoryIconName())
                     .font(.callout)
-                    .foregroundStyle(getCategoryColor())
+                    .foregroundStyle(transaction.isTransfer ? .gray : getCategoryColor())
                     .frame(width: 24)
-                
+
                 Text(transaction.merchant_name ?? transaction.name)
                     .font(.callout)
                     .monospaced()
                     .lineLimit(1)
                     .bold()
-                
+                    .foregroundStyle(transaction.isTransfer ? .gray : .primary)
+
                 Spacer()
                 Text(-transaction.amount, format: .currency(code: transaction.iso_currency_code ?? "USD"))
                     .font(.callout)
@@ -34,19 +35,25 @@ struct TransactionView: View {
                 Text(formatDate(transaction.authorized_date ?? transaction.date))
                     .font(.footnote)
                     .monospaced()
-                
+                    .foregroundStyle(transaction.isTransfer ? .gray : .secondary)
+
                 Spacer()
                 if (transaction.pending) {
                     Text("Pending")
                         .font(.footnote)
                         .monospaced()
                         .italic()
+                        .foregroundStyle(transaction.isTransfer ? .gray : .secondary)
                 }
             }
         }.padding(1)
     }
-    
+
     func getColor() -> Color {
+        // Transfers are displayed in gray
+        if transaction.isTransfer {
+            return .gray
+        }
         return transaction.amount > 0 ? .red : .teal
     }
     

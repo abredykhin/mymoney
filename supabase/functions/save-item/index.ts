@@ -15,15 +15,14 @@ serve(async (req) => {
 
   try {
     // Get authenticated user
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! }
-        }
+    const url = Deno.env.get('CUSTOM_SUPABASE_URL') || Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('CUSTOM_ANON_KEY') || Deno.env.get('SUPABASE_ANON_KEY')!;
+
+    const supabase = createClient(url, anonKey, {
+      global: {
+        headers: { Authorization: req.headers.get('Authorization')! }
       }
-    )
+    })
 
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
@@ -87,10 +86,9 @@ serve(async (req) => {
     console.log(`Got institution: ${institution.name}`)
 
     // Use service role to insert institution (bypasses RLS)
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
+    const serviceRoleKey = Deno.env.get('CUSTOM_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    const supabaseAdmin = createClient(url, serviceRoleKey)
 
     // Upsert institution (insert or update if exists)
     await supabaseAdmin
@@ -182,12 +180,12 @@ serve(async (req) => {
     console.log('Triggering initial transaction sync...')
     try {
       const syncResponse = await fetch(
-        `${Deno.env.get('SUPABASE_URL')}/functions/v1/sync-transactions`,
+        `${url}/functions/v1/sync-transactions`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            'Authorization': `Bearer ${serviceRoleKey}`,
           },
           body: JSON.stringify({ plaid_item_id: itemId }),
         }

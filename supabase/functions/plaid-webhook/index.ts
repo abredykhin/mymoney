@@ -187,9 +187,12 @@ async function triggerTransactionSync(plaidItemId: string) {
     console.log(`📦 Item ID type: ${typeof plaidItemId}, value: "${plaidItemId}"`);
 
     // Get the function URL (either local or production)
-    const functionUrl = Deno.env.get('SUPABASE_URL')
-      ? `${Deno.env.get('SUPABASE_URL')}/functions/v1/sync-transactions`
+    const supabaseUrl = Deno.env.get('CUSTOM_SUPABASE_URL') || Deno.env.get('SUPABASE_URL');
+    const functionUrl = supabaseUrl
+      ? `${supabaseUrl}/functions/v1/sync-transactions`
       : 'http://localhost:54321/functions/v1/sync-transactions';
+
+    const serviceRoleKey = Deno.env.get('CUSTOM_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     const payload = { plaid_item_id: plaidItemId };
     console.log(`📤 Sending payload:`, JSON.stringify(payload));
@@ -199,7 +202,7 @@ async function triggerTransactionSync(plaidItemId: string) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        'Authorization': `Bearer ${serviceRoleKey}`,
       },
       body: JSON.stringify(payload),
     });
