@@ -23,18 +23,6 @@ struct AllTransactionsView: View {
     @State private var dailyStats: [String: AllTransactionsView.Summary] = [:] // DateString -> Summary
     @State private var isLoadingStats = false
     
-    static let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        // Use UTC for date-only strings to avoid timezone conversion issues
-        // Database stores DATE type (no time), so we parse as UTC to keep dates consistent
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        return formatter
-    }()
-    
-    // MARK: - Data Structures for Grouping
-
     struct MonthKey: Hashable, Comparable {
         let year: Int
         let month: Int
@@ -54,6 +42,21 @@ struct AllTransactionsView: View {
             lhs.date < rhs.date
         }
     }
+    
+    struct Summary {
+        let totalIn: Double
+        let totalOut: Double
+    }
+    
+    static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        // Use UTC for date-only strings to avoid timezone conversion issues
+        // Database stores DATE type (no time), so we parse as UTC to keep dates consistent
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        return formatter
+    }()
 
     // Group transactions by month, then by day
     private var groupedByMonth: [MonthKey: [DayKey: [Transaction]]] {
@@ -92,56 +95,6 @@ struct AllTransactionsView: View {
     // Sort month keys (newest first)
     private var sortedMonths: [MonthKey] {
         groupedByMonth.keys.sorted(by: >)
-    }
-
-    // Get sorted days for a month (newest first)
-    private func sortedDays(for month: MonthKey) -> [DayKey] {
-        guard let days = groupedByMonth[month] else { return [] }
-        return days.keys.sorted(by: >)
-    }
-
-    // MARK: - Summary Calculations
-
-    struct Summary {
-        let totalIn: Double
-        let totalOut: Double
-    }
-    
-    // Calculate summary for a month (fetching from server stats)
-    private func monthlySummary(for month: MonthKey) -> Summary? {
-        // Try to get from server stats first
-        if let stats = monthlyStats[month.year]?[month.month] {
-            return stats
-        }
-
-        // If stats are still loading, return nil to show loading indicator
-        // This prevents showing incorrect partial totals from paginated data
-        if isLoadingStats {
-            return nil
-        }
-
-        // At this point, stats have loaded (or failed to load)
-        // Return zeros for months not found in stats
-        return Summary(totalIn: 0, totalOut: 0)
-    }
-
-    // Calculate summary for a specific day (fetching from server stats)
-    private func dailySummary(for month: MonthKey, day: DayKey) -> Summary? {
-        let dateString = AllTransactionsView.dateFormatter.string(from: day.date)
-
-        // Try to get from server stats
-        if let stats = dailyStats[dateString] {
-            return stats
-        }
-
-        // If loading stats, return nil
-        if isLoadingStats {
-            return nil
-        }
-
-        // At this point, stats have loaded (or failed to load)
-        // Return zeros for days not found in stats
-        return Summary(totalIn: 0, totalOut: 0)
     }
 
     // Computed index to trigger load more (based on the original flat list)
@@ -323,5 +276,48 @@ struct AllTransactionsView: View {
 
             self.isLoadingMore = false
         }
-    }    
+    }
+    
+    // Calculate summary for a month (fetching from server stats)
+    private func monthlySummary(for month: MonthKey) -> Summary? {
+        // Try to get from server stats first
+        if let stats = monthlyStats[month.year]?[month.month] {
+            return stats
+        }
+
+        // If stats are still loading, return nil to show loading indicator
+        // This prevents showing incorrect partial totals from paginated data
+        if isLoadingStats {
+            return nil
+        }
+
+        // At this point, stats have loaded (or failed to load)
+        // Return zeros for months not found in stats
+        return Summary(totalIn: 0, totalOut: 0)
+    }
+
+    // Calculate summary for a specific day (fetching from server stats)
+    private func dailySummary(for month: MonthKey, day: DayKey) -> Summary? {
+        let dateString = AllTransactionsView.dateFormatter.string(from: day.date)
+
+        // Try to get from server stats
+        if let stats = dailyStats[dateString] {
+            return stats
+        }
+
+        // If loading stats, return nil
+        if isLoadingStats {
+            return nil
+        }
+
+        // At this point, stats have loaded (or failed to load)
+        // Return zeros for days not found in stats
+        return Summary(totalIn: 0, totalOut: 0)
+    }
+    
+    // Get sorted days for a month (newest first)
+    private func sortedDays(for month: MonthKey) -> [DayKey] {
+        guard let days = groupedByMonth[month] else { return [] }
+        return days.keys.sorted(by: >)
+    }
 }

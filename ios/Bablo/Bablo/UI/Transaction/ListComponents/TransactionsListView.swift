@@ -10,6 +10,8 @@ import SwiftUI
 // MARK: - Transactions List (Extracted)
 
 struct TransactionsListView: View {
+    @EnvironmentObject var accountsService: AccountsService
+    
     let transactions: [Transaction]
     let groupedByMonth: [AllTransactionsView.MonthKey: [AllTransactionsView.DayKey: [Transaction]]]
     let sortedMonths: [AllTransactionsView.MonthKey]
@@ -22,9 +24,7 @@ struct TransactionsListView: View {
     let loadMoreThresholdIndex: Int
     let refreshAction: () async -> Void
     let loadMoreAction: () -> Void
-    
-    @EnvironmentObject var accountsService: AccountsService
-    
+
     var body: some View {
         List {
             // Month Sections
