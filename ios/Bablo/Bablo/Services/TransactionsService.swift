@@ -92,7 +92,7 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
         if let category = personal_finance_category?.uppercased() {
             return category.contains("TRANSFER")
         }
-        // Fallback: check if name contains "Payment" or "Transfer"
+        // Fallback: check if name contains "Payment" or "Transfer" explicitly
         let name = self.name.uppercased()
         return name.contains("PAYMENT") || name.contains("TRANSFER")
     }
@@ -369,9 +369,11 @@ extension Transaction {
     var formattedDate: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "UTC")
 
         if let date = formatter.date(from: date) {
             formatter.dateFormat = "MMM d, yyyy"
+            formatter.timeZone = TimeZone(identifier: "UTC")
             return formatter.string(from: date)
         }
 
@@ -384,5 +386,79 @@ extension Transaction {
         formatter.numberStyle = .currency
         formatter.currencyCode = "USD"
         return formatter.string(from: NSNumber(value: absoluteAmount)) ?? "$0.00"
+    }
+}
+
+// MARK: - Stats Models
+
+struct MonthlyTransactionStats: Decodable {
+    let year: Double
+    let month: Double
+    let total_in: Double
+    let total_out: Double
+    
+    var totalIn: Double { total_in }
+    var totalOut: Double { total_out }
+}
+
+struct DailyTransactionStats: Decodable {
+    let date: String
+    let total_in: Double
+    let total_out: Double
+    
+    var totalIn: Double { total_in }
+    var totalOut: Double { total_out }
+}
+
+// MARK: - Stats Extensions for TransactionsService
+
+extension TransactionsService {
+    /// Fetch monthly statistics for a date range
+    func fetchMonthlyStats(startDate: String, endDate: String) async throws -> [MonthlyTransactionStats] {
+        Logger.d("TransactionsService: Fetching monthly stats")
+        
+        struct Params: Encodable {
+            let start_date: String
+            let end_date: String
+        }
+        
+        let params = Params(start_date: startDate, end_date: endDate)
+        
+        do {
+            let stats: [MonthlyTransactionStats] = try await supabase
+                .rpc("get_monthly_transaction_stats", params: params)
+                .execute()
+                .value
+            
+            return stats
+        } catch {
+            Logger.e("TransactionsService: Failed to fetch monthly stats: \(error)")
+            // Provide empty fallback or rethrow - here we rethrow to let UI handle it
+            throw error
+        }
+    }
+    
+    /// Fetch daily statistics for a date range
+    func fetchDailyStats(startDate: String, endDate: String) async throws -> [DailyTransactionStats] {
+        Logger.d("TransactionsService: Fetching daily stats")
+        
+        struct Params: Encodable {
+            let start_date: String
+            let end_date: String
+        }
+        
+        let params = Params(start_date: startDate, end_date: endDate)
+        
+        do {
+            let stats: [DailyTransactionStats] = try await supabase
+                .rpc("get_daily_transaction_stats", params: params)
+                .execute()
+                .value
+            
+            return stats
+        } catch {
+            Logger.e("TransactionsService: Failed to fetch daily stats: \(error)")
+            throw error
+        }
     }
 }

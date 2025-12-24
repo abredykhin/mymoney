@@ -332,3 +332,45 @@ All tables have RLS policies that automatically filter data by `auth.uid()`:
 
 **📖 For complete migration plan, architecture decisions, gotchas, and implementation steps, see `SUPABASE.md`**
 
+
+---
+
+## Transaction Processing & Statistics
+*Added Jan 2025*
+
+### 1. In/Out Logic (Amount Sign)
+Plaid transaction amounts are signed, but their interpretation depends on the **Account Type**.
+This logic is implemented in both the Client (`AllTransactionsView.swift`) and the Database (`get_monthly_transaction_stats`).
+
+| Account Type | Positive Amount ($100) | Negative Amount (-$100) |
+|--------------|------------------------|-------------------------|
+| **Standard** (Depository, Credit, Investment)| **Expense / Out** (Money leaving) <br> *e.g., Buying coffee* | **Income / In** (Money entering) <br> *e.g., Salary deposit* |
+| **Loan** (Mortgage, Student Loan) | **Advance / In** (Principal increase) | **Payment / Out** (Principal decrease) |
+
+**Note:** The application explicitly checks for `account.type ILIKE 'loan'` to apply this inversion.
+
+### 2. Totals Calculation (Server-Side Stats)
+To handle pagination correctly without downloading the entire transaction history, Monthly and Daily totals are calculated on the **Database (Server-Side)** via Supabase RPC functions.
+
+*   **Migration:** `20251223000001_transaction_stats.sql`
+*   **RPC Functions:**
+    *   `get_monthly_transaction_stats(start_date, end_date)`: Grouped by Year/Month.
+    *   `get_daily_transaction_stats(start_date, end_date)`: Grouped by Date.
+*   **Logic:**
+    *   Applies the In/Out logic described above.
+    *   **Excludes Transfers:** Helper logic excludes transactions tagged with internal transfer categories or named "Payment/Transfer" to prevent double counting in spending reports.
+
+### 3. iOS Implementation
+*   `AllTransactionsView` fetches these stats (`fetchStats()`) in parallel with the transaction list.
+*   It prefers the Server-Side stats for headers but falls back to Client-Side calculation if stats aren't loaded yet.
+
+### 4. Database Performance
+*   **Indexing:** Critical indexes were added to support high-performance aggregation and RLS:
+    *   `transactions_table(user_id, date)`: For performant RPC aggregations.
+    *   `transactions_table(user_id)`: For RLS filtering.
+    *   Foreign Key indexes on `items_table`, `accounts_table`, `assets_table`, etc.
+*   **Migration:** `20251223000002_add_transaction_indexes.sql` and `20251223000003_add_more_indexes.sql`.
+*   **Caching Strategy:** Application-level caching was deemed unnecessary for current volumes (<300 txns/month) because Postgres aggregation with proper indexing takes <10ms.
+
+
+

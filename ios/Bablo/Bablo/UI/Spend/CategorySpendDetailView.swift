@@ -422,11 +422,14 @@ struct CategorySpendDetailView: View {
 
     // Helper to group transactions by month
     private var groupedTransactionsByMonth: [MonthTransactionGroup] {
-        let calendar = Calendar.current
+        // Use UTC calendar for consistency with database date format
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone(identifier: "UTC")!
         let currentDate = Date()
 
         let inputDateFormatter = DateFormatter()
-        inputDateFormatter.dateFormat = "yyyy-MM-dd"  // Assuming this is the format of transaction.date
+        inputDateFormatter.dateFormat = "yyyy-MM-dd"
+        inputDateFormatter.timeZone = TimeZone(identifier: "UTC")
 
         var monthGroups: [MonthTransactionGroup] = []
 
@@ -435,6 +438,7 @@ struct CategorySpendDetailView: View {
                 calendar.date(byAdding: .month, value: -i, to: currentDate) ?? currentDate
             let monthFormatter = DateFormatter()
             monthFormatter.dateFormat = i == 0 ? "MMMM" : "MMMM"  // Could customize for current month
+            monthFormatter.timeZone = TimeZone(identifier: "UTC")
 
             let monthName = monthFormatter.string(from: monthDate)
             let monthNumber = calendar.component(.month, from: monthDate)

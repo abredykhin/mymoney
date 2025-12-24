@@ -140,6 +140,7 @@ class TransactionsManager {
         // Date conversions with improved ISO-8601 support
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
 
         // Try ISO-8601 format first
         let iso8601Formatter = ISO8601DateFormatter()
@@ -182,6 +183,7 @@ class TransactionsManager {
             // Update the date if it's changed with improved ISO-8601 support
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
 
         // Try ISO-8601 format first
         let iso8601Formatter = ISO8601DateFormatter()
@@ -213,6 +215,7 @@ class TransactionsManager {
     private func mapTransactionEntityToTransaction(_ entity: TransactionEntity) -> Transaction {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
 
         let iso8601Formatter = ISO8601DateFormatter()
         iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

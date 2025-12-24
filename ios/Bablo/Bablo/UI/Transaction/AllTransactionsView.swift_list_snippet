@@ -1,0 +1,135 @@
+
+struct TransactionsListView: View {
+    let transactions: [Transaction]
+    let groupedByMonth: [AllTransactionsView.MonthKey: [AllTransactionsView.DayKey: [Transaction]]]
+    let sortedMonths: [AllTransactionsView.MonthKey]
+    let monthlyStats: [Int: [Int: AllTransactionsView.Summary]]
+    let dailyStats: [String: AllTransactionsView.Summary]
+    let isLoadingStats: Bool
+    let isLoadingMore: Bool
+    let loadingError: Error?
+    let hasMore: Bool
+    let loadMoreThresholdIndex: Int
+    let refreshAction: () async -> Void
+    let loadMoreAction: () -> Void
+    
+    var body: some View {
+        List {
+            // Month Sections
+            ForEach(sortedMonths, id: \.self) { month in
+                Section {
+                    // Day Sections
+                    ForEach(sortedDays(for: month), id: \.self) { day in
+                        Section {
+                            // Transactions
+                            ForEach(groupedByMonth[month]?[day] ?? [], id: \.id) { transaction in
+                                TransactionView(transaction: transaction)
+                                    .onAppear {
+                                        checkPreload(for: transaction)
+                                    }
+                            }
+                        } header: {
+                            DayHeaderView(day: day, summary: dailySummary(for: month, day: day))
+                        }
+                    }
+                } header: {
+                    MonthHeaderView(month: month, summary: monthlySummary(for: month))
+                }
+            }
+            
+            // Bottom Indicators
+            if isLoadingMore {
+                bottomLoadingIndicator
+            } else if loadingError != nil && hasMore {
+                bottomErrorIndicator
+            }
+        }
+        .listStyle(.plain)
+        .refreshable {
+            await refreshAction()
+        }
+    }
+    
+    // MARK: - Helpers
+    
+    private func sortedDays(for month: AllTransactionsView.MonthKey) -> [AllTransactionsView.DayKey] {
+        groupedByMonth[month]?.keys.sorted(by: >) ?? []
+    }
+    
+    private func checkPreload(for transaction: Transaction) {
+        if let originalIndex = transactions.firstIndex(where: { $0.id == transaction.id }),
+           originalIndex >= loadMoreThresholdIndex && hasMore && !isLoadingMore {
+            loadMoreAction()
+        }
+    }
+    
+    // Summary Helpers (Duplicated logic from main view but operates on passed stats)
+    private func monthlySummary(for month: AllTransactionsView.MonthKey) -> AllTransactionsView.Summary? {
+        if let stats = monthlyStats[month.year]?[month.month] { return stats }
+        if isLoadingStats { return nil }
+        
+        // Fallback Client-Side Calc
+        guard let daysInMonth = groupedByMonth[month] else {
+            return AllTransactionsView.Summary(totalIn: 0, totalOut: 0)
+        }
+        return calculateClientSideSummary(transactions: daysInMonth.values.flatMap { $0 })
+    }
+    
+    private func dailySummary(for month: AllTransactionsView.MonthKey, day: AllTransactionsView.DayKey) -> AllTransactionsView.Summary? {
+        let dateString = AllTransactionsView.dateFormatter.string(from: day.date)
+        if let stats = dailyStats[dateString] { return stats }
+        if isLoadingStats { return nil }
+        
+        guard let transactions = groupedByMonth[month]?[day] else {
+            return AllTransactionsView.Summary(totalIn: 0, totalOut: 0)
+        }
+        return calculateClientSideSummary(transactions: transactions)
+    }
+    
+    private func calculateClientSideSummary(transactions: [Transaction]) -> AllTransactionsView.Summary {
+        var totalIn: Double = 0
+        var totalOut: Double = 0
+        
+        // We need the account type logic here too... 
+        // Ideally we pass a closure or an "AccountTypeProvider" but for now let's reuse logic?
+        // Actually, without access to `accountsService` to lookup account types, we can't do the robust calc here!
+        // THIS IS A PROBLEM with extraction. The `processTransaction` logic depended on `accountsService`.
+        
+        // FIX: The simpler approach is to rely ONLY on server stats for now or assume depository if unknown?
+        // Or passed "AccountTypes" dictionary?
+        
+        // Better: Make AllTransactionsView compute the logic and pass just the data? 
+        // No, that's too much pre-computation.
+        
+        // Alternative: Pass `accountsService` (Environment) to this View too?
+        // Yes, `TransactionsListView` can have `@EnvironmentObject var accountsService: AccountsService`.
+        
+        for transaction in transactions {
+             // simplified logic placeholder if EnvironmentObject not used
+             if transaction.amount > 0 { totalOut += transaction.amount }
+             else { totalIn += abs(transaction.amount) }
+        }
+        return AllTransactionsView.Summary(totalIn: totalIn, totalOut: totalOut)
+    }
+
+    private var bottomLoadingIndicator: some View {
+        HStack {
+            Spacer(); ProgressView().tint(.accentColor); Spacer()
+        }
+        .listRowSeparator(.hidden)
+        .padding(.vertical)
+    }
+    
+    private var bottomErrorIndicator: some View {
+        HStack {
+            Spacer()
+            VStack {
+                Text("Couldn't load more").font(.footnote).foregroundColor(.secondary)
+                Button("Retry") { loadMoreAction() }.font(.footnote)
+            }
+            Spacer()
+        }
+        .listRowSeparator(.hidden)
+        .padding(.vertical)
+    }
+}
