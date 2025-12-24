@@ -1,3 +1,13 @@
+//
+//  TransactionsListView.swift
+//  Bablo
+//
+//  Created by Anton Bredykhin on 12/23/25.
+//
+
+import SwiftUI
+
+// MARK: - Transactions List (Extracted)
 
 struct TransactionsListView: View {
     let transactions: [Transaction]
@@ -12,6 +22,8 @@ struct TransactionsListView: View {
     let loadMoreThresholdIndex: Int
     let refreshAction: () async -> Void
     let loadMoreAction: () -> Void
+    
+    @EnvironmentObject var accountsService: AccountsService
     
     var body: some View {
         List {
@@ -63,53 +75,53 @@ struct TransactionsListView: View {
         }
     }
     
-    // Summary Helpers (Duplicated logic from main view but operates on passed stats)
+    // Summary Helpers
     private func monthlySummary(for month: AllTransactionsView.MonthKey) -> AllTransactionsView.Summary? {
+        // Try to get from server stats
         if let stats = monthlyStats[month.year]?[month.month] { return stats }
+
+        // If still loading, show loading indicator
         if isLoadingStats { return nil }
-        
-        // Fallback Client-Side Calc
-        guard let daysInMonth = groupedByMonth[month] else {
-            return AllTransactionsView.Summary(totalIn: 0, totalOut: 0)
-        }
-        return calculateClientSideSummary(transactions: daysInMonth.values.flatMap { $0 })
+
+        // Stats loaded (or failed to load) but month not found - return zeros
+        return AllTransactionsView.Summary(totalIn: 0, totalOut: 0)
     }
-    
+
     private func dailySummary(for month: AllTransactionsView.MonthKey, day: AllTransactionsView.DayKey) -> AllTransactionsView.Summary? {
         let dateString = AllTransactionsView.dateFormatter.string(from: day.date)
+
+        // Try to get from server stats
         if let stats = dailyStats[dateString] { return stats }
+
+        // If still loading, show loading indicator
         if isLoadingStats { return nil }
-        
-        guard let transactions = groupedByMonth[month]?[day] else {
-            return AllTransactionsView.Summary(totalIn: 0, totalOut: 0)
-        }
-        return calculateClientSideSummary(transactions: transactions)
+
+        // Stats loaded (or failed to load) but day not found - return zeros
+        return AllTransactionsView.Summary(totalIn: 0, totalOut: 0)
     }
     
-    private func calculateClientSideSummary(transactions: [Transaction]) -> AllTransactionsView.Summary {
-        var totalIn: Double = 0
-        var totalOut: Double = 0
+    private func processTransaction(_ transaction: Transaction, totalIn: inout Double, totalOut: inout Double) {
+        if transaction.isTransfer { return }
         
-        // We need the account type logic here too... 
-        // Ideally we pass a closure or an "AccountTypeProvider" but for now let's reuse logic?
-        // Actually, without access to `accountsService` to lookup account types, we can't do the robust calc here!
-        // THIS IS A PROBLEM with extraction. The `processTransaction` logic depended on `accountsService`.
+        let accountType = getAccountType(for: transaction.account_id)?.lowercased() ?? "depository"
         
-        // FIX: The simpler approach is to rely ONLY on server stats for now or assume depository if unknown?
-        // Or passed "AccountTypes" dictionary?
-        
-        // Better: Make AllTransactionsView compute the logic and pass just the data? 
-        // No, that's too much pre-computation.
-        
-        // Alternative: Pass `accountsService` (Environment) to this View too?
-        // Yes, `TransactionsListView` can have `@EnvironmentObject var accountsService: AccountsService`.
-        
-        for transaction in transactions {
-             // simplified logic placeholder if EnvironmentObject not used
-             if transaction.amount > 0 { totalOut += transaction.amount }
-             else { totalIn += abs(transaction.amount) }
+        if transaction.amount > 0 {
+             totalOut += transaction.amount
+        } else {
+            let amount = abs(transaction.amount)
+            if accountType == "depository" || accountType == "investment" {
+                totalIn += amount
+            }
         }
-        return AllTransactionsView.Summary(totalIn: totalIn, totalOut: totalOut)
+    }
+    
+    private func getAccountType(for accountId: Int) -> String? {
+        for bank in accountsService.banksWithAccounts {
+            if let account = bank.accounts.first(where: { $0.id == accountId }) {
+                return account.type
+            }
+        }
+        return nil
     }
 
     private var bottomLoadingIndicator: some View {

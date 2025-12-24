@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3A68F9F92EFB8C0400D32561 /* EmptyTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F52EFB8C0400D32561 /* EmptyTransactionsView.swift */; };
+		3A68F9FA2EFB8C0400D32561 /* DayHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F42EFB8C0400D32561 /* DayHeaderView.swift */; };
+		3A68F9FB2EFB8C0400D32561 /* TransactionsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F72EFB8C0400D32561 /* TransactionsListView.swift */; };
+		3A68F9FC2EFB8C0400D32561 /* MonthHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F62EFB8C0400D32561 /* MonthHeaderView.swift */; };
 		751C8E932DF7F45300C38039 /* CategorySpendDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */; };
 		7521DF1C2D87A52C00856718 /* BankAccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */; };
 		7549AB492D0E499600313F5C /* OnboardingStartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7549AB482D0E499600313F5C /* OnboardingStartView.swift */; };
@@ -104,6 +108,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		3A68F9F42EFB8C0400D32561 /* DayHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayHeaderView.swift; sourceTree = "<group>"; };
+		3A68F9F52EFB8C0400D32561 /* EmptyTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyTransactionsView.swift; sourceTree = "<group>"; };
+		3A68F9F62EFB8C0400D32561 /* MonthHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthHeaderView.swift; sourceTree = "<group>"; };
+		3A68F9F72EFB8C0400D32561 /* TransactionsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsListView.swift; sourceTree = "<group>"; };
 		751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategorySpendDetailView.swift; sourceTree = "<group>"; };
 		7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountDetailView.swift; sourceTree = "<group>"; };
 		7549AB482D0E499600313F5C /* OnboardingStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStartView.swift; sourceTree = "<group>"; };
@@ -213,6 +221,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3A68F9F82EFB8C0400D32561 /* ListComponents */ = {
+			isa = PBXGroup;
+			children = (
+				3A68F9F42EFB8C0400D32561 /* DayHeaderView.swift */,
+				3A68F9F52EFB8C0400D32561 /* EmptyTransactionsView.swift */,
+				3A68F9F62EFB8C0400D32561 /* MonthHeaderView.swift */,
+				3A68F9F72EFB8C0400D32561 /* TransactionsListView.swift */,
+			);
+			path = ListComponents;
+			sourceTree = "<group>";
+		};
 		7549AB452D0E495200313F5C /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
@@ -459,6 +478,7 @@
 		75E6CC692CBCC0B900C779C9 /* Transaction */ = {
 			isa = PBXGroup;
 			children = (
+				3A68F9F82EFB8C0400D32561 /* ListComponents */,
 				75CD54C82D92721B0018288D /* AllTransactionsView.swift */,
 				75E49BA42CA27E67008D72F8 /* TransactionView.swift */,
 				75E6CC642CBCBD4500C779C9 /* RecentTransactionsView.swift */,
@@ -661,6 +681,10 @@
 				75B4DF0F2DA2F3EB00FF3C1C /* BankListTabView.swift in Sources */,
 				755F88862C86B8D200BEE12A /* BankAccountView.swift in Sources */,
 				75F946A22D3C85320076E91E /* CategoryRowView.swift in Sources */,
+				3A68F9F92EFB8C0400D32561 /* EmptyTransactionsView.swift in Sources */,
+				3A68F9FA2EFB8C0400D32561 /* DayHeaderView.swift in Sources */,
+				3A68F9FB2EFB8C0400D32561 /* TransactionsListView.swift in Sources */,
+				3A68F9FC2EFB8C0400D32561 /* MonthHeaderView.swift in Sources */,
 				7549AB502D0E4C7F00313F5C /* LargeButton.swift in Sources */,
 				75F946992D3C84B10076E91E /* CurrencyTextField.swift in Sources */,
 				757ABF8F2C1822CD00DF8CA8 /* ColorType.swift in Sources */,
