@@ -11,6 +11,8 @@
 		3A68F9FA2EFB8C0400D32561 /* DayHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F42EFB8C0400D32561 /* DayHeaderView.swift */; };
 		3A68F9FB2EFB8C0400D32561 /* TransactionsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F72EFB8C0400D32561 /* TransactionsListView.swift */; };
 		3A68F9FC2EFB8C0400D32561 /* MonthHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F62EFB8C0400D32561 /* MonthHeaderView.swift */; };
+		3A68FA002EFB9FDA00D32561 /* HeroCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9FD2EFB9FDA00D32561 /* HeroCardView.swift */; };
+		3A68FA012EFB9FDA00D32561 /* HeroCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */; };
 		751C8E932DF7F45300C38039 /* CategorySpendDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */; };
 		7521DF1C2D87A52C00856718 /* BankAccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */; };
 		7549AB492D0E499600313F5C /* OnboardingStartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7549AB482D0E499600313F5C /* OnboardingStartView.swift */; };
@@ -112,6 +114,8 @@
 		3A68F9F52EFB8C0400D32561 /* EmptyTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyTransactionsView.swift; sourceTree = "<group>"; };
 		3A68F9F62EFB8C0400D32561 /* MonthHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthHeaderView.swift; sourceTree = "<group>"; };
 		3A68F9F72EFB8C0400D32561 /* TransactionsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsListView.swift; sourceTree = "<group>"; };
+		3A68F9FD2EFB9FDA00D32561 /* HeroCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroCardView.swift; sourceTree = "<group>"; };
+		3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroCarouselView.swift; sourceTree = "<group>"; };
 		751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategorySpendDetailView.swift; sourceTree = "<group>"; };
 		7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountDetailView.swift; sourceTree = "<group>"; };
 		7549AB482D0E499600313F5C /* OnboardingStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStartView.swift; sourceTree = "<group>"; };
@@ -230,6 +234,15 @@
 				3A68F9F72EFB8C0400D32561 /* TransactionsListView.swift */,
 			);
 			path = ListComponents;
+			sourceTree = "<group>";
+		};
+		3A68F9FF2EFB9FDA00D32561 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				3A68F9FD2EFB9FDA00D32561 /* HeroCardView.swift */,
+				3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */,
+			);
+			path = Home;
 			sourceTree = "<group>";
 		};
 		7549AB452D0E495200313F5C /* Onboarding */ = {
@@ -405,6 +418,7 @@
 		757ABF912C18242900DF8CA8 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				3A68F9FF2EFB9FDA00D32561 /* Home */,
 				754B69452D97D65800C0F001 /* Auth */,
 				7549AB452D0E495200313F5C /* Onboarding */,
 				75579F212CD6F2B600845A62 /* Profile */,
@@ -737,6 +751,8 @@
 				759CDE5A2EED1F4B00F8BB96 /* SignInWithAppleCoordinator.swift in Sources */,
 				75F946A52D3C85680076E91E /* ExpenseSection.swift in Sources */,
 				7573DA182CBCD7320004EBE4 /* TotalBalanceView.swift in Sources */,
+				3A68FA002EFB9FDA00D32561 /* HeroCardView.swift in Sources */,
+				3A68FA012EFB9FDA00D32561 /* HeroCarouselView.swift in Sources */,
 				75B4DF042DA1CD0F00FF3C1C /* Color+Extensions.swift in Sources */,
 				75C972C62D13B87E008E6E87 /* OnboardingCompleteView.swift in Sources */,
 				757ABF792C181C3D00DF8CA8 /* Logger.swift in Sources */,

@@ -41,7 +41,8 @@ struct HomeView: View {
                     .padding(.horizontal)
                 }
                 
-                TotalBalanceView()
+                HeroCarouselView()
+                    .padding(.top, 0)
                 Text("Accounts")
                     .font(.headline)
                     .padding(.leading)
