@@ -119,9 +119,13 @@ enum SpendDateRange: String, CaseIterable, Identifiable {
         case .week:
             startDate = calendar.date(byAdding: .day, value: -7, to: now) ?? now
         case .month:
-            startDate = calendar.date(byAdding: .month, value: -1, to: now) ?? now
+            // Get the first day of the current month
+            let components = calendar.dateComponents([.year, .month], from: now)
+            startDate = calendar.date(from: components) ?? now
         case .year:
-            startDate = calendar.date(byAdding: .year, value: -1, to: now) ?? now
+            // Get the first day of the current year
+            let components = calendar.dateComponents([.year], from: now)
+            startDate = calendar.date(from: components) ?? now
         }
 
         return dateFormatter.string(from: startDate)
@@ -133,6 +137,31 @@ enum SpendDateRange: String, CaseIterable, Identifiable {
         dateFormatter.dateFormat = "yyyy-MM-dd"
         dateFormatter.timeZone = TimeZone(identifier: "UTC")
         return dateFormatter.string(from: Date())
+    }
+}
+
+/// A recurring budget item identified by Gemini
+struct BudgetItem: Codable, Identifiable, Equatable {
+    let id: Int
+    let name: String
+    let pattern: String
+    let amount: Double
+    let frequency: String
+    let monthlyAmount: Double
+    let type: String
+    let confidence: Double
+    let is_active: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case pattern
+        case amount
+        case frequency
+        case monthlyAmount = "monthly_amount"
+        case type
+        case confidence
+        case is_active
     }
 }
 
@@ -152,6 +181,11 @@ class BudgetService: ObservableObject {
     @Published var monthlyIncome: Double = 0
     @Published var monthlyMandatoryExpenses: Double = 0
     @Published var discretionaryBudget: Double = 0
+    @Published var allBudgetItems: [BudgetItem] = []
+    
+    // Dynamic income data
+    @Published var knownIncomeThisMonth: Double = 0
+    @Published var extraIncomeThisMonth: Double = 0
 
     private let supabase = SupabaseManager.shared.client
 
@@ -213,25 +247,45 @@ class BudgetService: ObservableObject {
         Logger.d("BudgetService: Fetching spending breakdown (\(range.displayName): \(startDate) to \(endDate))")
 
         do {
-            // Fetch all expense transactions in date range
+            // Fetch all expense transactions in date range from the 'transactions' view to include account 'type'
             let transactions: [TransactionForBreakdown] = try await supabase
-                .from("transactions_table")
-                .select()
+                .from("transactions")
+                .select("id, amount, name, personal_finance_category, type")
                 .gte("date", value: startDate)
                 .lte("date", value: endDate)
-                .lt("amount", value: 0) // Only expenses (negative amounts)
+                .gt("amount", value: 0) // Positive amounts are expenses
+                .not("personal_finance_category", operator: .ilike, value: "%transfer%")
                 .order("date", ascending: false)
                 .execute()
                 .value
 
             Logger.i("BudgetService: Received \(transactions.count) expense transactions")
 
+            // Filter out mandatory expenses if they have already occurred this month
+            let mandatoryPatterns = allBudgetItems
+                .filter { $0.type == "fixed_expense" }
+                .map { $0.pattern.lowercased() }
+            
+            let filteredTransactions = transactions.filter { tx in
+                let txName = tx.name.lowercased()
+                let isMandatory = mandatoryPatterns.contains { pattern in
+                    txName.contains(pattern)
+                }
+                
+                if isMandatory {
+                    Logger.d("BudgetService: Excluding mandatory expense from variable spending: \(tx.name) ($\(tx.amount))")
+                }
+                
+                return !isMandatory
+            }
+
             // Group by category and calculate totals
             var categoryMap: [String: CategoryData] = [:]
             var totalSpent: Double = 0
 
-            for transaction in transactions {
-                let category = transaction.category?.first ?? "Uncategorized"
+            for transaction in filteredTransactions {
+                // In Supabase, personal_finance_category is a string
+                let category = transaction.personalFinanceCategory ?? "Uncategorized"
                 let amount = abs(transaction.amount)
 
                 totalSpent += amount
@@ -330,26 +384,115 @@ class BudgetService: ObservableObject {
             self.monthlyIncome = profile.monthlyIncome
             self.monthlyMandatoryExpenses = profile.monthlyMandatoryExpenses
             Logger.i("BudgetService: Loaded profile successfully for \(userId)")
-            Logger.d("BudgetService: -> monthly_income: \(monthlyIncome)")
+            Logger.d("BudgetService: -> monthly_income (expected): \(monthlyIncome)")
             Logger.d("BudgetService: -> monthly_mandatory_expenses: \(monthlyMandatoryExpenses)")
             
+            await fetchBudgetItems()
+            await fetchActualIncome()
             calculateDiscretionaryBudget()
         } catch {
             Logger.e("BudgetService: Failed to fetch budget summary: \(error)")
         }
     }
 
-    /// Calculate discretionary budget: income - fixed expenses - non-fixed monthly spending
+    /// Fetch all recurring budget items (income and expenses)
+    func fetchBudgetItems() async {
+        guard let userId = UserAccount.shared.currentUser?.id else { return }
+        
+        do {
+            let items: [BudgetItem] = try await supabase
+                .from("budget_items_table")
+                .select("*")
+                .eq("user_id", value: userId)
+                .gte("confidence", value: 0.85)
+                .eq("is_active", value: true)
+                .execute()
+                .value
+            
+            self.allBudgetItems = items
+            Logger.i("BudgetService: Loaded \(items.count) highly confident budget patterns")
+        } catch {
+            Logger.e("BudgetService: Failed to fetch budget items: \(error)")
+        }
+    }
+
+    /// Fetch actual income transactions for the current month and categorize them
+    func fetchActualIncome() async {
+        guard let userId = UserAccount.shared.currentUser?.id else { return }
+        
+        let range = SpendDateRange.month
+        let startDate = range.startDate()
+        let endDate = range.endDate()
+        
+        do {
+            // Fetch all income transactions in date range from the 'transactions' view to get account type
+            // Sign logic: Negative amounts are income
+            let transactions: [TransactionForBreakdown] = try await supabase
+                .from("transactions")
+                .select("amount, name, type")
+                .gte("date", value: startDate)
+                .lte("date", value: endDate)
+                .lt("amount", value: 0) // Negative = Money In
+                .execute()
+                .value
+            
+            let incomePatterns = allBudgetItems
+                .filter { $0.type == "income" }
+                .map { (pattern: $0.pattern.lowercased(), name: $0.name) }
+            
+            var knownTotal: Double = 0
+            var extraTotal: Double = 0
+            
+            for tx in transactions {
+                // LIABILITY ACCOUNT INFLOW RULE: Ignore inflows on credit/loan accounts
+                if tx.type == "credit" || tx.type == "loan" {
+                    Logger.d("BudgetService: Ignoring income-like transaction on \(tx.type ?? "unknown") account: \(tx.name)")
+                    continue
+                }
+                
+                let txName = tx.name.lowercased()
+                let amount = abs(tx.amount)
+                
+                let matchingPattern = incomePatterns.first { txName.contains($0.pattern) }
+                
+                if let pattern = matchingPattern {
+                    Logger.d("BudgetService: Categorized as KNOWN income: \(tx.name) ($\(amount)) matching '\(pattern.name)'")
+                    knownTotal += amount
+                } else {
+                    Logger.d("BudgetService: Categorized as EXTRA income: \(tx.name) ($\(amount))")
+                    extraTotal += amount
+                }
+            }
+            
+            self.knownIncomeThisMonth = knownTotal
+            self.extraIncomeThisMonth = extraTotal
+            
+            Logger.i("BudgetService: Income Analysis - Known: $\(knownTotal), Extra: $\(extraTotal)")
+            
+        } catch {
+            Logger.e("BudgetService: Failed to fetch actual income: \(error)")
+        }
+    }
+
+    /// Calculate discretionary budget: (max(expected, known) + extra) - mandatory - spending
     func calculateDiscretionaryBudget() {
         let totalMonthlySpent = spendBreakdownResponse?.totalSpent ?? 0
         
         Logger.d("BudgetService: --- Budget Calculation ---")
-        Logger.d("BudgetService: 1. Monthly Income (from profile): \(monthlyIncome)")
-        Logger.d("BudgetService: 2. Fixed Expenses (from profile): \(monthlyMandatoryExpenses)")
-        Logger.d("BudgetService: 3. Fun Spending (Current Month): \(totalMonthlySpent)")
+        Logger.d("BudgetService: 1. Expected Baseline Income: \(monthlyIncome)")
+        Logger.d("BudgetService: 2. Known Income Received: \(knownIncomeThisMonth)")
+        Logger.d("BudgetService: 3. Extra Income Received: \(extraIncomeThisMonth)")
         
-        // Simple formula: Income - Mandatory - Current Spend
-        let result = max(0, monthlyIncome - monthlyMandatoryExpenses - totalMonthlySpent)
+        // Smarter income logic:
+        // Use the higher of expected vs known patterns (handles 3 paychecks)
+        // AND always add extra one-offs on top
+        let effectiveIncome = max(monthlyIncome, knownIncomeThisMonth) + extraIncomeThisMonth
+        
+        Logger.d("BudgetService: 4. Effective Income: \(effectiveIncome)")
+        Logger.d("BudgetService: 5. Fixed Expenses (Profile): \(monthlyMandatoryExpenses)")
+        Logger.d("BudgetService: 6. Variable Spending (Current Month): \(totalMonthlySpent)")
+        
+        let result = effectiveIncome - monthlyMandatoryExpenses - totalMonthlySpent
         self.discretionaryBudget = result
         
         Logger.i("BudgetService: => Resulting Discretionary Budget: \(discretionaryBudget)")
@@ -433,9 +576,19 @@ private struct AccountBalance: Codable {
 
 /// Transaction model for breakdown analysis
 private struct TransactionForBreakdown: Codable {
-    let id: Int
+    let id: Int?
     let amount: Double
-    let category: [String]?
+    let name: String
+    let personalFinanceCategory: String?
+    let type: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case amount
+        case name
+        case personalFinanceCategory = "personal_finance_category"
+        case type
+    }
 }
 
 /// Temporary data structure for category aggregation

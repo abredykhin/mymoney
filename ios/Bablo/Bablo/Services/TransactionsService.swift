@@ -78,7 +78,7 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
     }
 
     var isExpense: Bool {
-        amount < 0
+        amount > 0
     }
 
     var absoluteAmount: Double {
@@ -333,7 +333,7 @@ class TransactionsService: ObservableObject {
                 .select()
                 .gte("date", value: startDate)
                 .lte("date", value: endDate)
-                .lt("amount", value: 0) // Only expenses
+                .gt("amount", value: 0) // Only expenses
                 .execute()
                 .value
 

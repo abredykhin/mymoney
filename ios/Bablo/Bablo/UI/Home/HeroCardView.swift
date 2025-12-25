@@ -55,7 +55,7 @@ struct HeroCardView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
-            Text(model.amount, format: .currency(code: model.currencyCode))
+            Text(model.amount.rounded(.toNearestOrAwayFromZero), format: .currency(code: model.currencyCode).precision(.fractionLength(0)))
                 .font(.system(size: 40, weight: .bold, design: .rounded))
             
             HStack(spacing: 6) {

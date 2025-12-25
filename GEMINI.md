@@ -342,14 +342,35 @@ All tables have RLS policies that automatically filter data by `auth.uid()`:
 ## Transaction Processing & Statistics
 *Added Jan 2025*
 
-### 1. In/Out Logic (Amount Sign)
-Plaid transaction amounts are signed, but their interpretation depends on the **Account Type**.
-This logic is implemented in both the Client (`AllTransactionsView.swift`) and the Database (`get_monthly_transaction_stats`).
+### 1. Plaid Sign Logic (Source of Truth)
+> [!IMPORTANT]
+> **CRITICAL RULE**: The application follows the Plaid API standard for transaction amounts. This logic is used in the iOS Client, Edge Functions, and Database RPCs. **DO NOT CHANGE THIS LOGIC.**
+
+- **Positive Amount (+100.00)**: Money moving **OUT** of the account.
+  - Examples: Purchases, fixed expenses, lawyer payments, tax payments.
+  - In code: `amount > 0`.
+- **Negative Amount (-3500.00)**: Money moving **IN** to the account.
+  - Examples: Direct deposits, salary, refunds, credit card payments (as seen from the credit account).
+  - In code: `amount < 0`.
+
+**Quote from Plaid API Documentation**:
+> "Positive values when money moves out of the account; negative values when money moves in. For example, debit card purchases are positive; credit card payments, direct deposits, and refunds are negative."
+
+### 2. In/Out Logic (Account Type Specifics)
+While the sign logic above is absolute, the **interpretation** of inflows on specific account types is used for budget filtering:
 
 | Account Type | Positive Amount ($100) | Negative Amount (-$100) |
 |--------------|------------------------|-------------------------|
 | **Standard** (Depository, Credit, Investment)| **Expense / Out** (Money leaving) <br> *e.g., Buying coffee* | **Income / In** (Money entering) <br> *e.g., Salary deposit* |
 | **Loan** (Mortgage, Student Loan) | **Advance / In** (Principal increase) | **Payment / Out** (Principal decrease) |
+
+### 3. Liability Account Inflow Rule (Ignore Rule)
+> [!IMPORTANT]
+> **CRITICAL RULE**: Any **Negative Amount (-)** (Money In) on a **Credit** or **Loan** account MUST be ignored for all primary budget and income calculations. 
+
+- **Rationale**: Inflows on these accounts are almost exclusively **Credit Card Payments** (Transfers) or **Refunds**. They are not primary income.
+- **Exceptions**: Inflows on **Depository** (Checking/Savings) accounts *are* considered potential income.
+- **Application**: This rule is enforced in `gemini-budget-analysis` filtering and should be respected in any future budget aggregation logic.
 
 **Note:** The application explicitly checks for `account.type ILIKE 'loan'` to apply this inversion.
 
@@ -376,6 +397,25 @@ To handle pagination correctly without downloading the entire transaction histor
 *   **Migration:** `20251223000002_add_transaction_indexes.sql` and `20251223000003_add_more_indexes.sql`.
 ### 4. Caching Strategy
 *   **Caching Strategy:** Application-level caching was deemed unnecessary for current volumes (<300 txns/month) because Postgres aggregation with proper indexing takes <10ms.
+
+### 5. Dynamic Budgeting Logic (The Effective Income Model)
+The application uses a dynamic "Effective Income" model to calculate the Discretionary Budget. This model handles pay cycle variations (like the 3-paycheck month) and one-off windfalls without requiring manual user intervention.
+
+#### Logic Overview:
+- **Expected Baseline Income**: Stored in the user profile (calculated by Gemini analysis of last 90 days).
+- **Known Income Patterns**: Actual transactions matching identified income patterns (e.g., "Salary", "Payroll").
+- **Extra Income**: One-off inflows (e.g., "Venmo from Friend", "Tax Refund") that do not match identified patterns.
+
+#### The Formula:
+```
+Effective Income = max(Expected Baseline, Known Income Received) + Extra Income Received
+Discretionary Budget = Effective Income - Monthly Mandatory Expenses - Variable Spending
+```
+
+#### Why This Works:
+1. **Bi-weekly Handling**: Early in the month, `max(Expected, Known)` defaults to the `Expected` baseline, ensuring the user sees their anticipated surplus. When a 3rd paycheck arrives, `Known Income` exceeds `Expected`, and the budget baseline automatically expands.
+2. **One-off Windfalls**: Extra income is *always* added on top of the baseline, ensuring it increases the "Available to Spend" immediately rather than being swallowed by the monthly expectation.
+3. **Liability Account Inflow Rule**: Inflows on Credit or Loan accounts are filtered out to prevent credit card payments or refunds from artificially inflating income.
 
 ---
 
