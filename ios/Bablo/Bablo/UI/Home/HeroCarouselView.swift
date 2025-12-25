@@ -11,14 +11,13 @@ struct HeroCarouselView: View {
     @EnvironmentObject var accountsService: AccountsService
     @StateObject private var budgetService = BudgetService()
     
-    // Placeholder data for now, will integrate real data for the first card
     @State private var cards: [HeroCardViewModel] = []
     @State private var selectedIndex = 0
     
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
-                // Background stack effect (only one card behind, tighter)
+                // Background stack effect
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(.ultraThinMaterial)
                     .frame(height: 160)
@@ -43,19 +42,21 @@ struct HeroCarouselView: View {
             }
         }
         .background {
-            // Expansive background glow (unclipped and layout-neutral)
-            if !cards.isEmpty {
-                let currentCard = cards[selectedIndex]
-                let glowColor = currentCard.isPositive ? Color.green : Color.red
-                
-                Circle()
-                    .fill(glowColor.opacity(0.4))
-                    .frame(width: 800, height: 800) // Even larger
-                    .blur(radius: 120)
-                    .offset(x: -250, y: -300) // Positioned way up and left
-                    .allowsHitTesting(false)
-                    .ignoresSafeArea()
-            }
+            // Expansive background glow
+            let glowColor: Color = {
+                if !cards.isEmpty && selectedIndex < cards.count {
+                    return cards[selectedIndex].isPositive ? .green : .red
+                }
+                return .blue
+            }()
+            
+            Circle()
+                .fill(glowColor.opacity(0.4))
+                .frame(width: 800, height: 800)
+                .blur(radius: 120)
+                .offset(x: -250, y: -300)
+                .allowsHitTesting(false)
+                .ignoresSafeArea()
         }
         .onAppear {
             setupCards()
@@ -67,7 +68,6 @@ struct HeroCarouselView: View {
     }
     
     private func setupCards() {
-        // Initial cards with placeholders
         cards = [
             HeroCardViewModel(
                 title: "Net Available Cash",
@@ -75,20 +75,6 @@ struct HeroCarouselView: View {
                 monthlyChange: 0,
                 isPositive: true,
                 currencyCode: budgetService.totalBalance?.iso_currency_code ?? "USD"
-            ),
-            HeroCardViewModel(
-                title: "Monthly Discretionary Budget",
-                amount: 1200.0,
-                monthlyChange: 300,
-                isPositive: true,
-                currencyCode: "USD"
-            ),
-            HeroCardViewModel(
-                title: "Spending Breakdown",
-                amount: 1850.0,
-                monthlyChange: -80,
-                isPositive: false,
-                currencyCode: "USD"
             )
         ]
     }
@@ -98,7 +84,7 @@ struct HeroCarouselView: View {
             cards[0] = HeroCardViewModel(
                 title: "Net Available Cash",
                 amount: totalBalance.balance,
-                monthlyChange: 320.0, // Hardcoded for now as per mockup, ideally should come from stats
+                monthlyChange: 320.0,
                 isPositive: true,
                 currencyCode: totalBalance.iso_currency_code
             )
@@ -106,7 +92,7 @@ struct HeroCarouselView: View {
     }
 }
 
-#Preview {
-    HeroCarouselView()
-        .environmentObject(AccountsService())
-}
+//#Preview {
+//    HeroCarouselView()
+//        .environmentObject(AccountsService())
+//}

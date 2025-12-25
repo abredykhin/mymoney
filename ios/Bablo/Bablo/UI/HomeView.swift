@@ -16,10 +16,11 @@ struct HomeView: View {
     @State private var isOffline = false
     @State private var isRefreshing = false
     @State private var showingProfile = false
+    @State private var showingOnboarding = false
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 20) {
                 if isRefreshing {
                     ProgressView()
                         .tint(.accentColor)
@@ -43,20 +44,57 @@ struct HomeView: View {
                 
                 HeroCarouselView()
                     .padding(.top, 0)
-                Text("Accounts")
-                    .font(.headline)
-                    .padding(.leading)
-                BankListView()
+                
+                // Show empty state if budget is NOT setup
+                if !UserAccount.shared.isBudgetSetup {
+                    HeroBudgetEmptyStateView()
+                        .onTapGesture {
+                            showingOnboarding = true
+                        }
+                }
+                
+                // Secondary Hero Cards (Only if budget IS setup)
+                else {
+                    VStack(spacing: 16) {
+                        HeroCardView(model: HeroCardViewModel(
+                            title: "Monthly Discretionary Budget",
+                            amount: 1200.0,
+                            monthlyChange: 300,
+                            isPositive: true,
+                            currencyCode: "USD"
+                        ))
+                        
+                        HeroCardView(model: HeroCardViewModel(
+                            title: "Spending Breakdown",
+                            amount: 1850.0,
+                            monthlyChange: -80,
+                            isPositive: false,
+                            currencyCode: "USD"
+                        ))
+                    }
+                }
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Accounts")
+                        .font(.headline)
+                        .padding(.leading)
+                    BankListView()
+                }
+                
                 Spacer()
                 RecentTransactionsView()
                 Spacer()                    
             }
+        }
+        .sheet(isPresented: $showingOnboarding) {
+            OnboardingWizard()
         }
         .refreshable {
             checkConnectivityAndRefresh()
         }
         .task {
             checkConnectivityAndRefresh(forceRefresh: false)
+            await UserAccount.shared.fetchProfile()
         }
         .navigationTitle("Overview")
         .navigationDestination(for: Bank.self) { bank in

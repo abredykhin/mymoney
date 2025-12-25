@@ -31,6 +31,20 @@ struct User: Identifiable, Codable, Equatable, Sendable {
     }
 }
 
+struct Profile: Codable, Equatable {
+    let id: String
+    let username: String
+    let monthlyIncome: Double
+    let monthlyMandatoryExpenses: Double
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case username
+        case monthlyIncome = "monthly_income"
+        case monthlyMandatoryExpenses = "monthly_mandatory_expenses"
+    }
+}
+
 private enum UserKeys: String {
     case id = "userId"
     case name = "userName"
@@ -48,9 +62,15 @@ class UserAccount: ObservableObject {
     static let shared = UserAccount()
 
     @Published var currentUser: User? = nil
+    @Published var profile: Profile? = nil
     @Published var isSignedIn: Bool = false
     @Published var isBiometricallyAuthenticated = false
     @Published var isBiometricEnabled = false
+
+    var isBudgetSetup: Bool {
+        guard let profile = profile else { return false }
+        return profile.monthlyIncome > 0
+    }
 
     private let valet = Valet.valet(with: Identifier(nonEmpty: "BabloApp")!, accessibility: .whenUnlocked)
     private let supabase = SupabaseManager.shared.client
@@ -101,8 +121,65 @@ class UserAccount: ObservableObject {
 
         do {
             try saveUserData()
+            Task {
+                await fetchProfile()
+            }
         } catch {
             Logger.e("UserAccount: Failed to save user data: \(error)")
+        }
+    }
+
+    /// Fetch user profile from profiles table
+    func fetchProfile() async {
+        guard let user = currentUser else { return }
+        
+        do {
+            let fetchedProfile: Profile = try await supabase
+                .from("profiles")
+                .select()
+                .eq("id", value: user.id)
+                .single()
+                .execute()
+                .value
+            
+            await MainActor.run {
+                self.profile = fetchedProfile
+                Logger.i("UserAccount: Profile fetched for \(fetchedProfile.username). Budget setup: \(isBudgetSetup)")
+            }
+        } catch {
+            Logger.e("UserAccount: Failed to fetch profile: \(error)")
+        }
+    }
+    
+    /// Update user profile budget data
+    func updateProfileBudget(monthlyIncome: Double, monthlyExpenses: Double) async throws {
+        guard let user = currentUser else { return }
+        
+        Logger.i("UserAccount: Updating budget - Income: \(monthlyIncome), Expenses: \(monthlyExpenses)")
+        
+        struct BudgetUpdate: Encodable {
+            let monthly_income: Double
+            let monthly_mandatory_expenses: Double
+        }
+        
+        let updateData = BudgetUpdate(
+            monthly_income: monthlyIncome,
+            monthly_mandatory_expenses: monthlyExpenses
+        )
+        
+        do {
+            try await supabase
+                .from("profiles")
+                .update(updateData)
+                .eq("id", value: user.id)
+                .execute()
+            
+            // Refresh local profile
+            await fetchProfile()
+            Logger.i("UserAccount: Budget updated successfully")
+        } catch {
+            Logger.e("UserAccount: Failed to update budget: \(error)")
+            throw error
         }
     }
     

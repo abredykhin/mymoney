@@ -13,6 +13,8 @@
 		3A68F9FC2EFB8C0400D32561 /* MonthHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F62EFB8C0400D32561 /* MonthHeaderView.swift */; };
 		3A68FA002EFB9FDA00D32561 /* HeroCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9FD2EFB9FDA00D32561 /* HeroCardView.swift */; };
 		3A68FA012EFB9FDA00D32561 /* HeroCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */; };
+		3A68FA052EFCCF7000D32561 /* OnboardingWalletView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA032EFCCF7000D32561 /* OnboardingWalletView.swift */; };
+		3A68FA072EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */; };
 		751C8E932DF7F45300C38039 /* CategorySpendDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */; };
 		7521DF1C2D87A52C00856718 /* BankAccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */; };
 		7549AB492D0E499600313F5C /* OnboardingStartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7549AB482D0E499600313F5C /* OnboardingStartView.swift */; };
@@ -63,7 +65,6 @@
 		75B4DF292DA3107C00FF3C1C /* SpendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B4DF282DA3107C00FF3C1C /* SpendView.swift */; };
 		75BB90CB2CA0E30E00D197A6 /* BankView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75BB90CA2CA0E30E00D197A6 /* BankView.swift */; };
 		75C972C42D13B7D4008E6E87 /* OnboardingWizard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972C32D13B7D4008E6E87 /* OnboardingWizard.swift */; };
-		75C972C62D13B87E008E6E87 /* OnboardingCompleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972C52D13B87E008E6E87 /* OnboardingCompleteView.swift */; };
 		75C972C82D13B8BB008E6E87 /* OnboardingAccountsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972C72D13B8BB008E6E87 /* OnboardingAccountsView.swift */; };
 		75C972CA2D13B8CC008E6E87 /* OnboardingCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972C92D13B8CC008E6E87 /* OnboardingCategoriesView.swift */; };
 		75C972CC2D13BA33008E6E87 /* OnboardingBudgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972CB2D13BA33008E6E87 /* OnboardingBudgetView.swift */; };
@@ -116,6 +117,8 @@
 		3A68F9F72EFB8C0400D32561 /* TransactionsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsListView.swift; sourceTree = "<group>"; };
 		3A68F9FD2EFB9FDA00D32561 /* HeroCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroCardView.swift; sourceTree = "<group>"; };
 		3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroCarouselView.swift; sourceTree = "<group>"; };
+		3A68FA032EFCCF7000D32561 /* OnboardingWalletView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWalletView.swift; sourceTree = "<group>"; };
+		3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroBudgetEmptyStateView.swift; sourceTree = "<group>"; };
 		751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategorySpendDetailView.swift; sourceTree = "<group>"; };
 		7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountDetailView.swift; sourceTree = "<group>"; };
 		7549AB482D0E499600313F5C /* OnboardingStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStartView.swift; sourceTree = "<group>"; };
@@ -163,7 +166,6 @@
 		75B4DF282DA3107C00FF3C1C /* SpendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendView.swift; sourceTree = "<group>"; };
 		75BB90CA2CA0E30E00D197A6 /* BankView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankView.swift; sourceTree = "<group>"; };
 		75C972C32D13B7D4008E6E87 /* OnboardingWizard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWizard.swift; sourceTree = "<group>"; };
-		75C972C52D13B87E008E6E87 /* OnboardingCompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCompleteView.swift; sourceTree = "<group>"; };
 		75C972C72D13B8BB008E6E87 /* OnboardingAccountsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAccountsView.swift; sourceTree = "<group>"; };
 		75C972C92D13B8CC008E6E87 /* OnboardingCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCategoriesView.swift; sourceTree = "<group>"; };
 		75C972CB2D13BA33008E6E87 /* OnboardingBudgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingBudgetView.swift; sourceTree = "<group>"; };
@@ -239,6 +241,7 @@
 		3A68F9FF2EFB9FDA00D32561 /* Home */ = {
 			isa = PBXGroup;
 			children = (
+				3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */,
 				3A68F9FD2EFB9FDA00D32561 /* HeroCardView.swift */,
 				3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */,
 			);
@@ -249,9 +252,9 @@
 			isa = PBXGroup;
 			children = (
 				75F946912D3C82880076E91E /* Budget */,
+				3A68FA032EFCCF7000D32561 /* OnboardingWalletView.swift */,
 				7549AB482D0E499600313F5C /* OnboardingStartView.swift */,
 				75C972CB2D13BA33008E6E87 /* OnboardingBudgetView.swift */,
-				75C972C52D13B87E008E6E87 /* OnboardingCompleteView.swift */,
 				75C972C72D13B8BB008E6E87 /* OnboardingAccountsView.swift */,
 				75C972C92D13B8CC008E6E87 /* OnboardingCategoriesView.swift */,
 				75C972C32D13B7D4008E6E87 /* OnboardingWizard.swift */,
@@ -692,6 +695,7 @@
 				75F946B02D3C876A0076E91E /* IncomeInputView.swift in Sources */,
 				75668FDF2D83D538003A3D97 /* AccountsManager.swift in Sources */,
 				7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */,
+				3A68FA072EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift in Sources */,
 				75B4DF0F2DA2F3EB00FF3C1C /* BankListTabView.swift in Sources */,
 				755F88862C86B8D200BEE12A /* BankAccountView.swift in Sources */,
 				75F946A22D3C85320076E91E /* CategoryRowView.swift in Sources */,
@@ -743,6 +747,7 @@
 				75C972CA2D13B8CC008E6E87 /* OnboardingCategoriesView.swift in Sources */,
 				759CDE5D2EED1F6900F8BB96 /* SupabaseManager.swift in Sources */,
 				7590F2A72C865B9F00BCCDE6 /* BankListView.swift in Sources */,
+				3A68FA052EFCCF7000D32561 /* OnboardingWalletView.swift in Sources */,
 				75F9469C2D3C851D0076E91E /* BudgetPeriod.swift in Sources */,
 				757ABF7B2C181C4200DF8CA8 /* View+Extensions.swift in Sources */,
 				75F946952D3C82930076E91E /* BudgetRowView.swift in Sources */,
@@ -754,7 +759,6 @@
 				3A68FA002EFB9FDA00D32561 /* HeroCardView.swift in Sources */,
 				3A68FA012EFB9FDA00D32561 /* HeroCarouselView.swift in Sources */,
 				75B4DF042DA1CD0F00FF3C1C /* Color+Extensions.swift in Sources */,
-				75C972C62D13B87E008E6E87 /* OnboardingCompleteView.swift in Sources */,
 				757ABF792C181C3D00DF8CA8 /* Logger.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
