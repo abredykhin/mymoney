@@ -147,6 +147,11 @@ class BudgetService: ObservableObject {
     @Published var isLoadingBreakdown: Bool = false
     @Published var balanceError: Error? = nil
     @Published var breakdownError: Error? = nil
+    
+    // Budget profile data
+    @Published var monthlyIncome: Double = 0
+    @Published var monthlyMandatoryExpenses: Double = 0
+    @Published var discretionaryBudget: Double = 0
 
     private let supabase = SupabaseManager.shared.client
 
@@ -274,6 +279,9 @@ class BudgetService: ObservableObject {
                 endDate: endDate,
                 totalSpent: totalSpent
             )
+            
+            // Recalculate discretionary budget now that we have spending data
+            calculateDiscretionaryBudget()
 
             Logger.i("BudgetService: Spending breakdown complete (\(breakdownItems.count) categories, total: $\(totalSpent))")
         } catch {
@@ -294,7 +302,121 @@ class BudgetService: ObservableObject {
     func clearCache() {
         totalBalance = nil
         spendBreakdownResponse = nil
+        monthlyIncome = 0
+        monthlyMandatoryExpenses = 0
+        discretionaryBudget = 0
         Logger.d("BudgetService: Cleared cache")
+    }
+
+    /// Fetch budget summary from user profile
+    func fetchBudgetSummary() async {
+        guard let userId = UserAccount.shared.currentUser?.id else {
+            Logger.e("BudgetService: Cannot fetch budget summary - no user ID")
+            return
+        }
+        
+        Logger.d("BudgetService: Fetching budget summary for \(userId)")
+        
+        do {
+            // Select all fields (*) to avoid decoding errors for Profile struct
+            let profile: Profile = try await supabase
+                .from("profiles")
+                .select("*")
+                .eq("id", value: userId)
+                .single()
+                .execute()
+                .value
+            
+            self.monthlyIncome = profile.monthlyIncome
+            self.monthlyMandatoryExpenses = profile.monthlyMandatoryExpenses
+            Logger.i("BudgetService: Loaded profile successfully for \(userId)")
+            Logger.d("BudgetService: -> monthly_income: \(monthlyIncome)")
+            Logger.d("BudgetService: -> monthly_mandatory_expenses: \(monthlyMandatoryExpenses)")
+            
+            calculateDiscretionaryBudget()
+        } catch {
+            Logger.e("BudgetService: Failed to fetch budget summary: \(error)")
+        }
+    }
+
+    /// Calculate discretionary budget: income - fixed expenses - non-fixed monthly spending
+    func calculateDiscretionaryBudget() {
+        let totalMonthlySpent = spendBreakdownResponse?.totalSpent ?? 0
+        
+        Logger.d("BudgetService: --- Budget Calculation ---")
+        Logger.d("BudgetService: 1. Monthly Income (from profile): \(monthlyIncome)")
+        Logger.d("BudgetService: 2. Fixed Expenses (from profile): \(monthlyMandatoryExpenses)")
+        Logger.d("BudgetService: 3. Fun Spending (Current Month): \(totalMonthlySpent)")
+        
+        // Simple formula: Income - Mandatory - Current Spend
+        let result = max(0, monthlyIncome - monthlyMandatoryExpenses - totalMonthlySpent)
+        self.discretionaryBudget = result
+        
+        Logger.i("BudgetService: => Resulting Discretionary Budget: \(discretionaryBudget)")
+        
+        if monthlyIncome <= 0 {
+            Logger.w("BudgetService: Caution - monthlyIncome is 0 or less, check if gemini-budget-analysis completed successfully")
+        }
+    }
+
+    /// Check if budget analysis exists and trigger it if missing but accounts are linked
+    func checkAndTriggerBudgetAnalysis() async {
+        Logger.d("BudgetService: Checking if budget analysis is needed")
+        
+        do {
+            // Define minimal local struct for existence checking
+            struct IDOnly: Codable { let id: Int }
+            
+            // 1. Check if we already have budget items
+            let budgetItems: [IDOnly] = try await supabase
+                .from("budget_items_table")
+                .select("id")
+                .limit(1)
+                .execute()
+                .value
+            
+            if !budgetItems.isEmpty {
+                Logger.d("BudgetService: Budget analysis already exists")
+                return
+            }
+            
+            // 2. No budget items, check if we have any accounts linked
+            // We'll check items_table directly as it's the source of truth for bank connections
+            let items: [IDOnly] = try await supabase
+                .from("items_table")
+                .select("id")
+                .limit(1)
+                .execute()
+                .value
+            
+            if items.isEmpty {
+                Logger.d("BudgetService: No accounts (items) linked, skipping budget analysis")
+                return
+            }
+            
+            // 3. We have accounts but no budget analysis - trigger it!
+            Logger.i("BudgetService: Triggering Gemini budget analysis for user with linked accounts")
+            
+            guard let userId = UserAccount.shared.currentUser?.id else {
+                Logger.e("BudgetService: Missing user ID for budget analysis")
+                return
+            }
+            
+            let body = ["user_id": userId]
+            let bodyData = try JSONSerialization.data(withJSONObject: body)
+            
+            // Invoke the Edge Function (we don't necessarily need to wait for it or handle the result here
+            // as it runs in the background and updates the DB)
+            try await supabase.functions.invoke(
+                "gemini-budget-analysis",
+                options: FunctionInvokeOptions(body: bodyData)
+            )
+            
+            Logger.i("BudgetService: Gemini budget analysis triggered successfully")
+            
+        } catch {
+            Logger.e("BudgetService: Failed to check/trigger budget analysis: \(error)")
+        }
     }
 }
 

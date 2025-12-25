@@ -65,6 +65,10 @@
 ## 🛠️ Workflows & Commands
 
 ### Supabase (Run from Project Root)
+
+> [!CAUTION]
+> **CRITICAL RULE**: All `supabase` CLI commands MUST be run from the **root project folder** (`/Users/anton/ws/mymoney`), NOT from the `/supabase` subdirectory.
+
 -   **Start Local**: `supabase start`
 -   **Reset DB**: `supabase db reset`
 -   **Deploy Function**: `supabase functions deploy [function_name]`

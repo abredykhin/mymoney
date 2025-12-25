@@ -9,7 +9,7 @@ import SwiftUI
 
 struct HeroCarouselView: View {
     @EnvironmentObject var accountsService: AccountsService
-    @StateObject private var budgetService = BudgetService()
+    @EnvironmentObject var budgetService: BudgetService
     
     @State private var cards: [HeroCardViewModel] = []
     @State private var selectedIndex = 0
@@ -61,7 +61,11 @@ struct HeroCarouselView: View {
         .onAppear {
             setupCards()
             Task {
-                try? await budgetService.fetchTotalBalance()
+                await withTaskGroup(of: Void.self) { group in
+                    group.addTask { try? await budgetService.fetchTotalBalance() }
+                    group.addTask { try? await budgetService.fetchSpendingBreakdown(range: .month) }
+                    group.addTask { await budgetService.fetchBudgetSummary() }
+                }
                 updateRealData()
             }
         }
@@ -81,13 +85,13 @@ struct HeroCarouselView: View {
     
     private func updateRealData() {
         if let totalBalance = budgetService.totalBalance {
-            cards[0] = HeroCardViewModel(
+            self.cards = [HeroCardViewModel(
                 title: "Net Available Cash",
                 amount: totalBalance.balance,
-                monthlyChange: 320.0,
+                monthlyChange: 0,
                 isPositive: true,
                 currencyCode: totalBalance.iso_currency_code
-            )
+            )]
         }
     }
 }

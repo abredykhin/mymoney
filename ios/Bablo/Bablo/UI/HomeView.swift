@@ -12,6 +12,7 @@ import Network
 struct HomeView: View {
     @EnvironmentObject var accountsService: AccountsService
     @StateObject private var transactionsService = TransactionsService()
+    @StateObject private var budgetService = BudgetService()
     @EnvironmentObject var navigationState: NavigationState
     @State private var isOffline = false
     @State private var isRefreshing = false
@@ -43,35 +44,35 @@ struct HomeView: View {
                 }
                 
                 HeroCarouselView()
+                    .environmentObject(budgetService)
                     .padding(.top, 0)
                 
-                // Show empty state if budget is NOT setup
-                if !UserAccount.shared.isBudgetSetup {
-                    HeroBudgetEmptyStateView()
-                        .onTapGesture {
-                            showingOnboarding = true
-                        }
-                }
-                
-                // Secondary Hero Cards (Only if budget IS setup)
-                else {
-                    VStack(spacing: 16) {
+                VStack(spacing: 16) {
+                    HeroCardView(model: HeroCardViewModel(
+                        title: "Monthly Discretionary Budget",
+                        amount: budgetService.discretionaryBudget,
+                        monthlyChange: 0,
+                        isPositive: budgetService.discretionaryBudget > 0,
+                        currencyCode: "USD"
+                    ))
+                    
+                    if let breakdown = budgetService.spendBreakdownResponse {
                         HeroCardView(model: HeroCardViewModel(
-                            title: "Monthly Discretionary Budget",
-                            amount: 1200.0,
-                            monthlyChange: 300,
-                            isPositive: true,
-                            currencyCode: "USD"
-                        ))
-                        
-                        HeroCardView(model: HeroCardViewModel(
-                            title: "Spending Breakdown",
-                            amount: 1850.0,
-                            monthlyChange: -80,
+                            title: "Monthly Spending",
+                            amount: breakdown.totalSpent,
+                            monthlyChange: 0,
                             isPositive: false,
                             currencyCode: "USD"
                         ))
                     }
+                }
+                
+                // Show empty state IF no accounts linked OR explicitly not setup (fallback)
+                if accountsService.banksWithAccounts.isEmpty {
+                    HeroBudgetEmptyStateView()
+                        .onTapGesture {
+                            showingOnboarding = true
+                        }
                 }
                 
                 VStack(alignment: .leading, spacing: 12) {
@@ -95,6 +96,7 @@ struct HomeView: View {
         .task {
             checkConnectivityAndRefresh(forceRefresh: false)
             await UserAccount.shared.fetchProfile()
+            await budgetService.checkAndTriggerBudgetAnalysis()
         }
         .navigationTitle("Overview")
         .navigationDestination(for: Bank.self) { bank in

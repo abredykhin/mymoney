@@ -24,7 +24,7 @@ import type { SyncRequest, SyncResponse } from './types.ts';
 /**
  * Main Deno serve handler
  */
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request, ctx: any) => {
   console.log('🔄 Sync transactions function called');
 
   // Only accept POST requests
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     const startTime = Date.now();
 
     // Execute sync
-    const result = await syncTransactions(plaid_item_id);
+    const result = await syncTransactions(plaid_item_id, ctx);
 
     const elapsed = Date.now() - startTime;
     console.log(`⏱️  Total sync time: ${elapsed}ms`);
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
  * @param plaidItemId - Plaid item ID
  * @returns Sync counts (added, modified, removed)
  */
-async function syncTransactions(plaidItemId: string): Promise<{
+async function syncTransactions(plaidItemId: string, ctx?: any): Promise<{
   added: number;
   modified: number;
   removed: number;
@@ -122,7 +122,7 @@ async function syncTransactions(plaidItemId: string): Promise<{
   await updateDatabase(supabase, {
     plaidItemId,
     itemId: item.id,
-    userId: item.user_id,
+    userId: item.user_id as string,
     added,
     modified,
     removed,
@@ -131,6 +131,17 @@ async function syncTransactions(plaidItemId: string): Promise<{
   });
 
   console.log(`✅ Sync completed: +${added.length} ~${modified.length} -${removed.length}`);
+
+  // Trigger Gemini Budget Analysis in the background
+  // Only trigger if it's the first sync (historical) or we have many new transactions
+  const isFirstSync = !item.transactions_cursor;
+  if (isFirstSync || added.length > 50) {
+    if (ctx && typeof ctx.waitUntil === 'function') {
+      ctx.waitUntil(triggerBudgetAnalysis(item.user_id as string));
+    } else {
+      triggerBudgetAnalysis(item.user_id as string).catch(err => console.error('Budget analysis trigger failed:', err));
+    }
+  }
 
   return {
     added: added.length,
@@ -255,3 +266,30 @@ async function updateDatabase(
  *   3. Single batch delete for removed transactions
  *   4. Cursor updated ONLY after all operations succeed
  */
+
+/**
+ * Trigger Gemini Budget Analysis Edge Function
+ */
+async function triggerBudgetAnalysis(userId: string) {
+  try {
+    console.log(`🚀 Triggering budget analysis for user: ${userId}`);
+
+    const supabaseUrl = Deno.env.get('CUSTOM_SUPABASE_URL') || Deno.env.get('SUPABASE_URL');
+    const functionUrl = supabaseUrl
+      ? `${supabaseUrl}/functions/v1/gemini-budget-analysis`
+      : 'http://localhost:54321/functions/v1/gemini-budget-analysis';
+
+    const serviceRoleKey = Deno.env.get('CUSTOM_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({ user_id: userId }),
+    });
+  } catch (error) {
+    console.error(`❌ Error triggering budget analysis:`, error);
+  }
+}

@@ -14,6 +14,23 @@ struct HeroCardViewModel: Identifiable {
     let monthlyChange: Double
     let isPositive: Bool
     let currencyCode: String
+    let subtitle: String?
+    
+    init(
+        title: String,
+        amount: Double,
+        monthlyChange: Double = 0,
+        isPositive: Bool = true,
+        currencyCode: String = "USD",
+        subtitle: String? = nil
+    ) {
+        self.title = title
+        self.amount = amount
+        self.monthlyChange = monthlyChange
+        self.isPositive = isPositive
+        self.currencyCode = currencyCode
+        self.subtitle = subtitle
+    }
     
     var statusText: String {
         isPositive ? "Healthy Surplus" : "Budget Deficit"
@@ -52,6 +69,13 @@ struct HeroCardView: View {
                 Text("\(model.changeText)")
                     .font(.footnote)
                     .foregroundColor(model.isPositive ? .green : .red) // Green if positive
+                
+                if let subtitle = model.subtitle {
+                    Spacer()
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
         }
         .padding(24)

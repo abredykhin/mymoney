@@ -282,7 +282,11 @@ The new architecture uses **Supabase** as a complete Backend-as-a-Service (BaaS)
 - **No Queue System:** Uses `ctx.waitUntil()` for background processing
 - **Deployment:** `supabase functions deploy <name>`
 
-#### 4. Local Development
+#### Local Development
+
+> [!CAUTION]
+> **CRITICAL RULE**: All `supabase` CLI commands (start, functions deploy, db push, etc.) MUST be run from the **root project folder** (`/Users/anton/ws/mymoney`), NOT from the `/supabase` subdirectory.
+
 ```bash
 # Start local Supabase (PostgreSQL + Auth + Edge Functions)
 cd supabase && supabase start
@@ -370,7 +374,26 @@ To handle pagination correctly without downloading the entire transaction histor
     *   `transactions_table(user_id)`: For RLS filtering.
     *   Foreign Key indexes on `items_table`, `accounts_table`, `assets_table`, etc.
 *   **Migration:** `20251223000002_add_transaction_indexes.sql` and `20251223000003_add_more_indexes.sql`.
+### 4. Caching Strategy
 *   **Caching Strategy:** Application-level caching was deemed unnecessary for current volumes (<300 txns/month) because Postgres aggregation with proper indexing takes <10ms.
+
+---
+
+## UI Component Rules (Bablo iOS)
+
+### 1. Hero Carousel (`HeroCarouselView`)
+- **Primary Purpose**: Displaying high-level financial health/balance summaries.
+- **Content Restriction**: Should ONLY contain the **Net Available Cash** (Balance) card.
+- **DO NOT** move secondary budget or spending cards into this carousel. 
+
+### 2. Home Dashboard (`HomeView`)
+- **Layout Order**:
+    1. Navigation Header
+    2. `HeroCarouselView` (Balance only)
+    3. Vertical Stack of `HeroCardView` (Secondary Budget/Spending cards)
+    4. Account List / Recent Transactions
+- **Budget Logic**: Secondary cards (Discretionary Budget, Spending Breakdown) should be restored as standalone vertical cards below the carousel to maintain scanability and prominence.
+- **Empty State**: Show `HeroBudgetEmptyStateView` ONLY when zero banks/accounts are linked. If accounts exist, show the calculated cards.
 
 
 
