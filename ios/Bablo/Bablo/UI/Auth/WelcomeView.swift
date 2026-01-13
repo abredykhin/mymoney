@@ -11,6 +11,7 @@ import AuthenticationServices
 struct WelcomeView : View {
     @StateObject private var appleSignInCoordinator = SignInWithAppleCoordinator()
     @State private var showError = false
+    @State private var showPhoneSignUp = false
     @EnvironmentObject var userAccount: UserAccount
 
     var body: some View {
@@ -56,6 +57,20 @@ struct WelcomeView : View {
                         .padding()
                 }
 
+                // Sign Up with Phone Button
+                Button(action: { showPhoneSignUp = true }) {
+                    Text("Sign Up with Phone")
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.accentColor.opacity(0.1))
+                        .foregroundColor(.accentColor)
+                        .cornerRadius(8)
+                }
+                .padding(.horizontal, 40)
+                .padding(.top, 8)
+
                 Spacer()
 
                 // Privacy Notice
@@ -79,6 +94,10 @@ struct WelcomeView : View {
                 if newErrorMessage != nil {
                     showError = true
                 }
+            }
+            .sheet(isPresented: $showPhoneSignUp) {
+                PhoneSignUpView()
+                    .environmentObject(userAccount)
             }
         }
     }

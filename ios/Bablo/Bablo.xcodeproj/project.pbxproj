@@ -15,6 +15,9 @@
 		3A68FA012EFB9FDA00D32561 /* HeroCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */; };
 		3A68FA052EFCCF7000D32561 /* OnboardingWalletView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA032EFCCF7000D32561 /* OnboardingWalletView.swift */; };
 		3A68FA072EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */; };
+		3A68FA0A2F14DBF800D32561 /* PhoneSignUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA092F14DBF800D32561 /* PhoneSignUpView.swift */; };
+		3A68FA0B2F14DBF800D32561 /* OTPVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA082F14DBF800D32561 /* OTPVerificationView.swift */; };
+		3A68FA0D2F14DC0200D32561 /* PhoneAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA0C2F14DC0200D32561 /* PhoneAuthService.swift */; };
 		751C8E932DF7F45300C38039 /* CategorySpendDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */; };
 		7521DF1C2D87A52C00856718 /* BankAccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */; };
 		7549AB492D0E499600313F5C /* OnboardingStartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7549AB482D0E499600313F5C /* OnboardingStartView.swift */; };
@@ -119,6 +122,9 @@
 		3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroCarouselView.swift; sourceTree = "<group>"; };
 		3A68FA032EFCCF7000D32561 /* OnboardingWalletView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWalletView.swift; sourceTree = "<group>"; };
 		3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroBudgetEmptyStateView.swift; sourceTree = "<group>"; };
+		3A68FA082F14DBF800D32561 /* OTPVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPVerificationView.swift; sourceTree = "<group>"; };
+		3A68FA092F14DBF800D32561 /* PhoneSignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSignUpView.swift; sourceTree = "<group>"; };
+		3A68FA0C2F14DC0200D32561 /* PhoneAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneAuthService.swift; sourceTree = "<group>"; };
 		751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategorySpendDetailView.swift; sourceTree = "<group>"; };
 		7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountDetailView.swift; sourceTree = "<group>"; };
 		7549AB482D0E499600313F5C /* OnboardingStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStartView.swift; sourceTree = "<group>"; };
@@ -273,6 +279,8 @@
 		754B69452D97D65800C0F001 /* Auth */ = {
 			isa = PBXGroup;
 			children = (
+				3A68FA082F14DBF800D32561 /* OTPVerificationView.swift */,
+				3A68FA092F14DBF800D32561 /* PhoneSignUpView.swift */,
 				759CDE592EED1F4B00F8BB96 /* SignInWithAppleCoordinator.swift */,
 				754B69462D97D66F00C0F001 /* AuthenticationView.swift */,
 				754B69482D97D6B800C0F001 /* PasswordFallbackView.swift */,
@@ -464,6 +472,7 @@
 		75D39A072EEE5C7600866367 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				3A68FA0C2F14DC0200D32561 /* PhoneAuthService.swift */,
 				75D39A452EEE878500866367 /* AccountsService.swift */,
 				75D39A462EEE878500866367 /* BudgetService.swift */,
 				75D39A472EEE878500866367 /* TransactionsService.swift */,
@@ -690,8 +699,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3A68FA0D2F14DC0200D32561 /* PhoneAuthService.swift in Sources */,
 				75C972C42D13B7D4008E6E87 /* OnboardingWizard.swift in Sources */,
 				757ABF372C18195100DF8CA8 /* ContentView.swift in Sources */,
+				3A68FA0A2F14DBF800D32561 /* PhoneSignUpView.swift in Sources */,
+				3A68FA0B2F14DBF800D32561 /* OTPVerificationView.swift in Sources */,
 				75F946B02D3C876A0076E91E /* IncomeInputView.swift in Sources */,
 				75668FDF2D83D538003A3D97 /* AccountsManager.swift in Sources */,
 				7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */,
