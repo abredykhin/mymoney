@@ -260,6 +260,9 @@ class UserAccount: ObservableObject {
                 currentUser = nil
                 isSignedIn = false
                 clearCoreDataCache()
+                // Clear AccountsService cache
+                UserDefaults.standard.removeObject(forKey: "cached_banks_v2")
+                Logger.i("Cleared AccountsService cache")
             }
         }
     }

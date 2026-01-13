@@ -43,42 +43,57 @@ struct HomeView: View {
                     .padding(.horizontal)
                 }
                 
-                HeroCarouselView()
-                    .environmentObject(budgetService)
-                    .padding(.top, 0)
-                
-                VStack(spacing: 16) {
-                    HeroCardView(model: HeroCardViewModel(
-                        title: "Monthly Discretionary Budget",
-                        amount: budgetService.discretionaryBudget,
-                        monthlyChange: 0,
-                        isPositive: budgetService.discretionaryBudget > 0,
-                        currencyCode: "USD"
-                    ))
+                // Only show charts if we have accounts OR budget data
+                if !accountsService.banksWithAccounts.isEmpty || budgetService.totalBalance?.balance != 0 {
+                    HeroCarouselView()
+                        .environmentObject(budgetService)
+                        .padding(.top, 0)
                     
-                    if let breakdown = budgetService.spendBreakdownResponse {
+                    VStack(spacing: 16) {
                         HeroCardView(model: HeroCardViewModel(
-                            title: "Monthly Spending",
-                            amount: breakdown.totalSpent,
+                            title: "Monthly Discretionary Budget",
+                            amount: budgetService.discretionaryBudget,
                             monthlyChange: 0,
-                            isPositive: false,
+                            isPositive: budgetService.discretionaryBudget > 0,
                             currencyCode: "USD"
                         ))
+                        
+                        if let breakdown = budgetService.spendBreakdownResponse {
+                            HeroCardView(model: HeroCardViewModel(
+                                title: "Monthly Spending",
+                                amount: breakdown.totalSpent,
+                                monthlyChange: 0,
+                                isPositive: false,
+                                currencyCode: "USD"
+                            ))
+                        }
                     }
                 }
                 
-                // Show empty state IF no accounts linked OR explicitly not setup (fallback)
+                // Show empty state IF no accounts linked
                 if accountsService.banksWithAccounts.isEmpty {
                     HeroBudgetEmptyStateView()
                         .onTapGesture {
                             showingOnboarding = true
                         }
+                        .padding(.top, 20)
                 }
                 
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Accounts")
-                        .font(.headline)
-                        .padding(.leading)
+                    HStack {
+                        Text("Accounts")
+                            .font(.headline)
+                        Spacer()
+                        if accountsService.banksWithAccounts.isEmpty {
+                            Button("Link Account") {
+                                showingOnboarding = true
+                            }
+                            .font(.subheadline)
+                        }
+                    }
+                    .padding(.leading)
+                    .padding(.trailing)
+                    
                     BankListView()
                 }
                 
@@ -97,6 +112,15 @@ struct HomeView: View {
             checkConnectivityAndRefresh(forceRefresh: false)
             await UserAccount.shared.fetchProfile()
             await budgetService.checkAndTriggerBudgetAnalysis()
+            
+            // Auto-trigger onboarding if new user (no accounts, no cache)
+            if accountsService.banksWithAccounts.isEmpty && !showingOnboarding {
+                // Check if we should auto-prompt (simple heuristic: if no accounts loaded after refresh)
+                try? await Task.sleep(nanoseconds: 500_000_000) // Small delay to allow refresh to complete
+                if accountsService.banksWithAccounts.isEmpty {
+                    showingOnboarding = true
+                }
+            }
         }
         .navigationTitle("Overview")
         .navigationDestination(for: Bank.self) { bank in
