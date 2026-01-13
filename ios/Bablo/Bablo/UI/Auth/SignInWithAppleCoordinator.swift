@@ -142,6 +142,10 @@ extension SignInWithAppleCoordinator: ASAuthorizationControllerDelegate {
                 Logger.e("SignInWithAppleCoordinator: Not handled")
             case .unknown:
                 Logger.e("SignInWithAppleCoordinator: Unknown error")
+            case .notInteractive:
+                Logger.e("SignInWithAppleCoordinator: Not interactive")
+            case .matchedExcludedCredential:
+                Logger.e("SignInWithAppleCoordinator: Matched excluded credential")
             @unknown default:
                 Logger.e("SignInWithAppleCoordinator: Unknown authorization error")
             }

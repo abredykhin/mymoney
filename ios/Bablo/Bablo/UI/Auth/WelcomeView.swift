@@ -12,6 +12,7 @@ struct WelcomeView : View {
     @StateObject private var appleSignInCoordinator = SignInWithAppleCoordinator()
     @State private var showError = false
     @State private var showPhoneSignUp = false
+    @State private var showEmailAuth = false
     @EnvironmentObject var userAccount: UserAccount
 
     var body: some View {
@@ -57,9 +58,9 @@ struct WelcomeView : View {
                         .padding()
                 }
 
-                // Sign Up with Phone Button
-                Button(action: { showPhoneSignUp = true }) {
-                    Text("Sign Up with Phone")
+                // Sign In with Email Button
+                Button(action: { showEmailAuth = true }) {
+                    Text("Sign In with Email")
                         .font(.body)
                         .fontWeight(.medium)
                         .frame(maxWidth: .infinity)
@@ -70,6 +71,20 @@ struct WelcomeView : View {
                 }
                 .padding(.horizontal, 40)
                 .padding(.top, 8)
+
+                // Hidden: Sign Up with Phone Button (for future use)
+                // Button(action: { showPhoneSignUp = true }) {
+                //     Text("Sign Up with Phone")
+                //         .font(.body)
+                //         .fontWeight(.medium)
+                //         .frame(maxWidth: .infinity)
+                //         .padding()
+                //         .background(Color.accentColor.opacity(0.1))
+                //         .foregroundColor(.accentColor)
+                //         .cornerRadius(8)
+                // }
+                // .padding(.horizontal, 40)
+                // .padding(.top, 4)
 
                 Spacer()
 
@@ -97,6 +112,10 @@ struct WelcomeView : View {
             }
             .sheet(isPresented: $showPhoneSignUp) {
                 PhoneSignUpView()
+                    .environmentObject(userAccount)
+            }
+            .sheet(isPresented: $showEmailAuth) {
+                EmailAuthView()
                     .environmentObject(userAccount)
             }
         }
