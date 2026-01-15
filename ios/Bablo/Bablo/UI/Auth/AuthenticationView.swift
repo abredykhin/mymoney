@@ -76,6 +76,9 @@ struct AuthenticationView: View {
             .navigationTitle("Authentication")
             .navigationBarTitleDisplayMode(.inline)
         }
+        .onAppear {
+            authenticate()
+        }
     }
     
     func authenticate() {

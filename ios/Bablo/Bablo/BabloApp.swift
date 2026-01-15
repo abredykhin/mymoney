@@ -15,6 +15,7 @@ struct BabloApp: App {
     @StateObject var authManager = AuthManager.shared
     @State private var showBiometricEnrollment = false
     @State private var showAuthView = false
+    @Environment(\.scenePhase) var scenePhase
     
     let coreDataStack = CoreDataStack.shared
     
@@ -32,7 +33,7 @@ struct BabloApp: App {
                         .animation(.default, value: userAccount.isBiometricallyAuthenticated)
                         .animation(.default, value: showAuthView)
                         .overlay {
-                            if (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated) {
+                            if (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated && scenePhase == .active) {
                                 Color.black.opacity(0.01)
                                     .edgesIgnoringSafeArea(.all)
                                     .onAppear {
@@ -67,20 +68,22 @@ struct BabloApp: App {
             .task {
                 userAccount.checkCurrentUser()
                 userAccount.checkBiometricSettings()
-                
-                    // Always require authentication on app launch
+            }
+            .onChange(of: userAccount.isSignedIn) {
                 if userAccount.isSignedIn {
-                    Logger.d("BabloApp: App launched with signed-in user, requiring authentication")
-                    userAccount.requireBiometricAuth() // This will check with AuthManager
-                }
-                
+                    Logger.d("BabloApp: User signed in detected, checking auth requirements")
+                    
+                    // Always require authentication when sign in state changes to true
+                    userAccount.requireBiometricAuth()
+                    
                     // Check if this is the first sign-in and biometrics haven't been configured
-                if userAccount.isSignedIn && !userAccount.hasBiometricPromptBeenShown() {
+                    if !userAccount.hasBiometricPromptBeenShown() {
                         // Only show enrollment if device supports biometrics
-                    let authService = BiometricsAuthService()
-                    if authService.biometricType() != .none {
-                        showBiometricEnrollment = true
-                        userAccount.markBiometricPromptAsShown()
+                        let authService = BiometricsAuthService()
+                        if authService.biometricType() != .none {
+                            showBiometricEnrollment = true
+                            userAccount.markBiometricPromptAsShown()
+                        }
                     }
                 }
             }

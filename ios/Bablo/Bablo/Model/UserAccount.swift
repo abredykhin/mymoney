@@ -264,6 +264,13 @@ class UserAccount: ObservableObject {
         }
     }
     
+    func lockApp() {
+        if isBiometricEnabled {
+            Logger.d("UserAccount: Locking app (invalidating biometric session)")
+            isBiometricallyAuthenticated = false
+        }
+    }
+    
     func hasBiometricPromptBeenShown() -> Bool {
         do {
             if try valet.containsObject(forKey: BiometricKeys.biometricPromptShown.rawValue) {

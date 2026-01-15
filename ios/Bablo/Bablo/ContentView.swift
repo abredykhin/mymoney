@@ -79,6 +79,11 @@ struct ContentView: View {
             .onChange(of: scenePhase) {
                 Logger.d("ContentView: Scene phase changed from \(previousScenePhase) to \(scenePhase)")
                 
+                if scenePhase == .background {
+                    // Lock the app immediately when it goes to background
+                    userAccount.lockApp()
+                }
+                
                 // If coming back to active from inactive OR background
                 if scenePhase == .active && (previousScenePhase == .background || previousScenePhase == .inactive) {
                     // Always check with auth manager whether auth is needed
