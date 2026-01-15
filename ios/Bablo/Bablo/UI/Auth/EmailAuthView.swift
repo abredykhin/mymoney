@@ -50,7 +50,6 @@ struct EmailAuthView: View {
                         .autocapitalization(.none)
                         .autocorrectionDisabled()
                         .padding()
-                        .background(Color(UIColor.secondarySystemBackground))
                         .cornerRadius(10)
                 }
                 .padding(.horizontal, 40)

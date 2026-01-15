@@ -45,11 +45,7 @@ struct Profile: Codable, Equatable {
     }
 }
 
-private enum UserKeys: String {
-    case id = "userId"
-    case name = "userName"
-    case token = "token"
-}
+
 
 private enum BiometricKeys: String {
     case isBiometricEnabled = "biometricEnabled"
@@ -119,13 +115,8 @@ class UserAccount: ObservableObject {
             self.isSignedIn = true
         }
 
-        do {
-            try saveUserData()
-            Task {
-                await fetchProfile()
-            }
-        } catch {
-            Logger.e("UserAccount: Failed to save user data: \(error)")
+        Task {
+            await fetchProfile()
         }
     }
 
@@ -146,6 +137,9 @@ class UserAccount: ObservableObject {
                 self.profile = fetchedProfile
                 Logger.i("UserAccount: Profile fetched for \(fetchedProfile.username). Budget setup: \(isBudgetSetup)")
             }
+        } catch let error as PostgrestError where error.code == "PGRST116" {
+            Logger.e("UserAccount: Profile not found (User likely deleted). Force signing out.")
+            signOut()
         } catch {
             Logger.e("UserAccount: Failed to fetch profile: \(error)")
         }
@@ -193,50 +187,17 @@ class UserAccount: ObservableObject {
                 Logger.d("Found active Supabase session")
                 await handleSupabaseSession(session)
                 return
+            } catch let error as AuthError {
+                Logger.e("Supabase session invalid (AuthError: \(error)). Force signing out.")
+                signOut()
+                return
             } catch {
                 Logger.d("No active Supabase session: \(error)")
+                signOut()
+                return
             }
 
-            // Fall back to legacy credentials check (for migration period)
-            if let token = try? valet.string(forKey: UserKeys.token.rawValue),
-               let userId = try? valet.string(forKey: UserKeys.id.rawValue),
-               let userName = try? valet.string(forKey: UserKeys.name.rawValue) {
-                Logger.d("Found legacy credentials for \(userName)")
-                let user = User(id: userId, name: userName, token: token, email: nil)
-                await MainActor.run {
-                    currentUser = user
-                    isSignedIn = true
-                }
-            } else {
-                Logger.d("User is not logged in")
-            }
         }
-    }
-    
-    /// @deprecated Legacy sign in method - NO LONGER SUPPORTED
-    /// Use Sign in with Apple via Supabase instead
-    func signIn(email: String, password: String) async throws {
-        Logger.e("Legacy sign in attempted for \(email) - method no longer supported")
-        throw NSError(
-            domain: "UserAccount",
-            code: -1,
-            userInfo: [
-                NSLocalizedDescriptionKey: "Legacy password authentication is no longer supported. Please sign out and use Sign in with Apple."
-            ]
-        )
-    }
-
-    /// @deprecated Legacy account creation method - NO LONGER SUPPORTED
-    /// Use Sign in with Apple via Supabase instead
-    func createAccount(name: String, email: String, password: String) async throws {
-        Logger.e("Legacy account creation attempted for \(email) - method no longer supported")
-        throw NSError(
-            domain: "UserAccount",
-            code: -1,
-            userInfo: [
-                NSLocalizedDescriptionKey: "Legacy account creation is no longer supported. Please use Sign in with Apple."
-            ]
-        )
     }
     
     func signOut() {
@@ -251,10 +212,7 @@ class UserAccount: ObservableObject {
                 Logger.e("Failed to sign out from Supabase: \(error)")
             }
 
-            // Clear legacy credentials
-            try? valet.removeObject(forKey: UserKeys.token.rawValue)
-            try? valet.removeObject(forKey: UserKeys.id.rawValue)
-            try? valet.removeObject(forKey: UserKeys.name.rawValue)
+
 
             await MainActor.run {
                 currentUser = nil
@@ -355,13 +313,7 @@ class UserAccount: ObservableObject {
         Logger.i("CoreData context reset complete")
     }
     
-    private func saveUserData() throws {
-        if let theUser = currentUser {
-            try valet.setString(theUser.id, forKey: UserKeys.id.rawValue)
-            try valet.setString(theUser.name, forKey: UserKeys.name.rawValue)
-            try valet.setString(theUser.token, forKey: UserKeys.token.rawValue)
-        }
-    }
+
     
     // Legacy login/register methods removed - backend no longer exists
     // All authentication now goes through Supabase Auth (Sign in with Apple)

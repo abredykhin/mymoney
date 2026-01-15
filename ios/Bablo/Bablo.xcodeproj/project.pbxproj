@@ -27,7 +27,6 @@
 		7549AB502D0E4C7F00313F5C /* LargeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7549AB4F2D0E4C7F00313F5C /* LargeButton.swift */; };
 		754B69432D97D19800C0F001 /* BiometricAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B69422D97D19800C0F001 /* BiometricAuthService.swift */; };
 		754B69472D97D66F00C0F001 /* AuthenticationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B69462D97D66F00C0F001 /* AuthenticationView.swift */; };
-		754B69492D97D6B800C0F001 /* PasswordFallbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B69482D97D6B800C0F001 /* PasswordFallbackView.swift */; };
 		754B694B2D97D8E500C0F001 /* BiometricsEnrollmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B694A2D97D8E500C0F001 /* BiometricsEnrollmentView.swift */; };
 		754B694D2D97EAD100C0F001 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B694C2D97EAD100C0F001 /* AuthManager.swift */; };
 		754B69522D989AC800C0F001 /* Transaction+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B69512D989AC800C0F001 /* Transaction+Extensions.swift */; };
@@ -137,7 +136,6 @@
 		7549AB4F2D0E4C7F00313F5C /* LargeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LargeButton.swift; sourceTree = "<group>"; };
 		754B69422D97D19800C0F001 /* BiometricAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthService.swift; sourceTree = "<group>"; };
 		754B69462D97D66F00C0F001 /* AuthenticationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationView.swift; sourceTree = "<group>"; };
-		754B69482D97D6B800C0F001 /* PasswordFallbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordFallbackView.swift; sourceTree = "<group>"; };
 		754B694A2D97D8E500C0F001 /* BiometricsEnrollmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricsEnrollmentView.swift; sourceTree = "<group>"; };
 		754B694C2D97EAD100C0F001 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		754B69512D989AC800C0F001 /* Transaction+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Transaction+Extensions.swift"; sourceTree = "<group>"; };
@@ -291,7 +289,6 @@
 				3A68FA092F14DBF800D32561 /* PhoneSignUpView.swift */,
 				759CDE592EED1F4B00F8BB96 /* SignInWithAppleCoordinator.swift */,
 				754B69462D97D66F00C0F001 /* AuthenticationView.swift */,
-				754B69482D97D6B800C0F001 /* PasswordFallbackView.swift */,
 				754B694A2D97D8E500C0F001 /* BiometricsEnrollmentView.swift */,
 				757ABF922C18243100DF8CA8 /* WelcomeView.swift */,
 				754B694C2D97EAD100C0F001 /* AuthManager.swift */,
@@ -761,7 +758,6 @@
 				7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */,
 				75C972C82D13B8BB008E6E87 /* OnboardingAccountsView.swift in Sources */,
 				75F529662C8D696100629F2B /* Modifiers.swift in Sources */,
-				754B69492D97D6B800C0F001 /* PasswordFallbackView.swift in Sources */,
 				757ABF352C18195100DF8CA8 /* BabloApp.swift in Sources */,
 				75668FDD2D83D025003A3D97 /* BankManager.swift in Sources */,
 				7549AB492D0E499600313F5C /* OnboardingStartView.swift in Sources */,

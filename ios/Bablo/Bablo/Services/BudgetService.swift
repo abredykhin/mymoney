@@ -196,6 +196,7 @@ class BudgetService: ObservableObject {
     // MARK: - Public Methods
 
     /// Fetch total balance across all visible accounts
+    /// Logic: Net Available Cash = (Depository Accounts) - (Credit Card Debt)
     func fetchTotalBalance() async throws {
         isLoadingBalance = true
         balanceError = nil
@@ -207,17 +208,31 @@ class BudgetService: ObservableObject {
         Logger.d("BudgetService: Fetching total balance")
 
         do {
-            // Query all non-hidden accounts and sum their balances
+            // Query all non-hidden accounts
             let accounts: [AccountBalance] = try await supabase
                 .from("accounts")
-                .select("current_balance")
+                .select("current_balance, type") // Select type to filter logic
                 .eq("hidden", value: false)
                 .execute()
                 .value
 
-            let total = accounts.reduce(0) { $0 + $1.currentBalance }
+            // Calculate Net Available Cash
+            // 1. Add Depository (Checking, Savings, etc.)
+            // 2. Subtract Credit (Credit Card debt, which is usually positive in Plaid/DB)
+            // 3. Ignore Investments, Loans, etc. for "Cash" metric
+            let total = accounts.reduce(0.0) { result, account in
+                if account.type.caseInsensitiveCompare("depository") == .orderedSame {
+                    // Money we have
+                    return result + account.currentBalance
+                } else if account.type.caseInsensitiveCompare("credit") == .orderedSame {
+                    // Money we owe (Debt) - Subtract it from available cash
+                    // Assuming positive balance means debt (standard Plaid)
+                    return result - account.currentBalance
+                }
+                return result
+            }
 
-            Logger.i("BudgetService: Total balance: $\(total) across \(accounts.count) accounts")
+            Logger.i("BudgetService: Net Available Cash: $\(total) (from \(accounts.count) accounts)")
 
             self.totalBalance = TotalBalance(
                 balance: total,
@@ -566,11 +581,14 @@ class BudgetService: ObservableObject {
 // MARK: - Private Models
 
 /// Simple account balance model for aggregation
+/// Simple account balance model for aggregation
 private struct AccountBalance: Codable {
     let currentBalance: Double
+    let type: String
 
     enum CodingKeys: String, CodingKey {
         case currentBalance = "current_balance"
+        case type
     }
 }
 

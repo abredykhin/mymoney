@@ -190,7 +190,7 @@ struct OnboardingAccountCard: View {
         .frame(height: 160)
         .background {
             let hex = bank.primary_color ?? "#000000"
-            let color = Color(hex: hex) ?? .blue
+            let color = Color(hex: hex)
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(color)
                 .overlay {

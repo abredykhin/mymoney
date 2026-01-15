@@ -12,7 +12,7 @@ struct AuthenticationView: View {
     @EnvironmentObject var userAccount: UserAccount
     @State private var errorMessage = ""
     @State private var showError = false
-    @State private var showPasswordFallback = false
+
     @State private var showSignOutConfirmation = false
     
     var onAuthenticated: () -> Void
@@ -46,10 +46,7 @@ struct AuthenticationView: View {
                 }
                 .padding(.horizontal)
                 
-                Button("Use Password Instead") {
-                    showPasswordFallback = true
-                }
-                .padding(.top, 8)
+
                 
                 Spacer()
                 
@@ -67,15 +64,7 @@ struct AuthenticationView: View {
                     dismissButton: .default(Text("OK"))
                 )
             }
-            .sheet(isPresented: $showPasswordFallback) {
-                PasswordFallbackView { success in
-                    if success {
-                        onAuthenticated()
-                    }
-                    showPasswordFallback = false
-                }
-                .environmentObject(userAccount)
-            }
+
             .alert("Sign Out?", isPresented: $showSignOutConfirmation) {
                 Button("Cancel", role: .cancel) { }
                 Button("Sign Out", role: .destructive) {
