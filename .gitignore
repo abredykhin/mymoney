@@ -7,6 +7,7 @@ yarn-error.log*
 database/last-cleared.dummy
 db-data/
 config.toml
+.agent/
 
 supabase/config.toml
 
