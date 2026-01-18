@@ -15,6 +15,8 @@ struct HeroCardViewModel: Identifiable {
     let isPositive: Bool
     let currencyCode: String
     let subtitle: String?
+    let overrideStatusText: String?
+    let showArrow: Bool
     
     init(
         title: String,
@@ -22,7 +24,9 @@ struct HeroCardViewModel: Identifiable {
         monthlyChange: Double = 0,
         isPositive: Bool = true,
         currencyCode: String = "USD",
-        subtitle: String? = nil
+        subtitle: String? = nil,
+        overrideStatusText: String? = nil,
+        showArrow: Bool = true
     ) {
         self.title = title
         self.amount = amount
@@ -30,19 +34,26 @@ struct HeroCardViewModel: Identifiable {
         self.isPositive = isPositive
         self.currencyCode = currencyCode
         self.subtitle = subtitle
+        self.overrideStatusText = overrideStatusText
+        self.showArrow = showArrow
     }
     
     var statusText: String {
-        isPositive ? "Healthy Surplus" : "Budget Deficit"
+        if let override = overrideStatusText {
+            return override
+        }
+        return isPositive ? "Healthy Surplus" : "Budget Deficit"
     }
     
-    var changeText: String {
+    var changeText: String? {
+        guard monthlyChange != 0 else { return nil }
+        
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.currencyCode = currencyCode
         formatter.maximumFractionDigits = monthlyChange.truncatingRemainder(dividingBy: 1) == 0 ? 0 : 2
         let amountString = formatter.string(from: NSNumber(value: abs(monthlyChange))) ?? ""
-        return "\(isPositive ? "+" : "-")\(amountString) this month"
+        return "\(monthlyChange > 0 ? "+" : "-")\(amountString) this month"
     }
 }
 
@@ -59,16 +70,20 @@ struct HeroCardView: View {
                 .font(.system(size: 40, weight: .bold, design: .rounded))
             
             HStack(spacing: 6) {
-                Image(systemName: model.isPositive ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
-                    .foregroundColor(model.isPositive ? .green : .red)
+                if model.showArrow {
+                    Image(systemName: model.isPositive ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
+                        .foregroundColor(model.isPositive ? .green : .red)
+                }
                 
                 Text(model.statusText)
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(.primary) // Black in light mode
                 
-                Text("\(model.changeText)")
-                    .font(.footnote)
-                    .foregroundColor(model.isPositive ? .green : .red) // Green if positive
+                if let changeText = model.changeText {
+                    Text(changeText)
+                        .font(.footnote)
+                        .foregroundColor(model.isPositive ? .green : .red) // Green if positive
+                }
                 
                 if let subtitle = model.subtitle {
                     Spacer()

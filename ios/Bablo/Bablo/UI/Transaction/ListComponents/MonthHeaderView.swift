@@ -37,7 +37,7 @@ struct MonthHeaderView: View {
                         Text("-\(formatAmount(summary.totalOut))")
                             .font(.subheadline)
                             .foregroundColor(.red)
-                        Text("out")
+                        Text("total spent (includes bills)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }

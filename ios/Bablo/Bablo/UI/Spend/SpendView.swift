@@ -19,7 +19,7 @@ extension NumberFormatter {
 
 struct SpendView: View {
     @State private var selectedDateRange: SpendDateRange = .week
-    @StateObject private var budgetService = BudgetService()
+    @EnvironmentObject private var budgetService: BudgetService
     @State private var animateBars: Bool = false  // State to control animation trigger
     @State private var showingDetailSheet = false
     @State private var selectedCategoryForDetail: String?

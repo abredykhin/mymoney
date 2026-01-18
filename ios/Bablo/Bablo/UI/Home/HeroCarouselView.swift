@@ -72,25 +72,31 @@ struct HeroCarouselView: View {
     }
     
     private func setupCards() {
+        let balance = budgetService.totalBalance?.balance ?? 0
+        let isDistressed = balance < 0
+        
         cards = [
             HeroCardViewModel(
                 title: "Net Available Cash",
-                amount: budgetService.totalBalance?.balance ?? 0,
+                amount: balance,
                 monthlyChange: 0,
-                isPositive: true,
-                currencyCode: budgetService.totalBalance?.iso_currency_code ?? "USD"
+                isPositive: !isDistressed,
+                currencyCode: budgetService.totalBalance?.iso_currency_code ?? "USD",
+                overrideStatusText: isDistressed ? "Negative Balance" : nil
             )
         ]
     }
     
     private func updateRealData() {
         if let totalBalance = budgetService.totalBalance {
+            let isDistressed = totalBalance.balance < 0
             self.cards = [HeroCardViewModel(
                 title: "Net Available Cash",
                 amount: totalBalance.balance,
                 monthlyChange: 0,
-                isPositive: true,
-                currencyCode: totalBalance.iso_currency_code
+                isPositive: !isDistressed,
+                currencyCode: totalBalance.iso_currency_code,
+                overrideStatusText: isDistressed ? "Negative Balance" : nil
             )]
         }
     }

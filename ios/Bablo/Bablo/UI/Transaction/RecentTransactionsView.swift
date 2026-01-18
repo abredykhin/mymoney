@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct RecentTransactionsView: View {
-    @StateObject private var transactionsService = TransactionsService()
+    @EnvironmentObject private var transactionsService: TransactionsService
     
     var body: some View {
         VStack {

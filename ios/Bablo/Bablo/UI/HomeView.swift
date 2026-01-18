@@ -11,8 +11,8 @@ import Network
 
 struct HomeView: View {
     @EnvironmentObject var accountsService: AccountsService
-    @StateObject private var transactionsService = TransactionsService()
-    @StateObject private var budgetService = BudgetService()
+    @EnvironmentObject private var transactionsService: TransactionsService
+    @EnvironmentObject private var budgetService: BudgetService
     @EnvironmentObject var navigationState: NavigationState
     @State private var isOffline = false
     @State private var isRefreshing = false
@@ -53,18 +53,21 @@ struct HomeView: View {
                         HeroCardView(model: HeroCardViewModel(
                             title: "Monthly Discretionary Budget",
                             amount: budgetService.discretionaryBudget,
-                            monthlyChange: 0,
-                            isPositive: budgetService.discretionaryBudget > 0,
-                            currencyCode: "USD"
+                            monthlyChange: budgetService.discretionaryBudget - (budgetService.monthlyIncome - budgetService.monthlyMandatoryExpenses),
+                            isPositive: budgetService.discretionaryBudget >= 0,
+                            currencyCode: "USD",
+                            overrideStatusText: budgetService.discretionaryBudget >= 0 ? "Left to Spend" : "Over Budget"
                         ))
                         
                         if let breakdown = budgetService.spendBreakdownResponse {
                             HeroCardView(model: HeroCardViewModel(
-                                title: "Monthly Spending",
+                                title: "Discretionary Spending",
                                 amount: breakdown.totalSpent,
                                 monthlyChange: 0,
-                                isPositive: false,
-                                currencyCode: "USD"
+                                isPositive: true,
+                                currencyCode: "USD",
+                                overrideStatusText: "Excludes fixed bills",
+                                showArrow: false
                             ))
                         }
                     }

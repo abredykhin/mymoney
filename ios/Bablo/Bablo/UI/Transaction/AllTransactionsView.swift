@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct AllTransactionsView: View {
-    @StateObject private var transactionsService = TransactionsService()
+    @EnvironmentObject private var transactionsService: TransactionsService
     @EnvironmentObject var userAccount: UserAccount
     @EnvironmentObject var navigationState: NavigationState
 
