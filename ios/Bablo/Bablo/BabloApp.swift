@@ -13,10 +13,12 @@ struct BabloApp: App {
     @StateObject var userAccount = UserAccount.shared
     @StateObject var accountsService = AccountsService()
     @StateObject var authManager = AuthManager.shared
+    @StateObject var budgetService = BudgetService()
+    @StateObject var transactionsService = TransactionsService()
     @State private var showBiometricEnrollment = false
     @State private var showAuthView = false
     @Environment(\.scenePhase) var scenePhase
-    
+
     let coreDataStack = CoreDataStack.shared
     
     var body: some Scene {
@@ -28,6 +30,8 @@ struct BabloApp: App {
                         .environmentObject(userAccount)
                         .environmentObject(accountsService)
                         .environmentObject(authManager)
+                        .environmentObject(budgetService)
+                        .environmentObject(transactionsService)
                         .environment(\.managedObjectContext, coreDataStack.viewContext)
                         .blur(radius: (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated) || showAuthView ? 20 : 0)
                         .animation(.default, value: userAccount.isBiometricallyAuthenticated)
