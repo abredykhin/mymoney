@@ -8,6 +8,7 @@ database/last-cleared.dummy
 db-data/
 config.toml
 .agent/
+.gemini-clipboard/
 
 supabase/config.toml
 
