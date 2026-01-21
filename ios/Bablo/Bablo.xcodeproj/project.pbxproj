@@ -28,16 +28,13 @@
 		3A68FA302F206EF300D32561 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA182F206EF300D32561 /* PrimaryButton.swift */; };
 		3A68FA312F206EF300D32561 /* CornerRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA262F206EF300D32561 /* CornerRadius.swift */; };
 		3A68FA322F206EF300D32561 /* Elevation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA272F206EF300D32561 /* Elevation.swift */; };
-		3A68FA332F206EF300D32561 /* ColorType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA2A2F206EF300D32561 /* ColorType.swift */; };
 		3A68FA342F206EF300D32561 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA282F206EF300D32561 /* Spacing.swift */; };
 		3A68FA352F206EF300D32561 /* ColorPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA232F206EF300D32561 /* ColorPalette.swift */; };
-		3A68FA362F206EF300D32561 /* LargeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA1F2F206EF300D32561 /* LargeButton.swift */; };
 		3A68FA372F206EF300D32561 /* GlassCardModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA1D2F206EF300D32561 /* GlassCardModifier.swift */; };
 		3A68FA382F206EF300D32561 /* CardModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA1C2F206EF300D32561 /* CardModifier.swift */; };
 		751C8E932DF7F45300C38039 /* CategorySpendDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */; };
 		7521DF1C2D87A52C00856718 /* BankAccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */; };
 		7549AB492D0E499600313F5C /* OnboardingStartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7549AB482D0E499600313F5C /* OnboardingStartView.swift */; };
-		7549AB502D0E4C7F00313F5C /* LargeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7549AB4F2D0E4C7F00313F5C /* LargeButton.swift */; };
 		754B69432D97D19800C0F001 /* BiometricAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B69422D97D19800C0F001 /* BiometricAuthService.swift */; };
 		754B69472D97D66F00C0F001 /* AuthenticationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B69462D97D66F00C0F001 /* AuthenticationView.swift */; };
 		754B694B2D97D8E500C0F001 /* BiometricsEnrollmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B694A2D97D8E500C0F001 /* BiometricsEnrollmentView.swift */; };
@@ -64,7 +61,6 @@
 		757ABF7F2C181C5200DF8CA8 /* View+Previews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF7E2C181C5200DF8CA8 /* View+Previews.swift */; };
 		757ABF872C181D3400DF8CA8 /* UserAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF862C181D3400DF8CA8 /* UserAccount.swift */; };
 		757ABF8A2C181DCC00DF8CA8 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF892C181DCC00DF8CA8 /* Valet */; };
-		757ABF8F2C1822CD00DF8CA8 /* ColorType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF8E2C1822C900DF8CA8 /* ColorType.swift */; };
 		757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF922C18243100DF8CA8 /* WelcomeView.swift */; };
 		7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F2972C86470400BCCDE6 /* HomeView.swift */; };
 		7590F29F2C86471D00BCCDE6 /* LinkController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F29B2C86471D00BCCDE6 /* LinkController.swift */; };
@@ -97,7 +93,6 @@
 		75E49BAA2CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv in Resources */ = {isa = PBXBuildFile; fileRef = 75E49BA92CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv */; };
 		75E49BAC2CA3EACF008D72F8 /* Dates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E49BAB2CA3EACF008D72F8 /* Dates.swift */; };
 		75E6CC652CBCBD4500C779C9 /* RecentTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E6CC642CBCBD4500C779C9 /* RecentTransactionsView.swift */; };
-		75F529662C8D696100629F2B /* Modifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75F529652C8D696100629F2B /* Modifiers.swift */; };
 		75F946952D3C82930076E91E /* BudgetRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75F946942D3C82930076E91E /* BudgetRowView.swift */; };
 		75F946992D3C84B10076E91E /* CurrencyTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75F946982D3C84B10076E91E /* CurrencyTextField.swift */; };
 		75F9469C2D3C851D0076E91E /* BudgetPeriod.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75F9469B2D3C851D0076E91E /* BudgetPeriod.swift */; };
@@ -148,18 +143,15 @@
 		3A68FA1A2F206EF300D32561 /* TertiaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TertiaryButton.swift; sourceTree = "<group>"; };
 		3A68FA1C2F206EF300D32561 /* CardModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardModifier.swift; sourceTree = "<group>"; };
 		3A68FA1D2F206EF300D32561 /* GlassCardModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCardModifier.swift; sourceTree = "<group>"; };
-		3A68FA1F2F206EF300D32561 /* LargeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LargeButton.swift; sourceTree = "<group>"; };
 		3A68FA212F206EF300D32561 /* View+DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+DesignSystem.swift"; sourceTree = "<group>"; };
 		3A68FA232F206EF300D32561 /* ColorPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPalette.swift; sourceTree = "<group>"; };
 		3A68FA242F206EF300D32561 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		3A68FA262F206EF300D32561 /* CornerRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerRadius.swift; sourceTree = "<group>"; };
 		3A68FA272F206EF300D32561 /* Elevation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Elevation.swift; sourceTree = "<group>"; };
 		3A68FA282F206EF300D32561 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
-		3A68FA2A2F206EF300D32561 /* ColorType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorType.swift; sourceTree = "<group>"; };
 		751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategorySpendDetailView.swift; sourceTree = "<group>"; };
 		7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountDetailView.swift; sourceTree = "<group>"; };
 		7549AB482D0E499600313F5C /* OnboardingStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStartView.swift; sourceTree = "<group>"; };
-		7549AB4F2D0E4C7F00313F5C /* LargeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LargeButton.swift; sourceTree = "<group>"; };
 		754B69422D97D19800C0F001 /* BiometricAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthService.swift; sourceTree = "<group>"; };
 		754B69462D97D66F00C0F001 /* AuthenticationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationView.swift; sourceTree = "<group>"; };
 		754B694A2D97D8E500C0F001 /* BiometricsEnrollmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricsEnrollmentView.swift; sourceTree = "<group>"; };
@@ -188,7 +180,6 @@
 		757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Extensions.swift"; sourceTree = "<group>"; };
 		757ABF7E2C181C5200DF8CA8 /* View+Previews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Previews.swift"; sourceTree = "<group>"; };
 		757ABF862C181D3400DF8CA8 /* UserAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAccount.swift; sourceTree = "<group>"; };
-		757ABF8E2C1822C900DF8CA8 /* ColorType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorType.swift; sourceTree = "<group>"; };
 		757ABF922C18243100DF8CA8 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		7590F2972C86470400BCCDE6 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkButtonView.swift; sourceTree = "<group>"; };
@@ -216,7 +207,6 @@
 		75E49BA92CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv */ = {isa = PBXFileReference; lastKnownFileType = text; path = "transactions-personal-finance-category-taxonomy.csv"; sourceTree = "<group>"; };
 		75E49BAB2CA3EACF008D72F8 /* Dates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dates.swift; sourceTree = "<group>"; };
 		75E6CC642CBCBD4500C779C9 /* RecentTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentTransactionsView.swift; sourceTree = "<group>"; };
-		75F529652C8D696100629F2B /* Modifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Modifiers.swift; sourceTree = "<group>"; };
 		75F946942D3C82930076E91E /* BudgetRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetRowView.swift; sourceTree = "<group>"; };
 		75F946982D3C84B10076E91E /* CurrencyTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyTextField.swift; sourceTree = "<group>"; };
 		75F9469B2D3C851D0076E91E /* BudgetPeriod.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetPeriod.swift; sourceTree = "<group>"; };
@@ -308,7 +298,6 @@
 			children = (
 				3A68FA1B2F206EF300D32561 /* Buttons */,
 				3A68FA1E2F206EF300D32561 /* Cards */,
-				3A68FA1F2F206EF300D32561 /* LargeButton.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -347,7 +336,6 @@
 				3A68FA222F206EF300D32561 /* Extensions */,
 				3A68FA252F206EF300D32561 /* Theme */,
 				3A68FA292F206EF300D32561 /* Tokens */,
-				3A68FA2A2F206EF300D32561 /* ColorType.swift */,
 			);
 			path = Design;
 			sourceTree = "<group>";
@@ -369,7 +357,6 @@
 		7549AB4C2D0E4C6400313F5C /* Components */ = {
 			isa = PBXGroup;
 			children = (
-				7549AB4F2D0E4C7F00313F5C /* LargeButton.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -500,7 +487,6 @@
 				757ABF7E2C181C5200DF8CA8 /* View+Previews.swift */,
 				757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */,
 				757ABF782C181C3D00DF8CA8 /* Logger.swift */,
-				75F529652C8D696100629F2B /* Modifiers.swift */,
 				75E49BAB2CA3EACF008D72F8 /* Dates.swift */,
 				75B4DF032DA1CD0F00FF3C1C /* Color+Extensions.swift */,
 				75D39A212EEE5F1000866367 /* Config.swift */,
@@ -521,7 +507,6 @@
 			isa = PBXGroup;
 			children = (
 				7549AB4C2D0E4C6400313F5C /* Components */,
-				757ABF8E2C1822C900DF8CA8 /* ColorType.swift */,
 			);
 			path = Design;
 			sourceTree = "<group>";
@@ -816,9 +801,7 @@
 				3A68F9FA2EFB8C0400D32561 /* DayHeaderView.swift in Sources */,
 				3A68F9FB2EFB8C0400D32561 /* TransactionsListView.swift in Sources */,
 				3A68F9FC2EFB8C0400D32561 /* MonthHeaderView.swift in Sources */,
-				7549AB502D0E4C7F00313F5C /* LargeButton.swift in Sources */,
 				75F946992D3C84B10076E91E /* CurrencyTextField.swift in Sources */,
-				757ABF8F2C1822CD00DF8CA8 /* ColorType.swift in Sources */,
 				75668FDA2D83CFF9003A3D97 /* CoreDataStack.swift in Sources */,
 				75F946AE2D3C875A0076E91E /* OnboardingBudgetFooterView.swift in Sources */,
 				754B69522D989AC800C0F001 /* Transaction+Extensions.swift in Sources */,
@@ -849,10 +832,8 @@
 				3A68FA302F206EF300D32561 /* PrimaryButton.swift in Sources */,
 				3A68FA312F206EF300D32561 /* CornerRadius.swift in Sources */,
 				3A68FA322F206EF300D32561 /* Elevation.swift in Sources */,
-				3A68FA332F206EF300D32561 /* ColorType.swift in Sources */,
 				3A68FA342F206EF300D32561 /* Spacing.swift in Sources */,
 				3A68FA352F206EF300D32561 /* ColorPalette.swift in Sources */,
-				3A68FA362F206EF300D32561 /* LargeButton.swift in Sources */,
 				3A68FA372F206EF300D32561 /* GlassCardModifier.swift in Sources */,
 				3A68FA382F206EF300D32561 /* CardModifier.swift in Sources */,
 				75F9469F2D3C85240076E91E /* SpendingCategory.swift in Sources */,
@@ -865,7 +846,6 @@
 				75D39A082EEE5C7600866367 /* PlaidService.swift in Sources */,
 				7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */,
 				75C972C82D13B8BB008E6E87 /* OnboardingAccountsView.swift in Sources */,
-				75F529662C8D696100629F2B /* Modifiers.swift in Sources */,
 				757ABF352C18195100DF8CA8 /* BabloApp.swift in Sources */,
 				75668FDD2D83D025003A3D97 /* BankManager.swift in Sources */,
 				7549AB492D0E499600313F5C /* OnboardingStartView.swift in Sources */,
