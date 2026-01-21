@@ -10,6 +10,7 @@
  */
 
 import { createServiceRoleClient } from '../_shared/auth.ts';
+import { validateWebhookSignature } from '../_shared/plaid.ts';
 
 // Webhook event types
 interface PlaidWebhookBody {
@@ -36,17 +37,38 @@ Deno.serve(async (req, ctx) => {
   }
 
   try {
-    // Parse webhook body
-    const body: PlaidWebhookBody = await req.json();
-    console.log(`📦 Webhook type: ${body.webhook_type}, code: ${body.webhook_code}`);
-    console.log(`📦 Full webhook body:`, JSON.stringify(body));
-
     // Check if running in local development mode
     const isLocal = Deno.env.get('IS_LOCAL_DEV') === 'true';
 
-    if (isLocal) {
+    // Read body as text first for signature verification
+    const bodyText = await req.text();
+
+    // Verify webhook signature (skip in local dev)
+    if (!isLocal) {
+      console.log('🔐 Verifying webhook signature...');
+      const isValid = await validateWebhookSignature(req, bodyText);
+
+      if (!isValid) {
+        console.error('❌ Webhook signature verification failed');
+        // Return 401 for invalid signatures to alert us of potential attacks
+        return new Response(JSON.stringify({
+          status: 'error',
+          message: 'Invalid webhook signature'
+        }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('✅ Webhook signature verified');
+    } else {
       console.log('⚠️  Local dev mode - webhook signature verification skipped');
     }
+
+    // Parse webhook body
+    const body: PlaidWebhookBody = JSON.parse(bodyText);
+    console.log(`📦 Webhook type: ${body.webhook_type}, code: ${body.webhook_code}`);
+    console.log(`📦 Full webhook body:`, JSON.stringify(body));
 
     // Return 200 OK immediately (Plaid requirement)
     // Process webhook in background with waitUntil
