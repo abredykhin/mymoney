@@ -6,6 +6,7 @@
  */
 
 import { Configuration, PlaidApi, PlaidEnvironments } from 'npm:plaid@31.1.0';
+import * as jose from 'https://deno.land/x/jose@v5.9.6/index.ts';
 
 /**
  * Get Plaid configuration from environment variables
@@ -110,15 +111,101 @@ export function handlePlaidError(error: any): { error: string; details?: any } {
 }
 
 /**
- * Validate Plaid webhook signature (for webhook endpoints)
+ * Validate Plaid webhook signature using JWT verification
  *
- * @param body The raw webhook body
- * @param signature The webhook signature from headers
- * @returns true if signature is valid
+ * Implementation follows: https://plaid.com/docs/api/webhooks/webhook-verification/
+ *
+ * @param request The incoming webhook request
+ * @param bodyText The raw webhook body as text
+ * @returns Promise resolving to true if signature is valid
  */
-export function validateWebhookSignature(body: string, signature: string): boolean {
-  // TODO: Implement webhook signature validation
-  // See: https://plaid.com/docs/api/webhooks/#webhook-verification
-  // For now, we'll rely on HTTPS and the webhook URL being secret
-  return true;
+export async function validateWebhookSignature(
+  request: Request,
+  bodyText: string
+): Promise<boolean> {
+  try {
+    // Step 1: Extract JWT from Plaid-Verification header
+    const jwt = request.headers.get('Plaid-Verification');
+    if (!jwt) {
+      console.error('❌ Missing Plaid-Verification header');
+      return false;
+    }
+
+    // Step 2: Decode JWT header without validation to extract kid
+    const decodedHeader = jose.decodeProtectedHeader(jwt);
+
+    // Verify algorithm is ES256
+    if (decodedHeader.alg !== 'ES256') {
+      console.error(`❌ Invalid algorithm: ${decodedHeader.alg}, expected ES256`);
+      return false;
+    }
+
+    const kid = decodedHeader.kid;
+    if (!kid) {
+      console.error('❌ Missing kid in JWT header');
+      return false;
+    }
+
+    console.log(`🔑 Extracted kid: ${kid}`);
+
+    // Step 3: Retrieve verification key from Plaid
+    const plaidClient = createPlaidClient();
+    const keyResponse = await plaidClient.webhookVerificationKeyGet({
+      key_id: kid,
+    });
+
+    if (!keyResponse.data.key) {
+      console.error('❌ Failed to retrieve verification key from Plaid');
+      return false;
+    }
+
+    // Convert Plaid's JWK to the format expected by jose
+    const jwk = keyResponse.data.key;
+    console.log('🔑 Retrieved JWK from Plaid');
+
+    // Step 4: Verify JWT signature using the JWK
+    const publicKey = await jose.importJWK(jwk, decodedHeader.alg);
+    const { payload } = await jose.jwtVerify(jwt, publicKey, {
+      algorithms: ['ES256'],
+    });
+
+    console.log('✅ JWT signature verified');
+
+    // Step 5: Check webhook freshness (must be within 5 minutes)
+    const currentTime = Math.floor(Date.now() / 1000);
+    const issuedAt = payload.iat as number;
+    const age = currentTime - issuedAt;
+
+    if (age > 300) { // 5 minutes = 300 seconds
+      console.error(`❌ Webhook too old: ${age} seconds (max 300)`);
+      return false;
+    }
+
+    console.log(`✅ Webhook is fresh: ${age} seconds old`);
+
+    // Step 6: Verify body integrity using SHA-256 hash
+    const expectedHash = payload.request_body_sha256 as string;
+
+    // Compute SHA-256 hash of the body
+    const encoder = new TextEncoder();
+    const data = encoder.encode(bodyText);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // Use constant-time comparison to prevent timing attacks
+    if (computedHash !== expectedHash) {
+      console.error('❌ Body hash mismatch');
+      console.error(`   Expected: ${expectedHash}`);
+      console.error(`   Computed: ${computedHash}`);
+      return false;
+    }
+
+    console.log('✅ Body integrity verified');
+    return true;
+
+  } catch (error) {
+    console.error('❌ Webhook verification failed:', error);
+    return false;
+  }
 }
