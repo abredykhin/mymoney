@@ -18,12 +18,4 @@ extension View {
     }
 }
 
-// MARK: - Legacy Support (Deprecated)
-extension View {
-    /// Legacy card background modifier
-    /// - Warning: Deprecated, use `.card()` instead
-    @available(*, deprecated, renamed: "card", message: "Use .card() instead")
-    func cardBackground() -> some View {
-        self.card()
-    }
-}
+

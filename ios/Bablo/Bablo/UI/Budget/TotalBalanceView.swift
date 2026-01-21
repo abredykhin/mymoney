@@ -12,23 +12,23 @@ struct TotalBalanceView: View {
     
     var body: some View {
         HStack {
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text("Total Balance")
-                    .font(.body)
-                    .foregroundColor(.primary)
+                    .font(Typography.body)
+                    .foregroundColor(ColorPalette.textPrimary)
                     .lineLimit(1)
-                    .padding(.bottom, 2)
-                    .monospaced()
                 
                 if let totalBalance = budgetService.totalBalance {
                     Text(totalBalance.balance, format: .currency(code: totalBalance.iso_currency_code))
-                        .font(.title3.weight(.medium))
+                        .font(Typography.h4)
                         .monospaced()
                 }
-            }.padding()
+            }
+            .padding(Spacing.lg)
+            
             Spacer()
         }
-        .cardBackground()
+        .card()
         .onAppear() {
             Task {
                 try? await budgetService.fetchTotalBalance()
