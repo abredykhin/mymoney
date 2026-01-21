@@ -23,28 +23,28 @@ struct OTPVerificationView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 32) {
+            VStack(spacing: Spacing.xxl) {
                 Spacer()
 
                 // Icon
                 Image(systemName: "envelope.fill")
-                    .font(.system(size: 70))
-                    .foregroundColor(.accentColor)
+                    .font(Typography.displayLarge)
+                    .foregroundColor(ColorPalette.primary)
 
                 // Title
                 Text("Enter Verification Code")
-                    .font(.title2)
+                    .font(Typography.h3)
                     .fontWeight(.bold)
 
                 // Subtitle
                 Text("We sent a code to \(formattedPhoneNumber)")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(Typography.bodyMedium)
+                    .foregroundColor(ColorPalette.textSecondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+                    .padding(.horizontal, Spacing.xxxl)
 
                 // OTP Input Fields
-                HStack(spacing: 12) {
+                HStack(spacing: Spacing.md) {
                     ForEach(0..<6, id: \.self) { index in
                         OTPTextField(
                             text: $otpDigits[index],
@@ -62,35 +62,35 @@ struct OTPVerificationView: View {
                         )
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Spacing.xl)
 
                 // Loading Indicator
                 if phoneAuthService.isLoading {
                     ProgressView()
-                        .padding()
+                        .padding(Spacing.lg)
                 }
 
                 // Resend Button
                 Button(action: resendCode) {
                     if canResend {
                         Text("Resend Code")
-                            .foregroundColor(.accentColor)
+                            .foregroundColor(ColorPalette.primary)
                     } else {
                         Text("Resend in \(resendCountdown)s")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(ColorPalette.textSecondary)
                     }
                 }
                 .disabled(!canResend || phoneAuthService.isLoading)
-                .padding()
+                .padding(Spacing.lg)
 
                 // Disclaimer
                 Text("Data rates may apply")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(Typography.caption)
+                    .foregroundColor(ColorPalette.textSecondary)
 
                 Spacer()
             }
-            .padding()
+            .padding(Spacing.lg)
             .navigationTitle("Verification")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -212,13 +212,13 @@ struct OTPTextField: View {
         TextField("", text: $text)
             .keyboardType(.numberPad)
             .multilineTextAlignment(.center)
-            .font(.title)
+            .font(Typography.h2)
             .frame(width: 45, height: 55)
-            .background(Color(UIColor.secondarySystemBackground))
-            .cornerRadius(10)
+            .background(ColorPalette.backgroundSecondary)
+            .cornerRadius(CornerRadius.md)
             .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(focusedField == index ? Color.accentColor : Color.clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: CornerRadius.md)
+                    .stroke(focusedField == index ? ColorPalette.primary : Color.clear, lineWidth: 2)
             )
             .focused($focusedField, equals: index)
             .onChange(of: text) { _, newValue in

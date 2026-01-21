@@ -14,10 +14,13 @@ struct CategoryRowView: View {
     var body: some View {
         HStack {
             Text(category.name)
+                .font(Typography.body)
             Spacer()
             Text(category.amount, format: .currency(code: "USD"))
+                .font(Typography.mono)
             Text("per \(period.shortName)")
-                .foregroundColor(.secondary)
+                .font(Typography.caption)
+                .foregroundColor(ColorPalette.textSecondary)
         }
     }
 }

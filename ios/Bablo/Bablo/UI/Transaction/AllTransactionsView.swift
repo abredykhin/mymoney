@@ -110,7 +110,7 @@ struct AllTransactionsView: View {
                 // Initial loading indicator (full screen)
                 if transactionsService.isLoading && transactionsService.transactions.isEmpty && !isLoadingMore {
                     ProgressView()
-                        .tint(.accentColor)
+                        .tint(ColorPalette.primary)
                         .frame(maxHeight: .infinity)
                 } else if !transactionsService.transactions.isEmpty {
                     TransactionsListView(

@@ -14,13 +14,13 @@ struct ExpenseSection: View {
     let description: String
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(title)
-                    .font(.headline)
+                    .font(Typography.h4)
                 Text(description)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(Typography.caption)
+                    .foregroundColor(ColorPalette.textSecondary)
             }
             
             HStack {
@@ -28,12 +28,13 @@ struct ExpenseSection: View {
                     .frame(maxWidth: .infinity)
                 
                 Text("per \(period.shortName)")
-                    .foregroundColor(.secondary)
+                    .font(Typography.body)
+                    .foregroundColor(ColorPalette.textSecondary)
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .padding(Spacing.lg)
+        .background(ColorPalette.backgroundPrimary)
+        .cornerRadius(CornerRadius.md)
     }
 }
 
@@ -43,7 +44,7 @@ struct ExpenseSection: View {
         @State private var previewPeriod: BudgetPeriod = .monthly
         
         var body: some View {
-            VStack(spacing: 20) {
+            VStack(spacing: Spacing.xl) {
                     // Preview with monthly period
                 ExpenseSection(
                     title: "Need to spend",
@@ -60,8 +61,8 @@ struct ExpenseSection: View {
                     description: "Your savings goal"
                 )
             }
-            .padding()
-            .background(Color(.systemGroupedBackground))
+            .padding(Spacing.lg)
+            .background(ColorPalette.backgroundSecondary)
         }
     }
     

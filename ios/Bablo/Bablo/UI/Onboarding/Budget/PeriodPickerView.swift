@@ -21,12 +21,13 @@ struct PeriodPickerView: View {
         } label: {
             HStack {
                 Text("per \(period.shortName)")
+                    .font(Typography.body)
                 Image(systemName: "chevron.down")
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm)
+            .background(ColorPalette.backgroundSecondary)
+            .cornerRadius(CornerRadius.sm)
         }
     }
 }

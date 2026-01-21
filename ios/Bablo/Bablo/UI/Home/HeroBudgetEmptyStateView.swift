@@ -4,39 +4,29 @@ struct HeroBudgetEmptyStateView: View {
     @EnvironmentObject var navigationState: NavigationState
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
             HStack {
                 Text("Monthly Budget")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(Typography.buttonLabel)
+                    .foregroundColor(ColorPalette.textSecondary)
                 Spacer()
                 Image(systemName: "sparkles")
-                    .foregroundColor(.purple)
+                    .foregroundColor(ColorPalette.categoryLoanPayments) // Using purple equivalent
             }
             
             Text("Set up your budget to unlock insights")
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(Typography.h3)
                 .fixedSize(horizontal: false, vertical: true)
             
             HStack {
                 Text("Get Started")
-                    .font(.subheadline.weight(.semibold))
+                    .font(Typography.bodySemibold)
                 Image(systemName: "arrow.right")
-                    .font(.footnote)
+                    .font(Typography.footnote)
             }
-            .foregroundColor(.blue)
+            .foregroundColor(ColorPalette.info)
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, minHeight: 160, alignment: .leading)
-        .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(.white.opacity(0.4), lineWidth: 1)
-                }
-        }
-        .padding(.horizontal, 16)
+        .glassCard()
     }
 }
 

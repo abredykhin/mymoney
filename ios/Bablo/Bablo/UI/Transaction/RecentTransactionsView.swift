@@ -13,23 +13,23 @@ struct RecentTransactionsView: View {
     var body: some View {
         VStack {
             Text("Recent Transactions")
-                .font(.headline.monospaced().weight(.semibold))
-                .padding(.horizontal)
-                .padding(.top, 2)
+                .font(Typography.mono.weight(.bold))
+                .padding(.horizontal, Spacing.md)
+                .padding(.top, Spacing.xxs)
             
             if transactionsService.transactions.isEmpty && !transactionsService.isLoading {
                 Text("No transactions")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .padding()
+                    .font(Typography.bodyMedium)
+                    .foregroundColor(ColorPalette.textSecondary)
+                    .padding(Spacing.md)
             } else {
                 ForEach(transactionsService.transactions, id: \.id) { transaction in
                     TransactionView(transaction: transaction)
-                        .padding(.horizontal)
+                        .padding(.horizontal, Spacing.md)
                 }
             }
         }
-        .cardBackground()
+        .card()
         .onAppear() {
             Task {
                 try? await transactionsService.fetchRecentTransactions(forceRefresh: false, loadMore: false, limit: 10)

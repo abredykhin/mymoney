@@ -40,10 +40,10 @@ struct BankAccountDetailView: View {
     }
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Spacing.lg) {
             // Account header
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                HStack(spacing: Spacing.md) {
                     // Bank logo/icon
                     if let logo = parentBank?.decodedLogo {
                         Image(uiImage: logo)
@@ -56,46 +56,44 @@ struct BankAccountDetailView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 24, height: 24)
-                            .padding(4)
-                            .foregroundColor(.secondary)
+                            .padding(Spacing.xs)
+                            .foregroundColor(ColorPalette.textSecondary)
                     }
                     
                     Text(account.name)
-                        .font(.title2.bold())
+                        .font(Typography.h3)
                         .lineLimit(1)
                 }
                 
                 HStack {
                     Text(account._type.capitalized)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .font(Typography.bodyMedium)
+                        .foregroundColor(ColorPalette.textSecondary)
                     
                     if let mask = account.mask {
                         Text("••••\(mask)")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(Typography.bodyMedium)
+                            .foregroundColor(ColorPalette.textSecondary)
                     }
                     
                     Spacer()
                     
                     Text(account.current_balance, format: .currency(code: account.iso_currency_code ?? "USD"))
-                        .font(.title3.bold())
+                        .font(Typography.h4)
                         .foregroundColor(getAccountColor(account))
                 }
                 
                 Text(lastUpdatedText)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding(.top, 4)
+                    .font(Typography.caption)
+                    .foregroundColor(ColorPalette.textSecondary)
+                    .padding(.top, Spacing.xs)
             }
-            .padding()
-            .background(Color.white)
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
-            .padding(.horizontal)
+            .padding(Spacing.md)
+            .card()
+            .padding(.horizontal, Spacing.lg)
             
             // Action buttons
-            HStack(spacing: 16) {
+            HStack(spacing: Spacing.md) {
                 Button(action: {
                     withAnimation {
                         isRefreshing = true
@@ -112,45 +110,42 @@ struct BankAccountDetailView: View {
                         }
                         Text("Refresh")
                     }
-                    .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(isRefreshing)
+                .primaryButton(isLoading: isRefreshing)
                 
                 Button(action: {
                     isDeleteAlertShowing = true
                 }) {
                     Label("Hide Account", systemImage: "eye.slash")
-                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
-                .foregroundColor(.orange)
+                .secondaryButton()
+                .foregroundColor(ColorPalette.warning)
             }
-            .padding(.horizontal)
+            .padding(.horizontal, Spacing.lg)
             
             // Transactions section
             ZStack {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         Text("Transactions")
-                            .font(.headline)
+                            .font(Typography.h4)
 
                         Spacer()
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 12)
-                    .padding(.bottom, 8)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.top, Spacing.md)
+                    .padding(.bottom, Spacing.sm)
                     
                     if transactionsService.transactions.isEmpty && !transactionsService.isLoading {
-                        VStack(spacing: 12) {
+                        VStack(spacing: Spacing.md) {
                             Image(systemName: "doc.text")
-                                .font(.system(size: 40))
-                                .foregroundColor(.secondary)
+                                .font(Typography.displayLarge)
+                                .foregroundColor(ColorPalette.textSecondary)
                             Text("No transactions found")
-                                .foregroundColor(.secondary)
+                                .foregroundColor(ColorPalette.textSecondary)
                         }
                         .frame(maxWidth: .infinity, minHeight: 200)
-                        .padding(.vertical, 40)
+                        .padding(.vertical, Spacing.xxxl)
                     } else {
                         // We keep the list visible even during loading for smoother transitions
                         List {
@@ -167,27 +162,25 @@ struct BankAccountDetailView: View {
                 // Overlay loading indicator instead of replacing content
                 if transactionsService.isLoading {
                     ZStack {
-                        Color(UIColor.systemBackground)
+                        ColorPalette.backgroundPrimary
                             .opacity(0.7)
                         
-                        VStack(spacing: 12) {
+                        VStack(spacing: Spacing.md) {
                             ProgressView()
                                 .scaleEffect(1.2)
                             Text("Loading transactions...")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .font(Typography.bodyMedium)
+                                .foregroundColor(ColorPalette.textSecondary)
                         }
                     }
                     .transition(.opacity)
                 }
             }
-            .background(Color.white)
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
-            .padding(.horizontal)
-            .padding(.bottom)
+            .card()
+            .padding(.horizontal, Spacing.lg)
+            .padding(.bottom, Spacing.md)
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, Spacing.xs)
         .alert(isPresented: $isDeleteAlertShowing) {
             Alert(
                 title: Text("Hide Account"),
@@ -251,9 +244,9 @@ struct BankAccountDetailView: View {
     private func getAccountColor(_ account: BankAccount) -> Color {
         switch account._type {
         case "depository", "investment":
-            return account.current_balance > 0 ? .green : .red
+            return account.current_balance > 0 ? ColorPalette.success : ColorPalette.error
         default:
-            return .red
+            return ColorPalette.error
         }
     }
 }

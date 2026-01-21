@@ -19,36 +19,36 @@ struct PhoneSignUpView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
+            VStack(spacing: Spacing.xl) {
                 Spacer()
 
                 // Icon
                 Image(systemName: "phone.circle.fill")
-                    .font(.system(size: 70))
-                    .foregroundColor(.accentColor)
+                    .font(Typography.displayLarge)
+                    .foregroundColor(ColorPalette.primary)
 
                 // Title
                 Text("Sign Up with Phone")
-                    .font(.title2)
+                    .font(Typography.h3)
                     .fontWeight(.bold)
 
                 // Subtitle
                 Text("Enter your phone number to get started")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(Typography.bodyMedium)
+                    .foregroundColor(ColorPalette.textSecondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+                    .padding(.horizontal, Spacing.xxxl)
 
                 // Phone Number Input
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
                     Text("Phone Number")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(Typography.caption)
+                        .foregroundColor(ColorPalette.textSecondary)
 
                     HStack {
                         Text("+1")
-                            .foregroundColor(.secondary)
-                            .padding(.leading, 12)
+                            .foregroundColor(ColorPalette.textSecondary)
+                            .padding(.leading, Spacing.md)
 
                         TextField("(555) 123-4567", text: $formattedPhoneNumber)
                             .keyboardType(.phonePad)
@@ -56,34 +56,22 @@ struct PhoneSignUpView: View {
                                 formatPhoneNumber(newValue)
                             }
                     }
-                    .padding()
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(10)
+                    .padding(Spacing.lg)
+                    .background(ColorPalette.backgroundSecondary)
+                    .cornerRadius(CornerRadius.textField)
                 }
-                .padding(.horizontal, 40)
+                .padding(.horizontal, Spacing.xxxl)
 
                 // Send Code Button
                 Button(action: sendCode) {
-                    HStack {
-                        if phoneAuthService.isLoading {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        } else {
-                            Text("Send Code")
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(isPhoneNumberValid ? Color.accentColor : Color.gray)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                    Text("Send Code")
                 }
-                .disabled(!isPhoneNumberValid || phoneAuthService.isLoading)
-                .padding(.horizontal, 40)
+                .primaryButton(isLoading: phoneAuthService.isLoading, isDisabled: !isPhoneNumberValid)
+                .padding(.horizontal, Spacing.xxxl)
 
                 Spacer()
             }
-            .padding()
+            .padding(Spacing.lg)
             .navigationTitle("Sign Up")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

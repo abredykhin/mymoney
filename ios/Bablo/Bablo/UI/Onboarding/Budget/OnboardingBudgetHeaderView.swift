@@ -10,15 +10,15 @@ import SwiftUI
 // Header Component
 struct OnboardingBudgetHeaderView: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
             Text("Let's set up your budget basics")
-                .font(.title2)
+                .font(Typography.h3)
                 .fontWeight(.bold)
             
             Text("Don't worry about being exact – you can refine these numbers once you link your accounts, and update them anytime.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .font(Typography.body)
+                .foregroundColor(ColorPalette.textSecondary)
         }
-        .padding(.bottom)
+        .padding(.bottom, Spacing.lg)
     }
 }

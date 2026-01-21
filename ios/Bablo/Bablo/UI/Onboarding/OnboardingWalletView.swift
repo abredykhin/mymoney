@@ -9,7 +9,7 @@ struct OnboardingWalletView: View {
         ZStack {
             // Background Glow
             Circle()
-                .fill(Color.blue.opacity(0.1))
+                .fill(ColorPalette.info.opacity(0.1))
                 .frame(width: 400, height: 400)
                 .blur(radius: 60)
                 .offset(y: 100)
@@ -31,48 +31,48 @@ struct OnboardingWalletView: View {
     }
     
     private var connectState: some View {
-        VStack(spacing: 32) {
-            VStack(spacing: 8) {
+        VStack(spacing: Spacing.xxl) {
+            VStack(spacing: Spacing.sm) {
                 Text("Connect your accounts.")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .font(Typography.h1)
                     .multilineTextAlignment(.center)
                 
                 Text("We use Plaid to securely connect to 11,000+ financial institutions.")
-                    .font(.system(size: 17))
+                    .font(Typography.bodyLarge)
                     .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 20)
+                    .foregroundColor(ColorPalette.textSecondary)
+                    .padding(.horizontal, Spacing.xl)
             }
-            .padding(.top, 40)
+            .padding(.top, Spacing.xxxl)
             
             // Bank Logo Stack (Simplified Mockup 1)
             ZStack {
                 ForEach(0..<2) { index in
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(.white)
+                    RoundedRectangle(cornerRadius: CornerRadius.heroCard, style: .continuous)
+                        .fill(ColorPalette.backgroundPrimary)
                         .frame(width: 260, height: 180)
-                        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 5)
+                        .shadow(Elevation.level3)
                         .offset(y: CGFloat(index * 12))
                         .scaleEffect(1.0 - CGFloat(index) * 0.05)
                         .zIndex(Double(-index))
                 }
                 
                 VStack {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 16) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: Spacing.lg) {
                         ForEach(0..<8) { _ in
                             Image(systemName: "building.columns.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.gray.opacity(0.4))
+                                .font(Typography.h4)
+                                .foregroundColor(ColorPalette.textSecondary.opacity(0.4))
                                 .frame(width: 40, height: 40)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(10)
+                                .background(ColorPalette.backgroundSecondary)
+                                .cornerRadius(CornerRadius.md)
                         }
                     }
-                    .padding(20)
+                    .padding(Spacing.xl)
                     
                     Text("See everything in one place.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .font(Typography.captionMedium)
+                        .foregroundColor(ColorPalette.textSecondary)
                 }
                 .frame(width: 260, height: 180)
             }
@@ -82,13 +82,13 @@ struct OnboardingWalletView: View {
     private var walletState: some View {
         VStack(spacing: 0) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text("Your Wallet")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(Typography.h1)
                     
                     Text("\(accountsService.banksWithAccounts.count) bank(s) connected.")
-                        .font(.system(size: 17))
-                        .foregroundColor(.secondary)
+                        .font(Typography.bodyLarge)
+                        .foregroundColor(ColorPalette.textSecondary)
                 }
                 Spacer()
                 
@@ -99,18 +99,18 @@ struct OnboardingWalletView: View {
                         }
                     } label: {
                         Text("Collapse")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.blue)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 16)
-                            .background(Color.blue.opacity(0.1))
+                            .font(Typography.captionBold)
+                            .foregroundColor(ColorPalette.info)
+                            .padding(.vertical, Spacing.sm)
+                            .padding(.horizontal, Spacing.lg)
+                            .background(ColorPalette.info.opacity(0.1))
                             .clipShape(Capsule())
                     }
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 20)
-            .padding(.bottom, 24)
+            .padding(.horizontal, Spacing.md)
+            .padding(.top, Spacing.xl)
+            .padding(.bottom, Spacing.xl)
             
             // Stacked Account Cards
             ScrollView(showsIndicators: false) {
@@ -119,12 +119,12 @@ struct OnboardingWalletView: View {
                 }
                 
                 if isExpanded {
-                    VStack(spacing: 16) {
+                    VStack(spacing: Spacing.lg) {
                         ForEach(Array(accounts.enumerated()), id: \.offset) { index, item in
                             OnboardingAccountCard(bank: item.0, account: item.1)
                         }
                     }
-                    .padding(.bottom, 20)
+                    .padding(.bottom, Spacing.xl)
                 } else {
                     let displayAccounts = Array(accounts.prefix(3))
                     ZStack(alignment: .top) {
@@ -132,10 +132,10 @@ struct OnboardingWalletView: View {
                             OnboardingAccountCard(bank: item.0, account: item.1)
                                 .zIndex(Double(displayAccounts.count - index))
                                 .scaleEffect(1.0 - CGFloat(index) * 0.03)
-                                .offset(y: CGFloat(index * 24)) // Peaking from bottom
+                                .offset(y: CGFloat(index) * Spacing.xl) // Peaking from bottom
                         }
                     }
-                    .frame(height: 160 + CGFloat(min(displayAccounts.count, 3) - 1) * 24)
+                    .frame(height: 160 + CGFloat(min(displayAccounts.count, 3) - 1) * Spacing.xl)
                     .onTapGesture {
                         withAnimation(.spring()) {
                             isExpanded = true
@@ -143,7 +143,7 @@ struct OnboardingWalletView: View {
                     }
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, Spacing.md)
         }
     }
 }
@@ -153,54 +153,54 @@ struct OnboardingAccountCard: View {
     let account: BankAccount
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Spacing.md) {
             HStack {
                 Text(bank.bank_name)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(Typography.bodySemibold)
                 Spacer()
                 Text(account.iso_currency_code ?? "USD")
-                    .font(.system(size: 12))
+                    .font(Typography.footnote)
                     .opacity(0.8)
             }
             
             Text(account.name)
-                .font(.system(size: 14))
+                .font(Typography.caption)
                 .opacity(0.9)
             
             Spacer()
             
             HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
                     Text("Balance")
-                        .font(.system(size: 10))
+                        .font(Typography.footnote)
                         .opacity(0.7)
                     Text(account.current_balance, format: .currency(code: account.iso_currency_code ?? "USD"))
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .font(Typography.h3)
                 }
                 Spacer()
                 if let mask = account.mask {
                     Text("•••• \(mask)")
-                        .font(.system(size: 14))
+                        .font(Typography.caption)
                         .opacity(0.7)
                 }
             }
         }
-        .padding(20)
+        .padding(Spacing.xl)
         .frame(maxWidth: .infinity)
         .frame(height: 160)
         .background {
             let hex = bank.primary_color ?? "#000000"
             let color = Color(hex: hex)
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: CornerRadius.heroCard, style: .continuous)
                 .fill(color)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    RoundedRectangle(cornerRadius: CornerRadius.heroCard, style: .continuous)
                         .stroke(.white.opacity(0.2), lineWidth: 1)
                 }
         }
         .foregroundColor(.white)
-        .shadow(color: .black.opacity(0.12), radius: 15, x: 0, y: 8)
-        .contentShape(RoundedRectangle(cornerRadius: 24))
+        .shadow(Elevation.level4)
+        .contentShape(RoundedRectangle(cornerRadius: CornerRadius.heroCard))
     }
 }
 

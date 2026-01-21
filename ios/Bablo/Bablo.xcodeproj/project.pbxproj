@@ -21,6 +21,19 @@
 		3A68FA102F15FCC600D32561 /* EmailAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA0E2F15FCC600D32561 /* EmailAuthView.swift */; };
 		3A68FA112F15FCC600D32561 /* EmailOTPVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA0F2F15FCC600D32561 /* EmailOTPVerificationView.swift */; };
 		3A68FA132F15FD6E00D32561 /* EmailAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA122F15FD6E00D32561 /* EmailAuthService.swift */; };
+		3A68FA2C2F206EF300D32561 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA242F206EF300D32561 /* Typography.swift */; };
+		3A68FA2D2F206EF300D32561 /* View+DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA212F206EF300D32561 /* View+DesignSystem.swift */; };
+		3A68FA2E2F206EF300D32561 /* TertiaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA1A2F206EF300D32561 /* TertiaryButton.swift */; };
+		3A68FA2F2F206EF300D32561 /* SecondaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA192F206EF300D32561 /* SecondaryButton.swift */; };
+		3A68FA302F206EF300D32561 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA182F206EF300D32561 /* PrimaryButton.swift */; };
+		3A68FA312F206EF300D32561 /* CornerRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA262F206EF300D32561 /* CornerRadius.swift */; };
+		3A68FA322F206EF300D32561 /* Elevation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA272F206EF300D32561 /* Elevation.swift */; };
+		3A68FA332F206EF300D32561 /* ColorType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA2A2F206EF300D32561 /* ColorType.swift */; };
+		3A68FA342F206EF300D32561 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA282F206EF300D32561 /* Spacing.swift */; };
+		3A68FA352F206EF300D32561 /* ColorPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA232F206EF300D32561 /* ColorPalette.swift */; };
+		3A68FA362F206EF300D32561 /* LargeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA1F2F206EF300D32561 /* LargeButton.swift */; };
+		3A68FA372F206EF300D32561 /* GlassCardModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA1D2F206EF300D32561 /* GlassCardModifier.swift */; };
+		3A68FA382F206EF300D32561 /* CardModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA1C2F206EF300D32561 /* CardModifier.swift */; };
 		751C8E932DF7F45300C38039 /* CategorySpendDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */; };
 		7521DF1C2D87A52C00856718 /* BankAccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */; };
 		7549AB492D0E499600313F5C /* OnboardingStartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7549AB482D0E499600313F5C /* OnboardingStartView.swift */; };
@@ -130,6 +143,19 @@
 		3A68FA0E2F15FCC600D32561 /* EmailAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailAuthView.swift; sourceTree = "<group>"; };
 		3A68FA0F2F15FCC600D32561 /* EmailOTPVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailOTPVerificationView.swift; sourceTree = "<group>"; };
 		3A68FA122F15FD6E00D32561 /* EmailAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailAuthService.swift; sourceTree = "<group>"; };
+		3A68FA182F206EF300D32561 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
+		3A68FA192F206EF300D32561 /* SecondaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryButton.swift; sourceTree = "<group>"; };
+		3A68FA1A2F206EF300D32561 /* TertiaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TertiaryButton.swift; sourceTree = "<group>"; };
+		3A68FA1C2F206EF300D32561 /* CardModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardModifier.swift; sourceTree = "<group>"; };
+		3A68FA1D2F206EF300D32561 /* GlassCardModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCardModifier.swift; sourceTree = "<group>"; };
+		3A68FA1F2F206EF300D32561 /* LargeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LargeButton.swift; sourceTree = "<group>"; };
+		3A68FA212F206EF300D32561 /* View+DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+DesignSystem.swift"; sourceTree = "<group>"; };
+		3A68FA232F206EF300D32561 /* ColorPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPalette.swift; sourceTree = "<group>"; };
+		3A68FA242F206EF300D32561 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
+		3A68FA262F206EF300D32561 /* CornerRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerRadius.swift; sourceTree = "<group>"; };
+		3A68FA272F206EF300D32561 /* Elevation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Elevation.swift; sourceTree = "<group>"; };
+		3A68FA282F206EF300D32561 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
+		3A68FA2A2F206EF300D32561 /* ColorType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorType.swift; sourceTree = "<group>"; };
 		751C8E922DF7F45300C38039 /* CategorySpendDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategorySpendDetailView.swift; sourceTree = "<group>"; };
 		7521DF1B2D87A52C00856718 /* BankAccountDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountDetailView.swift; sourceTree = "<group>"; };
 		7549AB482D0E499600313F5C /* OnboardingStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingStartView.swift; sourceTree = "<group>"; };
@@ -258,6 +284,74 @@
 			path = Home;
 			sourceTree = "<group>";
 		};
+		3A68FA1B2F206EF300D32561 /* Buttons */ = {
+			isa = PBXGroup;
+			children = (
+				3A68FA182F206EF300D32561 /* PrimaryButton.swift */,
+				3A68FA192F206EF300D32561 /* SecondaryButton.swift */,
+				3A68FA1A2F206EF300D32561 /* TertiaryButton.swift */,
+			);
+			path = Buttons;
+			sourceTree = "<group>";
+		};
+		3A68FA1E2F206EF300D32561 /* Cards */ = {
+			isa = PBXGroup;
+			children = (
+				3A68FA1C2F206EF300D32561 /* CardModifier.swift */,
+				3A68FA1D2F206EF300D32561 /* GlassCardModifier.swift */,
+			);
+			path = Cards;
+			sourceTree = "<group>";
+		};
+		3A68FA202F206EF300D32561 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				3A68FA1B2F206EF300D32561 /* Buttons */,
+				3A68FA1E2F206EF300D32561 /* Cards */,
+				3A68FA1F2F206EF300D32561 /* LargeButton.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		3A68FA222F206EF300D32561 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				3A68FA212F206EF300D32561 /* View+DesignSystem.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		3A68FA252F206EF300D32561 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				3A68FA232F206EF300D32561 /* ColorPalette.swift */,
+				3A68FA242F206EF300D32561 /* Typography.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		3A68FA292F206EF300D32561 /* Tokens */ = {
+			isa = PBXGroup;
+			children = (
+				3A68FA262F206EF300D32561 /* CornerRadius.swift */,
+				3A68FA272F206EF300D32561 /* Elevation.swift */,
+				3A68FA282F206EF300D32561 /* Spacing.swift */,
+			);
+			path = Tokens;
+			sourceTree = "<group>";
+		};
+		3A68FA2B2F206EF300D32561 /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				3A68FA202F206EF300D32561 /* Components */,
+				3A68FA222F206EF300D32561 /* Extensions */,
+				3A68FA252F206EF300D32561 /* Theme */,
+				3A68FA292F206EF300D32561 /* Tokens */,
+				3A68FA2A2F206EF300D32561 /* ColorType.swift */,
+			);
+			path = Design;
+			sourceTree = "<group>";
+		};
 		7549AB452D0E495200313F5C /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
@@ -351,6 +445,7 @@
 			children = (
 				75D39A2A2EEE607200866367 /* Info.plist */,
 				757ABF912C18242900DF8CA8 /* UI */,
+				3A68FA2B2F206EF300D32561 /* Design */,
 				757ABF832C181CC300DF8CA8 /* Model */,
 				75D39A072EEE5C7600866367 /* Services */,
 				757ABF902C18232E00DF8CA8 /* Design */,
@@ -747,6 +842,19 @@
 				751C8E932DF7F45300C38039 /* CategorySpendDetailView.swift in Sources */,
 				75668FD72D83CE8C003A3D97 /* BabloModel.xcdatamodeld in Sources */,
 				75D39A222EEE5F1000866367 /* Config.swift in Sources */,
+				3A68FA2C2F206EF300D32561 /* Typography.swift in Sources */,
+				3A68FA2D2F206EF300D32561 /* View+DesignSystem.swift in Sources */,
+				3A68FA2E2F206EF300D32561 /* TertiaryButton.swift in Sources */,
+				3A68FA2F2F206EF300D32561 /* SecondaryButton.swift in Sources */,
+				3A68FA302F206EF300D32561 /* PrimaryButton.swift in Sources */,
+				3A68FA312F206EF300D32561 /* CornerRadius.swift in Sources */,
+				3A68FA322F206EF300D32561 /* Elevation.swift in Sources */,
+				3A68FA332F206EF300D32561 /* ColorType.swift in Sources */,
+				3A68FA342F206EF300D32561 /* Spacing.swift in Sources */,
+				3A68FA352F206EF300D32561 /* ColorPalette.swift in Sources */,
+				3A68FA362F206EF300D32561 /* LargeButton.swift in Sources */,
+				3A68FA372F206EF300D32561 /* GlassCardModifier.swift in Sources */,
+				3A68FA382F206EF300D32561 /* CardModifier.swift in Sources */,
 				75F9469F2D3C85240076E91E /* SpendingCategory.swift in Sources */,
 				75C972CC2D13BA33008E6E87 /* OnboardingBudgetView.swift in Sources */,
 				757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */,

@@ -18,12 +18,12 @@ struct HeroCarouselView: View {
         VStack(spacing: 0) {
             ZStack {
                 // Background stack effect
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: CornerRadius.heroCard, style: .continuous)
                     .fill(.ultraThinMaterial)
                     .frame(height: 160)
-                    .padding(.horizontal, 40)
+                    .padding(.horizontal, Spacing.xxxl)
                     .scaleEffect(0.95)
-                    .offset(y: 12)
+                    .offset(y: Spacing.md)
                     .opacity(0.4)
                     .zIndex(-1)
                 
@@ -45,9 +45,9 @@ struct HeroCarouselView: View {
             // Expansive background glow
             let glowColor: Color = {
                 if !cards.isEmpty && selectedIndex < cards.count {
-                    return cards[selectedIndex].isPositive ? .green : .red
+                    return cards[selectedIndex].isPositive ? ColorPalette.glowPositive : ColorPalette.glowNegative
                 }
-                return .blue
+                return ColorPalette.info
             }()
             
             Circle()

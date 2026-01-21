@@ -12,51 +12,50 @@ struct DayHeaderView: View {
     let summary: AllTransactionsView.Summary?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: Spacing.xxs) {
             Text(formatDayHeader(day))
-                .font(.body)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
+                .font(Typography.bodySemibold)
+                .foregroundColor(ColorPalette.textPrimary)
 
             // Daily summary below the day name - separate lines
             if let summary = summary {
                 if summary.totalIn > 0 {
-                    HStack(spacing: 4) {
+                    HStack(spacing: Spacing.xs) {
                         Text(formatAmount(summary.totalIn))
-                            .font(.caption)
-                            .foregroundColor(.green)
+                            .font(Typography.caption)
+                            .foregroundColor(ColorPalette.success)
                         Text("in")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(Typography.caption)
+                            .foregroundColor(ColorPalette.textSecondary)
                     }
                 }
 
                 if summary.totalOut > 0 {
-                    HStack(spacing: 4) {
+                    HStack(spacing: Spacing.xs) {
                         Text("-\(formatAmount(summary.totalOut))")
-                            .font(.caption)
-                            .foregroundColor(.red)
+                            .font(Typography.caption)
+                            .foregroundColor(ColorPalette.error)
                         Text("out")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(Typography.caption)
+                            .foregroundColor(ColorPalette.textSecondary)
                     }
                 }
             } else {
                 // Loading state for stats
-                HStack(spacing: 4) {
+                HStack(spacing: Spacing.xs) {
                     ProgressView()
                         .scaleEffect(0.5)
                     Text("Loading stats...")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .font(Typography.footnote)
+                        .foregroundColor(ColorPalette.textSecondary)
                 }
                 .frame(height: 20)
             }
         }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 16)
+        .padding(.vertical, Spacing.sm)
+        .padding(.horizontal, Spacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.systemGray6))
+        .background(ColorPalette.backgroundSecondary)
         .textCase(nil)
     }
     

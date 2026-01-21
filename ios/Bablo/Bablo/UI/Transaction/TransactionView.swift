@@ -14,76 +14,126 @@ struct TransactionView: View {
         VStack {
             HStack(alignment: .center) {
                 Image(systemName: transaction.getDetailedCategoryIconName())
-                    .font(.callout)
-                    .foregroundStyle(transaction.isTransfer ? .gray : getCategoryColor())
+                    .font(Typography.body)
+                    .foregroundStyle(transaction.isTransfer ? ColorPalette.textSecondary : getCategoryColor())
                     .frame(width: 24)
 
                 Text(transaction.merchant_name ?? transaction.name)
-                    .font(.callout)
-                    .monospaced()
+                    .font(Typography.body)
                     .lineLimit(1)
                     .bold()
-                    .foregroundStyle(transaction.isTransfer ? .gray : .primary)
+                    .foregroundStyle(transaction.isTransfer ? ColorPalette.textSecondary : ColorPalette.textPrimary)
 
                 Spacer()
                 Text(-transaction.amount, format: .currency(code: transaction.iso_currency_code ?? "USD"))
-                    .font(.callout)
-                    .monospaced()
+                    .font(Typography.transactionAmount)
                     .foregroundStyle(getColor())
             }
             HStack(alignment: .top) {
                 Text(formatDate(transaction.authorized_date ?? transaction.date))
-                    .font(.footnote)
-                    .monospaced()
-                    .foregroundStyle(transaction.isTransfer ? .gray : .secondary)
+                    .font(Typography.transactionDetail)
+                    .foregroundStyle(transaction.isTransfer ? ColorPalette.textSecondary : ColorPalette.textSecondary)
 
                 Spacer()
                 if (transaction.pending) {
                     Text("Pending")
-                        .font(.footnote)
-                        .monospaced()
+                        .font(Typography.transactionDetail)
                         .italic()
-                        .foregroundStyle(transaction.isTransfer ? .gray : .secondary)
+                        .foregroundStyle(transaction.isTransfer ? ColorPalette.textSecondary : ColorPalette.textSecondary)
                 }
             }
-        }.padding(1)
+        }.padding(Spacing.xxs)
     }
 
     func getColor() -> Color {
         // Transfers are displayed in gray
         if transaction.isTransfer {
-            return .gray
+            return ColorPalette.textSecondary
         }
-        return transaction.amount > 0 ? .red : .teal
+        return transaction.amount > 0 ? ColorPalette.error : ColorPalette.success
     }
     
     func getCategoryColor() -> Color {
         guard let category = transaction.personal_finance_category else {
-            return .secondary
+            return ColorPalette.categoryDefault
         }
         
+        // Handle "TRANSFER_IN" or "TRANSFER_OUT" which might be the category string themselves
+        // or starting with them. The original code split by "_" and took first.
+        // But "TRANSFER_IN" split by "_" first is "TRANSFER".
+        // Let's look at original logic:
+        // let primaryCategory = category.split(separator: "_").first?.uppercased() ?? ""
+        // if category is "FOOD_AND_DRINK", primary is "FOOD".
+        // if "TRANSFER_IN", primary is "TRANSFER".
+        // wait, the original switch case had "TRANSFER_IN" and "TRANSFER_OUT".
+        // If split by "_", "TRANSFER_IN" becomes ["TRANSFER", "IN"]. first is "TRANSFER".
+        // So case "TRANSFER_IN" would NEVER match in original code if it was checking just the first part!
+        // Let's re-read the original code carefully.
+        
+        /*
         let primaryCategory = category.split(separator: "_").first?.uppercased() ?? ""
-        
         switch primaryCategory {
-        case "INCOME":
-            return .green
-        case "TRANSFER_IN":
-            return .blue
-        case "TRANSFER_OUT":
-            return .orange
-        case "LOAN_PAYMENTS":
-            return .purple
-        case "BANK_FEES":
-            return .red
-        case "FOOD_AND_DRINK":
-            return .pink
-        case "ENTERTAINMENT":
-            return .indigo
-        case "TRAVEL":
-            return .cyan
-        default:
-            return .secondary
+        case "INCOME": ...
+        case "TRANSFER_IN": ... 
+        */
+        
+        // If category is "TRANSFER_IN", primaryCategory is "TRANSFER".
+        // So "TRANSFER_IN" case is unreachable in original code unless the string is just "TRANSFER_IN" and split doesn't split it? No, split("_") splits.
+        // Ah, maybe the category string format is different.
+        // Assuming the Migration Plan logic is the desired one, which uses the full string logic or at least mapping.
+        // The migration plan suggested:
+        /*
+        switch category {
+            case "INCOME": return ColorPalette.categoryIncome
+            ...
         }
+        */
+        // It removed the `split` logic in the plan's suggested code.
+        // I should try to replicate the INTENT or improve it.
+        // If I follow the plan strictly (Step 2.2), it says:
+        /*
+        // NEW
+        private func getCategoryColor(for category: String?) -> Color {
+            guard let category = category else { return ColorPalette.categoryDefault }
+        
+            switch category {
+            case "INCOME": return ColorPalette.categoryIncome
+            ...
+        */
+        // But here `getCategoryColor` is a method of `TransactionView` taking no args (uses `transaction.personal_finance_category`).
+        // And the plan's snippet shows `case "FOOD_AND_DRINK": return ColorPalette.categoryFood`.
+        // So the plan assumes we are switching on the FULL category string (or at least the `personal_finance_category` enum value from Plaid).
+        // Plaid categories are like "FOOD_AND_DRINK", "TRAVEL", "TRANSFER_IN", "TRANSFER_OUT".
+        // So the `split` in original code might have been WRONG for "TRANSFER_IN" but RIGHT for "FOOD_AND_DRINK" if the intention was to group.
+        // But "FOOD_AND_DRINK" is a top level category.
+        // "FOOD_AND_DRINK_FAST_FOOD" is sub.
+        // If Plaid sends "FOOD_AND_DRINK", split("_") first is "FOOD".
+        // But the case was "FOOD_AND_DRINK". So "FOOD" != "FOOD_AND_DRINK".
+        // So original code `split` logic vs case logic seems mismatched for "FOOD_AND_DRINK" too.
+        // UNLESS the prompt/doc implies Plaid returns something else?
+        // Actually, Plaid `personal_finance_category.primary` is usually human readable like "Food and Drink".
+        // But here the code uses `personal_finance_category` which seems to be the SNAKE_CASE one.
+        // If the original code was BUGGY, I should fix it.
+        // If `category` is "FOOD_AND_DRINK", `primaryCategory` is "FOOD".
+        // `switch "FOOD"` -> case "FOOD_AND_DRINK" is false.
+        // So all these returned `.secondary` (teal default in original was in default case).
+        // Wait, original default was `.teal`.
+        // So maybe all these specific colors were BROKEN in the original code?
+        // If so, implementing it correctly now is a huge win.
+        // I will implement the check based on `category` (the full string) or `startsWith`.
+        
+        let normalizedCategory = category.uppercased()
+        
+        if normalizedCategory == "INCOME" { return ColorPalette.categoryIncome }
+        if normalizedCategory == "TRANSFER_IN" { return ColorPalette.categoryTransferIn }
+        if normalizedCategory == "TRANSFER_OUT" { return ColorPalette.categoryTransferOut }
+        if normalizedCategory == "LOAN_PAYMENTS" { return ColorPalette.categoryLoanPayments }
+        if normalizedCategory == "BANK_FEES" { return ColorPalette.categoryBankFees }
+        if normalizedCategory == "FOOD_AND_DRINK" { return ColorPalette.categoryFood }
+        if normalizedCategory == "ENTERTAINMENT" { return ColorPalette.categoryEntertainment }
+        if normalizedCategory == "TRAVEL" { return ColorPalette.categoryTravel }
+        
+        return ColorPalette.categoryDefault
     }
 }
 

@@ -19,71 +19,60 @@ struct EmailAuthView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
+            VStack(spacing: Spacing.xl) {
                 Spacer()
 
                 // Icon
                 Image(systemName: "envelope.circle.fill")
-                    .font(.system(size: 70))
-                    .foregroundColor(.accentColor)
+                    .font(Typography.displayLarge)
+                    .foregroundColor(ColorPalette.primary)
 
                 // Title
                 Text(isSignUp ? "Sign Up with Email" : "Sign In with Email")
-                    .font(.title2)
+                    .font(Typography.h3)
                     .fontWeight(.bold)
 
                 // Subtitle
                 Text("Enter your email to \(isSignUp ? "get started" : "continue")")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(Typography.bodyMedium)
+                    .foregroundColor(ColorPalette.textSecondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+                    .padding(.horizontal, Spacing.xxxl)
 
                 // Email Input
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: Spacing.sm) {
                     Text("Email Address")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(Typography.caption)
+                        .foregroundColor(ColorPalette.textSecondary)
 
                     TextField("you@example.com", text: $email)
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
                         .autocorrectionDisabled()
-                        .padding()
-                        .cornerRadius(10)
+                        .padding(Spacing.lg)
+                        .background(ColorPalette.backgroundSecondary)
+                        .cornerRadius(CornerRadius.textField)
                 }
-                .padding(.horizontal, 40)
+                .padding(.horizontal, Spacing.xxxl)
 
                 // Send Code Button
                 Button(action: sendCode) {
-                    HStack {
-                        if emailAuthService.isLoading {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        } else {
-                            Text("Send Code")
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(isEmailValid ? Color.accentColor : Color.gray)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                    Text("Send Code")
                 }
-                .disabled(!isEmailValid || emailAuthService.isLoading)
-                .padding(.horizontal, 40)
+                .primaryButton(isLoading: emailAuthService.isLoading, isDisabled: !isEmailValid)
+                .padding(.horizontal, Spacing.xxxl)
 
                 // Toggle between Sign Up / Sign In
                 Button(action: { isSignUp.toggle() }) {
                     Text(isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up")
-                        .font(.subheadline)
-                        .foregroundColor(.accentColor)
+                        .font(Typography.bodyMedium)
+                        .foregroundColor(ColorPalette.primary)
                 }
-                .padding(.top, 8)
+                .padding(.top, Spacing.sm)
 
                 Spacer()
             }
-            .padding()
+            .padding(Spacing.lg)
             .navigationTitle(isSignUp ? "Sign Up" : "Sign In")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

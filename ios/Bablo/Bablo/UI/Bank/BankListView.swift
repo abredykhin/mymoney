@@ -22,34 +22,34 @@ struct BankListView: View {
         VStack {
             if accountsService.isLoading {
                 ProgressView("Loading accounts...")
-                    .padding()
+                    .padding(Spacing.md)
             } else if accountsService.banksWithAccounts.isEmpty {
-                VStack(spacing: 12) {
+                VStack(spacing: Spacing.md) {
                     Image(systemName: "creditcard.circle")
-                        .font(.system(size: 40))
-                        .foregroundColor(.secondary)
+                        .font(Typography.displayLarge)
+                        .foregroundColor(ColorPalette.textSecondary)
                     Text("No accounts found")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(ColorPalette.textSecondary)
                     LinkButtonView()
-                        .padding(.top)
+                        .padding(.top, Spacing.md)
                 }
-                .padding(.vertical, 30)
+                .padding(.vertical, Spacing.xxxl)
             } else {
                 if let lastUpdated = accountsService.lastUpdated {
                     Text("Last updated: \(dateFormatter.string(from: lastUpdated))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(Typography.caption)
+                        .foregroundColor(ColorPalette.textSecondary)
                 }
 
                 ScrollView {
                     LazyVStack(alignment: .leading) {
                         ForEach(accountsService.banksWithAccounts, id: \.id) { bank in
                             BankView(bank: bank)
-                                .padding(.bottom, 4)
+                                .padding(.bottom, Spacing.xs)
                         }
                     }
                     LinkButtonView()
-                        .padding()
+                        .padding(Spacing.md)
                 }
             }
         }

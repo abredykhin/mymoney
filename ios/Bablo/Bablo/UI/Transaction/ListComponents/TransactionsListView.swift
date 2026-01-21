@@ -126,22 +126,22 @@ struct TransactionsListView: View {
 
     private var bottomLoadingIndicator: some View {
         HStack {
-            Spacer(); ProgressView().tint(.accentColor); Spacer()
+            Spacer(); ProgressView().tint(ColorPalette.primary); Spacer()
         }
         .listRowSeparator(.hidden)
-        .padding(.vertical)
+        .padding(.vertical, Spacing.lg)
     }
     
     private var bottomErrorIndicator: some View {
         HStack {
             Spacer()
             VStack {
-                Text("Couldn't load more").font(.footnote).foregroundColor(.secondary)
-                Button("Retry") { loadMoreAction() }.font(.footnote)
+                Text("Couldn't load more").font(Typography.footnote).foregroundColor(ColorPalette.textSecondary)
+                Button("Retry") { loadMoreAction() }.font(Typography.footnote)
             }
             Spacer()
         }
         .listRowSeparator(.hidden)
-        .padding(.vertical)
+        .padding(.vertical, Spacing.lg)
     }
 }

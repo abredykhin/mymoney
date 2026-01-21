@@ -13,29 +13,27 @@ struct BiometricEnrollmentView: View {
     @StateObject private var authService = BiometricsAuthService()
     
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: Spacing.xl) {
             Image(systemName: authService.biometricType() == .faceID ? "faceid" : "touchid")
-                .font(.system(size: 70))
-                .foregroundColor(.accentColor)
+                .font(Typography.displayLarge)
+                .foregroundColor(ColorPalette.primary)
             
             Text("Enable \(authService.biometricType() == .faceID ? "Face ID" : "Touch ID")?")
-                .font(.title)
+                .font(Typography.h2)
                 .fontWeight(.bold)
             
             Text("You can use \(authService.biometricType() == .faceID ? "Face ID" : "Touch ID") to quickly and securely access your financial data.")
+                .font(Typography.body)
+                .foregroundColor(ColorPalette.textSecondary)
                 .multilineTextAlignment(.center)
-                .padding()
+                .padding(Spacing.md)
             
-            HStack(spacing: 20) {
+            HStack(spacing: Spacing.md) {
                 Button("Skip") {
                     userAccount.enableBiometricAuthentication(false)
                     dismiss()
                 }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color.gray.opacity(0.2))
-                .foregroundColor(.primary)
-                .cornerRadius(10)
+                .secondaryButton()
                 
                 Button("Enable") {
                     // Perform a test authentication to ensure it works
@@ -51,14 +49,10 @@ struct BiometricEnrollmentView: View {
                         }
                     }
                 }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color.accentColor)
-                .foregroundColor(.white)
-                .cornerRadius(10)
+                .primaryButton()
             }
-            .padding(.horizontal)
+            .padding(.horizontal, Spacing.lg)
         }
-        .padding()
+        .padding(Spacing.lg)
     }
 }

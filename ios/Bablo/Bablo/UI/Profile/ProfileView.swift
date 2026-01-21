@@ -15,23 +15,23 @@ struct ProfileView: View {
     
     var body: some View {
         ZStack {
-            Color(UIColor.systemGroupedBackground)
+            ColorPalette.backgroundSecondary
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 if let name = userAccount.currentUser?.name {
-                    VStack(spacing: 8) {
+                    VStack(spacing: Spacing.sm) {
                         Text("Hello,")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
+                            .font(Typography.bodySemibold)
+                            .foregroundColor(ColorPalette.textSecondary)
                         
                         Text(name)
-                            .font(.title)
+                            .font(Typography.h2)
                             .fontWeight(.bold)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 24)
-                    .background(colorScheme == .dark ? Color(UIColor.secondarySystemBackground) : .white)
+                    .padding(.vertical, Spacing.xxl)
+                    .background(ColorPalette.backgroundPrimary)
                 }
                 
                 List {
@@ -41,23 +41,23 @@ struct ProfileView: View {
                         }) {
                             HStack {
                                 Text("Clear Cache Data")
-                                    .font(.body)
+                                    .font(Typography.body)
                                 Spacer()
                                 Image(systemName: "trash.circle")
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(ColorPalette.info)
                             }
-                            .foregroundColor(.primary)
+                            .foregroundColor(ColorPalette.textPrimary)
                         }
                         
                         Button(action: handleSignOut) {
                             HStack {
                                 Text("Sign Out")
-                                    .font(.body)
+                                    .font(Typography.body)
                                 Spacer()
                                 Image(systemName: "arrow.right.circle")
-                                    .foregroundColor(.red)
+                                    .foregroundColor(ColorPalette.error)
                             }
-                            .foregroundColor(.red)
+                            .foregroundColor(ColorPalette.error)
                         }
                     }
                 }

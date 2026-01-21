@@ -12,7 +12,7 @@ struct BankDetailView : View {
     @EnvironmentObject var accountsService: AccountsService
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Spacing.md) {
             HStack {
                 if let logo = bank.decodedLogo {
                     Image(uiImage: logo)
@@ -20,12 +20,12 @@ struct BankDetailView : View {
                         .scaledToFit()
                         .frame(width: 40, height: 40)
                         .clipShape(Circle())
-                        .padding(.trailing, 8)
+                        .padding(.trailing, Spacing.xs)
                 }
                 
                 Text(bank.bank_name)
-                    .font(.headline)
-                    .foregroundColor(.primary)
+                    .font(Typography.h4)
+                    .foregroundColor(ColorPalette.textPrimary)
                     .lineLimit(2)
                 
                 Spacer()
@@ -33,11 +33,9 @@ struct BankDetailView : View {
             
             BankView(bank: bank)
         }
-        .padding()
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-        .padding(.horizontal)
+        .padding(Spacing.md)
+        .card()
+        .padding(.horizontal, Spacing.lg)
     }
 }
 

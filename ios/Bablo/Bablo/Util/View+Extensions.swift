@@ -15,8 +15,4 @@ extension View {
     }
 }
 
-extension View {
-    func cardBackground() -> some View {
-        modifier(CardBackground())
-    }
-}
+
