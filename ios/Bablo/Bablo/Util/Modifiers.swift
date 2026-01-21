@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+@available(*, deprecated, message: "Use .card() from the design system instead")
 struct CardBackground: ViewModifier {
     func body(content: Content) -> some View {
         content
