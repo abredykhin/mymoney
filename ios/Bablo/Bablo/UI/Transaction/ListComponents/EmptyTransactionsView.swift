@@ -25,10 +25,10 @@ struct EmptyTransactionsView: View {
             
             VStack {
                 Text("No transactions found")
-                    .font(.headline)
+                    .font(Typography.h4)
                 Text("Pull to refresh")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(Typography.bodyMedium)
+                    .foregroundColor(ColorPalette.textSecondary)
             }
         }
         .frame(maxHeight: .infinity)

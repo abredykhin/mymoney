@@ -20,43 +20,40 @@ struct AuthenticationView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
+            VStack(spacing: Spacing.xl) {
                 Image(systemName: "lock.shield")
-                    .font(.system(size: 70))
-                    .foregroundColor(.accentColor)
+                    .font(Typography.displayLarge)
+                    .foregroundColor(ColorPalette.primary)
                 
                 Text("Authentication Required")
-                    .font(.title2)
+                    .font(Typography.h3)
                     .fontWeight(.bold)
                 
                 Text("Use biometric authentication or your password to access your account")
+                    .font(Typography.body)
+                    .foregroundColor(ColorPalette.textSecondary)
                     .multilineTextAlignment(.center)
-                    .padding()
+                    .padding(Spacing.md)
                 
                 Button(action: authenticate) {
                     HStack {
                         Image(systemName: authService.biometricType() == .faceID ? "faceid" : "touchid")
                         Text("Try \(authService.biometricType() == .faceID ? "Face ID" : "Touch ID") Again")
                     }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.accentColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
                 }
-                .padding(.horizontal)
-                
-
+                .primaryButton()
+                .padding(.horizontal, Spacing.xxxl)
                 
                 Spacer()
                 
                 Button("Sign Out") {
                     showSignOutConfirmation = true
                 }
-                .foregroundColor(.red)
-                .padding(.bottom, 20)
+                .font(Typography.bodyMedium)
+                .foregroundColor(ColorPalette.error)
+                .padding(.bottom, Spacing.xl)
             }
-            .padding()
+            .padding(Spacing.lg)
             .alert(isPresented: $showError) {
                 Alert(
                     title: Text("Authentication Failed"),

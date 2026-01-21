@@ -16,42 +16,31 @@ struct BankAccountView : View {
                 HStack {
                         // Account Name
                     Text(account.name)
-                        .font(.body.weight(.semibold).monospaced())
+                        .font(Typography.mono.weight(.semibold))
                         .lineLimit(1)
                         .truncationMode(.tail)
-                        .foregroundColor(.primary)
+                        .foregroundColor(ColorPalette.textPrimary)
                     Spacer()
                     Text(account.current_balance, format: .currency(code: account.iso_currency_code ?? "USD"))
-                        .font(.body.weight(.semibold).monospaced())
+                        .font(Typography.mono.weight(.semibold))
                         .foregroundColor(getAccountColor(account))
                 }
                 Text(account._type.capitalized)
-                    .font(.footnote.monospaced())
-                    .foregroundColor(.secondary)
+                    .font(Typography.mono)
+                    .foregroundColor(ColorPalette.textSecondary)
             }
-            .padding(4)
+            .padding(Spacing.xs)
         }
     }
     
-    private func getGradient() -> LinearGradient {
-        if (account._type == "depository") {
-            return LinearGradient(gradient: Gradient(colors: [.teal, .green]),
-                                  startPoint: .topLeading,
-                                  endPoint: .bottomTrailing)
-            
-        } else {
-            return LinearGradient(gradient: Gradient(colors: [.teal, .green]),
-                                  startPoint: .topLeading,
-                                  endPoint: .bottomTrailing)
-        }
-    }
+
     
     private func getAccountColor(_ account: BankAccount) -> Color {
         switch account._type {
         case "depository", "investment":
-            return account.current_balance > 0 ? .green : .red
+            return account.current_balance > 0 ? ColorPalette.success : ColorPalette.error
         default:
-            return .red
+            return ColorPalette.error
         }
     }
 }

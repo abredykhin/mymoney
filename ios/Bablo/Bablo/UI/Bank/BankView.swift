@@ -16,7 +16,7 @@ struct BankView : View {
     
     var body: some View {
         NavigationLink(value: bank) {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
                 HStack {
                     if let logo = bank.decodedLogo {
                         Image(uiImage: logo)
@@ -24,12 +24,12 @@ struct BankView : View {
                             .scaledToFit()
                             .frame(width: 24, height: 24)
                             .clipShape(Circle())
-                            .padding(.trailing, 4)
+                            .padding(.trailing, Spacing.xs)
                     }
                     
                     Text(bank.bank_name)
-                        .font(.body.monospaced())
-                        .foregroundColor(.primary)
+                        .font(Typography.mono)
+                        .foregroundColor(ColorPalette.textPrimary)
                         .lineLimit(1)
                     
                     Spacer()
@@ -43,9 +43,9 @@ struct BankView : View {
 //                                .background(backgroundColor)
                         }
                     }
-                }.padding(.leading, 4)
-            }.padding()
-            .cardBackground()
+                }.padding(.leading, Spacing.xs)
+            }.padding(Spacing.md)
+            .card()
         }
     }
 }

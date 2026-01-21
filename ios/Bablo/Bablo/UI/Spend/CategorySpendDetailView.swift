@@ -235,7 +235,7 @@ struct CategorySpendDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: Spacing.xl) {
                 // Header Section
                 headerSection
 
@@ -251,21 +251,21 @@ struct CategorySpendDetailView: View {
                 // Transactions
                 transactionsSection
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, Spacing.lg)
             .padding(.bottom, 100)  // Bottom padding for tab bar
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Text("CATEGORIES")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(Typography.caption)
+                    .foregroundColor(ColorPalette.textSecondary)
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {}) {
                     Image(systemName: "ellipsis")
-                        .foregroundColor(.primary)
+                        .foregroundColor(ColorPalette.textPrimary)
                 }
             }
         }
@@ -273,13 +273,13 @@ struct CategorySpendDetailView: View {
 
     // MARK: - Header Section
     private var headerSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Spacing.lg) {
             Text(spendingData.category.name)
-                .font(.largeTitle)
+                .font(Typography.h1)
                 .fontWeight(.bold)
                 .foregroundColor(Color(hex: spendingData.category.color))
 
-            HStack(spacing: 12) {
+            HStack(spacing: Spacing.md) {
                 ForEach(spendingData.category.subcategories, id: \.id) { subcategory in
                     SubcategoryPill(subcategory: subcategory)
                 }
@@ -289,18 +289,18 @@ struct CategorySpendDetailView: View {
 
     // MARK: - Budget Status Section
     private var budgetStatusSection: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: Spacing.sm) {
             Text("SPENT")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(Typography.caption)
+                .foregroundColor(ColorPalette.textSecondary)
 
             HStack(alignment: .firstTextBaseline) {
                 Text("$\(spendingData.currentMonthSpent, specifier: "%.2f")")
-                    .font(.system(size: 48, weight: .medium))
+                    .font(Typography.displayMedium)
 
                 if spendingData.currentMonthSpent == 0 {
                     Circle()
-                        .fill(.green)
+                        .fill(ColorPalette.success)
                         .frame(width: 8, height: 8)
                         .offset(y: -20)
                 }
@@ -308,24 +308,24 @@ struct CategorySpendDetailView: View {
 
             if let budgetRemaining = spendingData.budgetRemaining {
                 Text("$\(budgetRemaining, specifier: "%.0f") left")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
+                    .font(Typography.h4)
+                    .foregroundColor(ColorPalette.textSecondary)
             }
         }
     }
 
     // MARK: - Spending Chart Section
     private var spendingChartSection: some View {
-        VStack(alignment: .trailing, spacing: 16) {
+        VStack(alignment: .trailing, spacing: Spacing.lg) {
             HStack {
                 Spacer()
                 Text("$\(spendingData.category.budget ?? 0, specifier: "%.0f")")
-                    .font(.caption)
+                    .font(Typography.caption)
                     .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
-                    .background(Color.blue.opacity(0.8))
-                    .cornerRadius(12)
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.vertical, Spacing.xs)
+                    .background(ColorPalette.info.opacity(0.8))
+                    .cornerRadius(CornerRadius.md)
             }
 
             Chart(spendingData.monthlySpending, id: \.month) { monthData in
@@ -335,11 +335,11 @@ struct CategorySpendDetailView: View {
                 )
                 .foregroundStyle(
                     monthData.amount > (spendingData.category.budget ?? Double.infinity)
-                        ? .red : .red.opacity(0.7))
+                        ? ColorPalette.error : ColorPalette.error.opacity(0.7))
 
                 if let budget = spendingData.category.budget {
                     RuleMark(y: .value("Budget", budget))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(ColorPalette.info)
                         .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 5]))
                 }
             }
@@ -352,7 +352,7 @@ struct CategorySpendDetailView: View {
                     AxisValueLabel {
                         if let month = value.as(String.self) {
                             Text(month.prefix(1))
-                                .font(.caption2)
+                                .font(Typography.caption)
                         }
                     }
                 }
@@ -362,20 +362,20 @@ struct CategorySpendDetailView: View {
 
     // MARK: - Key Metrics Section
     private var keyMetricsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
             HStack {
                 Text("KEY METRICS")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(Typography.caption)
+                    .foregroundColor(ColorPalette.textSecondary)
 
                 Spacer()
 
                 Text("\(selectedYear)")
-                    .font(.caption)
-                    .foregroundColor(.blue)
+                    .font(Typography.caption)
+                    .foregroundColor(ColorPalette.info)
             }
 
-            VStack(spacing: 12) {
+            VStack(spacing: Spacing.md) {
                 MetricRow(
                     title: "Total spend this year",
                     value: String(format: "$%.2f", spendingData.totalSpentThisYear)
@@ -391,22 +391,22 @@ struct CategorySpendDetailView: View {
 
     // MARK: - Transactions Section
     private var transactionsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
             HStack {
                 Text("TRANSACTIONS")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(Typography.caption)
+                    .foregroundColor(ColorPalette.textSecondary)
 
                 Spacer()
 
                 Button("View all") {
                     // Handle view all action
                 }
-                .font(.caption)
-                .foregroundColor(.blue)
+                .font(Typography.caption)
+                .foregroundColor(ColorPalette.info)
             }
 
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: Spacing.xl) {
                 ForEach(groupedTransactionsByMonth.prefix(3), id: \.month) { monthGroup in
                     TransactionMonthGroup(
                         month: monthGroup.month,
@@ -491,18 +491,18 @@ struct SubcategoryPill: View {
     let subcategory: Subcategory
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Spacing.xs) {
             Text(subcategory.icon)
-                .font(.caption)
+                .font(Typography.caption)
 
             Text(subcategory.name)
-                .font(.caption)
+                .font(Typography.caption)
                 .fontWeight(.medium)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.xs)
         .background(Color.gray.opacity(0.1))
-        .cornerRadius(16)
+        .cornerRadius(CornerRadius.lg)
     }
 }
 
@@ -513,13 +513,13 @@ struct MetricRow: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(.body)
-                .foregroundColor(.primary)
+                .font(Typography.body)
+                .foregroundColor(ColorPalette.textPrimary)
 
             Spacer()
 
             Text(value)
-                .font(.body)
+                .font(Typography.body)
                 .fontWeight(.medium)
         }
     }
@@ -542,18 +542,18 @@ struct TransactionMonthGroup: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Spacing.md) {
             Text(month)
-                .font(.title2)
+                .font(Typography.h4)
                 .fontWeight(.semibold)
 
             if transactions.isEmpty {
                 Text(emptyMessage ?? "No transactions")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .padding(.leading, 8)
+                    .font(Typography.body)
+                    .foregroundColor(ColorPalette.textSecondary)
+                    .padding(.leading, Spacing.sm)
             } else {
-                VStack(spacing: 8) {
+                VStack(spacing: Spacing.sm) {
                     ForEach(transactions, id: \.id) { transaction in
                         TransactionRow(transaction: transaction, spendingData: spendingData)
                     }
@@ -584,10 +584,10 @@ struct TransactionRow: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(transaction.date)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(Typography.caption)
+                    .foregroundColor(ColorPalette.textSecondary)
             }
             .frame(width: 50, alignment: .leading)
 
@@ -598,17 +598,17 @@ struct TransactionRow: View {
             Spacer()
 
             Text(subcategoryIcon)
-                .font(.caption)
+                .font(Typography.caption)
 
             Text("$\(transaction.amount, specifier: "%.2f")")
-                .font(.body)
+                .font(Typography.body)
                 .fontWeight(.medium)
 
             Circle()
-                .fill(.green)
+                .fill(ColorPalette.success)
                 .frame(width: 8, height: 8)
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, Spacing.sm)
     }
 }
 

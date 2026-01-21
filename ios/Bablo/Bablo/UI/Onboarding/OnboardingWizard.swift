@@ -33,18 +33,18 @@ struct OnboardingWizard: View {
                     Button {
                         goBack()
                     } label: {
-                        HStack(spacing: 4) {
+                        HStack(spacing: Spacing.xs) {
                             Image(systemName: "chevron.left")
                             Text("Back")
                         }
-                        .font(.system(size: 17, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .font(Typography.bodyMedium)
+                        .foregroundColor(ColorPalette.textSecondary)
                     }
                 }
                 Spacer()
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 12)
+            .padding(.horizontal, Spacing.xl)
+            .padding(.top, Spacing.md)
             .frame(height: 44)
             
             ZStack {
@@ -64,40 +64,28 @@ struct OnboardingWizard: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
             // Footer
-            VStack(spacing: 12) {
+            VStack(spacing: Spacing.md) {
                 switch currentStep {
                 case .welcome:
                     Button {
                         currentStep = .budget
                     } label: {
                         Text("Get Started")
-                            .font(.headline)
-                            .foregroundColor(.black)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.white)
-                            .cornerRadius(100)
-                            .shadow(color: Color(red: 0.4, green: 1.0, blue: 0.8).opacity(0.5), radius: 20, x: 0, y: 10)
                     }
+                    .primaryButton()
                 
                 case .budget:
                     Button {
                         currentStep = .accounts
                     } label: {
                         Text("Continue")
-                            .font(.headline)
-                            .foregroundColor(.black)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color(red: 0.7, green: 1.0, blue: 0.0))
-                            .cornerRadius(100)
                     }
+                    .primaryButton()
                     
                     Button("Skip for now") {
                         currentStep = .accounts
                     }
-                    .foregroundColor(.secondary)
-                    .font(.subheadline.weight(.semibold))
+                    .tertiaryButton()
                     
                 case .accounts:
                     // Add Another Account Button pinned with Continue
@@ -107,18 +95,13 @@ struct OnboardingWizard: View {
                         } label: {
                             HStack {
                                 if isLoadingLinkToken {
-                                    ProgressView().tint(.blue).padding(.trailing, 8)
+                                    ProgressView().tint(ColorPalette.primary).padding(.trailing, Spacing.sm)
                                 }
                                 Image(systemName: "plus")
                                 Text("Add another account")
                             }
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.blue)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(100)
                         }
+                        .secondaryButton()
                     } else {
                         // Empty state: Connect with Plaid is the primary action
                         Button {
@@ -126,19 +109,13 @@ struct OnboardingWizard: View {
                         } label: {
                             HStack {
                                 if isLoadingLinkToken {
-                                    ProgressView().tint(.white).padding(.trailing, 8)
+                                    ProgressView().tint(.white).padding(.trailing, Spacing.sm)
                                 }
                                 Image(systemName: "circle.grid.3x3.fill")
                                 Text("Connect with Plaid")
                             }
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color(red: 0.2, green: 0.6, blue: 0.4))
-                            .cornerRadius(100)
                         }
-                        .disabled(isLoadingLinkToken)
+                        .primaryButton(isLoading: isLoadingLinkToken)
                     }
                     
                     // Final Continue Button
@@ -147,22 +124,16 @@ struct OnboardingWizard: View {
                     } label: {
                         HStack {
                             if isSavingBudget {
-                                ProgressView().tint(.white).padding(.trailing, 8)
+                                ProgressView().tint(.white).padding(.trailing, Spacing.sm)
                             }
                             Text("Continue")
                         }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.blue)
-                        .cornerRadius(100)
                     }
-                    .disabled(isSavingBudget)
+                    .primaryButton(isLoading: isSavingBudget)
                 }
             }
-            .padding(.horizontal, 40)
-            .padding(.bottom, 20)
+            .padding(.horizontal, Spacing.xxxl)
+            .padding(.bottom, Spacing.lg)
         }
         .sheet(isPresented: $shouldPresentLink) {
             if let linkController {

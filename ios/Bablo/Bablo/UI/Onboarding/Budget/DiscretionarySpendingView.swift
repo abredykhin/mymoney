@@ -13,10 +13,10 @@ struct DiscretionarySpendingView: View {
     let period: BudgetPeriod
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
             HStack {
                 Text("Want to spend")
-                    .font(.headline)
+                    .font(Typography.h4)
                 Spacer()
                 Toggle("Use Categories", isOn: $isUsingCategories)
             }
@@ -27,12 +27,13 @@ struct DiscretionarySpendingView: View {
                         .frame(maxWidth: .infinity)
                     
                     Text("per \(period.shortName)")
-                        .foregroundColor(.secondary)
+                        .font(Typography.body)
+                        .foregroundColor(ColorPalette.textSecondary)
                 }
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .padding(Spacing.lg)
+        .background(ColorPalette.backgroundPrimary)
+        .cornerRadius(CornerRadius.md)
     }
 }

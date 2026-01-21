@@ -13,9 +13,9 @@ struct IncomeInputView: View {
     @Binding var period: BudgetPeriod
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
             Text("Income")
-                .font(.headline)
+                .font(Typography.h4)
             
             HStack {
                 CurrencyTextField(title: "Amount", value: $income)
@@ -24,8 +24,8 @@ struct IncomeInputView: View {
                 PeriodPickerView(period: $period)
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
+        .padding(Spacing.lg)
+        .background(ColorPalette.backgroundPrimary)
+        .cornerRadius(CornerRadius.md)
     }
 }

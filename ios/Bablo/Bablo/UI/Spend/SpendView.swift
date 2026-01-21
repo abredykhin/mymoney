@@ -82,29 +82,29 @@ struct SpendView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .padding(.bottom)
+                .padding(.bottom, Spacing.md)
 
                 // Show loading or error state
                 if budgetService.isLoadingBreakdown {
                     ProgressView()
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding()
+                        .padding(Spacing.md)
                 } else if let error = budgetService.breakdownError {
                     Text("Error loading breakdown: \(error.localizedDescription)")
-                        .foregroundColor(.red)
-                        .padding()
+                        .foregroundColor(ColorPalette.error)
+                        .padding(Spacing.md)
 //                } else if $budgetService.spendBreakdownItems.isEmpty {
 //                    Text("No spending data available for the current year.")
-//                        .foregroundColor(.secondary)
-//                        .padding()
+//                        .foregroundColor(ColorPalette.textSecondary)
+//                        .padding(Spacing.md)
                 } else if sortedSpendBreakdownItems.isEmpty {  // Check sorted list specifically
                     Text("No spending data for the selected period.")
-                        .foregroundColor(.secondary)
-                        .padding()
+                        .foregroundColor(ColorPalette.textSecondary)
+                        .padding(Spacing.md)
                 } else {
                     let totalSpend = totalSpendForSelectedRange  // Cache for use in the loop
                     // Display the data using LazyVStack
-                    LazyVStack(spacing: 10) {  // Adjusted spacing
+                    LazyVStack(spacing: Spacing.md) {  // Adjusted spacing
                         ForEach(
                             Array(sortedSpendBreakdownItems.enumerated()), id: \.element.category
                         ) { index, item in
@@ -134,17 +134,18 @@ struct SpendView: View {
                                             transactionCategory: item.category
                                         )
                                     )
+                                    .font(Typography.body)
                                     Spacer()
                                     Text(
                                         currentSpend,  // Use the already fetched currentSpend
                                         format: .currency(code: "USD")
                                     )
-                                    .monospaced()
+                                    .font(Typography.mono)
                                 }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 10)  // Adjusted padding
+                                .padding(.horizontal, Spacing.md)
+                                .padding(.vertical, Spacing.md)  // Adjusted padding
                             }
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.sm))
                             .onTapGesture {
                                 selectedCategoryForDetail = item.category
                                 showingDetailSheet = true
@@ -156,7 +157,7 @@ struct SpendView: View {
                 }
                 Spacer()
             }
-            .padding()
+            .padding(Spacing.md)
         }
         .sheet(isPresented: $showingDetailSheet) {
             if let category = selectedCategoryForDetail {

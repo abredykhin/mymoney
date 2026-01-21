@@ -21,10 +21,10 @@ struct HomeView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: Spacing.sectionSpacing) {
                 if isRefreshing {
                     ProgressView()
-                        .tint(.accentColor)
+                        .tint(ColorPalette.primary)
                 }
 
                 if isOffline {
@@ -37,10 +37,10 @@ struct HomeView: View {
                         }
                         .buttonStyle(.bordered)
                     }
-                    .padding()
-                    .background(Color.yellow.opacity(0.2))
-                    .cornerRadius(8)
-                    .padding(.horizontal)
+                    .padding(Spacing.md)
+                    .background(ColorPalette.warning.opacity(0.2))
+                    .cornerRadius(CornerRadius.sm)
+                    .padding(.horizontal, Spacing.screenEdge)
                 }
                 
                 // Only show charts if we have accounts OR budget data
@@ -49,7 +49,7 @@ struct HomeView: View {
                         .environmentObject(budgetService)
                         .padding(.top, 0)
                     
-                    VStack(spacing: 16) {
+                    VStack(spacing: Spacing.lg) {
                         HeroCardView(model: HeroCardViewModel(
                             title: "Monthly Discretionary Budget",
                             amount: budgetService.discretionaryBudget,
@@ -79,23 +79,23 @@ struct HomeView: View {
                         .onTapGesture {
                             showingOnboarding = true
                         }
-                        .padding(.top, 20)
+                        .padding(.top, Spacing.xl)
                 }
                 
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: Spacing.md) {
                     HStack {
                         Text("Accounts")
-                            .font(.headline)
+                            .font(Typography.h4)
                         Spacer()
                         if accountsService.banksWithAccounts.isEmpty {
                             Button("Link Account") {
                                 showingOnboarding = true
                             }
-                            .font(.subheadline)
+                            .font(Typography.captionMedium)
                         }
                     }
-                    .padding(.leading)
-                    .padding(.trailing)
+                    .padding(.leading, Spacing.screenEdge)
+                    .padding(.trailing, Spacing.screenEdge)
                     
                     BankListView()
                 }

@@ -11,9 +11,9 @@ import SwiftUI
 struct OnboardingBudgetFooterView: View {
     var body: some View {
         Text("These numbers will be automatically updated as you use the app")
-            .font(.footnote)
-            .foregroundColor(.secondary)
+            .font(Typography.footnote)
+            .foregroundColor(ColorPalette.textSecondary)
             .multilineTextAlignment(.center)
-            .padding(.top)
+            .padding(.top, Spacing.lg)
     }
 }

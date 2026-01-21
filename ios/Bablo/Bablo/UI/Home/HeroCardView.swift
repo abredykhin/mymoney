@@ -61,49 +61,39 @@ struct HeroCardView: View {
     let model: HeroCardViewModel
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Spacing.md) {
             Text(model.title)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .font(Typography.cardTitle)
+                .foregroundColor(ColorPalette.textSecondary)
             
             Text(model.amount.rounded(.toNearestOrAwayFromZero), format: .currency(code: model.currencyCode).precision(.fractionLength(0)))
-                .font(.system(size: 40, weight: .bold, design: .rounded))
+                .font(Typography.amountDisplay)
             
-            HStack(spacing: 6) {
+            HStack(spacing: Spacing.xs) {
                 if model.showArrow {
                     Image(systemName: model.isPositive ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
-                        .foregroundColor(model.isPositive ? .green : .red)
+                        .foregroundColor(model.isPositive ? ColorPalette.success : ColorPalette.error)
                 }
                 
                 Text(model.statusText)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.primary) // Black in light mode
+                    .font(Typography.captionMedium)
+                    .foregroundColor(ColorPalette.textPrimary)
                 
                 if let changeText = model.changeText {
                     Text(changeText)
-                        .font(.footnote)
-                        .foregroundColor(model.isPositive ? .green : .red) // Green if positive
+                    .font(Typography.footnote) // Was .footnote, mapped to Typography.footnote
+                        .foregroundColor(model.isPositive ? ColorPalette.success : ColorPalette.error)
                 }
                 
                 if let subtitle = model.subtitle {
                     Spacer()
                     Text(subtitle)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(Typography.caption)
+                        .foregroundColor(ColorPalette.textSecondary)
                 }
             }
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, minHeight: 160, alignment: .leading)
-        .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(.white.opacity(0.4), lineWidth: 1)
-                }
-        }
-        .padding(.horizontal, 16)
+        .glassCard()
     }
 }
 

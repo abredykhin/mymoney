@@ -13,6 +13,7 @@ struct CurrencyTextField: View {
     
     var body: some View {
         TextField(title, value: $value, format: .currency(code: "USD"))
+            .font(Typography.body)
             .keyboardType(.decimalPad)
             .textFieldStyle(RoundedBorderTextFieldStyle())
     }

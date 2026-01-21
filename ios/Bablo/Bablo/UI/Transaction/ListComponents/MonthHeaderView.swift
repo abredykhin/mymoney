@@ -12,49 +12,49 @@ struct MonthHeaderView: View {
     let summary: AllTransactionsView.Summary?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Spacing.xxs) {
             Text(formatMonthHeader(month))
-                .font(.headline)
+                .font(Typography.h4)
                 .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .foregroundColor(ColorPalette.textPrimary)
 
             if let summary = summary {
                 // "In" amount on first line (if > 0)
                 if summary.totalIn > 0 {
-                    HStack(spacing: 4) {
+                    HStack(spacing: Spacing.xs) {
                         Text(formatAmount(summary.totalIn))
-                            .font(.subheadline)
-                            .foregroundColor(.green)
+                            .font(Typography.bodyMedium)
+                            .foregroundColor(ColorPalette.success)
                         Text("in")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(Typography.caption)
+                            .foregroundColor(ColorPalette.textSecondary)
                     }
                 }
 
                 // "Out" amount on second line (if > 0)
                 if summary.totalOut > 0 {
-                    HStack(spacing: 4) {
+                    HStack(spacing: Spacing.xs) {
                         Text("-\(formatAmount(summary.totalOut))")
-                            .font(.subheadline)
-                            .foregroundColor(.red)
+                            .font(Typography.bodyMedium)
+                            .foregroundColor(ColorPalette.error)
                         Text("total spent (includes bills)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(Typography.caption)
+                            .foregroundColor(ColorPalette.textSecondary)
                     }
                 }
             } else {
                 // Loading state for monthly stats
-                HStack(spacing: 8) {
+                HStack(spacing: Spacing.sm) {
                     ProgressView()
                         .scaleEffect(0.7)
                     Text("Calculating totals...")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(Typography.caption)
+                        .foregroundColor(ColorPalette.textSecondary)
                 }
                 .frame(height: 30)
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, Spacing.sm)
         .textCase(nil)
     }
     

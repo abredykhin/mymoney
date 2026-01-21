@@ -23,28 +23,28 @@ struct EmailOTPVerificationView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 32) {
+            VStack(spacing: Spacing.xxl) {
                 Spacer()
 
                 // Icon
                 Image(systemName: "envelope.fill")
-                    .font(.system(size: 70))
-                    .foregroundColor(.accentColor)
+                    .font(Typography.displayLarge)
+                    .foregroundColor(ColorPalette.primary)
 
                 // Title
                 Text("Enter Verification Code")
-                    .font(.title2)
+                    .font(Typography.h3)
                     .fontWeight(.bold)
 
                 // Subtitle
                 Text("We sent a code to \(email)")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(Typography.bodyMedium)
+                    .foregroundColor(ColorPalette.textSecondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+                    .padding(.horizontal, Spacing.xxxl)
 
                 // OTP Input Fields
-                HStack(spacing: 12) {
+                HStack(spacing: Spacing.md) {
                     ForEach(0..<6, id: \.self) { index in
                         OTPTextField(
                             text: $otpDigits[index],
@@ -62,35 +62,35 @@ struct EmailOTPVerificationView: View {
                         )
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Spacing.xl)
 
                 // Loading Indicator
                 if emailAuthService.isLoading {
                     ProgressView()
-                        .padding()
+                        .padding(Spacing.lg)
                 }
 
                 // Resend Button
                 Button(action: resendCode) {
                     if canResend {
                         Text("Resend Code")
-                            .foregroundColor(.accentColor)
+                            .foregroundColor(ColorPalette.primary)
                     } else {
                         Text("Resend in \(resendCountdown)s")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(ColorPalette.textSecondary)
                     }
                 }
                 .disabled(!canResend || emailAuthService.isLoading)
-                .padding()
+                .padding(Spacing.lg)
 
                 // Disclaimer
                 Text("Check your inbox and spam folder")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(Typography.caption)
+                    .foregroundColor(ColorPalette.textSecondary)
 
                 Spacer()
             }
-            .padding()
+            .padding(Spacing.lg)
             .navigationTitle("Verification")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

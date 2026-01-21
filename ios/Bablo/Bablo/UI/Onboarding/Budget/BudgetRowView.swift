@@ -17,15 +17,16 @@ struct BudgetRowView: View {
         HStack {
             Circle()
                 .fill(color)
-                .frame(width: 8, height: 8)
+                .frame(width: Spacing.sm, height: Spacing.sm)
             Text(title)
+                .font(Typography.body)
             Spacer()
             VStack(alignment: .trailing) {
                 Text(amount, format: .currency(code: "USD"))
-                    .fontWeight(.medium)
+                    .font(Typography.bodyMedium)
                 Text("per \(period.shortName)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(Typography.caption)
+                    .foregroundColor(ColorPalette.textSecondary)
             }
         }
     }
@@ -36,6 +37,6 @@ struct BudgetRowView: View {
         title: "Salary",
         amount: 300.0,
         period: .biweekly,
-        color: .green
+        color: ColorPalette.success
     )
 }

@@ -27,22 +27,11 @@ struct LinkButtonView : View {
                     await loadLinkToken()
                 }
             } label: {
-                HStack {
-                    if isLoadingLinkToken {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .padding(.trailing, 8)
-                    }
-                    Text(isLoadingLinkToken ? "Loading..." : "Link new account")
-                        .foregroundColor(.white)
-                }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color.secondary)
-                .cornerRadius(8)
-                .padding(.horizontal)
-                .shadow(radius: 2)
+                Text(isLoadingLinkToken ? "Loading..." : "Link new account")
             }
+            .primaryButton(isLoading: isLoadingLinkToken)
+            .padding(.horizontal, Spacing.lg)
+            .shadow(Elevation.level2)
             .disabled(isLoadingLinkToken)
         }
         .sheet(
@@ -55,10 +44,11 @@ struct LinkButtonView : View {
                     linkController
                         .ignoresSafeArea(.all)
                 } else {
-                    VStack(spacing: 16) {
+                    VStack(spacing: Spacing.lg) {
                         ProgressView()
                         Text("Initializing Plaid Link...")
-                            .foregroundColor(.secondary)
+                            .font(Typography.body)
+                            .foregroundColor(ColorPalette.textSecondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
