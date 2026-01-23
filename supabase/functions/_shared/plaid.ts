@@ -6,7 +6,7 @@
  */
 
 import { Configuration, PlaidApi, PlaidEnvironments } from 'npm:plaid@31.1.0';
-import * as jose from 'https://deno.land/x/jose@v5.9.6/index.ts';
+import * as jose from 'https://deno.land/x/jose@v5.10.0/index.ts';
 
 /**
  * Get Plaid configuration from environment variables
