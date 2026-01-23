@@ -60,7 +60,9 @@ export function createPlaidClient(): PlaidApi {
  * Plaid webhook URL configuration
  */
 export const PLAID_WEBHOOK_URL = Deno.env.get('PLAID_WEBHOOK_URL') ||
-  'https://babloapp.com/plaid/webhook';
+  (Deno.env.get('SUPABASE_URL')
+    ? `${Deno.env.get('SUPABASE_URL')}/functions/v1/plaid-webhook`
+    : 'http://localhost:54321/functions/v1/plaid-webhook');
 
 /**
  * Plaid redirect URI configuration
