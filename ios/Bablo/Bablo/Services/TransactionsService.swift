@@ -209,7 +209,10 @@ class TransactionsService: ObservableObject {
             let totalCount = response.count // Note: Supabase returns count in headers
 
             if loadMore {
-                self.transactions.append(contentsOf: response)
+                // Deduplicate: Filter out transactions that already exist
+                let existingIds = Set(self.transactions.map { $0.id })
+                let newTransactions = response.filter { !existingIds.contains($0.id) }
+                self.transactions.append(contentsOf: newTransactions)
             } else {
                 self.transactions = response
             }

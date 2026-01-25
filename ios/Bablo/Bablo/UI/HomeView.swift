@@ -45,32 +45,26 @@ struct HomeView: View {
                 
                 // Only show charts if we have accounts OR budget data
                 if !accountsService.banksWithAccounts.isEmpty || budgetService.totalBalance?.balance != 0 {
-                    HeroCarouselView()
-                        .environmentObject(budgetService)
-                        .padding(.top, 0)
-                    
                     VStack(spacing: Spacing.lg) {
+                        // 1. Original Hero: Total Balance (Carousel) - Restored to top
+                        HeroCarouselView()
+                            .environmentObject(budgetService)
+                            .padding(.top, 0)
+                        
+                        // 2. New Secondary Hero: Discretionary Spending / "Spend Money"
+                        DiscretionaryHeroView()
+                        
+                        // 3. Budget Summary Card
                         HeroCardView(model: HeroCardViewModel(
-                            title: "Monthly Discretionary Budget",
+                            title: "Monthly Budget",
                             amount: budgetService.discretionaryBudget,
                             monthlyChange: budgetService.discretionaryBudget - (budgetService.monthlyIncome - budgetService.monthlyMandatoryExpenses),
                             isPositive: budgetService.discretionaryBudget >= 0,
                             currencyCode: "USD",
                             overrideStatusText: budgetService.discretionaryBudget >= 0 ? "Left to Spend" : "Over Budget"
                         ))
-                        
-                        if let breakdown = budgetService.spendBreakdownResponse {
-                            HeroCardView(model: HeroCardViewModel(
-                                title: "Discretionary Spending",
-                                amount: breakdown.totalSpent,
-                                monthlyChange: 0,
-                                isPositive: true,
-                                currencyCode: "USD",
-                                overrideStatusText: "Excludes fixed bills",
-                                showArrow: false
-                            ))
-                        }
                     }
+                    .padding(.bottom, Spacing.lg)
                 }
                 
                 // Show empty state IF no accounts linked

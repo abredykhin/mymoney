@@ -37,7 +37,7 @@ struct HeroCarouselView: View {
                         }
                     }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .always))
+                .tabViewStyle(.page(indexDisplayMode: cards.count > 1 ? .always : .never))
                 .frame(height: 190)
             }
         }
@@ -61,11 +61,16 @@ struct HeroCarouselView: View {
         .onAppear {
             setupCards()
             Task {
+                // 1. Fetch budget summary FIRST to load patterns (bills/income)
+                await budgetService.fetchBudgetSummary()
+                
+                // 2. Then fetch breakdown (depends on patterns to filter bills) & balance
+                // We can run these in parallel now that patterns are loaded, or just sequentially for simplicity
                 await withTaskGroup(of: Void.self) { group in
                     group.addTask { try? await budgetService.fetchTotalBalance() }
                     group.addTask { try? await budgetService.fetchSpendingBreakdown(range: .month) }
-                    group.addTask { await budgetService.fetchBudgetSummary() }
                 }
+                
                 updateRealData()
             }
         }
