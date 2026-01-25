@@ -45,15 +45,15 @@ struct HomeView: View {
                 
                 // Only show charts if we have accounts OR budget data
                 if !accountsService.banksWithAccounts.isEmpty || budgetService.totalBalance?.balance != 0 {
-                    VStack(spacing: Spacing.lg) {
+                    VStack(spacing: Spacing.sm) {
                         // 1. Original Hero: Total Balance (Carousel) - Restored to top
                         HeroCarouselView()
                             .environmentObject(budgetService)
-                            .padding(.top, 0)
-                        
+                            .padding(.top, Dimensions.topSpacingReduction)
+
                         // 2. New Secondary Hero: Discretionary Spending / "Spend Money"
                         DiscretionaryHeroView()
-                        
+
                         // 3. Budget Summary Card
                         HeroCardView(model: HeroCardViewModel(
                             title: "Monthly Budget",
@@ -64,9 +64,8 @@ struct HomeView: View {
                             overrideStatusText: budgetService.discretionaryBudget >= 0 ? "Left to Spend" : "Over Budget"
                         ))
                     }
-                    .padding(.bottom, Spacing.lg)
                 }
-                
+
                 // Show empty state IF no accounts linked
                 if accountsService.banksWithAccounts.isEmpty {
                     HeroBudgetEmptyStateView()
@@ -75,27 +74,9 @@ struct HomeView: View {
                         }
                         .padding(.top, Spacing.xl)
                 }
-                
-                VStack(alignment: .leading, spacing: Spacing.md) {
-                    HStack {
-                        Text("Accounts")
-                            .font(Typography.h4)
-                        Spacer()
-                        if accountsService.banksWithAccounts.isEmpty {
-                            Button("Link Account") {
-                                showingOnboarding = true
-                            }
-                            .font(Typography.captionMedium)
-                        }
-                    }
-                    .padding(.leading, Spacing.screenEdge)
-                    .padding(.trailing, Spacing.screenEdge)
-                    
-                    BankListView()
-                }
-                
-                Spacer()
+
                 RecentTransactionsView()
+                    .padding(.top, Spacing.sm)
                 Spacer()                    
             }
         }
@@ -119,7 +100,7 @@ struct HomeView: View {
                 }
             }
         }
-        .navigationTitle("Overview")
+        .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: Bank.self) { bank in
             BankDetailView(bank: bank)
         }
@@ -127,11 +108,16 @@ struct HomeView: View {
             BankAccountDetailView(account: account)
         }
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Text("Overview")
+                    .font(Typography.h4)
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     showingProfile = true
                 } label: {
                     Image(systemName: "person.circle")
+                        .font(Typography.h4)
                 }
             }
         }

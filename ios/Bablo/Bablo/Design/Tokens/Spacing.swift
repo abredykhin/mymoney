@@ -12,32 +12,32 @@ enum Spacing {
     /// 8pt - Small gaps between related items
     static let sm: CGFloat = 8
 
-    /// 12pt - Default spacing between items
-    static let md: CGFloat = 12
+    /// 10pt - Default spacing between items
+    static let md: CGFloat = 10
 
-    /// 16pt - Section spacing, comfortable gaps
-    static let lg: CGFloat = 16
+    /// 14pt - Section spacing, comfortable gaps
+    static let lg: CGFloat = 14
 
-    /// 24pt - Large sections, prominent spacing
-    static let xl: CGFloat = 24
+    /// 14pt - Large sections, prominent spacing
+    static let xl: CGFloat = 14
 
-    /// 32pt - Major sections, clear separation
-    static let xxl: CGFloat = 32
+    /// 24pt - Major sections, clear separation
+    static let xxl: CGFloat = 24
 
-    /// 40pt - Hero spacing, maximum separation
-    static let xxxl: CGFloat = 40
+    /// 32pt - Hero spacing, maximum separation
+    static let xxxl: CGFloat = 32
 
     // MARK: - Semantic Aliases (Use these for clarity)
-    /// Standard padding inside cards - 24pt
+    /// Standard padding inside cards - 18pt
     static let cardPadding = xl
 
-    /// Screen edge margins - 16pt
+    /// Screen edge margins - 14pt
     static let screenEdge = lg
 
-    /// Spacing between list items - 12pt
+    /// Spacing between list items - 10pt
     static let itemSpacing = md
 
-    /// Spacing between major sections - 24pt
+    /// Spacing between major sections - 18pt
     static let sectionSpacing = xl
 
     /// Button padding (vertical) - 12pt

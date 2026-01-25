@@ -20,13 +20,13 @@ struct HeroCarouselView: View {
                 // Background stack effect
                 RoundedRectangle(cornerRadius: CornerRadius.heroCard, style: .continuous)
                     .fill(.ultraThinMaterial)
-                    .frame(height: 160)
+                    .frame(height: Dimensions.heroCardHeight)
                     .padding(.horizontal, Spacing.xxxl)
                     .scaleEffect(0.95)
                     .offset(y: Spacing.md)
                     .opacity(0.4)
                     .zIndex(-1)
-                
+
                 TabView(selection: $selectedIndex) {
                     if cards.isEmpty {
                         ProgressView()
@@ -38,7 +38,7 @@ struct HeroCarouselView: View {
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: cards.count > 1 ? .always : .never))
-                .frame(height: 190)
+                .frame(height: Dimensions.heroCarouselHeight)
             }
         }
         .background {

@@ -61,14 +61,14 @@ struct HeroCardView: View {
     let model: HeroCardViewModel
     
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
             Text(model.title)
                 .font(Typography.cardTitle)
                 .foregroundColor(ColorPalette.textSecondary)
-            
+
             Text(model.amount.rounded(.toNearestOrAwayFromZero), format: .currency(code: model.currencyCode).precision(.fractionLength(0)))
                 .font(Typography.amountDisplay)
-            
+
             HStack(spacing: Spacing.xs) {
                 if model.showArrow {
                     Image(systemName: model.isPositive ? "arrow.up.circle.fill" : "arrow.down.circle.fill")

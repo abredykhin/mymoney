@@ -9,8 +9,8 @@ struct Typography {
     /// Medium display - 44pt, bold, rounded (e.g., onboarding headers)
     static let displayMedium = Font.system(size: 44, weight: .bold, design: .rounded)
 
-    /// Small display - 40pt, bold, rounded (e.g., hero card amounts)
-    static let displaySmall = Font.system(size: 40, weight: .bold, design: .rounded)
+    /// Small display - 28pt, bold, rounded (e.g., hero card amounts)
+    static let displaySmall = Font.system(size: 28, weight: .bold, design: .rounded)
 
     // MARK: - Headings
     /// H1 - 32pt, bold, rounded
