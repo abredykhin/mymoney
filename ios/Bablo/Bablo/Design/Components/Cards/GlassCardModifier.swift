@@ -5,7 +5,7 @@ struct GlassCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(Spacing.cardPadding)
-            .frame(maxWidth: .infinity, minHeight: 160, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: Dimensions.heroCardHeight, alignment: .leading)
             .background {
                 RoundedRectangle(
                     cornerRadius: CornerRadius.heroCard,

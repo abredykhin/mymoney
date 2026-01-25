@@ -42,7 +42,8 @@ struct TransactionView: View {
                         .foregroundStyle(transaction.isTransfer ? ColorPalette.textSecondary : ColorPalette.textSecondary)
                 }
             }
-        }.padding(Spacing.xxs)
+        }.padding(.vertical, Spacing.sm)
+         .padding(.horizontal, Spacing.xxs)
     }
 
     func getColor() -> Color {

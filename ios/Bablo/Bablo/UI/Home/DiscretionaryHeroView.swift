@@ -70,7 +70,7 @@ struct DiscretionaryHeroView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
             // Header Row: Title + Toggle
             HStack(alignment: .center) {
                 Text("Spend Money")

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		3A4919562F24812000C0E820 /* DiscretionaryHeroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4919552F24812000C0E820 /* DiscretionaryHeroView.swift */; };
+		3A4919582F25E9BA00C0E820 /* Dimensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4919572F25E9BA00C0E820 /* Dimensions.swift */; };
 		3A68F9F92EFB8C0400D32561 /* EmptyTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F52EFB8C0400D32561 /* EmptyTransactionsView.swift */; };
 		3A68F9FA2EFB8C0400D32561 /* DayHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F42EFB8C0400D32561 /* DayHeaderView.swift */; };
 		3A68F9FB2EFB8C0400D32561 /* TransactionsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F72EFB8C0400D32561 /* TransactionsListView.swift */; };
@@ -126,6 +127,7 @@
 
 /* Begin PBXFileReference section */
 		3A4919552F24812000C0E820 /* DiscretionaryHeroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscretionaryHeroView.swift; sourceTree = "<group>"; };
+		3A4919572F25E9BA00C0E820 /* Dimensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dimensions.swift; sourceTree = "<group>"; };
 		3A68F9F42EFB8C0400D32561 /* DayHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayHeaderView.swift; sourceTree = "<group>"; };
 		3A68F9F52EFB8C0400D32561 /* EmptyTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyTransactionsView.swift; sourceTree = "<group>"; };
 		3A68F9F62EFB8C0400D32561 /* MonthHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthHeaderView.swift; sourceTree = "<group>"; };
@@ -325,6 +327,7 @@
 		3A68FA292F206EF300D32561 /* Tokens */ = {
 			isa = PBXGroup;
 			children = (
+				3A4919572F25E9BA00C0E820 /* Dimensions.swift */,
 				3A68FA262F206EF300D32561 /* CornerRadius.swift */,
 				3A68FA272F206EF300D32561 /* Elevation.swift */,
 				3A68FA282F206EF300D32561 /* Spacing.swift */,
@@ -859,6 +862,7 @@
 				3A68FA052EFCCF7000D32561 /* OnboardingWalletView.swift in Sources */,
 				75F9469C2D3C851D0076E91E /* BudgetPeriod.swift in Sources */,
 				757ABF7B2C181C4200DF8CA8 /* View+Extensions.swift in Sources */,
+				3A4919582F25E9BA00C0E820 /* Dimensions.swift in Sources */,
 				75F946952D3C82930076E91E /* BudgetRowView.swift in Sources */,
 				75CD54C92D92721B0018288D /* AllTransactionsView.swift in Sources */,
 				754B694D2D97EAD100C0F001 /* AuthManager.swift in Sources */,
