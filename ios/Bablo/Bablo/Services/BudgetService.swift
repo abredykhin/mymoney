@@ -192,6 +192,72 @@ class BudgetService: ObservableObject {
     var spendBreakdownItems: [CategoryBreakdownItem] {
         spendBreakdownResponse?.breakdown ?? []
     }
+    
+    // MARK: - Hero Card Helpers
+    
+    /// Estimated total spending for the month based on current trends
+    var spendingProjection: Double {
+        let totalMonthlySpent = spendBreakdownResponse?.totalSpent ?? 0
+        
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Get number of days in current month
+        guard let range = calendar.range(of: .day, in: .month, for: now) else { return totalMonthlySpent }
+        let totalDaysInMonth = Double(range.count)
+        
+        // Get current day of month
+        let currentDay = Double(calendar.component(.day, from: now))
+        
+        // Avoid division by zero
+        if currentDay == 0 { return 0 }
+        
+        // Simple linear extrapolation
+        return (totalMonthlySpent / currentDay) * totalDaysInMonth
+    }
+    
+    var daysRemainingInMonth: Int {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let range = calendar.range(of: .day, in: .month, for: now) else { return 0 }
+        let totalDays = range.count
+        let currentDay = calendar.component(.day, from: now)
+        return max(0, totalDays - currentDay)
+    }
+    
+    var daysRemainingInCurrentWeek: Int {
+        // Assuming week ends on Saturday (or standard Gregorian). 
+        // 1 = Sunday, 7 = Saturday.
+        let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: Date()) // 1...7
+        // Let's assume we want days left including today? Or remaining?
+        // "Safe to spend for the rest of this week" implies remaining days.
+        // If today is Monday (2), and week ends Saturday (7), we have Tue, Wed, Thu, Fri, Sat = 5 days.
+        // Let's strictly say "Days until end of week".
+        // Use user's locale for week definition?
+        // Simple approach: 7 - weekday + 1 (if we count today) or just strict remaining.
+        // User asked: "how many days are left in this week"
+        
+        // Support Sunday-start or Monday-start based on Locale?
+        // Let's use 7 (Saturday) as end for standard US, but let's standardise to "End of Week" 
+        // being the start of next week - 1 day.
+        
+        // Simple logic: Days until the next Sunday (start of new week).
+        // If today is Sunday (1), days remaining = 6 (Mon-Sat)? Or is Sunday the end?
+        // Let's assume standard ISO week (Monday start)? Or US (Sunday start)?
+        // MyMoney seems generic. Let's assume "Rest of this week" means until next Monday?? 
+        // Or until Saturday night?
+        
+        // Let's go with: Week ends on Saturday.
+        
+        // If today is Friday (6), days left = 1 (Saturday).
+        // If today is Saturday (7), days left = 0.
+        
+        // Let's include TODAY in the logic "Safe to spend THIS week", usually implies the budget for `today...end_of_week`.
+        // So if today is Fri, I have budget for Fri, Sat. = 2 days.
+        
+        return 7 - weekday + 1
+    }
 
     // MARK: - Public Methods
 
@@ -489,6 +555,12 @@ class BudgetService: ObservableObject {
         }
     }
 
+    /// Effective income: max(expected, known) + extra
+    /// Use this for UI displays instead of raw monthlyIncome
+    var effectiveIncome: Double {
+        max(monthlyIncome, knownIncomeThisMonth) + extraIncomeThisMonth
+    }
+
     /// Calculate discretionary budget: (max(expected, known) + extra) - mandatory - spending
     func calculateDiscretionaryBudget() {
         let totalMonthlySpent = spendBreakdownResponse?.totalSpent ?? 0
@@ -501,19 +573,19 @@ class BudgetService: ObservableObject {
         // Smarter income logic:
         // Use the higher of expected vs known patterns (handles 3 paychecks)
         // AND always add extra one-offs on top
-        let effectiveIncome = max(monthlyIncome, knownIncomeThisMonth) + extraIncomeThisMonth
+        let incomeToUse = effectiveIncome
         
-        Logger.d("BudgetService: 4. Effective Income: \(effectiveIncome)")
+        Logger.d("BudgetService: 4. Effective Income: \(incomeToUse)")
         Logger.d("BudgetService: 5. Fixed Expenses (Profile): \(monthlyMandatoryExpenses)")
         Logger.d("BudgetService: 6. Variable Spending (Current Month): \(totalMonthlySpent)")
         
-        let result = effectiveIncome - monthlyMandatoryExpenses - totalMonthlySpent
+        let result = incomeToUse - monthlyMandatoryExpenses - totalMonthlySpent
         self.discretionaryBudget = result
         
         Logger.i("BudgetService: => Resulting Discretionary Budget: \(discretionaryBudget)")
         
-        if monthlyIncome <= 0 {
-            Logger.w("BudgetService: Caution - monthlyIncome is 0 or less, check if gemini-budget-analysis completed successfully")
+        if monthlyIncome <= 0 && knownIncomeThisMonth <= 0 {
+            Logger.w("BudgetService: Caution - No income source found yet")
         }
     }
 

@@ -60,20 +60,42 @@ struct DayHeaderView: View {
     }
     
     private func formatDayHeader(_ day: AllTransactionsView.DayKey) -> String {
-        // Use UTC calendar for consistency
-        var calendar = Calendar.current
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-
-        if calendar.isDateInToday(day.date) {
+        // We need to compare the "nominal" date (YYYY-MM-DD from the DB)
+        // against the user's "nominal" current date.
+        
+        // 1. Extract the nominal components from the transaction date (interpreted as UTC)
+        var utcCalendar = Calendar.current
+        utcCalendar.timeZone = TimeZone(identifier: "UTC")!
+        let txComponents = utcCalendar.dateComponents([.year, .month, .day], from: day.date)
+        
+        // 2. Extract the nominal components for "Today" and "Yesterday" in Local time
+        let localCalendar = Calendar.current
+        let today = Date()
+        let todayComponents = localCalendar.dateComponents([.year, .month, .day], from: today)
+        
+        // Check for Today
+        if txComponents.year == todayComponents.year &&
+           txComponents.month == todayComponents.month &&
+           txComponents.day == todayComponents.day {
             return "Today"
-        } else if calendar.isDateInYesterday(day.date) {
-            return "Yesterday"
-        } else {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "EEE, MMM d"
-            formatter.timeZone = TimeZone(identifier: "UTC")
-            return formatter.string(from: day.date)
         }
+        
+        // Check for Yesterday
+        if let yesterday = localCalendar.date(byAdding: .day, value: -1, to: today) {
+            let yesterdayComponents = localCalendar.dateComponents([.year, .month, .day], from: yesterday)
+            
+            if txComponents.year == yesterdayComponents.year &&
+               txComponents.month == yesterdayComponents.month &&
+               txComponents.day == yesterdayComponents.day {
+                return "Yesterday"
+            }
+        }
+        
+        // Fallback: Just format the date
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE, MMM d"
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        return formatter.string(from: day.date)
     }
     
     private func formatAmount(_ amount: Double) -> String {
