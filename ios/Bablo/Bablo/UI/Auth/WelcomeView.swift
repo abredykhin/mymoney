@@ -70,7 +70,6 @@ struct WelcomeView : View {
                         .cornerRadius(8)
                 }
                 .padding(.horizontal, 40)
-                .padding(.top, 8)
 
                 // Hidden: Sign Up with Phone Button (for future use)
                 // Button(action: { showPhoneSignUp = true }) {

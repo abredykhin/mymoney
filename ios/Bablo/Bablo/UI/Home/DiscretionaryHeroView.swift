@@ -70,11 +70,11 @@ struct DiscretionaryHeroView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             // Header Row: Title + Toggle
             HStack(alignment: .center) {
                 Text("Spend Money")
-                    .font(Typography.cardTitle)
+                    .font(Typography.footnote)
                     .foregroundColor(ColorPalette.textSecondary)
 
                 Spacer()
@@ -87,9 +87,9 @@ struct DiscretionaryHeroView: View {
                 }) {
                     HStack(spacing: 4) {
                         Text(isWeeklyView ? "Weekly" : "Monthly")
-                            .font(Typography.captionMedium)
+                            .font(.system(size: 11))
                         Image(systemName: "arrow.2.circlepath")
-                            .font(.caption)
+                            .font(.system(size: 10))
                     }
                     .foregroundColor(ColorPalette.textSecondary)
                 }
@@ -97,20 +97,21 @@ struct DiscretionaryHeroView: View {
 
             // Main Amount
             Text(displayAmount, format: .currency(code: "USD").precision(.fractionLength(0)))
-                .font(Typography.amountDisplay)
+                .font(Typography.h3.monospaced())
 
             // Status Row
             HStack(spacing: Spacing.xs) {
                 Image(systemName: isOverBudget ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
+                    .font(.system(size: 12))
                     .foregroundColor(isOverBudget ? ColorPalette.error : ColorPalette.success)
 
                 Text(statusText)
-                    .font(Typography.captionMedium)
+                    .font(Typography.footnote)
                     .foregroundColor(ColorPalette.textPrimary)
 
                 if let contextText = contextText {
                     Text(contextText)
-                        .font(Typography.footnote)
+                        .font(.system(size: 11))
                         .foregroundColor(isOverBudget ? ColorPalette.error : ColorPalette.success)
                 }
             }

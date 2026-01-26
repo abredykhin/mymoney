@@ -60,7 +60,6 @@
 		757ABF712C181B4600DF8CA8 /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF702C181B4600DF8CA8 /* LinkKit */; };
 		757ABF792C181C3D00DF8CA8 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF782C181C3D00DF8CA8 /* Logger.swift */; };
 		757ABF7B2C181C4200DF8CA8 /* View+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */; };
-		757ABF7F2C181C5200DF8CA8 /* View+Previews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF7E2C181C5200DF8CA8 /* View+Previews.swift */; };
 		757ABF872C181D3400DF8CA8 /* UserAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF862C181D3400DF8CA8 /* UserAccount.swift */; };
 		757ABF8A2C181DCC00DF8CA8 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF892C181DCC00DF8CA8 /* Valet */; };
 		757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF922C18243100DF8CA8 /* WelcomeView.swift */; };
@@ -182,7 +181,6 @@
 		757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		757ABF782C181C3D00DF8CA8 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Extensions.swift"; sourceTree = "<group>"; };
-		757ABF7E2C181C5200DF8CA8 /* View+Previews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Previews.swift"; sourceTree = "<group>"; };
 		757ABF862C181D3400DF8CA8 /* UserAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAccount.swift; sourceTree = "<group>"; };
 		757ABF922C18243100DF8CA8 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		7590F2972C86470400BCCDE6 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
@@ -360,13 +358,6 @@
 			path = Onboarding;
 			sourceTree = "<group>";
 		};
-		7549AB4C2D0E4C6400313F5C /* Components */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
 		754B69452D97D65800C0F001 /* Auth */ = {
 			isa = PBXGroup;
 			children = (
@@ -441,7 +432,6 @@
 				3A68FA2B2F206EF300D32561 /* Design */,
 				757ABF832C181CC300DF8CA8 /* Model */,
 				75D39A072EEE5C7600866367 /* Services */,
-				757ABF902C18232E00DF8CA8 /* Design */,
 				757ABF742C181C2600DF8CA8 /* Util */,
 				75E49BA82CA3E62F008D72F8 /* Files */,
 				7590F29D2C86471D00BCCDE6 /* Link */,
@@ -490,7 +480,6 @@
 			isa = PBXGroup;
 			children = (
 				759CDE5C2EED1F6900F8BB96 /* SupabaseManager.swift */,
-				757ABF7E2C181C5200DF8CA8 /* View+Previews.swift */,
 				757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */,
 				757ABF782C181C3D00DF8CA8 /* Logger.swift */,
 				75E49BAB2CA3EACF008D72F8 /* Dates.swift */,
@@ -507,14 +496,6 @@
 				757ABF862C181D3400DF8CA8 /* UserAccount.swift */,
 			);
 			path = Model;
-			sourceTree = "<group>";
-		};
-		757ABF902C18232E00DF8CA8 /* Design */ = {
-			isa = PBXGroup;
-			children = (
-				7549AB4C2D0E4C6400313F5C /* Components */,
-			);
-			path = Design;
 			sourceTree = "<group>";
 		};
 		757ABF912C18242900DF8CA8 /* UI */ = {
@@ -816,7 +797,6 @@
 				75E49BA52CA27E67008D72F8 /* TransactionView.swift in Sources */,
 				7521DF1C2D87A52C00856718 /* BankAccountDetailView.swift in Sources */,
 				75F946AC2D3C874F0076E91E /* DiscretionarySpendingView.swift in Sources */,
-				757ABF7F2C181C5200DF8CA8 /* View+Previews.swift in Sources */,
 				75E6CC652CBCBD4500C779C9 /* RecentTransactionsView.swift in Sources */,
 				75BB90CB2CA0E30E00D197A6 /* BankView.swift in Sources */,
 				754B69432D97D19800C0F001 /* BiometricAuthService.swift in Sources */,

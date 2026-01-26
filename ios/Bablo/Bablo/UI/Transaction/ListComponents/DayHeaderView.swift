@@ -12,32 +12,36 @@ struct DayHeaderView: View {
     let summary: AllTransactionsView.Summary?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.xxs) {
+        HStack {
             Text(formatDayHeader(day))
                 .font(Typography.bodySemibold)
                 .foregroundColor(ColorPalette.textPrimary)
 
-            // Daily summary below the day name - separate lines
-            if let summary = summary {
-                if summary.totalIn > 0 {
-                    HStack(spacing: Spacing.xs) {
-                        Text(formatAmount(summary.totalIn))
-                            .font(Typography.caption)
-                            .foregroundColor(ColorPalette.success)
-                        Text("in")
-                            .font(Typography.caption)
-                            .foregroundColor(ColorPalette.textSecondary)
-                    }
-                }
+            Spacer()
 
-                if summary.totalOut > 0 {
-                    HStack(spacing: Spacing.xs) {
-                        Text("-\(formatAmount(summary.totalOut))")
-                            .font(Typography.caption)
-                            .foregroundColor(ColorPalette.error)
-                        Text("out")
-                            .font(Typography.caption)
-                            .foregroundColor(ColorPalette.textSecondary)
+            // Daily summary inline
+            if let summary = summary {
+                HStack(spacing: Spacing.sm) {
+                    if summary.totalIn > 0 {
+                        HStack(spacing: Spacing.xxs) {
+                            Text(formatAmount(summary.totalIn))
+                                .font(Typography.footnote)
+                                .foregroundColor(ColorPalette.success)
+                            Text("in")
+                                .font(Typography.footnote)
+                                .foregroundColor(ColorPalette.textSecondary)
+                        }
+                    }
+
+                    if summary.totalOut > 0 {
+                        HStack(spacing: Spacing.xxs) {
+                            Text(formatAmount(summary.totalOut))
+                                .font(Typography.footnote)
+                                .foregroundColor(ColorPalette.error)
+                            Text("out")
+                                .font(Typography.footnote)
+                                .foregroundColor(ColorPalette.textSecondary)
+                        }
                     }
                 }
             } else {
@@ -45,17 +49,16 @@ struct DayHeaderView: View {
                 HStack(spacing: Spacing.xs) {
                     ProgressView()
                         .scaleEffect(0.5)
-                    Text("Loading stats...")
+                    Text("Loading...")
                         .font(Typography.footnote)
                         .foregroundColor(ColorPalette.textSecondary)
                 }
-                .frame(height: 20)
             }
         }
-        .padding(.vertical, Spacing.sm)
-        .padding(.horizontal, Spacing.lg)
+        .padding(.vertical, Spacing.xs)
+        .padding(.horizontal, Spacing.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(ColorPalette.backgroundSecondary)
+        .listRowInsets(EdgeInsets())
         .textCase(nil)
     }
     
