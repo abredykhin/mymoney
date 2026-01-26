@@ -4,7 +4,7 @@ import SwiftUI
 struct GlassCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .padding(Spacing.cardPadding)
+            .padding(Spacing.md)
             .frame(maxWidth: .infinity, minHeight: Dimensions.heroCardHeight, alignment: .leading)
             .background {
                 RoundedRectangle(

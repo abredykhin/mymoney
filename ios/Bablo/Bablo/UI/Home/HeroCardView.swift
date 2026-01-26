@@ -59,36 +59,37 @@ struct HeroCardViewModel: Identifiable {
 
 struct HeroCardView: View {
     let model: HeroCardViewModel
-    
+
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             Text(model.title)
-                .font(Typography.cardTitle)
+                .font(Typography.footnote)
                 .foregroundColor(ColorPalette.textSecondary)
 
             Text(model.amount.rounded(.toNearestOrAwayFromZero), format: .currency(code: model.currencyCode).precision(.fractionLength(0)))
-                .font(Typography.amountDisplay)
+                .font(Typography.h3.monospaced())
 
             HStack(spacing: Spacing.xs) {
                 if model.showArrow {
                     Image(systemName: model.isPositive ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
+                        .font(.system(size: 12))
                         .foregroundColor(model.isPositive ? ColorPalette.success : ColorPalette.error)
                 }
-                
+
                 Text(model.statusText)
-                    .font(Typography.captionMedium)
+                    .font(Typography.footnote)
                     .foregroundColor(ColorPalette.textPrimary)
-                
+
                 if let changeText = model.changeText {
                     Text(changeText)
-                    .font(Typography.footnote) // Was .footnote, mapped to Typography.footnote
+                        .font(.system(size: 11))
                         .foregroundColor(model.isPositive ? ColorPalette.success : ColorPalette.error)
                 }
-                
+
                 if let subtitle = model.subtitle {
                     Spacer()
                     Text(subtitle)
-                        .font(Typography.caption)
+                        .font(.system(size: 11))
                         .foregroundColor(ColorPalette.textSecondary)
                 }
             }

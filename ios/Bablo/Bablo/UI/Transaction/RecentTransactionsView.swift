@@ -9,33 +9,51 @@ import SwiftUI
 
 struct RecentTransactionsView: View {
     @EnvironmentObject private var transactionsService: TransactionsService
-    
+
     var body: some View {
-        VStack(spacing: Spacing.sm) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             Text("Recent Transactions")
-                .font(Typography.mono.weight(.bold))
-                .padding(.horizontal, Spacing.md)
-                .padding(.top, Spacing.sm)
-            
+                .font(Typography.footnote)
+                .foregroundColor(ColorPalette.textSecondary)
+
             if transactionsService.transactions.isEmpty && !transactionsService.isLoading {
                 Text("No transactions")
-                    .font(Typography.bodyMedium)
+                    .font(Typography.caption)
                     .foregroundColor(ColorPalette.textSecondary)
-                    .padding(Spacing.md)
+                    .padding(.vertical, Spacing.sm)
             } else {
-                VStack(spacing: Spacing.xxs) {
-                    ForEach(transactionsService.transactions, id: \.id) { transaction in
+                VStack(spacing: 0) {
+                    ForEach(transactionsService.transactions.prefix(10) , id: \.id) { transaction in
                         TransactionView(transaction: transaction)
-                            .padding(.horizontal, Spacing.md)
                     }
                 }
             }
         }
-        .card()
+        .glassCard()
         .onAppear() {
             Task {
                 try? await transactionsService.fetchRecentTransactions(forceRefresh: false, loadMore: false, limit: 10)
             }
         }
+    }
+}
+
+#Preview {
+    let service: TransactionsService = {
+        let s = TransactionsService()
+        s.transactions = [
+            TransactionView_Previews.foodTransaction,
+            TransactionView_Previews.travelTransaction,
+            TransactionView_Previews.incomeTransaction
+        ]
+        s.isLoading = false
+        return s
+    }()
+    
+    ZStack {
+        ColorPalette.backgroundPrimary.ignoresSafeArea()
+        RecentTransactionsView()
+            .environmentObject(service)
+            .padding()
     }
 }

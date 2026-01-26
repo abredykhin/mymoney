@@ -22,6 +22,7 @@ enum TabSelection {
     case transactions
     case accounts
     case spend
+    case profile
 }
 
 struct ContentView: View {
@@ -67,6 +68,12 @@ struct ContentView: View {
                 }
                 .tabItem {Label("Spend", systemImage: "banknote")
                 }.tag(TabSelection.spend)
+
+                NavigationStack {
+                    ProfileView()
+                }
+                .tabItem {Label("Profile", systemImage: "person.circle")
+                }.tag(TabSelection.profile)
             }
             .onChange(of: navigationState.selectedTab) { oldValue, newValue in
                 // Clear navigation stack when switching tabs

@@ -16,7 +16,6 @@ struct HomeView: View {
     @EnvironmentObject var navigationState: NavigationState
     @State private var isOffline = false
     @State private var isRefreshing = false
-    @State private var showingProfile = false
     @State private var showingOnboarding = false
     
     var body: some View {
@@ -106,25 +105,6 @@ struct HomeView: View {
         }
         .navigationDestination(for: BankAccount.self) { account in
             BankAccountDetailView(account: account)
-        }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Text("Overview")
-                    .font(Typography.h4)
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    showingProfile = true
-                } label: {
-                    Image(systemName: "person.circle")
-                        .font(Typography.h4)
-                }
-            }
-        }
-        .sheet(isPresented: $showingProfile) {
-            NavigationView {
-                ProfileView()
-            }
         }
         .onAppear {
             // Check network status when view appears

@@ -14,7 +14,6 @@ struct AllTransactionsView: View {
 
     @EnvironmentObject var accountsService: AccountsService // Injected to access account types
 
-    @State private var showingProfile = false
     @State private var isLoadingMore = false // Keep for bottom indicator logic
     @State private var loadingError: Error?
     
@@ -133,19 +132,6 @@ struct AllTransactionsView: View {
                     }
                 }
             }
-        }
-        .navigationTitle("Transactions")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    showingProfile = true
-                } label: {
-                    Image(systemName: "person.circle")
-                }
-            }
-        }
-        .sheet(isPresented: $showingProfile) {
-            NavigationView { ProfileView() }
         }
         .navigationDestination(for: Bank.self) { bank in
             BankDetailView(bank: bank)
@@ -320,4 +306,52 @@ struct AllTransactionsView: View {
         guard let days = groupedByMonth[month] else { return [] }
         return days.keys.sorted(by: >)
     }
+}
+
+#Preview {
+    let transactionService: TransactionsService = {
+        let s = TransactionsService()
+        s.transactions = [
+            TransactionView_Previews.foodTransaction,
+            TransactionView_Previews.travelTransaction,
+            TransactionView_Previews.incomeTransaction,
+            Transaction(
+               id: 4,
+               account_id: 0,
+               amount: 50.00,
+               date: "2024-11-20", // Different month to show month header
+               authorized_date: "2024-11-20",
+               name: "Previous Month Item",
+               merchant_name: "Previous Month Item",
+               pending: false,
+               category: ["Shopping"],
+               transaction_id: "4",
+               pending_transaction_transaction_id: nil,
+               iso_currency_code: "USD",
+               payment_channel: "online",
+               user_id: nil,
+               logo_url: nil,
+               website: nil,
+               personal_finance_category: "SHOPPING",
+               personal_finance_subcategory: nil,
+               created_at: nil,
+               updated_at: nil
+           )
+        ]
+        s.isLoading = false
+        return s
+    }()
+    
+    // Attempt to set stats if accessible, otherwise preview will just lack stats
+    
+    let userAccount = UserAccount()
+    let navigationState = NavigationState()
+    let accountsService = AccountsService()
+    
+    AllTransactionsView()
+        .environmentObject(transactionService)
+        .environmentObject(userAccount)
+        .environmentObject(navigationState)
+        .environmentObject(accountsService)
+        .background(ColorPalette.backgroundPrimary)
 }

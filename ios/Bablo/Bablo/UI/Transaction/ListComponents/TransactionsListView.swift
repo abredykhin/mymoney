@@ -26,40 +26,48 @@ struct TransactionsListView: View {
     let loadMoreAction: () -> Void
 
     var body: some View {
-        List {
-            // Month Sections
-            ForEach(sortedMonths, id: \.self) { month in
-                Section {
-                    // Day Sections
-                    ForEach(sortedDays(for: month), id: \.self) { day in
-                        Section {
-                            // Transactions
-                            ForEach(groupedByMonth[month]?[day] ?? [], id: \.id) { transaction in
-                                TransactionView(transaction: transaction)
-                                    .onAppear {
-                                        checkPreload(for: transaction)
-                                    }
+        ScrollView {
+            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                // Month Sections
+                ForEach(sortedMonths, id: \.self) { month in
+                    Section {
+                        // Day Sections
+                        ForEach(sortedDays(for: month), id: \.self) { day in
+                            Section {
+                                // Transactions
+                                ForEach(groupedByMonth[month]?[day] ?? [], id: \.id) { transaction in
+                                    TransactionView(transaction: transaction)
+                                        .padding(.horizontal, 0) // Remove default list padding
+                                        .onAppear {
+                                            checkPreload(for: transaction)
+                                        }
+                                }
+                            } header: {
+                                DayHeaderView(day: day, summary: dailySummary(for: month, day: day))
+                                    .background(ColorPalette.backgroundPrimary) // Ensure header has background for sticky effect
                             }
-                        } header: {
-                            DayHeaderView(day: day, summary: dailySummary(for: month, day: day))
                         }
+                    } header: {
+                        MonthHeaderView(month: month, summary: monthlySummary(for: month))
+                            .background(ColorPalette.backgroundPrimary) // Ensure header has background for sticky effect
                     }
-                } header: {
-                    MonthHeaderView(month: month, summary: monthlySummary(for: month))
                 }
-            }
-            
-            // Bottom Indicators
-            if isLoadingMore {
-                bottomLoadingIndicator
-            } else if loadingError != nil && hasMore {
-                bottomErrorIndicator
+                
+                // Bottom Indicators
+                if isLoadingMore {
+                    bottomLoadingIndicator
+                } else if loadingError != nil && hasMore {
+                    bottomErrorIndicator
+                }
+                
+                // Add some bottom padding for safe area
+                Color.clear.frame(height: Spacing.xl)
             }
         }
-        .listStyle(.plain)
         .refreshable {
             await refreshAction()
         }
+        .background(ColorPalette.backgroundPrimary)
     }
     
     // MARK: - Helpers
