@@ -50,17 +50,17 @@ struct HomeView: View {
                             .environmentObject(budgetService)
                             .padding(.top, Dimensions.topSpacingReduction)
 
-                        // 2. New Secondary Hero: Discretionary Spending / "Spend Money"
-                        DiscretionaryHeroView()
+                        // 2. New Secondary Hero: Variable Spending / "Spend Money"
+                        VariableSpendingView()
 
                         // 3. Budget Summary Card
                         HeroCardView(model: HeroCardViewModel(
                             title: "Monthly Budget",
-                            amount: budgetService.discretionaryBudget,
-                            monthlyChange: budgetService.discretionaryBudget - (budgetService.monthlyIncome - budgetService.monthlyMandatoryExpenses),
-                            isPositive: budgetService.discretionaryBudget >= 0,
+                            amount: budgetService.variableBudget,
+                            monthlyChange: budgetService.variableBudget - (budgetService.monthlyIncome - budgetService.monthlyMandatoryExpenses),
+                            isPositive: budgetService.variableBudget >= 0,
                             currencyCode: "USD",
-                            overrideStatusText: budgetService.discretionaryBudget >= 0 ? "Left to Spend" : "Over Budget"
+                            overrideStatusText: budgetService.variableBudget >= 0 ? "Left to Spend" : "Over Budget"
                         ))
                     }
                 }

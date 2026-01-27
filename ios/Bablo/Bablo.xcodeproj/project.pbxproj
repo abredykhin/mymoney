@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3A4919562F24812000C0E820 /* DiscretionaryHeroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4919552F24812000C0E820 /* DiscretionaryHeroView.swift */; };
 		3A4919582F25E9BA00C0E820 /* Dimensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4919572F25E9BA00C0E820 /* Dimensions.swift */; };
+		3A49195A2F287B2700C0E820 /* VariableSpendingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4919592F287B2700C0E820 /* VariableSpendingView.swift */; };
 		3A68F9F92EFB8C0400D32561 /* EmptyTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F52EFB8C0400D32561 /* EmptyTransactionsView.swift */; };
 		3A68F9FA2EFB8C0400D32561 /* DayHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F42EFB8C0400D32561 /* DayHeaderView.swift */; };
 		3A68F9FB2EFB8C0400D32561 /* TransactionsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9F72EFB8C0400D32561 /* TransactionsListView.swift */; };
@@ -125,8 +125,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		3A4919552F24812000C0E820 /* DiscretionaryHeroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscretionaryHeroView.swift; sourceTree = "<group>"; };
 		3A4919572F25E9BA00C0E820 /* Dimensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dimensions.swift; sourceTree = "<group>"; };
+		3A4919592F287B2700C0E820 /* VariableSpendingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VariableSpendingView.swift; sourceTree = "<group>"; };
 		3A68F9F42EFB8C0400D32561 /* DayHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayHeaderView.swift; sourceTree = "<group>"; };
 		3A68F9F52EFB8C0400D32561 /* EmptyTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyTransactionsView.swift; sourceTree = "<group>"; };
 		3A68F9F62EFB8C0400D32561 /* MonthHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthHeaderView.swift; sourceTree = "<group>"; };
@@ -269,7 +269,7 @@
 		3A68F9FF2EFB9FDA00D32561 /* Home */ = {
 			isa = PBXGroup;
 			children = (
-				3A4919552F24812000C0E820 /* DiscretionaryHeroView.swift */,
+				3A4919592F287B2700C0E820 /* VariableSpendingView.swift */,
 				3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */,
 				3A68F9FD2EFB9FDA00D32561 /* HeroCardView.swift */,
 				3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */,
@@ -793,6 +793,7 @@
 				75F946AE2D3C875A0076E91E /* OnboardingBudgetFooterView.swift in Sources */,
 				754B69522D989AC800C0F001 /* Transaction+Extensions.swift in Sources */,
 				75B4DF292DA3107C00FF3C1C /* SpendView.swift in Sources */,
+				3A49195A2F287B2700C0E820 /* VariableSpendingView.swift in Sources */,
 				754B694B2D97D8E500C0F001 /* BiometricsEnrollmentView.swift in Sources */,
 				75E49BA52CA27E67008D72F8 /* TransactionView.swift in Sources */,
 				7521DF1C2D87A52C00856718 /* BankAccountDetailView.swift in Sources */,
@@ -838,7 +839,6 @@
 				75C972CA2D13B8CC008E6E87 /* OnboardingCategoriesView.swift in Sources */,
 				759CDE5D2EED1F6900F8BB96 /* SupabaseManager.swift in Sources */,
 				7590F2A72C865B9F00BCCDE6 /* BankListView.swift in Sources */,
-				3A4919562F24812000C0E820 /* DiscretionaryHeroView.swift in Sources */,
 				3A68FA052EFCCF7000D32561 /* OnboardingWalletView.swift in Sources */,
 				75F9469C2D3C851D0076E91E /* BudgetPeriod.swift in Sources */,
 				757ABF7B2C181C4200DF8CA8 /* View+Extensions.swift in Sources */,

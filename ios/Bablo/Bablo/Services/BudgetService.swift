@@ -180,30 +180,34 @@ class BudgetService: ObservableObject {
     // Budget profile data
     @Published var monthlyIncome: Double = 0
     @Published var monthlyMandatoryExpenses: Double = 0
-    @Published var discretionaryBudget: Double = 0
+    @Published var variableBudget: Double = 0  // Renamed from discretionaryBudget
     @Published var allBudgetItems: [BudgetItem] = []
     
     // Dynamic income data
     @Published var knownIncomeThisMonth: Double = 0
     @Published var extraIncomeThisMonth: Double = 0
-
+    
+    // Variable spend tracking (for Home Screen)
+    @Published var variableSpend: Double = 0
+    
     private let supabase = SupabaseManager.shared.client
 
+    // Total spend (for Spend Tab)
     var spendBreakdownItems: [CategoryBreakdownItem] {
         spendBreakdownResponse?.breakdown ?? []
     }
     
     // MARK: - Hero Card Helpers
     
-    /// Estimated total spending for the month based on current trends
-    var spendingProjection: Double {
-        let totalMonthlySpent = spendBreakdownResponse?.totalSpent ?? 0
+    /// Estimated total variable spending for the month
+    var variableSpendingProjection: Double {
+        let currentVariableSpend = variableSpend
         
         let calendar = Calendar.current
         let now = Date()
         
         // Get number of days in current month
-        guard let range = calendar.range(of: .day, in: .month, for: now) else { return totalMonthlySpent }
+        guard let range = calendar.range(of: .day, in: .month, for: now) else { return currentVariableSpend }
         let totalDaysInMonth = Double(range.count)
         
         // Get current day of month
@@ -213,7 +217,7 @@ class BudgetService: ObservableObject {
         if currentDay == 0 { return 0 }
         
         // Simple linear extrapolation
-        return (totalMonthlySpent / currentDay) * totalDaysInMonth
+        return (currentVariableSpend / currentDay) * totalDaysInMonth
     }
     
     var daysRemainingInMonth: Int {
@@ -312,9 +316,47 @@ class BudgetService: ObservableObject {
         }
     }
 
-    /// Fetch spending breakdown by category
+    /// Fetch variable spending (filtered by DB view) for the current month
+    /// Used for Home Screen Budget Calculation
+    func fetchVariableSpend(range: SpendDateRange = .month) async throws {
+        // We typically care about the current month for budget
+        // but can support other ranges if needed.
+        // For now, let's stick to current month logic for the Home Screen.
+        
+        let startDate = range.startDate()
+        let endDate = range.endDate()
+        
+        Logger.d("BudgetService: Fetching variable spend (\(range.displayName))")
+        
+        do {
+            // Use the NEW DB View 'variable_transactions' which already filters out fixed expenses
+            let transactions: [TransactionForBreakdown] = try await supabase
+                .from("variable_transactions")
+                .select("id, amount, name, personal_finance_category, type") // Select all required fields for TransactionForBreakdown decoding
+                .gte("date", value: startDate)
+                .lte("date", value: endDate)
+                .gt("amount", value: 0) // Expenses only
+                .not("personal_finance_category", operator: .ilike, value: "%transfer%")
+                .execute()
+                .value
+            
+            let total = transactions.reduce(0) { $0 + abs($1.amount) }
+            
+            DispatchQueue.main.async {
+                self.variableSpend = total
+                self.calculateVariableBudget()
+            }
+            
+            Logger.i("BudgetService: Variable Spend (DB filtered): $\(total)")
+        } catch {
+            Logger.e("BudgetService: Failed to fetch variable spend: \(error)")
+        }
+    }
+
+    /// Fetch TOTAL spending breakdown (Unfiltered)
+    /// Used for Spend Tab
     /// - Parameter range: Time range for analysis
-    func fetchSpendingBreakdown(range: SpendDateRange = .month) async throws {
+    func fetchTotalSpend(range: SpendDateRange = .month) async throws {
         isLoadingBreakdown = true
         breakdownError = nil
 
@@ -325,46 +367,31 @@ class BudgetService: ObservableObject {
         let startDate = range.startDate()
         let endDate = range.endDate()
 
-        Logger.d("BudgetService: Fetching spending breakdown (\(range.displayName): \(startDate) to \(endDate))")
+        Logger.d("BudgetService: Fetching TOTAL spending breakdown (\(range.displayName))")
 
         do {
-            // Fetch all expense transactions in date range from the 'transactions' view to include account 'type'
+            // Use standard 'transactions' view - NO Filtering
             let transactions: [TransactionForBreakdown] = try await supabase
                 .from("transactions")
                 .select("id, amount, name, personal_finance_category, type")
                 .gte("date", value: startDate)
                 .lte("date", value: endDate)
                 .gt("amount", value: 0) // Positive amounts are expenses
-                .not("personal_finance_category", operator: .ilike, value: "%transfer%")
+                .not("personal_finance_category", operator: .ilike, value: "%transfer%") 
                 .order("date", ascending: false)
                 .execute()
                 .value
 
-            Logger.i("BudgetService: Received \(transactions.count) expense transactions")
+            Logger.i("BudgetService: Received \(transactions.count) total transactions for breakdown")
 
-            // Filter out mandatory expenses if they have already occurred this month
-            let mandatoryPatterns = allBudgetItems
-                .filter { $0.type == "fixed_expense" }
-                .map { $0.pattern.lowercased() }
+            // No client-side filtering needed anymore for Spend Tab!
+            // We want to see Rent/Mortgage here.
             
-            let filteredTransactions = transactions.filter { tx in
-                let txName = tx.name.lowercased()
-                let isMandatory = mandatoryPatterns.contains { pattern in
-                    txName.contains(pattern)
-                }
-                
-                if isMandatory {
-                    Logger.d("BudgetService: Excluding mandatory expense from variable spending: \(tx.name) ($\(tx.amount))")
-                }
-                
-                return !isMandatory
-            }
-
             // Group by category and calculate totals
             var categoryMap: [String: CategoryData] = [:]
             var totalSpent: Double = 0
 
-            for transaction in filteredTransactions {
+            for transaction in transactions {
                 // In Supabase, personal_finance_category is a string
                 let category = transaction.personalFinanceCategory ?? "Uncategorized"
                 let amount = abs(transaction.amount)
@@ -415,10 +442,10 @@ class BudgetService: ObservableObject {
                 totalSpent: totalSpent
             )
             
-            // Recalculate discretionary budget now that we have spending data
-            calculateDiscretionaryBudget()
+            // Note: We do NOT calculate variable budget here anymore.
+            // That is handled by fetchVariableSpend().
 
-            Logger.i("BudgetService: Spending breakdown complete (\(breakdownItems.count) categories, total: $\(totalSpent))")
+            Logger.i("BudgetService: Total spending breakdown complete (\(breakdownItems.count) categories, total: $\(totalSpent))")
         } catch {
             Logger.e("BudgetService: Failed to fetch spending breakdown: \(error)")
             self.breakdownError = error
@@ -439,7 +466,8 @@ class BudgetService: ObservableObject {
         spendBreakdownResponse = nil
         monthlyIncome = 0
         monthlyMandatoryExpenses = 0
-        discretionaryBudget = 0
+        variableBudget = 0
+        variableSpend = 0
         Logger.d("BudgetService: Cleared cache")
     }
 
@@ -453,7 +481,7 @@ class BudgetService: ObservableObject {
         Logger.d("BudgetService: Fetching budget summary for \(userId)")
         
         do {
-            // Select all fields (*) to avoid decoding errors for Profile struct
+        // Select all fields (*) to avoid decoding errors for Profile struct
             let profile: Profile = try await supabase
                 .from("profiles")
                 .select("*")
@@ -470,7 +498,7 @@ class BudgetService: ObservableObject {
             
             await fetchBudgetItems()
             await fetchActualIncome()
-            calculateDiscretionaryBudget()
+            try? await fetchVariableSpend() // Fetch variable spend to calc budget
         } catch {
             Logger.e("BudgetService: Failed to fetch budget summary: \(error)")
         }
@@ -561,9 +589,10 @@ class BudgetService: ObservableObject {
         max(monthlyIncome, knownIncomeThisMonth) + extraIncomeThisMonth
     }
 
-    /// Calculate discretionary budget: (max(expected, known) + extra) - mandatory - spending
-    func calculateDiscretionaryBudget() {
-        let totalMonthlySpent = spendBreakdownResponse?.totalSpent ?? 0
+    /// Calculate variable budget: (max(expected, known) + extra) - mandatory - variable_spending
+    func calculateVariableBudget() {
+        // Use the fetched variable spend from DB view
+        let totalMonthlyVariableSpent = variableSpend
         
         Logger.d("BudgetService: --- Budget Calculation ---")
         Logger.d("BudgetService: 1. Expected Baseline Income: \(monthlyIncome)")
@@ -577,12 +606,12 @@ class BudgetService: ObservableObject {
         
         Logger.d("BudgetService: 4. Effective Income: \(incomeToUse)")
         Logger.d("BudgetService: 5. Fixed Expenses (Profile): \(monthlyMandatoryExpenses)")
-        Logger.d("BudgetService: 6. Variable Spending (Current Month): \(totalMonthlySpent)")
+        Logger.d("BudgetService: 6. Variable Spending (Current Month): \(totalMonthlyVariableSpent)")
         
-        let result = incomeToUse - monthlyMandatoryExpenses - totalMonthlySpent
-        self.discretionaryBudget = result
+        let result = incomeToUse - monthlyMandatoryExpenses - totalMonthlyVariableSpent
+        self.variableBudget = result
         
-        Logger.i("BudgetService: => Resulting Discretionary Budget: \(discretionaryBudget)")
+        Logger.i("BudgetService: => Resulting Variable Budget: \(variableBudget)")
         
         if monthlyIncome <= 0 && knownIncomeThisMonth <= 0 {
             Logger.w("BudgetService: Caution - No income source found yet")

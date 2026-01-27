@@ -1,13 +1,14 @@
 //
-//  DiscretionaryHeroView.swift
+//  VariableSpendingView.swift
 //  Bablo
 //
-//  Created by Antigravity on 01/23/26.
+//  Created by Antigravity on 01/27/26.
+//  Renamed from DiscretionaryHeroView.swift
 //
 
 import SwiftUI
 
-struct DiscretionaryHeroView: View {
+struct VariableSpendingView: View {
     @EnvironmentObject var budgetService: BudgetService
     @State private var isWeeklyView: Bool = false
     
@@ -16,12 +17,12 @@ struct DiscretionaryHeroView: View {
     // Total free money budget for the month (income - mandatory expenses/bills)
     // Can be negative if mandatory expenses exceed income
     private var monthlyFreeBudget: Double {
-        budgetService.effectiveIncome - budgetService.monthlyMandatoryExpenses
+        budgetService.variableBudget // Calculated in BudgetService
     }
 
-    // Variable spending this month (bills already excluded by BudgetService)
+    // Variable spending this month (bills already excluded by BudgetService DB view)
     private var monthlyVariableSpending: Double {
-        budgetService.spendBreakdownResponse?.totalSpent ?? 0
+        budgetService.variableSpend
     }
 
     // Remaining free money to spend
@@ -61,13 +62,6 @@ struct DiscretionaryHeroView: View {
     private var displayTotalContext: Double {
         isWeeklyView ? weeklyFreeBudget : monthlyFreeBudget
     }
-
-    private var progress: Double {
-        let budget = isWeeklyView ? weeklyFreeBudget : monthlyFreeBudget
-        guard budget > 0 else { return 1 } // If no budget, we're at max
-        let p = displayAmount / budget
-        return max(0, min(1, p))
-    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
@@ -88,8 +82,8 @@ struct DiscretionaryHeroView: View {
                     HStack(spacing: 4) {
                         Text(isWeeklyView ? "Weekly" : "Monthly")
                             .font(.system(size: 11))
-                        Image(systemName: "arrow.2.circlepath")
-                            .font(.system(size: 10))
+                            Image(systemName: "arrow.2.circlepath")
+                                .font(.system(size: 10))
                     }
                     .foregroundColor(ColorPalette.textSecondary)
                 }
@@ -151,7 +145,7 @@ struct DiscretionaryHeroView: View {
     
     return ZStack {
         Color.gray.opacity(0.1).ignoresSafeArea()
-        DiscretionaryHeroView()
+        VariableSpendingView()
             .environmentObject(mockService)
             .padding()
     }

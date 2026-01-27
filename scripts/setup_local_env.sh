@@ -46,6 +46,8 @@ echo "${GREEN}Creating test user ($TEST_EMAIL)...${NC}"
 # SQL to create user if not exists and return ID
 
 # SQL to create user if not exists and return ID
+
+
 CREATE_USER_SQL="
 WITH user_check AS (
     SELECT id FROM auth.users WHERE email = '$TEST_EMAIL'
@@ -59,7 +61,7 @@ inserted_user AS (
     )
     SELECT 
       '00000000-0000-0000-0000-000000000000',
-      gen_random_uuid(),
+      '5f6bb5c6-faf0-484f-aee1-23316a77ea90',
       'authenticated',
       'authenticated',
       '$TEST_EMAIL',
@@ -96,7 +98,14 @@ SELECT id FROM user_id_result;
 
 # Execute and capture output (last line should be the ID)
 # Using docker exec to run psql directly on the db container
-USER_ID=$(echo "$CREATE_USER_SQL" | docker exec -i supabase_db_mymoney psql -U postgres -d postgres -t -A) 
+# Use session_replication_role = replica to suppress triggers (like handle_new_user) 
+# to prevent duplicate profile creation since seed.sql already populated it.
+CREATE_USER_SQL="
+SET session_replication_role = replica;
+$CREATE_USER_SQL
+"
+
+USER_ID=$(echo "$CREATE_USER_SQL" | docker exec -i supabase_db_mymoney psql -U postgres -d postgres -t -A | tail -n 1) 
 
 if [ -z "$USER_ID" ]; then
     echo "${RED}Failed to get Test User ID.${NC}"

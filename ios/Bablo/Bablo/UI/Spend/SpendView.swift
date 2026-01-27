@@ -175,7 +175,7 @@ struct SpendView: View {
             await Task.yield()
 
             // Step 3: Fetch data for the selected range.
-            try? await budgetService.fetchSpendingBreakdown(range: selectedDateRange)
+            try? await budgetService.fetchTotalSpend(range: selectedDateRange)
 
             // Step 4: After data is fetched and proportions are updated, trigger the animation
             // for bars to grow to their new size.
