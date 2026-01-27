@@ -53,6 +53,26 @@ struct WelcomeView : View {
                     appleSignInCoordinator.signInWithApple()
                 }
 
+
+                #if targetEnvironment(simulator)
+                Button(action: {
+                    Task {
+                        try? await EmailAuthService().signInWithPassword(email: "test@example.com", password: "password")
+                    }
+                }) {
+                    Text("Dev Login (Test User)")
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.red.opacity(0.1))
+                        .foregroundColor(.red)
+                        .cornerRadius(8)
+                }
+                .padding(.horizontal, 40)
+                .padding(.bottom, 8)
+                #endif
+
                 if appleSignInCoordinator.isLoading {
                     ProgressView()
                         .padding()
