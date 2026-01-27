@@ -54,4 +54,25 @@ class EmailAuthService: ObservableObject {
             throw error
         }
     }
+    /// Sign in with password (for Dev/Test only)
+    /// Sign in with password (for Dev/Test only)
+    func signInWithPassword(email: String, password: String) async throws {
+        Logger.i("EmailAuthService: Signing in with password for \(email)")
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let session = try await supabase.auth.signIn(
+                email: email,
+                password: password
+            )
+
+            Logger.i("EmailAuthService: Successfully signed in with password")
+            Logger.d("EmailAuthService: User ID: \(session.user.id)")
+        } catch {
+            Logger.e("EmailAuthService: Failed to sign in with password: \(error)")
+            errorMessage = error.localizedDescription
+            throw error
+        }
+    }
 }
