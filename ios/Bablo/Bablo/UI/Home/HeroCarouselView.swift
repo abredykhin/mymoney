@@ -68,7 +68,8 @@ struct HeroCarouselView: View {
                 // We can run these in parallel now that patterns are loaded, or just sequentially for simplicity
                 await withTaskGroup(of: Void.self) { group in
                     group.addTask { try? await budgetService.fetchTotalBalance() }
-                    group.addTask { try? await budgetService.fetchSpendingBreakdown(range: .month) }
+                    group.addTask { try? await budgetService.fetchVariableSpend(range: .month) }
+                    group.addTask { try? await budgetService.fetchTotalSpend(range: .month) }
                 }
                 
                 updateRealData()
