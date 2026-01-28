@@ -8,6 +8,7 @@
 
 import Foundation
 import Supabase
+import LinkKit
 
 /// Response from plaid-link-token Edge Function
 struct PlaidLinkTokenResponse: Codable {
@@ -25,6 +26,11 @@ struct SaveItemResponse: Codable {
 @MainActor
 class PlaidService: ObservableObject {
     private let supabase = SupabaseManager.shared.client
+
+    /// Store the current Plaid handler for OAuth redirect handling
+    /// The handler must be retained for the duration of the Link flow
+    /// and will be needed to respond to OAuth Universal Link redirects
+    var currentHandler: Handler? = nil
 
     /// Create a new Plaid Link token for connecting a bank account
     /// - Parameter itemId: Optional item ID for update mode

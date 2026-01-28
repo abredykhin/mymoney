@@ -10,14 +10,15 @@ struct OnboardingWizard: View {
     @State private var currentStep: OnboardingStep = .welcome
     @SwiftUI.Environment(\.dismiss) private var dismiss
     @EnvironmentObject var accountsService: AccountsService
+    @EnvironmentObject var authManager: AuthManager
     
     // Shared State
     @State private var income: String = "5500"
     @State private var expenses: String = "4300"
     @State private var isExpanded = false
-    
+
     // Plaid Link State
-    @StateObject var plaidService = PlaidService()
+    @EnvironmentObject var plaidService: PlaidService
     @State private var shouldPresentLink = false
     @State private var linkController: LinkController? = nil
     @State private var isLoadingLinkToken = false
@@ -135,7 +136,14 @@ struct OnboardingWizard: View {
             .padding(.horizontal, Spacing.xxxl)
             .padding(.bottom, Spacing.lg)
         }
-        .sheet(isPresented: $shouldPresentLink) {
+        .sheet(isPresented: $shouldPresentLink, onDismiss: {
+            // Clear the handler when the sheet is dismissed
+            // This prevents biometric auth from triggering during Plaid flow
+            plaidService.currentHandler = nil
+
+            // Update auth timestamp to prevent immediate auth prompt after Plaid flow
+            authManager.recordSuccessfulAuthentication()
+        }) {
             if let linkController {
                 linkController.ignoresSafeArea()
             } else {
@@ -188,6 +196,8 @@ struct OnboardingWizard: View {
             let handler = Plaid.create(config)
             switch handler {
             case .success(let handler):
+                // Store handler in PlaidService for OAuth redirect handling
+                self.plaidService.currentHandler = handler
                 self.linkController = LinkController(handler: handler)
                 self.shouldPresentLink = true
             case .failure(let error):
@@ -202,13 +212,21 @@ struct OnboardingWizard: View {
     
     private func generateLinkConfig(linkToken: String) async throws -> LinkTokenConfiguration {
         var config = LinkTokenConfiguration(token: linkToken) { success in
+            // Don't clear handler here - let the sheet's onDismiss handle it
+            // This prevents biometric auth from triggering before sheet dismisses
             Task {
                 try? await plaidService.saveNewItem(publicToken: success.publicToken, institutionId: success.metadata.institution.id)
                 try? await accountsService.refreshAccounts()
-                self.shouldPresentLink = false
+                // Dismiss the sheet after saving the item
+                await MainActor.run {
+                    self.shouldPresentLink = false
+                }
             }
         }
-        config.onExit = { _ in self.shouldPresentLink = false }
+        config.onExit = { _ in
+            // Dismiss the sheet - handler will be cleared in onDismiss
+            self.shouldPresentLink = false
+        }
         return config
     }
 }

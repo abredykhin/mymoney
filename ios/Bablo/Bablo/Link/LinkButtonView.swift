@@ -13,30 +13,36 @@ struct LinkButtonView : View {
     @State var shouldPresentLink = false
     @StateObject var userAccount = UserAccount.shared
     @EnvironmentObject var accountsService: AccountsService
-    @StateObject var plaidService = PlaidService()
+    @EnvironmentObject var plaidService: PlaidService
+    @EnvironmentObject var authManager: AuthManager
     @State var linkController: LinkController? = nil
     @State var isLoadingLinkToken = false
     @State var showError = false
     @State var errorMessage = ""
     
     var body: some View {
-        ZStack(alignment: .leading) {
-            Button {
-                Task {
-                    Logger.d("Add new account pressed!")
-                    await loadLinkToken()
-                }
-            } label: {
-                Text(isLoadingLinkToken ? "Loading..." : "Link new account")
+        Button {
+            Task {
+                Logger.d("Add new account pressed!")
+                await loadLinkToken()
             }
-            .primaryButton(isLoading: isLoadingLinkToken)
-            .padding(.horizontal, Spacing.lg)
-            .shadow(Elevation.level2)
-            .disabled(isLoadingLinkToken)
+        } label: {
+            Text(isLoadingLinkToken ? "Loading..." : "Link new account")
         }
+        .primaryButton(isLoading: isLoadingLinkToken)
+        .padding(.horizontal, Spacing.lg)
+        .shadow(Elevation.level2)
+        .disabled(isLoadingLinkToken)
         .sheet(
             isPresented: $shouldPresentLink,
             onDismiss: {
+                // Clear the handler when the sheet is dismissed
+                // This prevents biometric auth from triggering during Plaid flow
+                plaidService.currentHandler = nil
+
+                // Update auth timestamp to prevent immediate auth prompt after Plaid flow
+                authManager.recordSuccessfulAuthentication()
+
                 shouldPresentLink = false
             },
             content: { [linkController] in
@@ -84,6 +90,9 @@ struct LinkButtonView : View {
 
             switch handler {
             case .success(let handler):
+                // Store handler in PlaidService for OAuth redirect handling
+                self.plaidService.currentHandler = handler
+
                 self.linkController = LinkController(handler: handler)
                 Logger.i("LinkController initialized successfully")
 
@@ -108,12 +117,19 @@ struct LinkButtonView : View {
         
         var config = LinkTokenConfiguration(token: linkToken) { success in
             Logger.i("Link was finished succesfully! \(success)")
+            // Don't clear handler here - let the sheet's onDismiss handle it
+            // This prevents biometric auth from triggering before sheet dismisses
             Task {
                 try? await self.saveNewItem(token: success.publicToken, institutionId: success.metadata.institution.id)
+                // Dismiss the sheet after saving the item
+                await MainActor.run {
+                    self.shouldPresentLink = false
+                }
             }
         }
         config.onExit = { exit in
             Logger.e("User exited link early \(exit)")
+            // Dismiss the sheet - handler will be cleared in onDismiss
             self.shouldPresentLink = false
         }
         config.onEvent = { event in
