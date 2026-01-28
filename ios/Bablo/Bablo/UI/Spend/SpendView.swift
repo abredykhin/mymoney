@@ -21,8 +21,13 @@ struct SpendView: View {
     @State private var selectedDateRange: SpendDateRange = .week
     @EnvironmentObject private var budgetService: BudgetService
     @State private var animateBars: Bool = false  // State to control animation trigger
-    @State private var showingDetailSheet = false
-    @State private var selectedCategoryForDetail: String?
+    @State private var selectedCategoryForDetail: CategorySelection?
+
+    struct CategorySelection: Identifiable {
+        let id = UUID()
+        let category: String
+        let range: SpendDateRange
+    }
 
     // Determine which value to display based on the selected range
     private func spendValue(for item: CategoryBreakdownItem, range: SpendDateRange) -> Double {
@@ -147,8 +152,10 @@ struct SpendView: View {
                             }
                             .clipShape(RoundedRectangle(cornerRadius: CornerRadius.sm))
                             .onTapGesture {
-                                selectedCategoryForDetail = item.category
-                                showingDetailSheet = true
+                                selectedCategoryForDetail = CategorySelection(
+                                    category: item.category,
+                                    range: selectedDateRange
+                                )
                             }
                             // Optional: Give rows a consistent minimum height
                             // .frame(minHeight: 50)
@@ -159,10 +166,8 @@ struct SpendView: View {
             }
             .padding(Spacing.md)
         }
-        .sheet(isPresented: $showingDetailSheet) {
-            if let category = selectedCategoryForDetail {
-             //   CategorySpendDetailView(category: category)
-            }
+        .sheet(item: $selectedCategoryForDetail) { selection in
+            CategorySpendDetailView(category: selection.category, range: selection.range)
         }
         // Use .task with selectedDateRange as id to re-run on change or initial appearance
         .task(id: selectedDateRange) {

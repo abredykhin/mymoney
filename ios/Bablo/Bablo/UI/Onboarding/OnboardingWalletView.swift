@@ -192,7 +192,7 @@ struct OnboardingAccountCard: View {
             let hex = bank.primary_color ?? "#000000"
             let color = Color(hex: hex)
             RoundedRectangle(cornerRadius: CornerRadius.heroCard, style: .continuous)
-                .fill(color)
+                .fill(color ?? .black)
                 .overlay {
                     RoundedRectangle(cornerRadius: CornerRadius.heroCard, style: .continuous)
                         .stroke(.white.opacity(0.2), lineWidth: 1)
