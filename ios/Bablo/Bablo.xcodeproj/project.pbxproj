@@ -1245,7 +1245,7 @@
 			repositoryURL = "https://github.com/plaid/plaid-link-ios-spm";
 			requirement = {
 				kind = exactVersion;
-				version = 6.0.0;
+				version = 6.4.3;
 			};
 		};
 		757ABF882C181DAF00DF8CA8 /* XCRemoteSwiftPackageReference "Valet" */ = {

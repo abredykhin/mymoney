@@ -15,6 +15,7 @@ struct BabloApp: App {
     @StateObject var authManager = AuthManager.shared
     @StateObject var budgetService = BudgetService()
     @StateObject var transactionsService = TransactionsService()
+    @StateObject var plaidService = PlaidService()
     @State private var showBiometricEnrollment = false
     @State private var showAuthView = false
     @Environment(\.scenePhase) var scenePhase
@@ -32,12 +33,14 @@ struct BabloApp: App {
                         .environmentObject(authManager)
                         .environmentObject(budgetService)
                         .environmentObject(transactionsService)
+                        .environmentObject(plaidService)
                         .environment(\.managedObjectContext, coreDataStack.viewContext)
                         .blur(radius: (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated) || showAuthView ? 20 : 0)
                         .animation(.default, value: userAccount.isBiometricallyAuthenticated)
                         .animation(.default, value: showAuthView)
                         .overlay {
-                            if (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated && scenePhase == .active) {
+                            // Don't show biometric auth overlay if Plaid Link is active (OAuth in progress)
+                            if (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated && scenePhase == .active && plaidService.currentHandler == nil) {
                                 Color.black.opacity(0.01)
                                     .edgesIgnoringSafeArea(.all)
                                     .onAppear {
@@ -67,6 +70,23 @@ struct BabloApp: App {
                         // Login/welcome view
                     WelcomeView()
                         .environmentObject(userAccount)
+                }
+            }
+            .onOpenURL { url in
+                // Handle OAuth redirect from Plaid
+                Logger.d("BabloApp: Received URL: \(url.absoluteString)")
+
+                // Check if this is a Plaid OAuth redirect
+                if url.host == "babloapp.com" && url.path.starts(with: "/plaid/redirect") {
+                    Logger.i("BabloApp: Plaid OAuth redirect received")
+
+                    // In SDK 5.x+, OAuth redirects are handled automatically by the SDK
+                    // The handler just needs to be retained, which we do via plaidService.currentHandler
+                    if let handler = plaidService.currentHandler {
+                        Logger.i("BabloApp: Handler is retained - SDK will process OAuth redirect automatically")
+                    } else {
+                        Logger.e("BabloApp: No active Plaid handler found for OAuth redirect - Link may have been dismissed")
+                    }
                 }
             }
             .task {
