@@ -109,16 +109,18 @@ struct PaginationInfo: Equatable {
 /// Filter criteria for transactions
 struct TransactionFilter: Equatable {
     var category: String?
+    var personalFinanceCategory: String?
     var startDate: String?
     var endDate: String?
     var search: String?
 
     var isEmpty: Bool {
-        category == nil && startDate == nil && endDate == nil && search == nil
+        category == nil && personalFinanceCategory == nil && startDate == nil && endDate == nil && search == nil
     }
 
-    init(category: String? = nil, startDate: String? = nil, endDate: String? = nil, search: String? = nil) {
+    init(category: String? = nil, personalFinanceCategory: String? = nil, startDate: String? = nil, endDate: String? = nil, search: String? = nil) {
         self.category = category
+        self.personalFinanceCategory = personalFinanceCategory
         self.startDate = startDate
         self.endDate = endDate
         self.search = search
@@ -176,12 +178,20 @@ class TransactionsService: ObservableObject {
 
         do {
             var query = supabase
-                .from("transactions_table")
+                .from("transactions")
                 .select(count: .exact)
 
             // Apply filters before ordering and ranging
             if let category = options.filter.category {
                 query = query.contains("category", value: [category])
+            }
+
+            if let personalFinanceCategory = options.filter.personalFinanceCategory {
+                if personalFinanceCategory == "Uncategorized" {
+                    query = query.is("personal_finance_category", value: nil)
+                } else {
+                    query = query.eq("personal_finance_category", value: personalFinanceCategory)
+                }
             }
 
             if let startDate = options.filter.startDate {
@@ -266,7 +276,7 @@ class TransactionsService: ObservableObject {
 
         do {
             var query = supabase
-                .from("transactions_table")
+                .from("transactions")
                 .select()
                 .eq("account_id", value: accountId)
 
@@ -332,7 +342,7 @@ class TransactionsService: ObservableObject {
 
         do {
             let transactions: [Transaction] = try await supabase
-                .from("transactions_table")
+                .from("transactions")
                 .select()
                 .gte("date", value: startDate)
                 .lte("date", value: endDate)
