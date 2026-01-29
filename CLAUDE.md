@@ -169,18 +169,18 @@ All `supabase` commands should be executed from the root of the project reposito
 
 ### Production Deployment
 
-**IMPORTANT:** Production deployments are handled manually for safety and control. **Do not use `supabase db push` for production.**
+To deploy database migrations to production, use the Supabase CLI:
 
-The project uses a consolidated script, `supabase/DEPLOY_TO_PRODUCTION.sql`, to update the production database.
+```bash
+supabase db push
+```
 
-**Deployment Steps:**
+This command will:
+1. Compare your local migrations with the remote production database
+2. Show you which migrations will be applied
+3. Push any new migrations to the production database
 
-1.  **Consolidate Migrations:** Before a deployment, ensure that all necessary schema changes from the `supabase/migrations` directory are reflected in the `supabase/DEPLOY_TO_PRODUCTION.sql` script. This may require manually copying and pasting the SQL from your new migration files into the main deployment script.
-2.  **Run in Supabase Dashboard:**
-    *   Navigate to the Supabase SQL Editor for the production project:
-        [https://supabase.com/dashboard/project/teuyzmreoyganejfvquk/sql/new](https://supabase.com/dashboard/project/teuyzmreoyganejfvquk/sql/new)
-    *   Copy the entire content of `supabase/DEPLOY_TO_PRODUCTION.sql`.
-    *   Paste the script into the SQL editor and run it.
+**Important:** Review the migrations that will be applied before confirming the push.
 
 ## iOS Application
 
