@@ -695,3 +695,49 @@ SELECT pg_catalog.setval('"public"."transactions_table_id_seq"', 830, true);
 -- \unrestrict i0B6vFj3CqDcVlUe2vQqou4DhtpKE3CSbbfqHyuBqesJlFduJWk0ddHHS1dnBCg
 
 RESET ALL;
+
+--
+-- Create test user for local development
+-- Email: test@example.com, Password: password
+--
+
+SET session_replication_role = replica;
+
+INSERT INTO auth.users (
+  instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+  confirmation_token, recovery_token, email_change_token_new, email_change,
+  phone_change, phone_change_token, email_change_token_current, reauthentication_token,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+)
+SELECT
+  '00000000-0000-0000-0000-000000000000',
+  '5f6bb5c6-faf0-484f-aee1-23316a77ea90',
+  'authenticated',
+  'authenticated',
+  'test@example.com',
+  crypt('password', gen_salt('bf')),
+  now(),
+  '', '', '', '', '', '', '', '',
+  '{"provider":"email","providers":["email"]}',
+  '{}',
+  now(),
+  now()
+WHERE NOT EXISTS (
+  SELECT 1 FROM auth.users WHERE email = 'test@example.com'
+);
+
+INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  '5f6bb5c6-faf0-484f-aee1-23316a77ea90',
+  '{"sub":"5f6bb5c6-faf0-484f-aee1-23316a77ea90","email":"test@example.com"}'::jsonb,
+  'email',
+  'test@example.com',
+  now(),
+  now(),
+  now()
+WHERE NOT EXISTS (
+  SELECT 1 FROM auth.identities WHERE provider_id = 'test@example.com' AND provider = 'email'
+);
+
+SET session_replication_role = DEFAULT;
