@@ -19,7 +19,12 @@ import {
   updateCursor,
 } from './database.ts';
 import { fetchTransactionUpdates, fetchAccountBalances } from './plaid.ts';
-import type { SyncRequest, SyncResponse } from './types.ts';
+import type { SyncResponse } from './types.ts';
+
+interface SyncRequest {
+  plaid_item_id: string;
+  historical_complete?: boolean; // NEW: Flag from webhook
+}
 
 /**
  * Main Deno serve handler
@@ -27,15 +32,13 @@ import type { SyncRequest, SyncResponse } from './types.ts';
 Deno.serve(async (req: Request, ctx: any) => {
   console.log('🔄 Sync transactions function called');
 
-  // Only accept POST requests
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
 
   try {
-    // Parse request body
     const body: SyncRequest = await req.json();
-    const { plaid_item_id } = body;
+    const { plaid_item_id, historical_complete } = body;
 
     if (!plaid_item_id) {
       console.error('❌ Missing plaid_item_id in request');
@@ -46,10 +49,12 @@ Deno.serve(async (req: Request, ctx: any) => {
     }
 
     console.log(`📊 Starting transaction sync for item: ${plaid_item_id}`);
+    console.log(`📊 Historical complete flag: ${historical_complete}`);
+
     const startTime = Date.now();
 
     // Execute sync
-    const result = await syncTransactions(plaid_item_id, ctx);
+    const result = await syncTransactions(plaid_item_id, ctx, historical_complete);
 
     const elapsed = Date.now() - startTime;
     console.log(`⏱️  Total sync time: ${elapsed}ms`);
@@ -70,16 +75,12 @@ Deno.serve(async (req: Request, ctx: any) => {
     });
   } catch (error) {
     console.error('❌ Error syncing transactions:', error);
-
     return new Response(
       JSON.stringify({
         error: 'Sync failed',
         message: error instanceof Error ? error.message : 'Unknown error',
       }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 });
@@ -97,7 +98,11 @@ Deno.serve(async (req: Request, ctx: any) => {
  * @param plaidItemId - Plaid item ID
  * @returns Sync counts (added, modified, removed)
  */
-async function syncTransactions(plaidItemId: string, ctx?: any): Promise<{
+async function syncTransactions(
+  plaidItemId: string,
+  ctx?: any,
+  historicalComplete?: boolean
+): Promise<{
   added: number;
   modified: number;
   removed: number;
@@ -109,9 +114,13 @@ async function syncTransactions(plaidItemId: string, ctx?: any): Promise<{
   console.log('📍 Step 1: Fetch item details');
   const item = await fetchItemDetails(supabase, plaidItemId);
 
+  // Track if this is the FIRST time historical sync completes
+  const wasHistoricalIncomplete = !item.historical_sync_complete;
+  const nowHistoricalComplete = historicalComplete === true;
+
   // Step 2: Fetch transaction updates from Plaid
   console.log('📍 Step 2: Fetch transaction updates from Plaid');
-  const { added, modified, removed, nextCursor } = await fetchTransactionUpdates(item);
+  const { added, modified, removed, nextCursor } = await callPlaidWithRetry(() => fetchTransactionUpdates(item));
 
   // Step 3: Fetch updated account balances from Plaid
   console.log('📍 Step 3: Fetch account balances from Plaid');
@@ -132,14 +141,40 @@ async function syncTransactions(plaidItemId: string, ctx?: any): Promise<{
 
   console.log(`✅ Sync completed: +${added.length} ~${modified.length} -${removed.length}`);
 
-  // Trigger Gemini Budget Analysis in the background
-  // Only trigger if it's the first sync (historical) or we have many new transactions
-  const isFirstSync = !item.transactions_cursor;
-  if (isFirstSync || added.length > 50) {
+  // CRITICAL: If this is the first time historical sync completes, mark it and trigger recurring sync
+  if (wasHistoricalIncomplete && nowHistoricalComplete) {
+    console.log(`🎉 Historical sync just completed for item ${plaidItemId}`);
+
+    // Mark historical sync as complete in database
+    await supabase
+      .from('items_table')
+      .update({
+        historical_sync_complete: true,
+        historical_completed_at: new Date().toISOString()
+      })
+      .eq('plaid_item_id', plaidItemId);
+
+    console.log(`✅ Marked historical sync as complete`);
+
+    // NOW we can trigger recurring sync for the first time
+    console.log(`🔁 Triggering INITIAL recurring transaction sync`);
     if (ctx && typeof ctx.waitUntil === 'function') {
-      ctx.waitUntil(triggerBudgetAnalysis(item.user_id as string));
+      ctx.waitUntil(triggerRecurringSync(plaidItemId, item.user_id as string));
     } else {
-      triggerBudgetAnalysis(item.user_id as string).catch(err => console.error('Budget analysis trigger failed:', err));
+      triggerRecurringSync(plaidItemId, item.user_id as string).catch(err =>
+        console.error('Recurring sync trigger failed:', err)
+      );
+    }
+  }
+  // If historical sync was already complete, trigger recurring sync for updates
+  else if (item.historical_sync_complete && added.length > 5) {
+    console.log(`🔁 Triggering recurring sync after new transactions`);
+    if (ctx && typeof ctx.waitUntil === 'function') {
+      ctx.waitUntil(triggerRecurringSync(plaidItemId, item.user_id as string));
+    } else {
+      triggerRecurringSync(plaidItemId, item.user_id as string).catch(err =>
+        console.error('Recurring sync trigger failed:', err)
+      );
     }
   }
 
@@ -208,6 +243,99 @@ async function updateDatabase(
   }
 }
 
+async function triggerRecurringSync(plaidItemId: string, userId: string) {
+  try {
+    console.log(`🔄 Triggering recurring transaction sync for item: ${plaidItemId}`);
+
+    const supabaseUrl = Deno.env.get('CUSTOM_SUPABASE_URL') || Deno.env.get('SUPABASE_URL');
+    const functionUrl = supabaseUrl
+      ? `${supabaseUrl}/functions/v1/sync-recurring-transactions`
+      : 'http://localhost:54321/functions/v1/sync-recurring-transactions';
+
+    const serviceRoleKey = Deno.env.get('CUSTOM_SERVICE_ROLE_KEY') ||
+                          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({ plaid_item_id: plaidItemId, user_id: userId }),
+    });
+
+    console.log(`✅ Recurring sync triggered successfully`);
+  } catch (error) {
+    console.error(`❌ Error triggering recurring sync:`, error);
+  }
+}
+
+/**
+ * Retry logic with exponential backoff for rate limit errors
+ */
+async function callPlaidWithRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      // Check for rate limit error (HTTP 429)
+      if (error.response?.status === 429) {
+        if (attempt === maxRetries) {
+          throw new Error(`Rate limit exceeded after ${maxRetries} retries`);
+        }
+
+        // Exponential backoff: 1s, 2s, 4s, 8s...
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.warn(`⚠️ Rate limited, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // Check for invalid access token (ITEM_LOGIN_REQUIRED)
+      if (error.response?.data?.error_code === 'ITEM_LOGIN_REQUIRED') {
+        console.error('❌ Item requires re-authentication');
+        // Mark item as requiring user action
+        await markItemAsNeedsReauth(error.item_id);
+        throw new Error('Item requires re-authentication');
+      }
+
+      // Check for network/timeout errors
+      if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
+        if (attempt === maxRetries) {
+          throw new Error(`Network error after ${maxRetries} retries: ${error.code}`);
+        }
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.warn(`⚠️ Network error, retrying in ${delay}ms`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // All other errors - don't retry
+      throw error;
+    }
+  }
+
+  throw new Error('Unexpected retry loop exit');
+}
+
+/**
+ * Mark item as needing reauth
+ */
+async function markItemAsNeedsReauth(itemId: string) {
+  const supabase = createServiceRoleClient();
+  await supabase
+    .from('items_table')
+    .update({
+      status: 'NEEDS_REAUTH',
+      updated_at: new Date().toISOString()
+    })
+    .eq('plaid_item_id', itemId);
+}
+
 /**
  * DEPLOYMENT & TESTING
  *
@@ -266,30 +394,3 @@ async function updateDatabase(
  *   3. Single batch delete for removed transactions
  *   4. Cursor updated ONLY after all operations succeed
  */
-
-/**
- * Trigger Gemini Budget Analysis Edge Function
- */
-async function triggerBudgetAnalysis(userId: string) {
-  try {
-    console.log(`🚀 Triggering budget analysis for user: ${userId}`);
-
-    const supabaseUrl = Deno.env.get('CUSTOM_SUPABASE_URL') || Deno.env.get('SUPABASE_URL');
-    const functionUrl = supabaseUrl
-      ? `${supabaseUrl}/functions/v1/gemini-budget-analysis`
-      : 'http://localhost:54321/functions/v1/gemini-budget-analysis';
-
-    const serviceRoleKey = Deno.env.get('CUSTOM_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-    await fetch(functionUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${serviceRoleKey}`,
-      },
-      body: JSON.stringify({ user_id: userId }),
-    });
-  } catch (error) {
-    console.error(`❌ Error triggering budget analysis:`, error);
-  }
-}

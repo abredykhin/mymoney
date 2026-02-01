@@ -12,6 +12,73 @@ import Supabase
 
 // MARK: - Data Models
 
+/// A recurring transaction stream from Plaid or user-created
+struct RecurringStream: Codable, Identifiable, Equatable {
+    let id: Int
+    let plaidStreamId: String?
+    let description: String
+    let merchantName: String?
+    let personalFinanceCategory: String?  // Matches DB: stores PRIMARY value
+    let personalFinanceSubcategory: String?  // Matches DB: stores DETAILED value
+    let frequency: String // WEEKLY, SEMI_MONTHLY, MONTHLY, ANNUALLY
+    let averageAmount: Double
+    let monthlyAmount: Double
+    let isoCurrencyCode: String?
+    let type: String // income or expense
+    let status: String // MATURE, EARLY_DETECTION, TOMBSTONED, MANUAL
+    let isActive: Bool
+    let firstDate: String?
+    let lastDate: String?
+    let predictedNextDate: String?
+    let isUserModified: Bool
+    let userMarkedRecurring: Bool?
+    let isExcluded: Bool
+    let isManual: Bool
+    let matchPattern: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case plaidStreamId = "plaid_stream_id"
+        case description
+        case merchantName = "merchant_name"
+        case personalFinanceCategory = "personal_finance_category"
+        case personalFinanceSubcategory = "personal_finance_subcategory"
+        case frequency
+        case averageAmount = "average_amount"
+        case monthlyAmount = "monthly_amount"
+        case isoCurrencyCode = "iso_currency_code"
+        case type
+        case status
+        case isActive = "is_active"
+        case firstDate = "first_date"
+        case lastDate = "last_date"
+        case predictedNextDate = "predicted_next_date"
+        case isUserModified = "is_user_modified"
+        case userMarkedRecurring = "user_marked_recurring"
+        case isExcluded = "is_excluded"
+        case isManual = "is_manual"
+        case matchPattern = "match_pattern"
+    }
+
+    /// Human-readable frequency label
+    var frequencyDisplay: String {
+        switch frequency {
+        case "WEEKLY": return "Weekly"
+        case "SEMI_MONTHLY": return "Twice Monthly"
+        case "MONTHLY": return "Monthly"
+        case "ANNUALLY": return "Yearly"
+        default: return frequency.capitalized
+        }
+    }
+}
+
+/// Request model for creating manual recurring stream
+struct CreateManualStreamRequest: Codable {
+    let transaction_id: Int
+    let frequency: String
+    let user_id: String
+}
+
 /// Total balance across all accounts
 struct TotalBalance: Codable, Equatable {
     let balance: Double
@@ -182,6 +249,7 @@ class BudgetService: ObservableObject {
     @Published var monthlyMandatoryExpenses: Double = 0
     @Published var variableBudget: Double = 0  // Renamed from discretionaryBudget
     @Published var allBudgetItems: [BudgetItem] = []
+    @Published var allRecurringStreams: [RecurringStream] = []
     
     // Dynamic income data
     @Published var knownIncomeThisMonth: Double = 0
@@ -496,7 +564,7 @@ class BudgetService: ObservableObject {
             Logger.d("BudgetService: -> monthly_income (expected): \(monthlyIncome)")
             Logger.d("BudgetService: -> monthly_mandatory_expenses: \(monthlyMandatoryExpenses)")
             
-            await fetchBudgetItems()
+            await fetchRecurringStreams() // CHANGED: was fetchBudgetItems()
             await fetchActualIncome()
             try? await fetchVariableSpend() // Fetch variable spend to calc budget
         } catch {
@@ -504,24 +572,24 @@ class BudgetService: ObservableObject {
         }
     }
 
-    /// Fetch all recurring budget items (income and expenses)
-    func fetchBudgetItems() async {
+    /// Fetch all recurring streams (income and expenses) from Plaid
+    func fetchRecurringStreams() async {
         guard let userId = UserAccount.shared.currentUser?.id else { return }
-        
+
         do {
-            let items: [BudgetItem] = try await supabase
-                .from("budget_items_table")
+            let streams: [RecurringStream] = try await supabase
+                .from("recurring_streams_table")
                 .select("*")
                 .eq("user_id", value: userId)
-                .gte("confidence", value: 0.85)
                 .eq("is_active", value: true)
+                .eq("is_excluded", value: false)
                 .execute()
                 .value
-            
-            self.allBudgetItems = items
-            Logger.i("BudgetService: Loaded \(items.count) highly confident budget patterns")
+
+            self.allRecurringStreams = streams
+            Logger.i("BudgetService: Loaded \(streams.count) recurring streams from Plaid")
         } catch {
-            Logger.e("BudgetService: Failed to fetch budget items: \(error)")
+            Logger.e("BudgetService: Failed to fetch recurring streams: \(error)")
         }
     }
 
@@ -538,16 +606,15 @@ class BudgetService: ObservableObject {
             // Sign logic: Negative amounts are income
             let transactions: [TransactionForBreakdown] = try await supabase
                 .from("transactions")
-                .select("amount, name, type")
+                .select("amount, name, type, is_recurring")
                 .gte("date", value: startDate)
                 .lte("date", value: endDate)
                 .lt("amount", value: 0) // Negative = Money In
                 .execute()
                 .value
             
-            let incomePatterns = allBudgetItems
+            let incomeStreams = allRecurringStreams
                 .filter { $0.type == "income" }
-                .map { (pattern: $0.pattern.lowercased(), name: $0.name) }
             
             var knownTotal: Double = 0
             var extraTotal: Double = 0
@@ -559,16 +626,13 @@ class BudgetService: ObservableObject {
                     continue
                 }
                 
-                let txName = tx.name.lowercased()
                 let amount = abs(tx.amount)
                 
-                let matchingPattern = incomePatterns.first { txName.contains($0.pattern) }
-                
-                if let pattern = matchingPattern {
-                    Logger.d("BudgetService: Categorized as KNOWN income: \(tx.name) ($\(amount)) matching '\(pattern.name)'")
+                // If already marked as recurring by backend, count as known
+                if tx.isRecurring == true {
                     knownTotal += amount
                 } else {
-                    Logger.d("BudgetService: Categorized as EXTRA income: \(tx.name) ($\(amount))")
+                    // This is a one-off income transaction
                     extraTotal += amount
                 }
             }
@@ -618,64 +682,91 @@ class BudgetService: ObservableObject {
         }
     }
 
-    /// Check if budget analysis exists and trigger it if missing but accounts are linked
-    func checkAndTriggerBudgetAnalysis() async {
-        Logger.d("BudgetService: Checking if budget analysis is needed")
-        
-        do {
-            // Define minimal local struct for existence checking
-            struct IDOnly: Codable { let id: Int }
-            
-            // 1. Check if we already have budget items
-            let budgetItems: [IDOnly] = try await supabase
-                .from("budget_items_table")
-                .select("id")
-                .limit(1)
-                .execute()
-                .value
-            
-            if !budgetItems.isEmpty {
-                Logger.d("BudgetService: Budget analysis already exists")
-                return
-            }
-            
-            // 2. No budget items, check if we have any accounts linked
-            // We'll check items_table directly as it's the source of truth for bank connections
-            let items: [IDOnly] = try await supabase
-                .from("items_table")
-                .select("id")
-                .limit(1)
-                .execute()
-                .value
-            
-            if items.isEmpty {
-                Logger.d("BudgetService: No accounts (items) linked, skipping budget analysis")
-                return
-            }
-            
-            // 3. We have accounts but no budget analysis - trigger it!
-            Logger.i("BudgetService: Triggering Gemini budget analysis for user with linked accounts")
-            
-            guard let userId = UserAccount.shared.currentUser?.id else {
-                Logger.e("BudgetService: Missing user ID for budget analysis")
-                return
-            }
-            
-            let body = ["user_id": userId]
-            let bodyData = try JSONSerialization.data(withJSONObject: body)
-            
-            // Invoke the Edge Function (we don't necessarily need to wait for it or handle the result here
-            // as it runs in the background and updates the DB)
-            try await supabase.functions.invoke(
-                "gemini-budget-analysis",
-                options: FunctionInvokeOptions(body: bodyData)
-            )
-            
-            Logger.i("BudgetService: Gemini budget analysis triggered successfully")
-            
-        } catch {
-            Logger.e("BudgetService: Failed to check/trigger budget analysis: \(error)")
+    /// Manually trigger a recurring transaction sync from Plaid
+    func syncRecurringTransactions() async throws {
+        Logger.d("BudgetService: Triggering recurring transaction sync")
+
+        // Get user's first item (or iterate through all items)
+        guard let userId = UserAccount.shared.currentUser?.id else {
+            throw BudgetError.noUser
         }
+
+        struct ItemID: Codable { let plaid_item_id: String }
+        let items: [ItemID] = try await supabase
+            .from("items_table")
+            .select("plaid_item_id")
+            .eq("user_id", value: userId)
+            .eq("is_active", value: true)
+            .execute()
+            .value
+
+        guard let firstItem = items.first else {
+            Logger.w("BudgetService: No active items found for recurring sync")
+            return
+        }
+
+        let body = [
+            "plaid_item_id": firstItem.plaid_item_id,
+            "user_id": userId
+        ]
+        let bodyData = try JSONSerialization.data(withJSONObject: body)
+
+        try await supabase.functions.invoke(
+            "sync-recurring-transactions",
+            options: FunctionInvokeOptions(body: bodyData)
+        )
+
+        Logger.i("BudgetService: Recurring transaction sync triggered")
+
+        // Refresh data after sync
+        await fetchBudgetSummary()
+    }
+
+    /// Create a manual recurring stream from a transaction
+    func createManualStream(transactionId: Int, frequency: String) async throws {
+        Logger.d("BudgetService: Creating manual stream for transaction \(transactionId)")
+
+        guard let userId = UserAccount.shared.currentUser?.id else {
+            throw BudgetError.noUser
+        }
+
+        let body: [String: Any] = [
+            "transaction_id": transactionId,
+            "frequency": frequency,
+            "user_id": userId
+        ]
+        let bodyData = try JSONSerialization.data(withJSONObject: body)
+
+        let response = try await supabase.functions.invoke(
+            "create-manual-stream",
+            options: FunctionInvokeOptions(body: bodyData)
+        )
+
+        Logger.i("BudgetService: Manual stream created successfully")
+
+        // Refresh data after creating stream
+        await fetchBudgetSummary()
+    }
+
+    /// Delete a manual recurring stream
+    func deleteManualStream(streamId: Int) async throws {
+        Logger.d("BudgetService: Deleting manual stream \(streamId)")
+
+        try await supabase
+            .from("recurring_streams_table")
+            .delete()
+            .eq("id", value: streamId)
+            .eq("is_manual", value: true) // Safety: only allow deleting manual streams
+            .execute()
+
+        Logger.i("BudgetService: Manual stream deleted")
+
+        // Refresh data after deletion
+        await fetchBudgetSummary()
+    }
+
+    enum BudgetError: Error {
+        case noUser
     }
 }
 
@@ -700,6 +791,7 @@ private struct TransactionForBreakdown: Codable {
     let name: String
     let personalFinanceCategory: String?
     let type: String?
+    let isRecurring: Bool? // NEW
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -707,6 +799,7 @@ private struct TransactionForBreakdown: Codable {
         case name
         case personalFinanceCategory = "personal_finance_category"
         case type
+        case isRecurring = "is_recurring"
     }
 }
 

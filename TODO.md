@@ -1,0 +1,27 @@
+# Plaid Recurring Transactions Integration Checklist
+
+- [x] **Step 1: Database Schema Changes**
+  - [x] Create `recurring_streams_table`.
+  - [x] Create `recurring_stream_transactions_table`.
+  - [x] Update `items_table` with `historical_sync_complete`.
+  - [x] Update `transactions_table` with `is_recurring`.
+  - [x] Update `variable_transactions` view.
+- [x] **Step 2: Backend Edge Functions**
+  - [x] Create `sync-recurring-transactions` function.
+  - [x] Create `create-manual-stream` function.
+- [x] **Step 3: Update Existing Edge Functions**
+  - [x] Update `plaid-webhook` to handle new webhook types and trigger recurring sync.
+  - [x] Update `sync-transactions` to set `historical_sync_complete` flag and trigger initial recurring sync.
+- [x] **Step 4: Code Refactoring**
+  - [x] Extract shared logic into `/supabase/functions/_shared/recurring.ts`.
+  - [x] Implement error handling and retry logic (`callPlaidWithRetry`).
+- [x] **Step 5: Remove Gemini AI Feature**
+  - [x] Delete `gemini-budget-analysis` Edge Function.
+  - [x] Drop the `budget_items_table` from the database.
+  - [x] Remove Gemini API key from secrets.
+  - [x] Remove the trigger from `sync-transactions`.
+- [x] **Step 6: iOS Client Changes**
+  - [x] Update `BudgetService.swift` with new data models and methods.
+  - [x] Create `RecurringTransactionsView.swift`.
+- [x] **Step 7: Plaid Dashboard Configuration**
+  - [x] Add `RECURRING_TRANSACTIONS_UPDATE` webhook subscription.

@@ -23,6 +23,10 @@ interface PlaidWebhookBody {
   };
   new_transactions?: number;
   removed_transactions?: string[];
+  historical_update_complete?: boolean; // Critical for recurring sync timing
+  initial_update_complete?: boolean;
+  account_ids?: string[]; // NEW: For RECURRING_TRANSACTIONS_UPDATE webhook
+  environment: string; // "production" or "sandbox"
 }
 
 /**
@@ -130,9 +134,26 @@ async function handleTransactionWebhook(code: string, body: PlaidWebhookBody) {
     case 'SYNC_UPDATES_AVAILABLE':
       console.log(`🔄 Sync updates available for item ${body.item_id}`);
       console.log(`   New transactions: ${body.new_transactions || 0}`);
+      console.log(`   Historical complete: ${body.historical_update_complete || false}`);
 
       // Trigger transaction sync
-      await triggerTransactionSync(body.item_id);
+      await triggerTransactionSync(body.item_id, body.historical_update_complete || false);
+      break;
+
+    case 'RECURRING_TRANSACTIONS_UPDATE':
+      // NEW: Handle recurring transaction pattern updates from Plaid
+      console.log(`🔁 Recurring transactions updated for item ${body.item_id}`);
+      if (body.account_ids) {
+        console.log(`   Affected accounts: ${body.account_ids.join(', ')}`);
+      }
+
+      // Only trigger if historical sync is complete
+      const canSyncRecurring = await checkHistoricalSyncComplete(body.item_id);
+      if (canSyncRecurring) {
+        await triggerRecurringSync(body.item_id);
+      } else {
+        console.log(`   ⚠️ Skipping recurring sync - historical data not yet complete`);
+      }
       break;
 
     case 'DEFAULT_UPDATE':
@@ -201,12 +222,83 @@ async function handleItemWebhook(code: string, body: PlaidWebhookBody) {
 }
 
 /**
+ * Check if historical sync is complete for an item
+ */
+async function checkHistoricalSyncComplete(plaidItemId: string): Promise<boolean> {
+  try {
+    const supabase = createServiceRoleClient();
+
+    const { data: item, error } = await supabase
+      .from('items_table')
+      .select('historical_sync_complete')
+      .eq('plaid_item_id', plaidItemId)
+      .single();
+
+    if (error || !item) {
+      console.error(`❌ Failed to check historical sync status: ${error?.message}`);
+      return false;
+    }
+
+    return item.historical_sync_complete === true;
+  } catch (error) {
+    console.error(`❌ Error checking historical sync status:`, error);
+    return false;
+  }
+}
+
+/**
+ * Trigger recurring transaction sync
+ */
+async function triggerRecurringSync(plaidItemId: string) {
+  try {
+    console.log(`🔁 Triggering recurring sync for item: ${plaidItemId}`);
+
+    const supabaseUrl = Deno.env.get('CUSTOM_SUPABASE_URL') || Deno.env.get('SUPABASE_URL');
+    const functionUrl = supabaseUrl
+      ? `${supabaseUrl}/functions/v1/sync-recurring-transactions`
+      : 'http://localhost:54321/functions/v1/sync-recurring-transactions';
+
+    const serviceRoleKey = Deno.env.get('CUSTOM_SERVICE_ROLE_KEY') ||
+                          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    // Get user_id for this item
+    const supabase = createServiceRoleClient();
+    const { data: item } = await supabase
+      .from('items_table')
+      .select('user_id')
+      .eq('plaid_item_id', plaidItemId)
+      .single();
+
+    if (!item) {
+      console.error(`❌ Item not found: ${plaidItemId}`);
+      return;
+    }
+
+    await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        plaid_item_id: plaidItemId,
+        user_id: item.user_id
+      }),
+    });
+
+    console.log(`✅ Recurring sync triggered for item ${plaidItemId}`);
+  } catch (error) {
+    console.error(`❌ Error triggering recurring sync:`, error);
+  }
+}
+
+/**
  * Trigger transaction sync by calling the sync-transactions function
  */
-async function triggerTransactionSync(plaidItemId: string) {
+async function triggerTransactionSync(plaidItemId: string, historicalComplete: boolean) {
   try {
     console.log(`🚀 Triggering sync for item: ${plaidItemId}`);
-    console.log(`📦 Item ID type: ${typeof plaidItemId}, value: "${plaidItemId}"`);
+    console.log(`📦 Historical complete: ${historicalComplete}`);
 
     // Get the function URL (either local or production)
     const supabaseUrl = Deno.env.get('CUSTOM_SUPABASE_URL') || Deno.env.get('SUPABASE_URL');
@@ -216,7 +308,10 @@ async function triggerTransactionSync(plaidItemId: string) {
 
     const serviceRoleKey = Deno.env.get('CUSTOM_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    const payload = { plaid_item_id: plaidItemId };
+    const payload = { 
+      plaid_item_id: plaidItemId,
+      historical_complete: historicalComplete // Pass this flag to sync-transactions
+    };
     console.log(`📤 Sending payload:`, JSON.stringify(payload));
 
     // Call the sync function with service role key
