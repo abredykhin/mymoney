@@ -92,3 +92,10 @@ package-lock.json
 server/production_backup.dump
 
 supabase/.env
+
+# Test coverage
+supabase/functions/coverage/
+supabase/functions/coverage.lcov
+
+# Test environment
+supabase/functions/.env.test

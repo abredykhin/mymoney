@@ -1,0 +1,57 @@
+name: Test Edge Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/test-edge-functions.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/test-edge-functions.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      # Use test values for CI
+      SUPABASE_URL: http://localhost:54321
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY_TEST }}
+      SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET_TEST }}
+      PLAID_CLIENT_ID: test
+      PLAID_SECRET: test
+      PLAID_ENV: sandbox
+      TEST_MODE: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Run tests
+        working-directory: supabase/functions
+        run: deno task test
+
+      - name: Generate coverage report
+        working-directory: supabase/functions
+        run: deno task coverage
+
+      - name: Check coverage threshold
+        working-directory: supabase/functions
+        run: deno task test:check-coverage
+
+      - name: Upload coverage to Codecov (optional)
+        if: false  # Enable this when ready to use Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./supabase/functions/coverage.lcov
+          flags: edge-functions
+          fail_ci_if_error: false

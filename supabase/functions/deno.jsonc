@@ -1,0 +1,17 @@
+{
+  "tasks": {
+    "test": "deno test --allow-env --allow-net --allow-read --coverage=coverage",
+    "test:watch": "deno test --allow-env --allow-net --allow-read --watch",
+    "test:unit": "deno test --allow-env --allow-net --allow-read --ignore=**/*integration*.test.ts",
+    "test:integration": "deno test --allow-env --allow-net --allow-read **/*integration*.test.ts",
+    "test:coverage": "deno test --allow-env --allow-net --allow-read --coverage=coverage",
+    "coverage": "deno coverage coverage --lcov --output=coverage.lcov",
+    "test:check-coverage": "deno run --allow-read scripts/check-coverage.ts"
+  },
+  "exclude": [
+    "coverage/"
+  ],
+  "compilerOptions": {
+    "lib": ["deno.window", "dom"]
+  }
+}
