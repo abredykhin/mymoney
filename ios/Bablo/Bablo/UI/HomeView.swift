@@ -88,7 +88,6 @@ struct HomeView: View {
         .task {
             checkConnectivityAndRefresh(forceRefresh: false)
             await UserAccount.shared.fetchProfile()
-            await budgetService.checkAndTriggerBudgetAnalysis()
             
             // Auto-trigger onboarding if new user (no accounts, no cache)
             if accountsService.banksWithAccounts.isEmpty && !showingOnboarding {

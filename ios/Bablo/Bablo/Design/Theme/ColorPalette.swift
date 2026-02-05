@@ -9,7 +9,7 @@ struct ColorPalette {
     static let primary = Color.accentColor
 
     /// Secondary brand color
-    static let secondary = Color("SecondaryColor")
+    static let secondary = Color("BabloSecondary")
 
     // MARK: - Semantic Colors (State-based)
     /// Positive outcomes, income, gains
