@@ -82,7 +82,7 @@ struct BabloApp: App {
 
                     // In SDK 5.x+, OAuth redirects are handled automatically by the SDK
                     // The handler just needs to be retained, which we do via plaidService.currentHandler
-                    if let handler = plaidService.currentHandler {
+                    if plaidService.currentHandler != nil {
                         Logger.i("BabloApp: Handler is retained - SDK will process OAuth redirect automatically")
                     } else {
                         Logger.e("BabloApp: No active Plaid handler found for OAuth redirect - Link may have been dismissed")
