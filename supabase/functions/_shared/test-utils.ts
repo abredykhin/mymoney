@@ -1,485 +1,81 @@
 /**
  * Shared test utilities for Edge Functions
+ *
+ * IMPORTANT: Tests run against LOCAL Supabase instance, not mocks.
+ * Start local Supabase with: supabase start
  */
 
+import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { load } from "https://deno.land/std@0.224.0/dotenv/mod.ts";
 
 // Load test environment variables
 let envLoaded = false;
 
 /**
- * Loads test environment variables from .env.test file
- * Call this at the beginning of test files
+ * Loads test environment variables from .env.local file
+ * Call this at the beginning of EVERY test file
+ *
+ * @example
+ * ```typescript
+ * import { setupTestEnvironment } from '../_shared/test-utils.ts';
+ * await setupTestEnvironment();
+ * ```
  */
 export async function setupTestEnvironment() {
   if (!envLoaded) {
     try {
       await load({
-        envPath: new URL("../.env.test", import.meta.url).pathname,
+        envPath: new URL("../.env.local", import.meta.url).pathname,
         export: true,
       });
       envLoaded = true;
     } catch (error) {
-      console.warn("Warning: Could not load .env.test file:", (error as Error).message);
+      console.warn("Warning: Could not load .env.local file:", (error as Error).message);
       console.warn("Tests will use system environment variables");
     }
   }
 }
 
-// Re-export standard assertions
-export {
-  assertEquals,
-  assertExists,
-  assertRejects,
-  assertStrictEquals,
-  assertThrows,
-  assertNotEquals,
-  assertMatch,
-} from "https://deno.land/std@0.224.0/assert/mod.ts";
-
-// Re-export FakeTime for testing time-dependent code
-export { FakeTime } from "https://deno.land/std@0.224.0/testing/time.ts";
-
 /**
- * Mock Query Builder that supports method chaining
- * Simulates Supabase's query builder pattern
+ * Creates a REAL Supabase client pointing to local instance
+ * Use this for authenticated user operations
+ *
+ * @returns Real SupabaseClient (NOT A MOCK)
  */
-class MockQueryBuilder {
-  private mockData: any[];
-  private filters: Array<{ column: string; value: any; operator: string }> = [];
-  private selectColumns: string | undefined;
-  private limitValue: number | undefined;
-  private offsetValue: number | undefined;
-  private orderByValue: { column: string; ascending: boolean } | undefined;
-  private singleMode: boolean = false;
-  private mockError: any = null;
+export function createTestSupabaseClient(): SupabaseClient {
+  const url = Deno.env.get('SUPABASE_URL') || Deno.env.get('CUSTOM_SUPABASE_URL');
+  const key = Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('CUSTOM_ANON_KEY');
 
-  constructor(mockData: any[], mockError: any = null) {
-    this.mockData = Array.isArray(mockData) ? mockData : [mockData];
-    this.mockError = mockError;
+  if (!url || !key) {
+    throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set. Run setupTestEnvironment() first.');
   }
 
-  select(columns: string = '*') {
-    this.selectColumns = columns;
-    return this;
-  }
-
-  insert(data: any) {
-    if (this.mockError) {
-      return { data: null, error: this.mockError };
-    }
-    const newData = Array.isArray(data) ? data : [data];
-    return { data: newData, error: null };
-  }
-
-  upsert(data: any) {
-    if (this.mockError) {
-      return { data: null, error: this.mockError };
-    }
-    const newData = Array.isArray(data) ? data : [data];
-    return { data: newData, error: null };
-  }
-
-  update(data: any) {
-    // Return a chainable object for .eq() etc
-    return {
-      eq: (column: string, value: any) => {
-        if (this.mockError) {
-          return { data: null, error: this.mockError };
-        }
-        return { data: [data], error: null };
-      },
-      match: (filters: Record<string, any>) => {
-        if (this.mockError) {
-          return { data: null, error: this.mockError };
-        }
-        return { data: [data], error: null };
-      },
-    };
-  }
-
-  delete() {
-    return {
-      eq: (column: string, value: any) => {
-        if (this.mockError) {
-          return { data: null, error: this.mockError };
-        }
-        return { data: null, error: null };
-      },
-      match: (filters: Record<string, any>) => {
-        if (this.mockError) {
-          return { data: null, error: this.mockError };
-        }
-        return { data: null, error: null };
-      },
-    };
-  }
-
-  eq(column: string, value: any) {
-    this.filters.push({ column, value, operator: 'eq' });
-    return this;
-  }
-
-  neq(column: string, value: any) {
-    this.filters.push({ column, value, operator: 'neq' });
-    return this;
-  }
-
-  gt(column: string, value: any) {
-    this.filters.push({ column, value, operator: 'gt' });
-    return this;
-  }
-
-  gte(column: string, value: any) {
-    this.filters.push({ column, value, operator: 'gte' });
-    return this;
-  }
-
-  lt(column: string, value: any) {
-    this.filters.push({ column, value, operator: 'lt' });
-    return this;
-  }
-
-  lte(column: string, value: any) {
-    this.filters.push({ column, value, operator: 'lte' });
-    return this;
-  }
-
-  is(column: string, value: any) {
-    this.filters.push({ column, value, operator: 'is' });
-    return this;
-  }
-
-  in(column: string, values: any[]) {
-    this.filters.push({ column, value: values, operator: 'in' });
-    return this;
-  }
-
-  order(column: string, options: { ascending?: boolean } = {}) {
-    this.orderByValue = {
-      column,
-      ascending: options.ascending !== false,
-    };
-    return this;
-  }
-
-  limit(count: number) {
-    this.limitValue = count;
-    return this;
-  }
-
-  range(from: number, to: number) {
-    this.offsetValue = from;
-    this.limitValue = to - from + 1;
-    return this;
-  }
-
-  single() {
-    this.singleMode = true;
-    if (this.mockError) {
-      return { data: null, error: this.mockError };
-    }
-
-    const filtered = this.applyFilters();
-    const data = filtered.length > 0 ? filtered[0] : null;
-    return { data, error: null };
-  }
-
-  maybeSingle() {
-    return this.single();
-  }
-
-  private applyFilters(): any[] {
-    let result = [...this.mockData];
-
-    for (const filter of this.filters) {
-      result = result.filter(row => {
-        if (!row) return false;
-
-        const rowValue = row[filter.column];
-
-        switch (filter.operator) {
-          case 'eq':
-            return rowValue === filter.value;
-          case 'neq':
-            return rowValue !== filter.value;
-          case 'gt':
-            return rowValue > filter.value;
-          case 'gte':
-            return rowValue >= filter.value;
-          case 'lt':
-            return rowValue < filter.value;
-          case 'lte':
-            return rowValue <= filter.value;
-          case 'is':
-            return rowValue === filter.value;
-          case 'in':
-            return filter.value.includes(rowValue);
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Apply ordering
-    if (this.orderByValue) {
-      const { column, ascending } = this.orderByValue;
-      result.sort((a, b) => {
-        const aVal = a[column];
-        const bVal = b[column];
-        if (aVal < bVal) return ascending ? -1 : 1;
-        if (aVal > bVal) return ascending ? 1 : -1;
-        return 0;
-      });
-    }
-
-    // Apply limit and offset
-    if (this.offsetValue !== undefined) {
-      result = result.slice(this.offsetValue);
-    }
-    if (this.limitValue !== undefined) {
-      result = result.slice(0, this.limitValue);
-    }
-
-    return result;
-  }
-
-  // Terminal operation - returns promise-like object
-  then(resolve: (value: any) => void, reject?: (error: any) => void) {
-    if (this.mockError) {
-      const error = { data: null, error: this.mockError };
-      if (reject) reject(error);
-      return Promise.resolve(error);
-    }
-
-    const filtered = this.applyFilters();
-    const data = this.singleMode
-      ? (filtered.length > 0 ? filtered[0] : null)
-      : filtered;
-
-    const result = { data, error: null };
-    resolve(result);
-    return Promise.resolve(result);
-  }
+  return createClient(url, key);
 }
 
 /**
- * Creates a mock Supabase client for testing
+ * Creates a REAL Supabase client with service role (bypasses RLS)
+ * Use this for test setup/teardown that needs to bypass RLS
+ *
+ * @returns Real SupabaseClient with service role (NOT A MOCK)
  */
-export function createMockSupabaseClient(options: {
-  mockData?: Record<string, any[]>;
-  mockErrors?: Record<string, any>;
-  userId?: string;
-} = {}) {
-  const { mockData = {}, mockErrors = {}, userId = 'test-user-id' } = options;
+export function createTestServiceRoleClient(): SupabaseClient {
+  const url = Deno.env.get('SUPABASE_URL') || Deno.env.get('CUSTOM_SUPABASE_URL');
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('CUSTOM_SERVICE_ROLE_KEY');
 
-  return {
-    from: (table: string) => {
-      const tableData = mockData[table] || [];
-      const tableError = mockErrors[table] || null;
-      return new MockQueryBuilder(tableData, tableError);
-    },
-
-    auth: {
-      getUser: (jwt?: string) => {
-        if (mockErrors.auth) {
-          return Promise.resolve({ data: { user: null }, error: mockErrors.auth });
-        }
-        return Promise.resolve({
-          data: { user: { id: userId, email: `${userId}@test.com` } },
-          error: null,
-        });
-      },
-    },
-
-    rpc: (functionName: string, params?: any) => {
-      const rpcData = mockData[functionName] || null;
-      const rpcError = mockErrors[functionName] || null;
-      return Promise.resolve({ data: rpcData, error: rpcError });
-    },
-
-    functions: {
-      invoke: (functionName: string, options?: any) => {
-        const fnData = mockData[functionName] || {};
-        const fnError = mockErrors[functionName] || null;
-        return Promise.resolve({ data: fnData, error: fnError });
-      },
-    },
-  };
-}
-
-/**
- * Creates a mock Request object for testing
- */
-export function createMockRequest(options: {
-  method?: string;
-  url?: string;
-  headers?: Record<string, string>;
-  body?: any;
-} = {}): Request {
-  const {
-    method = 'GET',
-    url = 'http://localhost',
-    headers = {},
-    body,
-  } = options;
-
-  const requestInit: RequestInit = {
-    method,
-    headers: new Headers(headers),
-  };
-
-  if (body !== undefined) {
-    requestInit.body = typeof body === 'string' ? body : JSON.stringify(body);
+  if (!url || !key) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY must be set. Run setupTestEnvironment() first.');
   }
 
-  return new Request(url, requestInit);
+  return createClient(url, key);
 }
 
 /**
- * Creates a mock Response for testing
- */
-export function createMockResponse(
-  body: any,
-  options: { status?: number; headers?: Record<string, string> } = {}
-): Response {
-  const { status = 200, headers = {} } = options;
-
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: new Headers(headers),
-  });
-}
-
-/**
- * Creates a mock Plaid client for testing
- * Methods match the real Plaid Node SDK signatures
- */
-export function createMockPlaidClient(mockResponses: {
-  linkTokenCreate?: any;
-  itemPublicTokenExchange?: any;
-  institutionsGetById?: any;
-  accountsGet?: any;
-  transactionsSync?: any;
-  accountsBalanceGet?: any;
-  transactionsRecurringGet?: any;
-  itemWebhookUpdate?: any;
-} = {}) {
-  return {
-    linkTokenCreate: (request: any) => {
-      return Promise.resolve({
-        data: mockResponses.linkTokenCreate || {
-          link_token: 'link-sandbox-test-token',
-          expiration: new Date(Date.now() + 3600000).toISOString(),
-        },
-      });
-    },
-
-    itemPublicTokenExchange: (request: any) => {
-      return Promise.resolve({
-        data: mockResponses.itemPublicTokenExchange || {
-          access_token: 'access-sandbox-test-token',
-          item_id: 'test-item-id',
-        },
-      });
-    },
-
-    institutionsGetById: (request: any) => {
-      return Promise.resolve({
-        data: mockResponses.institutionsGetById || {
-          institution: {
-            institution_id: 'ins_test',
-            name: 'Test Bank',
-            products: ['transactions'],
-            country_codes: ['US'],
-            logo: 'data:image/png;base64,test',
-            primary_color: '#003366',
-            url: 'https://test-bank.com',
-          },
-        },
-      });
-    },
-
-    accountsGet: (request: any) => {
-      return Promise.resolve({
-        data: mockResponses.accountsGet || {
-          accounts: [
-            {
-              account_id: 'test-account-1',
-              balances: {
-                available: 1000,
-                current: 1000,
-                iso_currency_code: 'USD',
-              },
-              mask: '0000',
-              name: 'Test Checking',
-              official_name: 'Test Checking Account',
-              type: 'depository',
-              subtype: 'checking',
-            },
-          ],
-          item: {
-            item_id: 'test-item-id',
-            institution_id: 'ins_test',
-          },
-        },
-      });
-    },
-
-    transactionsSync: (request: any) => {
-      return Promise.resolve({
-        data: mockResponses.transactionsSync || {
-          added: [],
-          modified: [],
-          removed: [],
-          next_cursor: 'test-cursor',
-          has_more: false,
-        },
-      });
-    },
-
-    accountsBalanceGet: (request: any) => {
-      return Promise.resolve({
-        data: mockResponses.accountsBalanceGet || {
-          accounts: [
-            {
-              account_id: 'test-account-1',
-              balances: {
-                available: 1000,
-                current: 1000,
-                iso_currency_code: 'USD',
-              },
-            },
-          ],
-        },
-      });
-    },
-
-    transactionsRecurringGet: (request: any) => {
-      return Promise.resolve({
-        data: mockResponses.transactionsRecurringGet || {
-          inflow_streams: [],
-          outflow_streams: [],
-        },
-      });
-    },
-
-    itemWebhookUpdate: (request: any) => {
-      return Promise.resolve({
-        data: mockResponses.itemWebhookUpdate || {
-          item: {
-            item_id: request.item_id || 'test-item-id',
-            webhook: request.webhook,
-          },
-        },
-      });
-    },
-  };
-}
-
-/**
- * Generates a real JWT token for testing
- * Requires SUPABASE_JWT_SECRET environment variable
+ * Generates a REAL JWT token for testing authenticated requests
+ * This creates a valid JWT that will be accepted by local Supabase
+ *
+ * @param options - JWT configuration
+ * @returns Bearer token string (e.g., "Bearer eyJh...")
  */
 export async function createTestJWT(options: {
   userId?: string;
@@ -492,10 +88,12 @@ export async function createTestJWT(options: {
     expiresIn = 3600,
   } = options;
 
-  // Import JWT library
   const { create } = await import("https://deno.land/x/djwt@v2.8/mod.ts");
 
-  const secret = Deno.env.get('SUPABASE_JWT_SECRET') || 'test-secret-key';
+  const secret = Deno.env.get('SUPABASE_JWT_SECRET');
+  if (!secret) {
+    throw new Error('SUPABASE_JWT_SECRET must be set. Run setupTestEnvironment() first.');
+  }
 
   const key = await crypto.subtle.importKey(
     "raw",
@@ -523,105 +121,263 @@ export async function createTestJWT(options: {
 }
 
 /**
- * Creates a mock webhook signature for testing Plaid webhooks
+ * Helper to manage test data lifecycle: setup → test → cleanup
+ * Ensures cleanup runs even if test fails
+ *
+ * @example
+ * ```typescript
+ * await withTestData(
+ *   // Setup: create test data
+ *   async () => {
+ *     const supabase = createTestServiceRoleClient();
+ *     const { data } = await supabase.from('items').insert({...}).select().single();
+ *     return data;
+ *   },
+ *   // Cleanup: delete test data
+ *   async (data) => {
+ *     const supabase = createTestServiceRoleClient();
+ *     await supabase.from('items').delete().eq('id', data.id);
+ *   },
+ *   // Test: verify behavior
+ *   async (data) => {
+ *     assertEquals(data.field, expectedValue);
+ *   }
+ * );
+ * ```
  */
-export async function createMockWebhookSignature(options: {
-  payload?: any;
-  expired?: boolean;
-  invalidSignature?: boolean;
-  tamperedBody?: boolean;
-} = {}): Promise<{ signature: string; body: string }> {
-  const { payload, expired = false, invalidSignature = false, tamperedBody = false } = options;
-
-  const body = JSON.stringify(
-    tamperedBody ? { ...payload, __tampered: true } : payload
-  );
-
-  const now = Math.floor(Date.now() / 1000);
-  const issuedAt = expired ? now - 400 : now; // >5 min if expired
-
-  const webhookKey = invalidSignature
-    ? 'wrong-verification-key'
-    : (Deno.env.get('PLAID_WEBHOOK_VERIFICATION_KEY') || 'test-webhook-key');
-
-  // Import JWT library
-  const { create } = await import("https://deno.land/x/djwt@v2.8/mod.ts");
-
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(webhookKey),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-
-  // Calculate SHA-256 hash of body
-  const bodyHash = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(body)
-  );
-  const bodyHashBase64 = btoa(String.fromCharCode(...new Uint8Array(bodyHash)));
-
-  const token = await create(
-    { alg: "HS256", typ: "JWT" },
-    {
-      request_body_sha256: bodyHashBase64,
-      iat: issuedAt,
-    },
-    key
-  );
-
-  return { signature: token, body };
-}
-
-/**
- * Loads a test fixture from the fixtures directory
- */
-export async function loadFixture<T = any>(name: string): Promise<T> {
-  const path = new URL(`./fixtures/${name}.json`, import.meta.url);
+export async function withTestData<T>(
+  setup: () => Promise<T>,
+  cleanup: (data: T) => Promise<void>,
+  test: (data: T) => Promise<void>
+): Promise<void> {
+  const data = await setup();
   try {
-    const content = await Deno.readTextFile(path);
-    return JSON.parse(content);
-  } catch (error) {
-    throw new Error(`Failed to load fixture '${name}': ${(error as Error).message}`);
+    await test(data);
+  } finally {
+    try {
+      await cleanup(data);
+    } catch (cleanupError) {
+      console.error('Cleanup error:', cleanupError);
+      // Don't throw - we want test failure, not cleanup failure
+    }
   }
 }
 
 /**
- * Helper to create mock transaction data
+ * Creates a REAL Plaid client configured for sandbox testing
+ *
+ * ⚠️ IMPORTANT: This uses REAL Plaid sandbox (sandbox.plaid.com), NOT mocks
+ *
+ * Plaid provides a free sandbox environment with:
+ * - Rich test data
+ * - Deterministic behavior
+ * - Test institutions (use "ins_109508" for First Platypus Bank)
+ * - Default credentials: user_good / pass_good
+ *
+ * Patterns inspired by Plaid AI Coding Toolkit:
+ * https://github.com/plaid/ai-coding-toolkit/tree/main/sandbox
+ *
+ * Official docs: https://plaid.com/docs/sandbox/
+ *
+ * @returns Real PlaidApi instance pointed at sandbox
  */
-export function createMockTransaction(overrides: Partial<any> = {}) {
+export async function createTestPlaidClient() {
+  const { PlaidApi, PlaidEnvironments, Configuration } = await import('npm:plaid@31.1.0');
+
+  const clientId = Deno.env.get('PLAID_CLIENT_ID');
+  const secret = Deno.env.get('PLAID_SECRET');
+
+  if (!clientId || !secret) {
+    throw new Error('PLAID_CLIENT_ID and PLAID_SECRET must be set in .env.local');
+  }
+
+  const configuration = new Configuration({
+    basePath: PlaidEnvironments.sandbox,
+    baseOptions: {
+      headers: {
+        'PLAID-CLIENT-ID': clientId,
+        'PLAID-SECRET': secret,
+      },
+    },
+  });
+
+  return new PlaidApi(configuration);
+}
+
+/**
+ * Creates a test Item in Plaid sandbox without going through Link flow
+ *
+ * This bypasses the UI flow and directly creates an Item with mocked data.
+ * Uses Plaid's /sandbox/public_token/create endpoint.
+ *
+ * Pattern from Plaid AI Coding Toolkit - provides working access token + item ID.
+ *
+ * @param options - Test item configuration
+ * @returns Object with public_token, item_id, and access_token (after exchange)
+ *
+ * @example
+ * ```typescript
+ * // Create item and exchange for access token (all sandbox)
+ * const { access_token, item_id } = await createTestPlaidItem();
+ *
+ * // Now use access_token for testing transactions, accounts, etc.
+ * const { data } = await plaid.accountsGet({ access_token });
+ * ```
+ */
+export async function createTestPlaidItem(options: {
+  institutionId?: string;
+  initialProducts?: Array<'transactions' | 'auth' | 'identity' | 'assets' | 'investments' | 'liabilities' | 'payment_initiation'>;
+  testCredentials?: 'good' | 'bad' | 'locked';
+} = {}) {
+  console.log('📍 createTestPlaidItem called');
+  const plaid = await createTestPlaidClient();
+
+  const {
+    institutionId = 'ins_109508', // First Platypus Bank (test institution)
+    initialProducts = ['transactions' as any], // Cast to any to satisfy Plaid SDK types
+    testCredentials = 'good', // user_good / user_bad / user_locked
+  } = options;
+
+  console.log('📍 Plaid config:', { institutionId, initialProducts, testCredentials });
+
+  // Create public token in sandbox
+  let createResponse;
+  try {
+    const { Products } = await import('npm:plaid@31.1.0');
+    const webhookUrl = Deno.env.get('PLAID_WEBHOOK_URL') || 'http://127.0.0.1:54321/functions/v1/plaid-webhook';
+
+    createResponse = await plaid.sandboxPublicTokenCreate({
+      institution_id: institutionId,
+      initial_products: [Products.Transactions],  // Use Products enum
+      options: {
+        override_username: `user_${testCredentials}`,
+        override_password: `pass_${testCredentials}`,
+        webhook: webhookUrl,  // Configure webhook URL for sandbox item
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Plaid sandbox token creation failed');
+    console.error('Error:', error.message);
+    if (error.response?.data) {
+      console.error('Plaid API error:', JSON.stringify(error.response.data, null, 2));
+    }
+    throw error;
+  }
+
+  const public_token = createResponse.data.public_token;
+  console.log('✅ Got public token:', public_token.substring(0, 20) + '...');
+
+  // Exchange for access token
+  console.log('📍 Exchanging for access token...');
+  const exchangeResponse = await plaid.itemPublicTokenExchange({
+    public_token: public_token,
+  });
+
+  console.log('✅ Got access token');
   return {
-    transaction_id: 'plaid_tx_' + crypto.randomUUID(),
-    account_id: 'plaid_acc_1',
-    amount: 10.00,
-    date: new Date().toISOString().split('T')[0],
-    name: 'Test Transaction',
-    merchant_name: 'Test Merchant',
-    pending: false,
-    category: ['Test', 'Category'],
-    category_id: '12345',
-    payment_channel: 'online',
-    ...overrides,
+    public_token: public_token,
+    access_token: exchangeResponse.data.access_token,
+    item_id: exchangeResponse.data.item_id,
+    institution_id: institutionId,
   };
 }
 
 /**
- * Helper to create mock account data
+ * Simulates a Plaid webhook event in the sandbox environment
+ *
+ * Uses /sandbox/item/fire_webhook to trigger webhook events.
+ * Pattern from Plaid AI Coding Toolkit: https://github.com/plaid/ai-coding-toolkit/tree/main/sandbox
+ *
+ * This allows testing webhook handling without waiting for real events.
+ * The webhook will be sent to the PLAID_WEBHOOK_URL configured in .env.local.
+ *
+ * @param accessToken - Plaid access token for the item
+ * @param webhookCode - Type of webhook to simulate
+ *
+ * @example
+ * ```typescript
+ * // Simulate new transactions available
+ * await triggerPlaidSandboxWebhook(access_token, 'SYNC_UPDATES_AVAILABLE');
+ *
+ * // Simulate recurring transactions detected
+ * await triggerPlaidSandboxWebhook(access_token, 'RECURRING_TRANSACTIONS_UPDATE');
+ * ```
  */
-export function createMockAccount(overrides: Partial<any> = {}) {
-  return {
-    account_id: 'plaid_acc_' + crypto.randomUUID(),
-    name: 'Test Checking',
-    official_name: 'Test Checking Account',
-    type: 'depository',
-    subtype: 'checking',
-    mask: '0000',
-    balances: {
-      available: 1000,
-      current: 1000,
-      iso_currency_code: 'USD',
-    },
-    ...overrides,
-  };
+export async function triggerPlaidSandboxWebhook(
+  accessToken: string,
+  webhookCode: string = 'DEFAULT_UPDATE'
+) {
+  const plaid = await createTestPlaidClient();
+
+  // Cast to any to bypass strict enum checking for sandbox flexibility
+  await plaid.sandboxItemFireWebhook({
+    access_token: accessToken,
+    webhook_code: webhookCode as any,
+    webhook_type: 'TRANSACTIONS' as any,  // Required for DEFAULT_UPDATE
+  });
+
+  console.log(`✅ Triggered webhook: ${webhookCode}`);
 }
+
+/**
+ * Resets Plaid sandbox item login (useful for testing error states)
+ *
+ * @param accessToken - Plaid access token
+ */
+export async function resetPlaidSandboxItem(accessToken: string) {
+  const plaid = await createTestPlaidClient();
+
+  await plaid.sandboxItemResetLogin({
+    access_token: accessToken,
+  });
+}
+
+/**
+ * Test helper: Create a Plaid item and trigger a webhook in one call
+ *
+ * Simplifies webhook testing by combining item creation and webhook triggering.
+ * Pattern inspired by Plaid AI Coding Toolkit.
+ *
+ * @param webhookCode - Type of webhook to trigger after item creation
+ * @returns Object with access_token, item_id, and webhook trigger confirmation
+ *
+ * @example
+ * ```typescript
+ * // Create item and simulate new transactions webhook
+ * const { access_token, item_id } = await createItemAndTriggerWebhook('SYNC_UPDATES_AVAILABLE');
+ *
+ * // Now verify your webhook handler processed it correctly
+ * const { data: transactions } = await supabase
+ *   .from('transactions_table')
+ *   .select('*')
+ *   .eq('plaid_item_id', item_id);
+ * ```
+ */
+export async function createItemAndTriggerWebhook(
+  webhookCode: Parameters<typeof triggerPlaidSandboxWebhook>[1] = 'DEFAULT_UPDATE'
+) {
+  // Create test item
+  const item = await createTestPlaidItem();
+
+  // Give Plaid a moment to process the item creation
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  // Trigger webhook
+  await triggerPlaidSandboxWebhook(item.access_token, webhookCode);
+
+  return item;
+}
+
+// Re-export standard assertions for convenience
+export {
+  assertEquals,
+  assertExists,
+  assertRejects,
+  assertStrictEquals,
+  assertThrows,
+  assertNotEquals,
+  assertMatch,
+} from "https://deno.land/std@0.224.0/assert/mod.ts";
+
+// Re-export FakeTime for testing time-dependent code
+export { FakeTime } from "https://deno.land/std@0.224.0/testing/time.ts";

@@ -55,27 +55,29 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Check if running in local development mode
-    // Set IS_LOCAL_DEV="true" in config.toml [edge_runtime.secrets] for local dev
-    const isLocal = Deno.env.get('IS_LOCAL_DEV') === 'true';
-    console.log('🔍 Environment: isLocal =', isLocal);
-
+    // Get authenticated user
     let user;
     let supabase;
 
-    if (isLocal) {
-      // Local development: Skip auth for easier testing
-      console.log('⚠️  Running locally - Auth bypassed for testing');
-      user = { id: 'local-test-user-123' };
-      // supabase client not needed for new link mode (no itemId)
-    } else {
-      // Production: Require authentication
+    try {
+      supabase = createAuthenticatedClient(req);
       const authResult = await requireAuth(req);
       if (authResult instanceof Response) {
-        return authResult; // Return 401 if not authenticated
+        return authResult;
       }
       user = authResult;
-      supabase = createAuthenticatedClient(req);
+      if (!user) {
+        return jsonResponse(
+          { error: 'Unauthorized', message: 'User not found after auth' },
+          401
+        );
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      return jsonResponse(
+        { error: 'Authentication error', message },
+        401
+      );
     }
 
     // Parse request body
