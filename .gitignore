@@ -98,4 +98,4 @@ supabase/functions/coverage/
 supabase/functions/coverage.lcov
 
 # Test environment
-supabase/functions/.env.test
+supabase/functions/.env.testsupabase/functions/.env.local

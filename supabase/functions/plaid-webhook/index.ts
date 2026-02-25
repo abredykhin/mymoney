@@ -41,33 +41,26 @@ Deno.serve(async (req, ctx) => {
   }
 
   try {
-    // Check if running in local development mode
-    const isLocal = Deno.env.get('IS_LOCAL_DEV') === 'true';
-
     // Read body as text first for signature verification
     const bodyText = await req.text();
 
-    // Verify webhook signature (skip in local dev)
-    if (!isLocal) {
-      console.log('🔐 Verifying webhook signature...');
-      const isValid = await validateWebhookSignature(req, bodyText);
+    // Verify webhook signature
+    console.log('🔐 Verifying webhook signature...');
+    const isValid = await validateWebhookSignature(req, bodyText);
 
-      if (!isValid) {
-        console.error('❌ Webhook signature verification failed');
-        // Return 401 for invalid signatures to alert us of potential attacks
-        return new Response(JSON.stringify({
-          status: 'error',
-          message: 'Invalid webhook signature'
-        }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-
-      console.log('✅ Webhook signature verified');
-    } else {
-      console.log('⚠️  Local dev mode - webhook signature verification skipped');
+    if (!isValid) {
+      console.error('❌ Webhook signature verification failed');
+      // Return 401 for invalid signatures to alert us of potential attacks
+      return new Response(JSON.stringify({
+        status: 'error',
+        message: 'Invalid webhook signature'
+      }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
+
+    console.log('✅ Webhook signature verified');
 
     // Parse webhook body
     const body: PlaidWebhookBody = JSON.parse(bodyText);
