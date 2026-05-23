@@ -2,8 +2,6 @@
 //  BabloTests.swift
 //  BabloTests
 //
-//  Created by Anton Bredykhin on 6/10/24.
-//
 
 import Testing
 

@@ -258,7 +258,11 @@ class BudgetService: ObservableObject {
     // Variable spend tracking (for Home Screen)
     @Published var variableSpend: Double = 0
     
-    private let supabase = SupabaseManager.shared.client
+    private let supabase: SupabaseClient
+
+    init(supabaseClient: SupabaseClient = SupabaseManager.shared.client) {
+        self.supabase = supabaseClient
+    }
 
     // Total spend (for Spend Tab)
     var spendBreakdownItems: [CategoryBreakdownItem] {

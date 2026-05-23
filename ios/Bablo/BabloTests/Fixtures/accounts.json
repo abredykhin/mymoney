@@ -1,0 +1,10 @@
+[
+  {
+    "current_balance": 12500.50,
+    "type": "depository"
+  },
+  {
+    "current_balance": 3200.25,
+    "type": "credit"
+  }
+]
