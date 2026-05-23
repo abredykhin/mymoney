@@ -9,6 +9,9 @@ struct WelcomeView: View {
     @StateObject private var viewModel = BabloAuthViewModel()
     @EnvironmentObject private var userAccount: UserAccount
     @Environment(\.babloTheme) private var theme
+#if DEBUG
+    @State private var showingOnboardingSandbox = false
+#endif
 
     var body: some View {
         Group {
@@ -22,6 +25,12 @@ struct WelcomeView: View {
                 .environmentObject(userAccount)
             }
         }
+#if DEBUG
+        .fullScreenCover(isPresented: $showingOnboardingSandbox) {
+            OnboardingSandboxView()
+                .babloTheme(.normal)
+        }
+#endif
     }
 
     private var landing: some View {
@@ -81,6 +90,20 @@ struct WelcomeView: View {
                     .buttonStyle(PlainButtonStyle())
                     .padding(.horizontal, theme.effects.isPopArt ? 54 : 0)
                     .accessibilityIdentifier("auth.alreadyHaveAccount")
+
+#if DEBUG
+                    Button {
+                        showingOnboardingSandbox = true
+                    } label: {
+                        Text("Preview onboarding")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(theme.colors.textTertiary.color)
+                            .textCase(theme.effects.isPopArt ? .uppercase : nil)
+                            .tracking(theme.effects.isPopArt ? 1.8 : 0)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("debug.previewOnboarding")
+#endif
                 }
                 .padding(.horizontal, 28)
                 .padding(.bottom, 34)
@@ -118,3 +141,11 @@ struct WelcomeView: View {
         .environmentObject(UserAccount.shared)
         .babloTheme(.normal)
 }
+
+#if DEBUG
+#Preview("Welcome - Debug Onboarding Entry") {
+    WelcomeView()
+        .environmentObject(UserAccount.shared)
+        .babloTheme(.normal)
+}
+#endif

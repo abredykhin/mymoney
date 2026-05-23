@@ -20,6 +20,7 @@ final class BabloAuthViewModel: ObservableObject {
     @Published var email = ""
     @Published var showOTP = false
     @Published var errorMessage: String?
+    @Published var isLoading = false
 
     private let emailSender: EmailVerificationSending
 
@@ -35,11 +36,7 @@ final class BabloAuthViewModel: ObservableObject {
     }
 
     var canSubmitEmail: Bool {
-        isEmailValid && !emailSender.isLoading
-    }
-
-    var isLoading: Bool {
-        emailSender.isLoading
+        isEmailValid && !isLoading
     }
 
     func startSignUp() {
@@ -56,6 +53,10 @@ final class BabloAuthViewModel: ObservableObject {
 
     func sendCode() async {
         guard canSubmitEmail else { return }
+
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
 
         do {
             try await emailSender.sendVerification(email: normalizedEmail)

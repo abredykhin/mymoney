@@ -264,6 +264,15 @@ class AccountsService: ObservableObject {
             .reduce(0) { $0 + $1.current_balance }
     }
 
+    /// Clear user-scoped account data when the authenticated user changes.
+    func clearCache() {
+        banksWithAccounts = []
+        lastUpdated = nil
+        error = nil
+        cacheManager.clearCache()
+        Logger.d("AccountsService: Cleared cache")
+    }
+
     // MARK: - Private Methods
 
     private func loadCachedData() {

@@ -3,10 +3,18 @@ import SwiftUI
 struct OnboardingCategoriesView: View {
     var onContinue: ([FlexibleSpendingCategory]) -> Void
 
-    @State private var selected: Set<FlexibleSpendingCategory> = []
+    @State private var selected: Set<FlexibleSpendingCategory>
     @Environment(\.babloTheme) private var theme
 
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+
+    init(
+        initialSelected: Set<FlexibleSpendingCategory> = [],
+        onContinue: @escaping ([FlexibleSpendingCategory]) -> Void
+    ) {
+        _selected = State(initialValue: initialSelected)
+        self.onContinue = onContinue
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -150,7 +158,17 @@ private struct ScaleButtonStyle: ButtonStyle {
     }
 }
 
-#Preview {
+#Preview("Categories - Empty") {
     OnboardingCategoriesView(onContinue: { _ in })
         .background(Color(hex: "#F8F5EF"))
 }
+
+#if DEBUG
+#Preview("Categories - Selected") {
+    OnboardingCategoriesView(
+        initialSelected: .onboardingPreviewSelected,
+        onContinue: { _ in }
+    )
+    .background(Color(hex: "#F8F5EF"))
+}
+#endif

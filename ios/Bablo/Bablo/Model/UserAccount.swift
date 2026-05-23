@@ -34,6 +34,7 @@ struct User: Identifiable, Codable, Equatable, Sendable {
 struct Profile: Codable, Equatable {
     let id: String
     let username: String
+    let firstName: String?
     let monthlyIncome: Double
     let monthlyMandatoryExpenses: Double
     let trackedSpendingCategories: [String]
@@ -41,6 +42,7 @@ struct Profile: Codable, Equatable {
     enum CodingKeys: String, CodingKey {
         case id
         case username
+        case firstName = "first_name"
         case monthlyIncome = "monthly_income"
         case monthlyMandatoryExpenses = "monthly_mandatory_expenses"
         case trackedSpendingCategories = "tracked_spending_categories"
@@ -50,6 +52,7 @@ struct Profile: Codable, Equatable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(String.self, forKey: .id)
         username = try c.decode(String.self, forKey: .username)
+        firstName = try c.decodeIfPresent(String.self, forKey: .firstName)
         monthlyIncome = try c.decode(Double.self, forKey: .monthlyIncome)
         monthlyMandatoryExpenses = try c.decode(Double.self, forKey: .monthlyMandatoryExpenses)
         trackedSpendingCategories = (try? c.decodeIfPresent([String].self, forKey: .trackedSpendingCategories)) ?? []
@@ -63,7 +66,7 @@ struct FixedExpenseEntry {
     let amount: Int
 }
 
-private struct ManualStreamUpsert: Encodable {
+private struct ManualStreamWrite: Encodable {
     let user_id: String
     let description: String
     let frequency: String
@@ -75,6 +78,10 @@ private struct ManualStreamUpsert: Encodable {
     let is_active: Bool
     let is_manual: Bool
     let match_pattern: String
+}
+
+private struct ManualStreamIdentifier: Decodable {
+    let id: Int
 }
 
 private enum BiometricKeys: String {
@@ -96,6 +103,15 @@ class UserAccount: ObservableObject {
     var isBudgetSetup: Bool {
         guard let profile = profile else { return false }
         return profile.monthlyIncome > 0
+    }
+
+    var hasCompletedOnboarding: Bool {
+        guard let currentUser else { return false }
+        return UserDefaults.standard.bool(forKey: onboardingCompletionKey(for: currentUser.id))
+    }
+
+    var needsOnboarding: Bool {
+        !hasCompletedOnboarding && !isBudgetSetup
     }
 
     private let valet = Valet.valet(with: Identifier(nonEmpty: "BabloApp")!, accessibility: .whenUnlocked)
@@ -123,6 +139,7 @@ class UserAccount: ObservableObject {
                 Logger.i("UserAccount: User signed out")
                 await MainActor.run {
                     self.currentUser = nil
+                    self.profile = nil
                     self.isSignedIn = false
                 }
             case .tokenRefreshed:
@@ -139,8 +156,12 @@ class UserAccount: ObservableObject {
     /// Handle Supabase session and update user state
     private func handleSupabaseSession(_ session: Session) async {
         let user = User.from(session: session)
+        let isDifferentUser = currentUser?.id != user.id
 
         await MainActor.run {
+            if isDifferentUser {
+                self.profile = nil
+            }
             self.currentUser = user
             self.isSignedIn = true
         }
@@ -174,6 +195,38 @@ class UserAccount: ObservableObject {
             Logger.e("UserAccount: Failed to fetch profile: \(error)")
         }
     }
+
+    /// Save the user's casual first name collected during onboarding.
+    func updateProfileFirstName(_ firstName: String) async throws {
+        guard let user = currentUser else { return }
+
+        let trimmedName = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+
+        struct FirstNameUpdate: Encodable {
+            let first_name: String
+        }
+
+        do {
+            try await supabase
+                .from("profiles")
+                .update(FirstNameUpdate(first_name: trimmedName))
+                .eq("id", value: user.id)
+                .execute()
+
+            await fetchProfile()
+
+            currentUser = User(
+                id: user.id,
+                name: trimmedName,
+                token: user.token,
+                email: user.email
+            )
+        } catch {
+            Logger.e("UserAccount: Failed to update first name: \(error)")
+            throw error
+        }
+    }
     
     /// Save the user's selected flexible spending categories (onboarding Step 5).
     func updateTrackedCategories(_ categories: [String]) async throws {
@@ -201,7 +254,7 @@ class UserAccount: ObservableObject {
 
         for entry in entries where entry.amount > 0 {
             totalExpenses += Double(entry.amount)
-            let stream = ManualStreamUpsert(
+            let stream = ManualStreamWrite(
                 user_id: user.id,
                 description: entry.category.displayName,
                 frequency: "MONTHLY",
@@ -214,10 +267,8 @@ class UserAccount: ObservableObject {
                 is_manual: true,
                 match_pattern: entry.category.rawValue
             )
-            try await supabase
-                .from("recurring_streams_table")
-                .upsert(stream, onConflict: "user_id, match_pattern")
-                .execute()
+
+            try await saveManualRecurringStream(stream, for: user.id)
         }
 
         // Keep profile total in sync with what was entered
@@ -226,6 +277,31 @@ class UserAccount: ObservableObject {
                 monthlyIncome: profile?.monthlyIncome ?? 0,
                 monthlyExpenses: totalExpenses
             )
+        }
+    }
+
+    private func saveManualRecurringStream(_ stream: ManualStreamWrite, for userID: String) async throws {
+        let existingStreams: [ManualStreamIdentifier] = try await supabase
+            .from("recurring_streams_table")
+            .select("id")
+            .eq("user_id", value: userID)
+            .eq("match_pattern", value: stream.match_pattern)
+            .eq("is_manual", value: true)
+            .limit(1)
+            .execute()
+            .value
+
+        if let existingStream = existingStreams.first {
+            try await supabase
+                .from("recurring_streams_table")
+                .update(stream)
+                .eq("id", value: existingStream.id)
+                .execute()
+        } else {
+            try await supabase
+                .from("recurring_streams_table")
+                .insert(stream)
+                .execute()
         }
     }
 
@@ -300,6 +376,7 @@ class UserAccount: ObservableObject {
 
             await MainActor.run {
                 currentUser = nil
+                profile = nil
                 isSignedIn = false
                 clearCoreDataCache()
                 // Clear AccountsService cache
@@ -307,6 +384,11 @@ class UserAccount: ObservableObject {
                 Logger.i("Cleared AccountsService cache")
             }
         }
+    }
+
+    func markOnboardingCompleted() {
+        guard let currentUser else { return }
+        UserDefaults.standard.set(true, forKey: onboardingCompletionKey(for: currentUser.id))
     }
     
     func checkBiometricSettings() {
@@ -402,6 +484,10 @@ class UserAccount: ObservableObject {
         // Reset the context to clear all in-memory objects
         context.reset()
         Logger.i("CoreData context reset complete")
+    }
+
+    private func onboardingCompletionKey(for userID: String) -> String {
+        "hasCompletedOnboarding.\(userID)"
     }
     
 

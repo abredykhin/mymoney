@@ -2,27 +2,36 @@ import SwiftUI
 import LinkKit
 
 enum OnboardingStep: CaseIterable, Identifiable {
-    case income, linkBank, accountsConnected, fixedExpenses, categories
+    case name, income, linkBank, accountsConnected, fixedExpenses, categories
     var id: Self { self }
+
+    var showsBackButton: Bool {
+        self != .name
+    }
 
     var index: Int {
         switch self {
-        case .income:             return 0
-        case .linkBank:           return 1
-        case .accountsConnected:  return 2
-        case .fixedExpenses:      return 3
-        case .categories:         return 4
+        case .name:               return 0
+        case .income:             return 1
+        case .linkBank:           return 2
+        case .accountsConnected:  return 3
+        case .fixedExpenses:      return 4
+        case .categories:         return 5
         }
     }
 }
 
 struct OnboardingWizard: View {
-    @State private var currentStep: OnboardingStep = .income
+    @State private var currentStep: OnboardingStep = .name
     @SwiftUI.Environment(\.dismiss) private var dismiss
+    private let onFinish: (() -> Void)?
 
     @EnvironmentObject var accountsService: AccountsService
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var plaidService: PlaidService
+
+    // Name
+    @State private var nameVM = OnboardingNameInputViewModel()
 
     // Income
     @State private var incomeVM = IncomeInputViewModel()
@@ -36,6 +45,10 @@ struct OnboardingWizard: View {
     @State private var isSaving = false
     @State private var showError = false
     @State private var errorMessage = ""
+
+    init(onFinish: (() -> Void)? = nil) {
+        self.onFinish = onFinish
+    }
 
     var body: some View {
         ZStack {
@@ -52,10 +65,18 @@ struct OnboardingWizard: View {
                 // Step content
                 ZStack {
                     switch currentStep {
+                    case .name:
+                        OnboardingNameView(
+                            vm: nameVM,
+                            isSaving: isSaving,
+                            onContinue: { saveNameAndAdvance() }
+                        )
+                        .transition(stepTransition)
+
                     case .income:
                         OnboardingIncomeView(
                             vm: incomeVM,
-                            userName: UserAccount.shared.currentUser?.name ?? "there",
+                            userName: nameVM.trimmedName.isEmpty ? (UserAccount.shared.profile?.firstName ?? UserAccount.shared.currentUser?.name ?? "there") : nameVM.trimmedName,
                             onContinue: { saveIncomeAndAdvance() },
                             onSkip: { advance() }
                         )
@@ -128,6 +149,7 @@ struct OnboardingWizard: View {
     private func advance() {
         withAnimation(.easeInOut(duration: 0.25)) {
             switch currentStep {
+            case .name:              currentStep = .income
             case .income:            currentStep = .linkBank
             case .linkBank:          currentStep = accountsService.banksWithAccounts.isEmpty ? .fixedExpenses : .accountsConnected
             case .accountsConnected: currentStep = .fixedExpenses
@@ -139,6 +161,7 @@ struct OnboardingWizard: View {
 
     private func goBack() {
         switch currentStep {
+        case .income:            currentStep = .name
         case .linkBank:          currentStep = .income
         case .accountsConnected: currentStep = .linkBank
         case .fixedExpenses:     currentStep = accountsService.banksWithAccounts.isEmpty ? .linkBank : .accountsConnected
@@ -148,6 +171,22 @@ struct OnboardingWizard: View {
     }
 
     // MARK: - Actions
+
+    private func saveNameAndAdvance() {
+        Task {
+            guard nameVM.canContinue else { return }
+            isSaving = true
+            defer { isSaving = false }
+            do {
+                try await UserAccount.shared.updateProfileFirstName(nameVM.trimmedName)
+            } catch {
+                errorMessage = "Couldn't save your name: \(error.localizedDescription)"
+                showError = true
+                return
+            }
+            advance()
+        }
+    }
 
     private func saveIncomeAndAdvance() {
         Task {
@@ -186,7 +225,8 @@ struct OnboardingWizard: View {
         } catch {
             // Non-fatal: proceed anyway
         }
-        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+        UserAccount.shared.markOnboardingCompleted()
+        onFinish?()
         dismiss()
     }
 
@@ -237,7 +277,7 @@ private struct OnboardingTopBar: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            if step != .income {
+            if step.showsBackButton {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .semibold))

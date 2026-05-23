@@ -9,6 +9,11 @@
 /* Begin PBXBuildFile section */
 		05706EF4C798BE6921652138 /* FlexibleSpendingCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F627E8B0014BC6160A998D2B /* FlexibleSpendingCategory.swift */; };
 		082AC9C13BC9225DB9DEFFB5 /* OnboardingAccountsConnectedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A42C0A60C6A7AD4CD5420F4 /* OnboardingAccountsConnectedView.swift */; };
+		0E7A4C241BA54D6AB8D035C1 /* OnboardingSandboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7A4C221BA54D6AB8D035C1 /* OnboardingSandboxView.swift */; };
+		0E7A4C251BA54D6AB8D035C1 /* OnboardingSandboxState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7A4C231BA54D6AB8D035C1 /* OnboardingSandboxState.swift */; };
+		0E7A4C271BA54D6AB8D035C1 /* OnboardingPreviewFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7A4C261BA54D6AB8D035C1 /* OnboardingPreviewFixtures.swift */; };
+		0E7A4C2B1BA54D6AB8D035C1 /* OnboardingNameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7A4C2A1BA54D6AB8D035C1 /* OnboardingNameView.swift */; };
+		0E7A4C2D1BA54D6AB8D035C1 /* OnboardingNameInputViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7A4C2C1BA54D6AB8D035C1 /* OnboardingNameInputViewModel.swift */; };
 		330F6DC2EF9CF04F1F99D6FF /* OnboardingAmountStepper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23C1810B7EF201D0786BA6B6 /* OnboardingAmountStepper.swift */; };
 		33C6FB76EEB2848412C11408 /* FixedExpenseCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E5474B40C370C7373F06D32 /* FixedExpenseCategory.swift */; };
 		34311409391ADEB01253AD34 /* OnboardingIncomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 425AC6E68DF39DF90BF31D70 /* OnboardingIncomeView.swift */; };
@@ -123,6 +128,8 @@
 		75E49BAC2CA3EACF008D72F8 /* Dates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E49BAB2CA3EACF008D72F8 /* Dates.swift */; };
 		75E6CC652CBCBD4500C779C9 /* RecentTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E6CC642CBCBD4500C779C9 /* RecentTransactionsView.swift */; };
 		8BFF1113A3F23AA9B6F845A0 /* OnboardingIncomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DEC7CC9911D35A887B73A8 /* OnboardingIncomeViewModelTests.swift */; };
+		8E7A4C211BA54D6AB8D035C1 /* OnboardingSandboxStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7A4C201BA54D6AB8D035C1 /* OnboardingSandboxStateTests.swift */; };
+		8E7A4C291BA54D6AB8D035C1 /* OnboardingNameInputViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7A4C281BA54D6AB8D035C1 /* OnboardingNameInputViewModelTests.swift */; };
 		B8203166A3A9DB62F68CD955 /* OnboardingFixedExpensesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB442FCBA28DFC63AED0C61 /* OnboardingFixedExpensesView.swift */; };
 		D95B4ECD0B0830645BD96CDE /* IncomeInputViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB55063D775CEC7F1F70CA7 /* IncomeInputViewModel.swift */; };
 		F8E5C258DCB524B34EECA4E7 /* ProfileDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C54E0A69D0900E1468D5091D /* ProfileDecodingTests.swift */; };
@@ -245,6 +252,11 @@
 		75BB90CA2CA0E30E00D197A6 /* BankView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankView.swift; sourceTree = "<group>"; };
 		75C972C32D13B7D4008E6E87 /* OnboardingWizard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWizard.swift; sourceTree = "<group>"; };
 		75C972C92D13B8CC008E6E87 /* OnboardingCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCategoriesView.swift; sourceTree = "<group>"; };
+		0E7A4C221BA54D6AB8D035C1 /* OnboardingSandboxView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingSandboxView.swift; sourceTree = "<group>"; };
+		0E7A4C231BA54D6AB8D035C1 /* OnboardingSandboxState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingSandboxState.swift; sourceTree = "<group>"; };
+		0E7A4C261BA54D6AB8D035C1 /* OnboardingPreviewFixtures.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingPreviewFixtures.swift; sourceTree = "<group>"; };
+		0E7A4C2A1BA54D6AB8D035C1 /* OnboardingNameView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingNameView.swift; sourceTree = "<group>"; };
+		0E7A4C2C1BA54D6AB8D035C1 /* OnboardingNameInputViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingNameInputViewModel.swift; sourceTree = "<group>"; };
 		75CD54C82D92721B0018288D /* AllTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllTransactionsView.swift; sourceTree = "<group>"; };
 		75D39A062EEE5C7600866367 /* PlaidService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidService.swift; sourceTree = "<group>"; };
 		75D39A212EEE5F1000866367 /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
@@ -259,6 +271,8 @@
 		75E49BAB2CA3EACF008D72F8 /* Dates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dates.swift; sourceTree = "<group>"; };
 		75E6CC642CBCBD4500C779C9 /* RecentTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentTransactionsView.swift; sourceTree = "<group>"; };
 		7A42C0A60C6A7AD4CD5420F4 /* OnboardingAccountsConnectedView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingAccountsConnectedView.swift; sourceTree = "<group>"; };
+		8E7A4C201BA54D6AB8D035C1 /* OnboardingSandboxStateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingSandboxStateTests.swift; sourceTree = "<group>"; };
+		8E7A4C281BA54D6AB8D035C1 /* OnboardingNameInputViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingNameInputViewModelTests.swift; sourceTree = "<group>"; };
 		A0DEC7CC9911D35A887B73A8 /* OnboardingIncomeViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingIncomeViewModelTests.swift; sourceTree = "<group>"; };
 		A3B29B2642CB14C35C129E02 /* OnboardingCTAButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingCTAButton.swift; sourceTree = "<group>"; };
 		C54E0A69D0900E1468D5091D /* ProfileDecodingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfileDecodingTests.swift; sourceTree = "<group>"; };
@@ -429,6 +443,11 @@
 				9C4CEA2EE799554F5C54D379 /* Components */,
 				75C972C92D13B8CC008E6E87 /* OnboardingCategoriesView.swift */,
 				75C972C32D13B7D4008E6E87 /* OnboardingWizard.swift */,
+				0E7A4C221BA54D6AB8D035C1 /* OnboardingSandboxView.swift */,
+				0E7A4C231BA54D6AB8D035C1 /* OnboardingSandboxState.swift */,
+				0E7A4C261BA54D6AB8D035C1 /* OnboardingPreviewFixtures.swift */,
+				0E7A4C2A1BA54D6AB8D035C1 /* OnboardingNameView.swift */,
+				0E7A4C2C1BA54D6AB8D035C1 /* OnboardingNameInputViewModel.swift */,
 				425AC6E68DF39DF90BF31D70 /* OnboardingIncomeView.swift */,
 				170F06457D07F1D7E77F5B39 /* OnboardingLinkBankView.swift */,
 				7A42C0A60C6A7AD4CD5420F4 /* OnboardingAccountsConnectedView.swift */,
@@ -549,6 +568,8 @@
 				757ABF482C18195400DF8CB1 /* AuthLoginViewModelTests.swift */,
 				241F8E9939B3B508CC812313 /* FixedExpenseCategoryTests.swift */,
 				A0DEC7CC9911D35A887B73A8 /* OnboardingIncomeViewModelTests.swift */,
+				8E7A4C281BA54D6AB8D035C1 /* OnboardingNameInputViewModelTests.swift */,
+				8E7A4C201BA54D6AB8D035C1 /* OnboardingSandboxStateTests.swift */,
 				C54E0A69D0900E1468D5091D /* ProfileDecodingTests.swift */,
 			);
 			path = BabloTests;
@@ -948,6 +969,11 @@
 				34311409391ADEB01253AD34 /* OnboardingIncomeView.swift in Sources */,
 				391C281470D0B5B2DA099478 /* OnboardingLinkBankView.swift in Sources */,
 				082AC9C13BC9225DB9DEFFB5 /* OnboardingAccountsConnectedView.swift in Sources */,
+				0E7A4C241BA54D6AB8D035C1 /* OnboardingSandboxView.swift in Sources */,
+				0E7A4C251BA54D6AB8D035C1 /* OnboardingSandboxState.swift in Sources */,
+				0E7A4C271BA54D6AB8D035C1 /* OnboardingPreviewFixtures.swift in Sources */,
+				0E7A4C2B1BA54D6AB8D035C1 /* OnboardingNameView.swift in Sources */,
+				0E7A4C2D1BA54D6AB8D035C1 /* OnboardingNameInputViewModel.swift in Sources */,
 				B8203166A3A9DB62F68CD955 /* OnboardingFixedExpensesView.swift in Sources */,
 				44FC673B7FFDCA94F4061DD3 /* OnboardingNumPad.swift in Sources */,
 				330F6DC2EF9CF04F1F99D6FF /* OnboardingAmountStepper.swift in Sources */,
@@ -973,6 +999,8 @@
 				757ABF492C18195400DF8CB1 /* AuthLoginViewModelTests.swift in Sources */,
 				5A0D4D717842591388AD49E5 /* FixedExpenseCategoryTests.swift in Sources */,
 				8BFF1113A3F23AA9B6F845A0 /* OnboardingIncomeViewModelTests.swift in Sources */,
+				8E7A4C291BA54D6AB8D035C1 /* OnboardingNameInputViewModelTests.swift in Sources */,
+				8E7A4C211BA54D6AB8D035C1 /* OnboardingSandboxStateTests.swift in Sources */,
 				F8E5C258DCB524B34EECA4E7 /* ProfileDecodingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

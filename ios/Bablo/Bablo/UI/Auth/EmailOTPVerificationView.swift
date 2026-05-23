@@ -61,7 +61,7 @@ struct EmailOTPVerificationView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 28) {
+        VStack(alignment: .leading, spacing: 20) {
             Button {
                 dismiss()
             } label: {
@@ -92,17 +92,9 @@ struct EmailOTPVerificationView: View {
         HStack(spacing: 10) {
             ForEach(0..<6, id: \.self) { index in
                 BabloOTPTextField(
-                    text: $otpDigits[index],
+                    text: otpBinding(for: index),
                     focusedField: $focusedField,
-                    index: index,
-                    onComplete: {
-                        if index < 5 {
-                            focusedField = index + 1
-                        } else {
-                            focusedField = nil
-                            verifyCode()
-                        }
-                    }
+                    index: index
                 )
             }
         }
@@ -127,6 +119,18 @@ struct EmailOTPVerificationView: View {
 
     private var isCodeComplete: Bool {
         otpDigits.joined().count == 6
+    }
+
+    private func otpBinding(for index: Int) -> Binding<String> {
+        Binding(
+            get: { otpDigits[index] },
+            set: { newValue in
+                focusedField = OTPCodeInput.apply(newValue, to: &otpDigits, startingAt: index)
+                if focusedField == nil && isCodeComplete {
+                    verifyCode()
+                }
+            }
+        )
     }
 
     private func startCountdown() {
@@ -192,7 +196,6 @@ private struct BabloOTPTextField: View {
     @Binding var text: String
     @FocusState.Binding var focusedField: Int?
     let index: Int
-    let onComplete: () -> Void
     @Environment(\.babloTheme) private var theme
 
     var body: some View {
@@ -220,20 +223,32 @@ private struct BabloOTPTextField: View {
             )
             .focused($focusedField, equals: index)
             .accessibilityIdentifier("auth.otp.\(index)")
-            .onChange(of: text) { _, newValue in
-                if newValue.count > 1 {
-                    text = String(newValue.prefix(1))
-                }
+    }
+}
 
-                if !newValue.isEmpty && !newValue.allSatisfy(\.isNumber) {
-                    text = ""
-                    return
-                }
+enum OTPCodeInput {
+    @discardableResult
+    static func apply(_ input: String, to digits: inout [String], startingAt startIndex: Int) -> Int? {
+        guard digits.indices.contains(startIndex) else { return nil }
 
-                if !newValue.isEmpty {
-                    onComplete()
-                }
-            }
+        if input.isEmpty {
+            digits[startIndex] = ""
+            return startIndex
+        }
+
+        let sanitizedDigits = input.filter(\.isNumber).map(String.init)
+        guard !sanitizedDigits.isEmpty else {
+            digits[startIndex] = ""
+            return startIndex
+        }
+
+        var targetIndex = startIndex
+        for digit in sanitizedDigits where digits.indices.contains(targetIndex) {
+            digits[targetIndex] = digit
+            targetIndex += 1
+        }
+
+        return digits.indices.contains(targetIndex) ? targetIndex : nil
     }
 }
 

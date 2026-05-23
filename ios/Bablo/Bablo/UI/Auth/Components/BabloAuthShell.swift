@@ -18,7 +18,7 @@ struct BabloAuthShell<Content: View, BottomBar: View>: View {
                         content
                     }
                     .padding(.horizontal, theme.metrics.screenPadding + 12)
-                    .padding(.top, 38)
+                    .padding(.top, theme.effects.isPopArt ? 24 : 18)
                     .padding(.bottom, 24)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }

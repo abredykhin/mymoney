@@ -22,6 +22,10 @@ CREATE TABLE profiles_table
 (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username text UNIQUE NOT NULL,
+  first_name text,
+  monthly_income numeric(28,2) DEFAULT 0,
+  monthly_mandatory_expenses numeric(28,2) DEFAULT 0,
+  tracked_spending_categories text[] NOT NULL DEFAULT '{}',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -33,7 +37,15 @@ EXECUTE PROCEDURE trigger_set_timestamp();
 
 CREATE VIEW profiles
 AS
-  SELECT id, username, created_at, updated_at
+  SELECT
+    id,
+    username,
+    first_name,
+    monthly_income,
+    monthly_mandatory_expenses,
+    tracked_spending_categories,
+    created_at,
+    updated_at
   FROM profiles_table;
 
 -- Trigger to automatically create profile on user signup
@@ -472,6 +484,28 @@ $$;
 
 ALTER TABLE profiles_table
   ADD COLUMN IF NOT EXISTS tracked_spending_categories text[] NOT NULL DEFAULT '{}';
+
+-- =============================================================================
+-- Migration: 20260523202336 — Add profile first name
+-- =============================================================================
+
+ALTER TABLE public.profiles_table
+  ADD COLUMN IF NOT EXISTS first_name text;
+
+CREATE OR REPLACE VIEW public.profiles
+WITH (security_invoker = true)
+AS
+  SELECT
+    id,
+    username,
+    monthly_income,
+    monthly_mandatory_expenses,
+    created_at,
+    updated_at,
+    tracked_spending_categories,
+    first_name
+  FROM
+    public.profiles_table;
 
 -- =============================================================================
 -- DONE! Database is ready for the iOS app.

@@ -243,8 +243,16 @@ private struct SyncProgressRow: View {
     }
 }
 
-#Preview {
+#Preview("Accounts Connected - Empty Service") {
     OnboardingAccountsConnectedView(onLinkAnother: {}, onContinue: {})
         .environmentObject(AccountsService())
         .background(Color(hex: "#F8F5EF"))
 }
+
+#if DEBUG
+#Preview("Accounts Connected - Fixture Bank") {
+    OnboardingAccountsConnectedView(onLinkAnother: {}, onContinue: {})
+        .environmentObject(AccountsService.onboardingPreviewLinkedBank)
+        .background(Color(hex: "#F8F5EF"))
+}
+#endif

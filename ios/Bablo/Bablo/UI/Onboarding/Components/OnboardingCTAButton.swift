@@ -4,6 +4,7 @@ import SwiftUI
 struct OnboardingCTAButton: View {
     let label: String
     var isLoading: Bool = false
+    var isDisabled: Bool = false
     let action: () -> Void
 
     @Environment(\.babloTheme) private var theme
@@ -23,9 +24,9 @@ struct OnboardingCTAButton: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .frame(height: theme.metrics.buttonHeight)
-            .background(theme.colors.textPrimary.color)
+            .background(isDisabled ? theme.colors.textTertiary.color : theme.colors.textPrimary.color)
             .clipShape(RoundedRectangle(cornerRadius: theme.metrics.buttonCornerRadius, style: .continuous))
         }
-        .disabled(isLoading)
+        .disabled(isLoading || isDisabled)
     }
 }
