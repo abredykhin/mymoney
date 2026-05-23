@@ -13,6 +13,7 @@ struct HomeView: View {
     @EnvironmentObject var accountsService: AccountsService
     @EnvironmentObject private var transactionsService: TransactionsService
     @EnvironmentObject private var budgetService: BudgetService
+    @EnvironmentObject private var userAccount: UserAccount
     @EnvironmentObject var navigationState: NavigationState
     @State private var isOffline = false
     @State private var isRefreshing = false
@@ -85,18 +86,8 @@ struct HomeView: View {
         .refreshable {
             checkConnectivityAndRefresh()
         }
-        .task {
-            checkConnectivityAndRefresh(forceRefresh: false)
-            await UserAccount.shared.fetchProfile()
-            
-            // Auto-trigger onboarding if new user (no accounts, no cache)
-            if accountsService.banksWithAccounts.isEmpty && !showingOnboarding {
-                // Check if we should auto-prompt (simple heuristic: if no accounts loaded after refresh)
-                try? await Task.sleep(nanoseconds: 500_000_000) // Small delay to allow refresh to complete
-                if accountsService.banksWithAccounts.isEmpty {
-                    showingOnboarding = true
-                }
-            }
+        .task(id: userAccount.currentUser?.id) {
+            await refreshHomeForCurrentUser()
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: Bank.self) { bank in
@@ -136,6 +127,21 @@ struct HomeView: View {
                 }
                 
                 isRefreshing = false
+            }
+        }
+    }
+
+    private func refreshHomeForCurrentUser() async {
+        isRefreshing = true
+        defer { isRefreshing = false }
+
+        await userAccount.fetchProfile()
+
+        if !isOffline {
+            do {
+                try await accountsService.refreshAccounts(forceRefresh: true)
+            } catch {
+                Logger.e("Failed to refresh data: \(error)")
             }
         }
     }

@@ -98,7 +98,12 @@ struct OnboardingLinkBankView: View {
     }
 }
 
-#Preview {
+#Preview("Link Bank - Empty") {
     OnboardingLinkBankView(isLoading: false, onLinkWithPlaid: {}, onManual: {})
+        .background(Color(hex: "#F8F5EF"))
+}
+
+#Preview("Link Bank - Loading") {
+    OnboardingLinkBankView(isLoading: true, onLinkWithPlaid: {}, onManual: {})
         .background(Color(hex: "#F8F5EF"))
 }

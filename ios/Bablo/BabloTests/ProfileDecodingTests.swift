@@ -11,6 +11,7 @@ struct ProfileDecodingTests {
         {
           "id": "abc-123",
           "username": "test@example.com",
+          "first_name": "Mia",
           "monthly_income": 5500.00,
           "monthly_mandatory_expenses": 1282.00,
           "tracked_spending_categories": ["eats_out", "coffee_runs", "fun"]
@@ -21,6 +22,7 @@ struct ProfileDecodingTests {
 
         #expect(profile.id == "abc-123")
         #expect(profile.username == "test@example.com")
+        #expect(profile.firstName == "Mia")
         #expect(profile.monthlyIncome == 5500.0)
         #expect(profile.monthlyMandatoryExpenses == 1282.0)
         #expect(profile.trackedSpendingCategories == ["eats_out", "coffee_runs", "fun"])
@@ -39,6 +41,7 @@ struct ProfileDecodingTests {
 
         let decoder = JSONDecoder()
         let profile = try decoder.decode(Profile.self, from: json)
+        #expect(profile.firstName == nil)
         #expect(profile.trackedSpendingCategories == [])
     }
 

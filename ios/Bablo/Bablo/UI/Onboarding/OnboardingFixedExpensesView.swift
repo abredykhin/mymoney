@@ -2,15 +2,19 @@ import SwiftUI
 
 struct OnboardingFixedExpensesView: View {
     /// Amounts keyed by category; 0 means "Skip" (not tracking)
-    @State private var amounts: [FixedExpenseCategory: Int] = {
-        var d: [FixedExpenseCategory: Int] = [:]
-        for cat in FixedExpenseCategory.allCases { d[cat] = 0 }
-        return d
-    }()
+    @State private var amounts: [FixedExpenseCategory: Int]
 
     var onNext: ([FixedExpenseEntry]) -> Void
 
     @Environment(\.babloTheme) private var theme
+
+    init(
+        initialAmounts: [FixedExpenseCategory: Int] = Self.emptyAmounts,
+        onNext: @escaping ([FixedExpenseEntry]) -> Void
+    ) {
+        _amounts = State(initialValue: initialAmounts)
+        self.onNext = onNext
+    }
 
     private var trackedEntries: [FixedExpenseEntry] {
         FixedExpenseCategory.allCases
@@ -20,6 +24,14 @@ struct OnboardingFixedExpensesView: View {
 
     private var lockedTotal: Int {
         trackedEntries.reduce(0) { $0 + $1.amount }
+    }
+
+    private static var emptyAmounts: [FixedExpenseCategory: Int] {
+        var amounts: [FixedExpenseCategory: Int] = [:]
+        for category in FixedExpenseCategory.allCases {
+            amounts[category] = 0
+        }
+        return amounts
     }
 
     var body: some View {
@@ -156,7 +168,17 @@ private struct CategoryRow: View {
     }
 }
 
-#Preview {
+#Preview("Fixed Expenses - Empty") {
     OnboardingFixedExpensesView(onNext: { _ in })
         .background(Color(hex: "#F8F5EF"))
 }
+
+#if DEBUG
+#Preview("Fixed Expenses - Prefilled") {
+    OnboardingFixedExpensesView(
+        initialAmounts: .onboardingPreviewPrefilled,
+        onNext: { _ in }
+    )
+    .background(Color(hex: "#F8F5EF"))
+}
+#endif

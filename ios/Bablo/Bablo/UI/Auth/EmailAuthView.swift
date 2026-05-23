@@ -173,10 +173,17 @@ struct EmailAuthView: View {
 
             if viewModel.mode == .signUp {
                 Text("By continuing you agree to our Terms and Privacy Policy.")
-                    .font(.system(size: 16, weight: .regular, design: .default))
+                    .font(.system(size: 12, weight: .regular, design: .default))
                     .foregroundStyle(theme.colors.textTertiary.color)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 8)
+            }
+
+            if viewModel.isLoading {
+                ProgressView()
+                    .progressViewStyle(.linear)
+                    .tint(theme.colors.textPrimary.color)
+                    .accessibilityIdentifier("auth.emailProgress")
             }
         }
     }
@@ -201,7 +208,7 @@ struct EmailAuthView: View {
     }
 
     private var formTopPadding: CGFloat {
-        theme.effects.isPopArt ? 84 : 16
+        theme.effects.isPopArt ? 54 : 18
     }
 
     private var contentSpacing: CGFloat {

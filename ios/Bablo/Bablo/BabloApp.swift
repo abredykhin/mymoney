@@ -18,6 +18,7 @@ struct BabloApp: App {
     @StateObject var plaidService = PlaidService()
     @State private var showBiometricEnrollment = false
     @State private var showAuthView = false
+    @State private var isPresentingRequiredOnboarding = false
     @AppStorage("babloThemeVariant") private var babloThemeVariant = BabloTheme.normal.rawValue
     @Environment(\.scenePhase) var scenePhase
 
@@ -31,8 +32,16 @@ struct BabloApp: App {
         WindowGroup {
             ZStack {
                 if userAccount.isSignedIn {
-                        // Always show ContentView, but blur it when authentication is needed
-                    ContentView()
+                    if userAccount.profile == nil {
+                        BabloScreenBackground {
+                            ProgressView()
+                                .tint(.primary)
+                        }
+                        .babloTheme(selectedTheme)
+                    } else if isPresentingRequiredOnboarding || userAccount.needsOnboarding {
+                        OnboardingWizard {
+                            isPresentingRequiredOnboarding = false
+                        }
                         .environmentObject(userAccount)
                         .environmentObject(accountsService)
                         .environmentObject(authManager)
@@ -40,37 +49,52 @@ struct BabloApp: App {
                         .environmentObject(transactionsService)
                         .environmentObject(plaidService)
                         .environment(\.managedObjectContext, coreDataStack.viewContext)
-                        .blur(radius: (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated) || showAuthView ? 20 : 0)
-                        .animation(.default, value: userAccount.isBiometricallyAuthenticated)
-                        .animation(.default, value: showAuthView)
-                        .overlay {
-                            // Don't show biometric auth overlay if Plaid Link is active (OAuth in progress)
-                            if (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated && scenePhase == .active && plaidService.currentHandler == nil) {
-                                Color.black.opacity(0.01)
-                                    .edgesIgnoringSafeArea(.all)
-                                    .onAppear {
-                                        Logger.d("BabloApp: Authentication overlay appeared - triggering biometrics")
-                                        authenticateWithBiometrics()
-                                    }
-                            }
+                        .babloTheme(selectedTheme)
+                        .onAppear {
+                            isPresentingRequiredOnboarding = true
                         }
-                        .sheet(isPresented: $showAuthView) {
-                            AuthenticationView(onAuthenticated: {
-                                userAccount.isBiometricallyAuthenticated = true
-                                authManager.recordSuccessfulAuthentication()
-                                showAuthView = false
-                            }, onSignOut: {
-                                userAccount.signOut()
-                                showAuthView = false
-                            })
+                    } else {
+                        // Always show ContentView, but blur it when authentication is needed
+                        ContentView()
                             .environmentObject(userAccount)
-                            .interactiveDismissDisabled(true)
-                        }
-                        .sheet(isPresented: $showBiometricEnrollment) {
-                            BiometricEnrollmentView()
+                            .environmentObject(accountsService)
+                            .environmentObject(authManager)
+                            .environmentObject(budgetService)
+                            .environmentObject(transactionsService)
+                            .environmentObject(plaidService)
+                            .environment(\.managedObjectContext, coreDataStack.viewContext)
+                            .blur(radius: (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated) || showAuthView ? 20 : 0)
+                            .animation(.default, value: userAccount.isBiometricallyAuthenticated)
+                            .animation(.default, value: showAuthView)
+                            .overlay {
+                                // Don't show biometric auth overlay if Plaid Link is active (OAuth in progress)
+                                if (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated && scenePhase == .active && plaidService.currentHandler == nil) {
+                                    Color.black.opacity(0.01)
+                                        .edgesIgnoringSafeArea(.all)
+                                        .onAppear {
+                                            Logger.d("BabloApp: Authentication overlay appeared - triggering biometrics")
+                                            authenticateWithBiometrics()
+                                        }
+                                }
+                            }
+                            .sheet(isPresented: $showAuthView) {
+                                AuthenticationView(onAuthenticated: {
+                                    userAccount.isBiometricallyAuthenticated = true
+                                    authManager.recordSuccessfulAuthentication()
+                                    showAuthView = false
+                                }, onSignOut: {
+                                    userAccount.signOut()
+                                    showAuthView = false
+                                })
                                 .environmentObject(userAccount)
                                 .interactiveDismissDisabled(true)
-                        }
+                            }
+                            .sheet(isPresented: $showBiometricEnrollment) {
+                                BiometricEnrollmentView()
+                                    .environmentObject(userAccount)
+                                    .interactiveDismissDisabled(true)
+                            }
+                    }
                 } else {
                         // Login/welcome view
                     WelcomeView()
@@ -115,6 +139,23 @@ struct BabloApp: App {
                             userAccount.markBiometricPromptAsShown()
                         }
                     }
+                }
+            }
+            .onChange(of: userAccount.profile) { _, _ in
+                if userAccount.needsOnboarding {
+                    isPresentingRequiredOnboarding = true
+                }
+            }
+            .onChange(of: userAccount.currentUser?.id) { oldUserID, newUserID in
+                guard oldUserID != newUserID else { return }
+
+                isPresentingRequiredOnboarding = false
+                accountsService.clearCache()
+                transactionsService.clearCache()
+                budgetService.clearCache()
+
+                if newUserID != nil {
+                    Logger.i("BabloApp: Cleared user-scoped caches for auth transition")
                 }
             }
         }
