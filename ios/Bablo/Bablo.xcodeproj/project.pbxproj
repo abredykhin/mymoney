@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		05706EF4C798BE6921652138 /* FlexibleSpendingCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F627E8B0014BC6160A998D2B /* FlexibleSpendingCategory.swift */; };
 		082AC9C13BC9225DB9DEFFB5 /* OnboardingAccountsConnectedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A42C0A60C6A7AD4CD5420F4 /* OnboardingAccountsConnectedView.swift */; };
 		330F6DC2EF9CF04F1F99D6FF /* OnboardingAmountStepper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23C1810B7EF201D0786BA6B6 /* OnboardingAmountStepper.swift */; };
 		33C6FB76EEB2848412C11408 /* FixedExpenseCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E5474B40C370C7373F06D32 /* FixedExpenseCategory.swift */; };
@@ -286,6 +287,7 @@
 		7A42C0A60C6A7AD4CD5420F4 /* OnboardingAccountsConnectedView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingAccountsConnectedView.swift; sourceTree = "<group>"; };
 		A0DEC7CC9911D35A887B73A8 /* OnboardingIncomeViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingIncomeViewModelTests.swift; sourceTree = "<group>"; };
 		C54E0A69D0900E1468D5091D /* ProfileDecodingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfileDecodingTests.swift; sourceTree = "<group>"; };
+		F627E8B0014BC6160A998D2B /* FlexibleSpendingCategory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FlexibleSpendingCategory.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -615,6 +617,7 @@
 				75668FDB2D83D012003A3D97 /* Cache */,
 				757ABF862C181D3400DF8CA8 /* UserAccount.swift */,
 				6E5474B40C370C7373F06D32 /* FixedExpenseCategory.swift */,
+				F627E8B0014BC6160A998D2B /* FlexibleSpendingCategory.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -1009,6 +1012,7 @@
 				B8203166A3A9DB62F68CD955 /* OnboardingFixedExpensesView.swift in Sources */,
 				44FC673B7FFDCA94F4061DD3 /* OnboardingNumPad.swift in Sources */,
 				330F6DC2EF9CF04F1F99D6FF /* OnboardingAmountStepper.swift in Sources */,
+				05706EF4C798BE6921652138 /* FlexibleSpendingCategory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

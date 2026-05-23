@@ -36,16 +36,46 @@ struct Profile: Codable, Equatable {
     let username: String
     let monthlyIncome: Double
     let monthlyMandatoryExpenses: Double
+    let trackedSpendingCategories: [String]
 
     enum CodingKeys: String, CodingKey {
         case id
         case username
         case monthlyIncome = "monthly_income"
         case monthlyMandatoryExpenses = "monthly_mandatory_expenses"
+        case trackedSpendingCategories = "tracked_spending_categories"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        username = try c.decode(String.self, forKey: .username)
+        monthlyIncome = try c.decode(Double.self, forKey: .monthlyIncome)
+        monthlyMandatoryExpenses = try c.decode(Double.self, forKey: .monthlyMandatoryExpenses)
+        trackedSpendingCategories = (try? c.decodeIfPresent([String].self, forKey: .trackedSpendingCategories)) ?? []
     }
 }
 
 
+
+struct FixedExpenseEntry {
+    let category: FixedExpenseCategory
+    let amount: Int
+}
+
+private struct ManualStreamUpsert: Encodable {
+    let user_id: String
+    let description: String
+    let frequency: String
+    let average_amount: Double
+    let last_amount: Double
+    let monthly_amount: Double
+    let type: String
+    let status: String
+    let is_active: Bool
+    let is_manual: Bool
+    let match_pattern: String
+}
 
 private enum BiometricKeys: String {
     case isBiometricEnabled = "biometricEnabled"
@@ -145,6 +175,60 @@ class UserAccount: ObservableObject {
         }
     }
     
+    /// Save the user's selected flexible spending categories (onboarding Step 5).
+    func updateTrackedCategories(_ categories: [String]) async throws {
+        guard let user = currentUser else { return }
+
+        struct CategoryUpdate: Encodable {
+            let tracked_spending_categories: [String]
+        }
+
+        try await supabase
+            .from("profiles")
+            .update(CategoryUpdate(tracked_spending_categories: categories))
+            .eq("id", value: user.id)
+            .execute()
+
+        await fetchProfile()
+    }
+
+    /// Upsert manual recurring streams for fixed expense categories (onboarding Step 4).
+    /// Categories with amount == 0 are skipped (user left them as "Skip").
+    func saveFixedExpenses(_ entries: [FixedExpenseEntry]) async throws {
+        guard let user = currentUser else { return }
+
+        var totalExpenses: Double = 0
+
+        for entry in entries where entry.amount > 0 {
+            totalExpenses += Double(entry.amount)
+            let stream = ManualStreamUpsert(
+                user_id: user.id,
+                description: entry.category.displayName,
+                frequency: "MONTHLY",
+                average_amount: Double(entry.amount),
+                last_amount: Double(entry.amount),
+                monthly_amount: Double(entry.amount),
+                type: "expense",
+                status: "MANUAL",
+                is_active: true,
+                is_manual: true,
+                match_pattern: entry.category.rawValue
+            )
+            try await supabase
+                .from("recurring_streams_table")
+                .upsert(stream, onConflict: "user_id, match_pattern")
+                .execute()
+        }
+
+        // Keep profile total in sync with what was entered
+        if totalExpenses > 0 {
+            try await updateProfileBudget(
+                monthlyIncome: profile?.monthlyIncome ?? 0,
+                monthlyExpenses: totalExpenses
+            )
+        }
+    }
+
     /// Update user profile budget data
     func updateProfileBudget(monthlyIncome: Double, monthlyExpenses: Double) async throws {
         guard let user = currentUser else { return }
