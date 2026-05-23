@@ -1,147 +1,120 @@
-    //
-    //  WelcomeView.swift
-    //  Bablo
-    //
-    //  Created by Anton Bredykhin on 6/10/24.
-    //  Updated for Supabase Migration - Phase 2
-    //
-import SwiftUI
-import AuthenticationServices
+//
+//  WelcomeView.swift
+//  Bablo
+//
 
-struct WelcomeView : View {
-    @StateObject private var appleSignInCoordinator = SignInWithAppleCoordinator()
-    @State private var showError = false
-    @State private var showPhoneSignUp = false
-    @State private var showEmailAuth = false
-    @EnvironmentObject var userAccount: UserAccount
+import SwiftUI
+
+struct WelcomeView: View {
+    @StateObject private var viewModel = BabloAuthViewModel()
+    @EnvironmentObject private var userAccount: UserAccount
+    @Environment(\.babloTheme) private var theme
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 32) {
-                Spacer()
-
-                // App Logo/Icon
-                Image(systemName: "chart.bar.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.accentColor)
-
-                // App Name
-                Text("Bablo App")
-                    .font(.largeTitle)
-                    .fontWeight(.black)
-
-                Text("Your Personal Finance Manager")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .padding(.bottom, 24)
-
-                // Sign in with Apple Button
-                SignInWithAppleButton(
-                    onRequest: { request in
-                        request.requestedScopes = [.fullName, .email]
-                    },
-                    onCompletion: { result in
-                        // The coordinator handles the sign-in flow
-                    }
-                )
-                .signInWithAppleButtonStyle(.black)
-                .frame(height: 50)
-                .cornerRadius(8)
-                .padding(.horizontal, 40)
-                .onTapGesture {
-                    Logger.i("WelcomeView: Sign in with Apple button tapped")
-                    appleSignInCoordinator.signInWithApple()
+        Group {
+            switch viewModel.mode {
+            case .landing:
+                landing
+            case .signIn, .signUp:
+                EmailAuthView(mode: viewModel.mode) {
+                    viewModel.mode = .landing
                 }
-
-
-                #if targetEnvironment(simulator)
-                Button(action: {
-                    Task {
-                        try? await EmailAuthService().signInWithPassword(email: "test@example.com", password: "password")
-                    }
-                }) {
-                    Text("Dev Login (Test User)")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.red.opacity(0.1))
-                        .foregroundColor(.red)
-                        .cornerRadius(8)
-                }
-                .padding(.horizontal, 40)
-                .padding(.bottom, 8)
-                #endif
-
-                if appleSignInCoordinator.isLoading {
-                    ProgressView()
-                        .padding()
-                }
-
-                // Sign In with Email Button
-                Button(action: { showEmailAuth = true }) {
-                    Text("Sign In with Email")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.accentColor.opacity(0.1))
-                        .foregroundColor(.accentColor)
-                        .cornerRadius(8)
-                }
-                .padding(.horizontal, 40)
-
-                // Hidden: Sign Up with Phone Button (for future use)
-                // Button(action: { showPhoneSignUp = true }) {
-                //     Text("Sign Up with Phone")
-                //         .font(.body)
-                //         .fontWeight(.medium)
-                //         .frame(maxWidth: .infinity)
-                //         .padding()
-                //         .background(Color.accentColor.opacity(0.1))
-                //         .foregroundColor(.accentColor)
-                //         .cornerRadius(8)
-                // }
-                // .padding(.horizontal, 40)
-                // .padding(.top, 4)
-
-                Spacer()
-
-                // Privacy Notice
-                Text("By signing in, you agree to our Terms of Service and Privacy Policy")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-                    .padding(.bottom, 20)
-            }
-            .padding()
-            .background(Color(UIColor.systemBackground).edgesIgnoringSafeArea(.all))
-            .alert("Sign In Error", isPresented: $showError) {
-                Button("OK", role: .cancel) {
-                    showError = false
-                }
-            } message: {
-                Text(appleSignInCoordinator.errorMessage ?? "An unknown error occurred")
-            }
-            .onChange(of: appleSignInCoordinator.errorMessage) { _, newErrorMessage in
-                if newErrorMessage != nil {
-                    showError = true
-                }
-            }
-            .sheet(isPresented: $showPhoneSignUp) {
-                PhoneSignUpView()
-                    .environmentObject(userAccount)
-            }
-            .sheet(isPresented: $showEmailAuth) {
-                EmailAuthView()
-                    .environmentObject(userAccount)
+                .environmentObject(userAccount)
             }
         }
     }
+
+    private var landing: some View {
+        BabloScreenBackground {
+            VStack(spacing: 0) {
+                Spacer()
+                    .frame(height: theme.effects.isPopArt ? 260 : 308)
+
+                VStack(spacing: theme.effects.isPopArt ? 30 : 28) {
+                    BabloLogoMark()
+
+                    VStack(spacing: theme.effects.isPopArt ? 30 : 26) {
+                        Text(BabloAuthMode.landing.title)
+                            .font(landingTitleFont)
+                            .foregroundStyle(theme.colors.textPrimary.color)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.78)
+                            .frame(maxWidth: theme.effects.isPopArt ? 345 : 350)
+
+                        Text(BabloAuthMode.landing.subtitle)
+                            .font(landingSubtitleFont)
+                            .foregroundStyle(theme.colors.textSecondary.color)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(theme.effects.isPopArt ? 2 : 6)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: theme.effects.isPopArt ? 322 : 328)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+
+                Spacer(minLength: 0)
+
+                VStack(spacing: theme.effects.isPopArt ? 16 : 22) {
+                    Button {
+                        viewModel.startSignUp()
+                    } label: {
+                        HStack(spacing: 10) {
+                            Text(BabloAuthMode.landing.primaryActionTitle)
+                            Image(systemName: "arrow.up.right")
+                        }
+                    }
+                    .buttonStyle(.babloPrimary)
+                    .accessibilityIdentifier("auth.getStarted")
+
+                    Button {
+                        viewModel.startSignIn()
+                    } label: {
+                        Text(BabloAuthMode.landing.toggleTitle)
+                            .font(landingToggleFont)
+                            .foregroundStyle(theme.colors.textSecondary.color)
+                            .textCase(theme.effects.isPopArt ? .uppercase : nil)
+                            .tracking(theme.effects.isPopArt ? 2.4 : 0)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, theme.effects.isPopArt ? 54 : 0)
+                    .accessibilityIdentifier("auth.alreadyHaveAccount")
+                }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 34)
+            }
+        }
+    }
+
+    private var landingTitleFont: Font {
+        theme.effects.isPopArt
+        ? .system(size: 30, weight: .black, design: .rounded).italic()
+        : .system(size: 20, weight: .black, design: .default)
+    }
+
+    private var landingSubtitleFont: Font {
+        theme.effects.isPopArt
+        ? .system(size: 20, weight: .medium, design: .rounded)
+        : .system(size: 16, weight: .regular, design: .default)
+    }
+
+    private var landingToggleFont: Font {
+        theme.effects.isPopArt
+        ? .system(size: 18, weight: .black, design: .rounded).italic()
+        : .system(size: 16, weight: .bold, design: .default)
+    }
 }
 
-#Preview {
+#Preview("Welcome Pop") {
     WelcomeView()
         .environmentObject(UserAccount.shared)
+        .babloTheme(.pop)
+}
+
+#Preview("Welcome Normal") {
+    WelcomeView()
+        .environmentObject(UserAccount.shared)
+        .babloTheme(.normal)
 }

@@ -43,7 +43,9 @@ struct BabloButtonStyle: ButtonStyle {
     }
 
     private var labelFont: Font {
-        theme.typography.body(size: theme.effects.isPopArt ? 18 : 16, weight: .bold)
+        theme.effects.isPopArt
+        ? .system(size: 18, weight: .black, design: .rounded).italic()
+        : .system(size: 17, weight: .bold, design: .default)
     }
 
     private var foreground: Color {
@@ -94,7 +96,7 @@ struct BabloButtonStyle: ButtonStyle {
     }
 
     private func shadowColor(for configuration: Configuration) -> Color {
-        guard theme.effects.isPopArt || prominence != .ghost else { return .clear }
+        guard prominence != .ghost else { return .clear }
         let opacity = theme.effects.isPopArt ? 1.0 : 0.06
         return theme.effects.shadowColor.opacity(configuration.isPressed ? opacity * 0.7 : opacity)
     }

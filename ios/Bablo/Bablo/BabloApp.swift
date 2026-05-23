@@ -18,9 +18,14 @@ struct BabloApp: App {
     @StateObject var plaidService = PlaidService()
     @State private var showBiometricEnrollment = false
     @State private var showAuthView = false
+    @AppStorage("babloThemeVariant") private var babloThemeVariant = BabloTheme.normal.rawValue
     @Environment(\.scenePhase) var scenePhase
 
     let coreDataStack = CoreDataStack.shared
+
+    private var selectedTheme: BabloTheme {
+        BabloTheme(rawValue: babloThemeVariant) ?? .normal
+    }
     
     var body: some Scene {
         WindowGroup {
@@ -70,6 +75,7 @@ struct BabloApp: App {
                         // Login/welcome view
                     WelcomeView()
                         .environmentObject(userAccount)
+                        .babloTheme(selectedTheme)
                 }
             }
             .onOpenURL { url in
