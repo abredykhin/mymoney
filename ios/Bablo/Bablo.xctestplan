@@ -1,0 +1,38 @@
+{
+  "configurations" : [
+    {
+      "id" : "967F4651-0AD7-4593-9E5C-AFEF29186043",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:Bablo.xcodeproj",
+      "identifier" : "757ABF302C18195100DF8CA8",
+      "name" : "Bablo"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Bablo.xcodeproj",
+        "identifier" : "757ABF432C18195400DF8CA8",
+        "name" : "BabloTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Bablo.xcodeproj",
+        "identifier" : "757ABF4D2C18195400DF8CA8",
+        "name" : "BabloUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

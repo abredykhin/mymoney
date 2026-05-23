@@ -188,6 +188,7 @@
 		3A68FA262F206EF300D32561 /* CornerRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerRadius.swift; sourceTree = "<group>"; };
 		3A68FA272F206EF300D32561 /* Elevation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Elevation.swift; sourceTree = "<group>"; };
 		3A68FA282F206EF300D32561 /* Spacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Spacing.swift; sourceTree = "<group>"; };
+		3AAA80F42FC23BD000472401 /* Bablo.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Bablo.xctestplan; sourceTree = "<group>"; };
 		425AC6E68DF39DF90BF31D70 /* OnboardingIncomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingIncomeView.swift; sourceTree = "<group>"; };
 		4629BAFB74D6D69F5B6A000E /* OnboardingNumPad.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingNumPad.swift; sourceTree = "<group>"; };
 		5FB55063D775CEC7F1F70CA7 /* IncomeInputViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IncomeInputViewModel.swift; sourceTree = "<group>"; };
@@ -425,10 +426,9 @@
 		7549AB452D0E495200313F5C /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
-				75F946912D3C82880076E91E /* Budget */,
+				9C4CEA2EE799554F5C54D379 /* Components */,
 				75C972C92D13B8CC008E6E87 /* OnboardingCategoriesView.swift */,
 				75C972C32D13B7D4008E6E87 /* OnboardingWizard.swift */,
-				9C4CEA2EE799554F5C54D379 /* Components */,
 				425AC6E68DF39DF90BF31D70 /* OnboardingIncomeView.swift */,
 				170F06457D07F1D7E77F5B39 /* OnboardingLinkBankView.swift */,
 				7A42C0A60C6A7AD4CD5420F4 /* OnboardingAccountsConnectedView.swift */,
@@ -487,6 +487,7 @@
 		757ABF282C18195100DF8CA8 = {
 			isa = PBXGroup;
 			children = (
+				3AAA80F42FC23BD000472401 /* Bablo.xctestplan */,
 				757ABF332C18195100DF8CA8 /* Bablo */,
 				757ABF472C18195400DF8CA8 /* BabloTests */,
 				757ABF512C18195400DF8CA8 /* BabloUITests */,
@@ -682,13 +683,6 @@
 			path = Transaction;
 			sourceTree = "<group>";
 		};
-		75F946912D3C82880076E91E /* Budget */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Budget;
-			sourceTree = "<group>";
-		};
 		9C4CEA2EE799554F5C54D379 /* Components */ = {
 			isa = PBXGroup;
 			children = (
@@ -696,7 +690,6 @@
 				23C1810B7EF201D0786BA6B6 /* OnboardingAmountStepper.swift */,
 				A3B29B2642CB14C35C129E02 /* OnboardingCTAButton.swift */,
 			);
-			name = Components;
 			path = Components;
 			sourceTree = "<group>";
 		};
