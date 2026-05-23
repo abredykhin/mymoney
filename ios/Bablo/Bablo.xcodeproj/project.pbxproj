@@ -61,6 +61,7 @@
 		757ABF492C18195400DF8C93 /* BudgetServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C93 /* BudgetServiceTests.swift */; };
 		757ABF492C18195400DF8C94 /* PulseAnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C94 /* PulseAnalyticsTests.swift */; };
 		757ABF492C18195400DF8C95 /* GoalsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */; };
+		757ABF492C18195400DF8CAD /* CoachServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CAD /* CoachServiceTests.swift */; };
 		757ABF532C18195400DF8CA8 /* BabloUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF522C18195400DF8CA8 /* BabloUITests.swift */; };
 		757ABF552C18195400DF8CA8 /* BabloUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */; };
 		757ABF712C181B4600DF8CA8 /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF702C181B4600DF8CA8 /* LinkKit */; };
@@ -91,6 +92,7 @@
 		75C972CC2D13BA33008E6E87 /* OnboardingBudgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C972CB2D13BA33008E6E87 /* OnboardingBudgetView.swift */; };
 		75CD54C92D92721B0018288D /* AllTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75CD54C82D92721B0018288D /* AllTransactionsView.swift */; };
 		75D39A082EEE5C7600866367 /* PlaidService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A062EEE5C7600866367 /* PlaidService.swift */; };
+		75D39AC22EEE5C7600866367 /* CoachService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39AC12EEE5C7600866367 /* CoachService.swift */; };
 		75D39A222EEE5F1000866367 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A212EEE5F1000866367 /* Config.swift */; };
 		75D39A482EEE878500866367 /* TransactionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A472EEE878500866367 /* TransactionsService.swift */; };
 		75D39A492EEE878500866367 /* AccountsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A452EEE878500866367 /* AccountsService.swift */; };
@@ -189,6 +191,7 @@
 		757ABF482C18195400DF8C93 /* BudgetServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetServiceTests.swift; sourceTree = "<group>"; };
 		757ABF482C18195400DF8C94 /* PulseAnalyticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseAnalyticsTests.swift; sourceTree = "<group>"; };
 		757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsServiceTests.swift; sourceTree = "<group>"; };
+		757ABF482C18195400DF8CAD /* CoachServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachServiceTests.swift; sourceTree = "<group>"; };
 		757ABF4E2C18195400DF8CA8 /* BabloUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabloUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		757ABF522C18195400DF8CA8 /* BabloUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloUITests.swift; sourceTree = "<group>"; };
 		757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloUITestsLaunchTests.swift; sourceTree = "<group>"; };
@@ -213,6 +216,7 @@
 		75C972CB2D13BA33008E6E87 /* OnboardingBudgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingBudgetView.swift; sourceTree = "<group>"; };
 		75CD54C82D92721B0018288D /* AllTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllTransactionsView.swift; sourceTree = "<group>"; };
 		75D39A062EEE5C7600866367 /* PlaidService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidService.swift; sourceTree = "<group>"; };
+		75D39AC12EEE5C7600866367 /* CoachService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachService.swift; sourceTree = "<group>"; };
 		75D39A212EEE5F1000866367 /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
 		75D39A2A2EEE607200866367 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		75D39A452EEE878500866367 /* AccountsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsService.swift; sourceTree = "<group>"; };
@@ -476,6 +480,7 @@
 				757ABF482C18195400DF8C93 /* BudgetServiceTests.swift */,
 				757ABF482C18195400DF8C94 /* PulseAnalyticsTests.swift */,
 				757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */,
+				757ABF482C18195400DF8CAD /* CoachServiceTests.swift */,
 			);
 			path = BabloTests;
 			sourceTree = "<group>";
@@ -571,6 +576,7 @@
 				75D39A522EEE878500866367 /* GoalsService.swift */,
 				75D39A472EEE878500866367 /* TransactionsService.swift */,
 				75D39A062EEE5C7600866367 /* PlaidService.swift */,
+				75D39AC12EEE5C7600866367 /* CoachService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -853,6 +859,7 @@
 				75E49BAC2CA3EACF008D72F8 /* Dates.swift in Sources */,
 				7590F29F2C86471D00BCCDE6 /* LinkController.swift in Sources */,
 				75D39A082EEE5C7600866367 /* PlaidService.swift in Sources */,
+				75D39AC22EEE5C7600866367 /* CoachService.swift in Sources */,
 				7590F2A02C86471D00BCCDE6 /* LinkButtonView.swift in Sources */,
 				75C972C82D13B8BB008E6E87 /* OnboardingAccountsView.swift in Sources */,
 				757ABF352C18195100DF8CA8 /* BabloApp.swift in Sources */,
@@ -892,6 +899,7 @@
 				757ABF492C18195400DF8C93 /* BudgetServiceTests.swift in Sources */,
 				757ABF492C18195400DF8C94 /* PulseAnalyticsTests.swift in Sources */,
 				757ABF492C18195400DF8C95 /* GoalsServiceTests.swift in Sources */,
+				757ABF492C18195400DF8CAD /* CoachServiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
