@@ -99,3 +99,10 @@ supabase/functions/coverage.lcov
 
 # Test environment
 supabase/functions/.env.testsupabase/functions/.env.local
+supabase/functions/deno.lock
+
+# Designs
+design/
+
+# Codex
+DerivedDataCodex/
