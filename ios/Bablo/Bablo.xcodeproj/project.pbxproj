@@ -55,6 +55,10 @@
 		757ABF3B2C18195300DF8CA8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 757ABF3A2C18195300DF8CA8 /* Assets.xcassets */; };
 		757ABF3F2C18195300DF8CA8 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 757ABF3E2C18195300DF8CA8 /* Preview Assets.xcassets */; };
 		757ABF492C18195400DF8CA8 /* BabloTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CA8 /* BabloTests.swift */; };
+		757ABF492C18195400DF8C90 /* MockURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C90 /* MockURLProtocol.swift */; };
+		757ABF492C18195400DF8C91 /* TestSupabaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C91 /* TestSupabaseClient.swift */; };
+		757ABF492C18195400DF8C92 /* FixtureGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C92 /* FixtureGenerator.swift */; };
+		757ABF492C18195400DF8C93 /* BudgetServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C93 /* BudgetServiceTests.swift */; };
 		757ABF532C18195400DF8CA8 /* BabloUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF522C18195400DF8CA8 /* BabloUITests.swift */; };
 		757ABF552C18195400DF8CA8 /* BabloUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */; };
 		757ABF712C181B4600DF8CA8 /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF702C181B4600DF8CA8 /* LinkKit */; };
@@ -176,6 +180,10 @@
 		757ABF3E2C18195300DF8CA8 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		757ABF442C18195400DF8CA8 /* BabloTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabloTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		757ABF482C18195400DF8CA8 /* BabloTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloTests.swift; sourceTree = "<group>"; };
+		757ABF482C18195400DF8C90 /* MockURLProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockURLProtocol.swift; sourceTree = "<group>"; };
+		757ABF482C18195400DF8C91 /* TestSupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSupabaseClient.swift; sourceTree = "<group>"; };
+		757ABF482C18195400DF8C92 /* FixtureGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureGenerator.swift; sourceTree = "<group>"; };
+		757ABF482C18195400DF8C93 /* BudgetServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetServiceTests.swift; sourceTree = "<group>"; };
 		757ABF4E2C18195400DF8CA8 /* BabloUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabloUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		757ABF522C18195400DF8CA8 /* BabloUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloUITests.swift; sourceTree = "<group>"; };
 		757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloUITestsLaunchTests.swift; sourceTree = "<group>"; };
@@ -456,6 +464,10 @@
 			isa = PBXGroup;
 			children = (
 				757ABF482C18195400DF8CA8 /* BabloTests.swift */,
+				757ABF482C18195400DF8C90 /* MockURLProtocol.swift */,
+				757ABF482C18195400DF8C91 /* TestSupabaseClient.swift */,
+				757ABF482C18195400DF8C92 /* FixtureGenerator.swift */,
+				757ABF482C18195400DF8C93 /* BudgetServiceTests.swift */,
 			);
 			path = BabloTests;
 			sourceTree = "<group>";
@@ -864,6 +876,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				757ABF492C18195400DF8CA8 /* BabloTests.swift in Sources */,
+				757ABF492C18195400DF8C90 /* MockURLProtocol.swift in Sources */,
+				757ABF492C18195400DF8C91 /* TestSupabaseClient.swift in Sources */,
+				757ABF492C18195400DF8C92 /* FixtureGenerator.swift in Sources */,
+				757ABF492C18195400DF8C93 /* BudgetServiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1031,6 +1047,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Bablo/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BabloApp;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "BabloApp uses Face ID to securely access your financial information.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -1078,6 +1095,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Bablo/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BabloApp;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "BabloApp uses Face ID to securely access your financial information.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;

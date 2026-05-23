@@ -77,12 +77,12 @@ async function syncRecurringTransactions(
   ];
 
   for (const stream of allStreams) {
-    // Get account_id for this stream
+    // Get account_id for this stream (accounts_table has item_id, not user_id)
     const { data: account } = await supabase
       .from('accounts_table')
       .select('id')
       .eq('plaid_account_id', stream.account_id)
-      .eq('user_id', userId)
+      .eq('item_id', item.id)
       .single();
 
     if (!account) {

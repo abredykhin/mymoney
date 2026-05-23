@@ -207,5 +207,21 @@ Navigate to the `ios/Bablo/` directory and run:
 ```bash
 xcodebuild build -scheme Bablo -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 ```
-
 This command builds the `Bablo` scheme for the iPhone 17 Pro simulator. Adjust the `-destination` parameter as needed for other simulators or devices.
+
+## Testing Guidelines
+
+### Hybrid Testing Strategy
+
+We follow a hybrid testing strategy that combines fast, local unit tests with integration verification against a live local Supabase instance:
+
+1.  **Fast Mock-Based Unit Tests**: Mocks and network stubbing (via `URLProtocol` or custom mock clients) are **permitted** for testing client-side state, decoding logic, error handling (500s, timeouts, malformed payloads), and offline states. These tests must run extremely fast (milliseconds).
+2.  **Contract-Derived Fixtures**: To prevent "fixture drift" (where mocks silently become outdated compared to the real database schema), mock JSON fixtures must be generated directly from the live database. A helper script or test captures real responses from the local Supabase instance and writes them to the test bundle’s JSON assets.
+3.  **Live Local Supabase Integration Tests**: Real database assertions—such as RLS policy checks ("User A cannot see User B's transactions"), schema migrations, and complex PostgreSQL analytics calculations (`get_pulse_weekly_energy`, streaks)—must run against a **live local Supabase instance** (`http://localhost:54321`).
+
+*   Start the local Supabase environment for integration tests:
+    ```bash
+    supabase start
+    ```
+*   The integration tests must use a `SupabaseClient` instance configured to point to `http://localhost:54321` with the local `SUPABASE_ANON_KEY`.
+
