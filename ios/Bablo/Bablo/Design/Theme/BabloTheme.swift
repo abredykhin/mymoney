@@ -292,12 +292,12 @@ private extension BabloThemeMetrics {
         cardPadding: 24,
         cardCornerRadius: 28,
         controlCornerRadius: 16,
-        buttonCornerRadius: 16,
+        buttonCornerRadius: 24,
         iconCornerRadius: 14,
         borderWidth: 0.5,
         strongBorderWidth: 1,
-        buttonHeight: 56,
-        compactButtonHeight: 42
+        buttonHeight: 52,
+        compactButtonHeight: 38
     )
 
     static let pop = BabloThemeMetrics(

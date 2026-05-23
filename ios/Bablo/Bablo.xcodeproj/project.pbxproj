@@ -17,12 +17,15 @@
 		3A68FA012EFB9FDA00D32561 /* HeroCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */; };
 		3A68FA052EFCCF7000D32561 /* OnboardingWalletView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA032EFCCF7000D32561 /* OnboardingWalletView.swift */; };
 		3A68FA072EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */; };
-		3A68FA0A2F14DBF800D32561 /* PhoneSignUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA092F14DBF800D32561 /* PhoneSignUpView.swift */; };
-		3A68FA0B2F14DBF800D32561 /* OTPVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA082F14DBF800D32561 /* OTPVerificationView.swift */; };
-		3A68FA0D2F14DC0200D32561 /* PhoneAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA0C2F14DC0200D32561 /* PhoneAuthService.swift */; };
 		3A68FA102F15FCC600D32561 /* EmailAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA0E2F15FCC600D32561 /* EmailAuthView.swift */; };
 		3A68FA112F15FCC600D32561 /* EmailOTPVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA0F2F15FCC600D32561 /* EmailOTPVerificationView.swift */; };
 		3A68FA132F15FD6E00D32561 /* EmailAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA122F15FD6E00D32561 /* EmailAuthService.swift */; };
+		3A68FA142F29000000D32561 /* BabloAuthMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA142F29000100D32561 /* BabloAuthMode.swift */; };
+		3A68FA142F29000200D32561 /* BabloAuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA142F29000300D32561 /* BabloAuthViewModel.swift */; };
+		3A68FA142F29000400D32561 /* BabloAuthShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA142F29000500D32561 /* BabloAuthShell.swift */; };
+		3A68FA142F29000600D32561 /* BabloLogoMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA142F29000700D32561 /* BabloLogoMark.swift */; };
+		3A68FA142F29000800D32561 /* BabloAuthProviderButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA142F29000900D32561 /* BabloAuthProviderButton.swift */; };
+		3A68FA142F29000A00D32561 /* BabloAuthDivider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA142F29000B00D32561 /* BabloAuthDivider.swift */; };
 		3A68FA2C2F206EF300D32561 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA242F206EF300D32561 /* Typography.swift */; };
 		3A68FA2D2F206EF300D32561 /* View+DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA212F206EF300D32561 /* View+DesignSystem.swift */; };
 		3A68FA2E2F206EF300D32561 /* TertiaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA1A2F206EF300D32561 /* TertiaryButton.swift */; };
@@ -72,6 +75,7 @@
 		757ABF492C18195400DF8C95 /* GoalsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */; };
 		757ABF492C18195400DF8CAD /* CoachServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CAD /* CoachServiceTests.swift */; };
 		757ABF492C18195400DF8CB0 /* DesignSystemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CB0 /* DesignSystemTests.swift */; };
+		757ABF492C18195400DF8CB1 /* AuthLoginViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CB1 /* AuthLoginViewModelTests.swift */; };
 		757ABF532C18195400DF8CA8 /* BabloUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF522C18195400DF8CA8 /* BabloUITests.swift */; };
 		757ABF552C18195400DF8CA8 /* BabloUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */; };
 		757ABF712C181B4600DF8CA8 /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF702C181B4600DF8CA8 /* LinkKit */; };
@@ -154,12 +158,15 @@
 		3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroCarouselView.swift; sourceTree = "<group>"; };
 		3A68FA032EFCCF7000D32561 /* OnboardingWalletView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWalletView.swift; sourceTree = "<group>"; };
 		3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroBudgetEmptyStateView.swift; sourceTree = "<group>"; };
-		3A68FA082F14DBF800D32561 /* OTPVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPVerificationView.swift; sourceTree = "<group>"; };
-		3A68FA092F14DBF800D32561 /* PhoneSignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSignUpView.swift; sourceTree = "<group>"; };
-		3A68FA0C2F14DC0200D32561 /* PhoneAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneAuthService.swift; sourceTree = "<group>"; };
 		3A68FA0E2F15FCC600D32561 /* EmailAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailAuthView.swift; sourceTree = "<group>"; };
 		3A68FA0F2F15FCC600D32561 /* EmailOTPVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailOTPVerificationView.swift; sourceTree = "<group>"; };
 		3A68FA122F15FD6E00D32561 /* EmailAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailAuthService.swift; sourceTree = "<group>"; };
+		3A68FA142F29000100D32561 /* BabloAuthMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloAuthMode.swift; sourceTree = "<group>"; };
+		3A68FA142F29000300D32561 /* BabloAuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloAuthViewModel.swift; sourceTree = "<group>"; };
+		3A68FA142F29000500D32561 /* BabloAuthShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloAuthShell.swift; sourceTree = "<group>"; };
+		3A68FA142F29000700D32561 /* BabloLogoMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloLogoMark.swift; sourceTree = "<group>"; };
+		3A68FA142F29000900D32561 /* BabloAuthProviderButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloAuthProviderButton.swift; sourceTree = "<group>"; };
+		3A68FA142F29000B00D32561 /* BabloAuthDivider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloAuthDivider.swift; sourceTree = "<group>"; };
 		3A68FA182F206EF300D32561 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		3A68FA182F206EF300D325B1 /* BabloButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloButton.swift; sourceTree = "<group>"; };
 		3A68FA182F206EF300D325B2 /* BabloCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloCard.swift; sourceTree = "<group>"; };
@@ -212,6 +219,7 @@
 		757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsServiceTests.swift; sourceTree = "<group>"; };
 		757ABF482C18195400DF8CAD /* CoachServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachServiceTests.swift; sourceTree = "<group>"; };
 		757ABF482C18195400DF8CB0 /* DesignSystemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystemTests.swift; sourceTree = "<group>"; };
+		757ABF482C18195400DF8CB1 /* AuthLoginViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthLoginViewModelTests.swift; sourceTree = "<group>"; };
 		757ABF4E2C18195400DF8CA8 /* BabloUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabloUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		757ABF522C18195400DF8CA8 /* BabloUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloUITests.swift; sourceTree = "<group>"; };
 		757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloUITestsLaunchTests.swift; sourceTree = "<group>"; };
@@ -424,10 +432,11 @@
 		754B69452D97D65800C0F001 /* Auth */ = {
 			isa = PBXGroup;
 			children = (
+				3A68FA142F29000C00D32561 /* Components */,
 				3A68FA0E2F15FCC600D32561 /* EmailAuthView.swift */,
 				3A68FA0F2F15FCC600D32561 /* EmailOTPVerificationView.swift */,
-				3A68FA082F14DBF800D32561 /* OTPVerificationView.swift */,
-				3A68FA092F14DBF800D32561 /* PhoneSignUpView.swift */,
+				3A68FA142F29000100D32561 /* BabloAuthMode.swift */,
+				3A68FA142F29000300D32561 /* BabloAuthViewModel.swift */,
 				759CDE592EED1F4B00F8BB96 /* SignInWithAppleCoordinator.swift */,
 				754B69462D97D66F00C0F001 /* AuthenticationView.swift */,
 				754B694A2D97D8E500C0F001 /* BiometricsEnrollmentView.swift */,
@@ -436,6 +445,17 @@
 				754B69422D97D19800C0F001 /* BiometricAuthService.swift */,
 			);
 			path = Auth;
+			sourceTree = "<group>";
+		};
+		3A68FA142F29000C00D32561 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				3A68FA142F29000500D32561 /* BabloAuthShell.swift */,
+				3A68FA142F29000700D32561 /* BabloLogoMark.swift */,
+				3A68FA142F29000900D32561 /* BabloAuthProviderButton.swift */,
+				3A68FA142F29000B00D32561 /* BabloAuthDivider.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		75579F212CD6F2B600845A62 /* Profile */ = {
@@ -527,6 +547,7 @@
 				757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */,
 				757ABF482C18195400DF8CAD /* CoachServiceTests.swift */,
 				757ABF482C18195400DF8CB0 /* DesignSystemTests.swift */,
+				757ABF482C18195400DF8CB1 /* AuthLoginViewModelTests.swift */,
 			);
 			path = BabloTests;
 			sourceTree = "<group>";
@@ -616,7 +637,6 @@
 			isa = PBXGroup;
 			children = (
 				3A68FA122F15FD6E00D32561 /* EmailAuthService.swift */,
-				3A68FA0C2F14DC0200D32561 /* PhoneAuthService.swift */,
 				75D39A452EEE878500866367 /* AccountsService.swift */,
 				75D39A462EEE878500866367 /* BudgetService.swift */,
 				75D39A522EEE878500866367 /* GoalsService.swift */,
@@ -845,11 +865,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3A68FA0D2F14DC0200D32561 /* PhoneAuthService.swift in Sources */,
 				75C972C42D13B7D4008E6E87 /* OnboardingWizard.swift in Sources */,
 				757ABF372C18195100DF8CA8 /* ContentView.swift in Sources */,
-				3A68FA0A2F14DBF800D32561 /* PhoneSignUpView.swift in Sources */,
-				3A68FA0B2F14DBF800D32561 /* OTPVerificationView.swift in Sources */,
 				75F946B02D3C876A0076E91E /* IncomeInputView.swift in Sources */,
 				75668FDF2D83D538003A3D97 /* AccountsManager.swift in Sources */,
 				7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */,
@@ -933,6 +950,12 @@
 				759CDE5A2EED1F4B00F8BB96 /* SignInWithAppleCoordinator.swift in Sources */,
 				75F946A52D3C85680076E91E /* ExpenseSection.swift in Sources */,
 				3A68FA132F15FD6E00D32561 /* EmailAuthService.swift in Sources */,
+				3A68FA142F29000000D32561 /* BabloAuthMode.swift in Sources */,
+				3A68FA142F29000200D32561 /* BabloAuthViewModel.swift in Sources */,
+				3A68FA142F29000400D32561 /* BabloAuthShell.swift in Sources */,
+				3A68FA142F29000600D32561 /* BabloLogoMark.swift in Sources */,
+				3A68FA142F29000800D32561 /* BabloAuthProviderButton.swift in Sources */,
+				3A68FA142F29000A00D32561 /* BabloAuthDivider.swift in Sources */,
 				7573DA182CBCD7320004EBE4 /* TotalBalanceView.swift in Sources */,
 				3A68FA002EFB9FDA00D32561 /* HeroCardView.swift in Sources */,
 				3A68FA012EFB9FDA00D32561 /* HeroCarouselView.swift in Sources */,
@@ -956,6 +979,7 @@
 				757ABF492C18195400DF8C95 /* GoalsServiceTests.swift in Sources */,
 				757ABF492C18195400DF8CAD /* CoachServiceTests.swift in Sources */,
 				757ABF492C18195400DF8CB0 /* DesignSystemTests.swift in Sources */,
+				757ABF492C18195400DF8CB1 /* AuthLoginViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
