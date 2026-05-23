@@ -232,6 +232,44 @@ struct BudgetItem: Codable, Identifiable, Equatable {
     }
 }
 
+/// Driving the Week Day Spending Energy Chart
+struct DailyEnergyItem: Codable, Identifiable, Equatable {
+    var id: String { weekday }
+    let weekday: String
+    let dateLabel: String
+    let totalSpent: Double
+    let isPeak: Bool
+    let peakMerchant: String
+    let peakCategory: String?
+    let peakAmount: Double
+
+    enum CodingKeys: String, CodingKey {
+        case weekday
+        case dateLabel = "date_label"
+        case totalSpent = "total_spent"
+        case isPeak = "is_peak"
+        case peakMerchant = "peak_merchant"
+        case peakCategory = "peak_category"
+        case peakAmount = "peak_amount"
+    }
+}
+
+/// Driving the Top Merchants Lineup List
+struct TopMerchantItem: Codable, Identifiable, Equatable {
+    var id: String { merchantName }
+    let merchantName: String
+    let totalSpent: Double
+    let transactionCount: Int
+    let personalFinanceCategory: String?
+
+    enum CodingKeys: String, CodingKey {
+        case merchantName = "merchant_name"
+        case totalSpent = "total_spent"
+        case transactionCount = "transaction_count"
+        case personalFinanceCategory = "personal_finance_category"
+    }
+}
+
 // MARK: - Service
 
 /// Service for budget and spending analysis via Supabase direct database access
@@ -254,9 +292,11 @@ class BudgetService: ObservableObject {
     // Dynamic income data
     @Published var knownIncomeThisMonth: Double = 0
     @Published var extraIncomeThisMonth: Double = 0
-    
-    // Variable spend tracking (for Home Screen)
     @Published var variableSpend: Double = 0
+    
+    // Checkpoint 2: Pulse Screen Properties
+    @Published var dailyEnergy: [DailyEnergyItem] = []
+    @Published var topMerchants: [TopMerchantItem] = []
     
     private let supabase: SupabaseClient
 
@@ -767,6 +807,55 @@ class BudgetService: ObservableObject {
 
         // Refresh data after deletion
         await fetchBudgetSummary()
+    }
+
+    /// Fetch weekly energy spend aggregates from Supabase using local RPC
+    func fetchWeeklyEnergy(weekStart: String, weekEnd: String) async throws {
+        Logger.d("BudgetService: Fetching weekly energy (\(weekStart) to \(weekEnd))")
+        
+        struct Params: Encodable {
+            let week_start: String
+            let week_end: String
+        }
+        let params = Params(week_start: weekStart, week_end: weekEnd)
+        
+        do {
+            let energy: [DailyEnergyItem] = try await supabase
+                .rpc("get_pulse_weekly_energy", params: params)
+                .execute()
+                .value
+            
+            self.dailyEnergy = energy
+            Logger.i("BudgetService: Loaded \(energy.count) weekly energy daily values")
+        } catch {
+            Logger.e("BudgetService: Failed to fetch weekly energy: \(error)")
+            throw error
+        }
+    }
+
+    /// Fetch top spending merchants from Supabase using local RPC
+    func fetchTopMerchants(startDate: String, endDate: String, limit: Int = 5) async throws {
+        Logger.d("BudgetService: Fetching top merchants (\(startDate) to \(endDate), limit: \(limit))")
+        
+        struct Params: Encodable {
+            let start_date: String
+            let end_date: String
+            let lim: Int
+        }
+        let params = Params(start_date: startDate, end_date: endDate, lim: limit)
+        
+        do {
+            let merchants: [TopMerchantItem] = try await supabase
+                .rpc("get_pulse_top_merchants", params: params)
+                .execute()
+                .value
+            
+            self.topMerchants = merchants
+            Logger.i("BudgetService: Loaded \(merchants.count) top merchants")
+        } catch {
+            Logger.e("BudgetService: Failed to fetch top merchants: \(error)")
+            throw error
+        }
     }
 
     enum BudgetError: Error {

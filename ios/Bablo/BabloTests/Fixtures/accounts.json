@@ -1,10 +1,6 @@
-[
-  {
-    "current_balance": 12500.50,
-    "type": "depository"
-  },
-  {
-    "current_balance": 3200.25,
-    "type": "credit"
-  }
-]
+[{"current_balance":7700.3400000000,"type":"credit"}, 
+ {"current_balance":15267.2172671650,"type":"investment"}, 
+ {"current_balance":2881.1384800000,"type":"investment"}, 
+ {"current_balance":6390.7460822000,"type":"investment"}, 
+ {"current_balance":0.0000000000,"type":"credit"}, 
+ {"current_balance":50.0000000000,"type":"credit"}]

@@ -1,0 +1,8 @@
+[{"weekday":"Tue","date_label":"2026-01-20","total_spent":214.17,"is_peak":false,"peak_merchant":"The Vape Mall","peak_category":"GENERAL_MERCHANDISE","peak_amount":115.97}, 
+ {"weekday":"Wed","date_label":"2026-01-21","total_spent":257.06,"is_peak":false,"peak_merchant":"Chevron","peak_category":"TRANSPORTATION","peak_amount":98.58}, 
+ {"weekday":"Thu","date_label":"2026-01-22","total_spent":161.27,"is_peak":false,"peak_merchant":"Crocs","peak_category":"GENERAL_MERCHANDISE","peak_amount":88.58}, 
+ {"weekday":"Fri","date_label":"2026-01-23","total_spent":80.71,"is_peak":false,"peak_merchant":"Safeway","peak_category":"FOOD_AND_DRINK","peak_amount":66.64}, 
+ {"weekday":"Sat","date_label":"2026-01-24","total_spent":434.78,"is_peak":true,"peak_merchant":"European Market Deli & Cafe","peak_category":"FOOD_AND_DRINK","peak_amount":218.4}, 
+ {"weekday":"Sun","date_label":"2026-01-25","total_spent":278.76,"is_peak":false,"peak_merchant":"ARCO","peak_category":"TRANSPORTATION","peak_amount":101.04}, 
+ {"weekday":"Mon","date_label":"2026-01-26","total_spent":0,"is_peak":false,"peak_merchant":"No Spend","peak_category":null,"peak_amount":0}, 
+ {"weekday":"Tue","date_label":"2026-01-27","total_spent":14.61,"is_peak":false,"peak_merchant":"Safeway","peak_category":"FOOD_AND_DRINK","peak_amount":14.61}]
