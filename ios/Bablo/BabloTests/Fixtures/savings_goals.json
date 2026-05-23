@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "user_id": "5f6bb5c6-faf0-484f-aee1-23316a77ea90",
+    "name": "Tokyo Trip",
+    "target_amount": 5000.00,
+    "current_amount": 1250.00,
+    "eta_date": "2027-12-31",
+    "category_icon": "✈️",
+    "is_active": true,
+    "created_at": "2026-05-23T00:00:00Z",
+    "updated_at": "2026-05-23T00:00:00Z"
+  }
+]

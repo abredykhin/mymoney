@@ -60,6 +60,7 @@
 		757ABF492C18195400DF8C92 /* FixtureGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C92 /* FixtureGenerator.swift */; };
 		757ABF492C18195400DF8C93 /* BudgetServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C93 /* BudgetServiceTests.swift */; };
 		757ABF492C18195400DF8C94 /* PulseAnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C94 /* PulseAnalyticsTests.swift */; };
+		757ABF492C18195400DF8C95 /* GoalsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */; };
 		757ABF532C18195400DF8CA8 /* BabloUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF522C18195400DF8CA8 /* BabloUITests.swift */; };
 		757ABF552C18195400DF8CA8 /* BabloUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */; };
 		757ABF712C181B4600DF8CA8 /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF702C181B4600DF8CA8 /* LinkKit */; };
@@ -94,6 +95,7 @@
 		75D39A482EEE878500866367 /* TransactionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A472EEE878500866367 /* TransactionsService.swift */; };
 		75D39A492EEE878500866367 /* AccountsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A452EEE878500866367 /* AccountsService.swift */; };
 		75D39A4A2EEE878500866367 /* BudgetService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A462EEE878500866367 /* BudgetService.swift */; };
+		75D39A532EEE878500866367 /* GoalsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A522EEE878500866367 /* GoalsService.swift */; };
 		75DC5C6A2EED28EF00CEC681 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 75DC5C692EED28EF00CEC681 /* Supabase */; };
 		75E49BA52CA27E67008D72F8 /* TransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E49BA42CA27E67008D72F8 /* TransactionView.swift */; };
 		75E49BAA2CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv in Resources */ = {isa = PBXBuildFile; fileRef = 75E49BA92CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv */; };
@@ -186,6 +188,7 @@
 		757ABF482C18195400DF8C92 /* FixtureGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureGenerator.swift; sourceTree = "<group>"; };
 		757ABF482C18195400DF8C93 /* BudgetServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetServiceTests.swift; sourceTree = "<group>"; };
 		757ABF482C18195400DF8C94 /* PulseAnalyticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseAnalyticsTests.swift; sourceTree = "<group>"; };
+		757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsServiceTests.swift; sourceTree = "<group>"; };
 		757ABF4E2C18195400DF8CA8 /* BabloUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabloUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		757ABF522C18195400DF8CA8 /* BabloUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloUITests.swift; sourceTree = "<group>"; };
 		757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloUITestsLaunchTests.swift; sourceTree = "<group>"; };
@@ -214,6 +217,7 @@
 		75D39A2A2EEE607200866367 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		75D39A452EEE878500866367 /* AccountsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsService.swift; sourceTree = "<group>"; };
 		75D39A462EEE878500866367 /* BudgetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetService.swift; sourceTree = "<group>"; };
+		75D39A522EEE878500866367 /* GoalsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsService.swift; sourceTree = "<group>"; };
 		75D39A472EEE878500866367 /* TransactionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsService.swift; sourceTree = "<group>"; };
 		75E49BA42CA27E67008D72F8 /* TransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionView.swift; sourceTree = "<group>"; };
 		75E49BA92CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv */ = {isa = PBXFileReference; lastKnownFileType = text; path = "transactions-personal-finance-category-taxonomy.csv"; sourceTree = "<group>"; };
@@ -471,6 +475,7 @@
 				757ABF482C18195400DF8C92 /* FixtureGenerator.swift */,
 				757ABF482C18195400DF8C93 /* BudgetServiceTests.swift */,
 				757ABF482C18195400DF8C94 /* PulseAnalyticsTests.swift */,
+				757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */,
 			);
 			path = BabloTests;
 			sourceTree = "<group>";
@@ -563,6 +568,7 @@
 				3A68FA0C2F14DC0200D32561 /* PhoneAuthService.swift */,
 				75D39A452EEE878500866367 /* AccountsService.swift */,
 				75D39A462EEE878500866367 /* BudgetService.swift */,
+				75D39A522EEE878500866367 /* GoalsService.swift */,
 				75D39A472EEE878500866367 /* TransactionsService.swift */,
 				75D39A062EEE5C7600866367 /* PlaidService.swift */,
 			);
@@ -822,6 +828,7 @@
 				75D39A482EEE878500866367 /* TransactionsService.swift in Sources */,
 				75D39A492EEE878500866367 /* AccountsService.swift in Sources */,
 				75D39A4A2EEE878500866367 /* BudgetService.swift in Sources */,
+				75D39A532EEE878500866367 /* GoalsService.swift in Sources */,
 				75F946B22D3C87750076E91E /* OnboardingBudgetHeaderView.swift in Sources */,
 				759521A02CFD330A00655E7D /* BankDetailView.swift in Sources */,
 				751C8E932DF7F45300C38039 /* CategorySpendDetailView.swift in Sources */,
@@ -884,6 +891,7 @@
 				757ABF492C18195400DF8C92 /* FixtureGenerator.swift in Sources */,
 				757ABF492C18195400DF8C93 /* BudgetServiceTests.swift in Sources */,
 				757ABF492C18195400DF8C94 /* PulseAnalyticsTests.swift in Sources */,
+				757ABF492C18195400DF8C95 /* GoalsServiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
