@@ -270,6 +270,19 @@ struct TopMerchantItem: Codable, Identifiable, Equatable {
     }
 }
 
+/// Driving the Daily Spending Streak Card
+struct UserStreak: Codable, Equatable {
+    let currentStreak: Int
+    let maxStreak: Int
+    let last10DaysStatus: [Bool]
+
+    enum CodingKeys: String, CodingKey {
+        case currentStreak = "current_streak"
+        case maxStreak = "max_streak"
+        case last10DaysStatus = "last_10_days_status"
+    }
+}
+
 // MARK: - Service
 
 /// Service for budget and spending analysis via Supabase direct database access
@@ -297,6 +310,10 @@ class BudgetService: ObservableObject {
     // Checkpoint 2: Pulse Screen Properties
     @Published var dailyEnergy: [DailyEnergyItem] = []
     @Published var topMerchants: [TopMerchantItem] = []
+    
+    // Checkpoint 3: Goals & Streaks Properties
+    @Published var userStreak: UserStreak? = nil
+    @Published var idleSubscriptionsCount: Int = 0
     
     private let supabase: SupabaseClient
 
@@ -855,6 +872,68 @@ class BudgetService: ObservableObject {
         } catch {
             Logger.e("BudgetService: Failed to fetch top merchants: \(error)")
             throw error
+        }
+    }
+
+    /// Call RPC function in Supabase to fetch dynamic user streaks
+    func fetchUserStreak() async throws {
+        Logger.d("BudgetService: Fetching user spending streak")
+        do {
+            let streak: [UserStreak] = try await supabase
+                .rpc("get_user_spending_streak")
+                .execute()
+                .value
+            
+            self.userStreak = streak.first
+            Logger.i("BudgetService: Loaded streak tracker successfully: \(self.userStreak?.currentStreak ?? 0) days")
+        } catch {
+            Logger.e("BudgetService: Failed to fetch user spending streak: \(error)")
+            throw error
+        }
+    }
+
+    /// Scan for idle subscriptions (expense streams with 0 transactions in past 45 days)
+    func scanIdleSubscriptions() async {
+        guard let userId = UserAccount.shared.currentUser?.id else { return }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        guard let fortyFiveDaysAgo = calendar.date(byAdding: .day, value: -45, to: now) else { return }
+        
+        let dateFormatter = ISO8601DateFormatter()
+        let fortyFiveDaysAgoStr = dateFormatter.string(from: fortyFiveDaysAgo)
+        
+        do {
+            // 1. Fetch active expense streams
+            let streams = allRecurringStreams.isEmpty ? try await supabase
+                .from("recurring_streams_table")
+                .select("*")
+                .eq("user_id", value: userId)
+                .eq("type", value: "expense")
+                .eq("is_active", value: true)
+                .eq("is_excluded", value: false)
+                .execute()
+                .value as [RecurringStream] : allRecurringStreams.filter { $0.type == "expense" }
+
+            // 2. Fetch all recent recurring stream transaction links within the last 45 days
+            struct StreamTX: Codable {
+                let stream_id: Int
+            }
+            let recentTXs: [StreamTX] = try await supabase
+                .from("recurring_stream_transactions_table")
+                .select("stream_id")
+                .gte("created_at", value: fortyFiveDaysAgoStr)
+                .execute()
+                .value
+            
+            let activeStreamIds = Set(recentTXs.map { $0.stream_id })
+            
+            // 3. Any active expense stream NOT in the activeStreamIds set is "idle"
+            let idleStreams = streams.filter { !activeStreamIds.contains($0.id) }
+            self.idleSubscriptionsCount = idleStreams.count
+            Logger.i("BudgetService: Scanned \(streams.count) subscriptions, found \(idleSubscriptionsCount) idle subscriptions")
+        } catch {
+            Logger.e("BudgetService: Failed to scan idle subscriptions: \(error)")
         }
     }
 
