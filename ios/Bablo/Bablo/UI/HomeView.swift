@@ -59,12 +59,6 @@ struct HomeView: View {
                             .environmentObject(budgetService)
                             .padding(.horizontal, Spacing.screenEdge)
                             .padding(.top, Dimensions.topSpacingReduction)
-
-                        // 2. Net Available Cash — only with linked bank accounts
-                        if hasBankAccounts {
-                            HeroCarouselView()
-                                .environmentObject(budgetService)
-                        }
                     }
                 }
 
@@ -86,9 +80,7 @@ struct HomeView: View {
                         .padding(.top, Spacing.xl)
                 }
 
-                RecentTransactionsView()
-                    .padding(.top, Spacing.sm)
-                Spacer()                    
+                Spacer()
             }
         }
         .sheet(isPresented: $showingOnboarding) {
@@ -101,12 +93,6 @@ struct HomeView: View {
             await refreshHomeForCurrentUser()
         }
         .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(for: Bank.self) { bank in
-            BankDetailView(bank: bank)
-        }
-        .navigationDestination(for: BankAccount.self) { account in
-            BankAccountDetailView(account: account)
-        }
         .onAppear {
             // Check network status when view appears
             checkNetworkStatus()
