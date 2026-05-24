@@ -55,6 +55,15 @@ struct PulseTabView: View {
                     retry: { Task { await loadBreakdown() } }
                 )
                 .padding(.horizontal, theme.metrics.screenPadding)
+
+                DailyEnergyWidgetView(
+                    items: pulseService.dailyEnergy,
+                    period: selectedPeriod.heroPeriod,
+                    isLoading: pulseService.isLoadingDailyEnergy,
+                    error: pulseService.dailyEnergyError,
+                    retry: { Task { await loadDailyEnergy() } }
+                )
+                .padding(.horizontal, theme.metrics.screenPadding)
             }
             .padding(.bottom, 96)
         }
@@ -63,7 +72,8 @@ struct PulseTabView: View {
             guard loadsData else { return }
             async let damageReport: () = loadDamageReport()
             async let breakdown: () = loadBreakdown()
-            _ = await (damageReport, breakdown)
+            async let energy: () = loadDailyEnergy()
+            _ = await (damageReport, breakdown, energy)
         }
         .onChange(of: trackedCategories) { _, _ in
             guard loadsData else { return }
@@ -73,7 +83,8 @@ struct PulseTabView: View {
             guard loadsData else { return }
             async let damageReport: () = loadDamageReport()
             async let breakdown: () = loadBreakdown()
-            _ = await (damageReport, breakdown)
+            async let energy: () = loadDailyEnergy()
+            _ = await (damageReport, breakdown, energy)
         }
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -110,6 +121,11 @@ struct PulseTabView: View {
         } catch {
             // PulseService owns the published error state.
         }
+    }
+
+    private func loadDailyEnergy() async {
+        let current = selectedPeriod.currentWindow
+        await pulseService.fetchDailyEnergy(startDate: current.startDate, endDate: current.endDate)
     }
 }
 
@@ -309,6 +325,14 @@ private enum PulsePeriod: String, CaseIterable, Hashable {
 
     var comparisonWindow: PulseDateWindow? {
         PulseDateWindow.previous(period: self, relativeTo: currentWindow)
+    }
+
+    var heroPeriod: HeroPeriod {
+        switch self {
+        case .day:   return .day
+        case .week:  return .week
+        case .month: return .month
+        }
     }
 }
 
