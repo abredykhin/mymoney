@@ -160,7 +160,6 @@ struct HomeTopBarView: View {
         } label: {
             ZStack {
                 if theme.effects.isPopArt {
-                    // Pop Art: brutalist pink square with thick black border and shadow
                     Rectangle()
                         .fill(theme.colors.avatarPink.color)
                         .frame(width: 40, height: 40)
@@ -175,7 +174,6 @@ struct HomeTopBarView: View {
                         .foregroundStyle(theme.colors.accentInk.color)
                         .italic()
                 } else {
-                    // Normal Clean: elegant pink circle
                     Circle()
                         .fill(theme.colors.avatarPink.color)
                         .frame(width: 40, height: 40)

@@ -56,20 +56,20 @@ struct PulseTabView: View {
                 )
                 .padding(.horizontal, theme.metrics.screenPadding)
 
-                TheLineupWidgetView(
-                    items: pulseService.topMerchants,
-                    isLoading: pulseService.isLoadingTopMerchants,
-                    error: pulseService.topMerchantsError,
-                    retry: { Task { await loadTopMerchants() } }
-                )
-                .padding(.horizontal, theme.metrics.screenPadding)
-
                 DailyEnergyWidgetView(
                     items: pulseService.dailyEnergy,
                     period: selectedPeriod.heroPeriod,
                     isLoading: pulseService.isLoadingDailyEnergy,
                     error: pulseService.dailyEnergyError,
                     retry: { Task { await loadDailyEnergy() } }
+                )
+                .padding(.horizontal, theme.metrics.screenPadding)
+                
+                TheLineupWidgetView(
+                    items: pulseService.topMerchants,
+                    isLoading: pulseService.isLoadingTopMerchants,
+                    error: pulseService.topMerchantsError,
+                    retry: { Task { await loadTopMerchants() } }
                 )
                 .padding(.horizontal, theme.metrics.screenPadding)
             }
