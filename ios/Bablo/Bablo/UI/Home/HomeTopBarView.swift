@@ -5,11 +5,13 @@ struct HomeTopBarView: View {
     @EnvironmentObject var navigationState: NavigationState
     @Environment(\.babloTheme) private var theme
     
-    @State private var hasUnreadNotifications = true
-    @State private var notificationTapCount = 0
+    private let hasUnreadNotifications = false
     
     private var userName: String {
-        userAccount.currentUser?.name ?? "User"
+        HomeGreetingResolver.displayName(
+            profileFirstName: userAccount.profile?.firstName,
+            user: userAccount.currentUser
+        )
     }
     
     private var firstInitial: String {
@@ -72,10 +74,7 @@ struct HomeTopBarView: View {
     
     private var notificationButton: some View {
         Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                hasUnreadNotifications.toggle()
-                notificationTapCount += 1
-            }
+            // Notifications are not wired yet; keep this as a visual affordance only.
         } label: {
             ZStack {
                 if theme.effects.isPopArt {
@@ -165,6 +164,29 @@ struct HomeTopBarView: View {
             }
         }
         .buttonStyle(.plain)
+    }
+}
+
+enum HomeGreetingResolver {
+    static func displayName(profileFirstName: String?, user: User?) -> String {
+        let profileName = profileFirstName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let sessionName = user?.name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let profileName, !profileName.isEmpty {
+            return profileName
+        }
+
+        if let sessionName, !sessionName.isEmpty, sessionName != user?.emailUsernameFallback {
+            return sessionName
+        }
+
+        return "there"
+    }
+}
+
+private extension User {
+    var emailUsernameFallback: String? {
+        email?.components(separatedBy: "@").first
     }
 }
 

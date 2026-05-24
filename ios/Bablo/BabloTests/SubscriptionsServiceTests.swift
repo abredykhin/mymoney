@@ -22,7 +22,8 @@ struct SubscriptionsServiceTests {
                 headerFields: ["Content-Type": "application/json"]
             )!
             
-            #expect(url.path.contains("/rest/v1/recurring_streams_table"))
+            #expect(url.path.contains("/rest/v1/active_subscription_streams"))
+            #expect(url.query?.contains("user_id=eq.") == true)
             
             let streamsJSON = """
             [
@@ -72,7 +73,7 @@ struct SubscriptionsServiceTests {
         // Fetch
         try await service.fetchSubscriptions()
         
-        // Assert loaded (Red phase: this should fail because fetchSubscriptions is a stub)
+        // Assert loaded from the database-filtered subscriptions endpoint.
         #expect(service.subscriptions.count == 1)
         #expect(service.subscriptions.first?.description == "Netflix")
     }
@@ -89,6 +90,10 @@ struct SubscriptionsServiceTests {
             )!
             
             if url.path.contains("/rest/v1/recurring_streams_table") {
+                Issue.record("Subscriptions should be loaded from the database-level active_subscription_streams view")
+            }
+
+            if url.path.contains("/rest/v1/active_subscription_streams") {
                 let streamsJSON = """
                 [
                   {
@@ -141,7 +146,7 @@ struct SubscriptionsServiceTests {
         // Scan
         await service.scanIdleSubscriptions()
         
-        // Assert scanned idle (Red phase: this should fail because scanIdleSubscriptions is a stub)
+        // Assert scanned idle using the database-filtered subscriptions endpoint.
         #expect(service.idleCount == 1)
     }
 }

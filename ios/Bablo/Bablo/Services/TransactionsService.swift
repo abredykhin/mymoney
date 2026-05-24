@@ -101,9 +101,24 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
 /// Pagination metadata
 struct PaginationInfo: Equatable {
     let totalCount: Int
+    let isTotalCountExact: Bool
     let limit: Int
     let hasMore: Bool
     let nextOffset: Int?
+
+    init(
+        totalCount: Int,
+        isTotalCountExact: Bool = true,
+        limit: Int,
+        hasMore: Bool,
+        nextOffset: Int?
+    ) {
+        self.totalCount = totalCount
+        self.isTotalCountExact = isTotalCountExact
+        self.limit = limit
+        self.hasMore = hasMore
+        self.nextOffset = nextOffset
+    }
 }
 
 /// Filter criteria for transactions
@@ -157,8 +172,12 @@ class TransactionsService: ObservableObject {
     @Published var paginationInfo: PaginationInfo?
     @Published var error: Error?
 
-    private let supabase = SupabaseManager.shared.client
+    private let supabase: SupabaseClient
     private var currentOffset: Int = 0
+
+    init(supabaseClient: SupabaseClient = SupabaseManager.shared.client) {
+        self.supabase = supabaseClient
+    }
 
     // MARK: - Public Methods
 
@@ -207,16 +226,23 @@ class TransactionsService: ObservableObject {
             }
 
             // Apply ordering and pagination, then execute
-            let response: [Transaction] = try await query
+            let responseWithCount: PostgrestResponse<[Transaction]> = try await query
                 .order("date", ascending: false)
                 .order("id", ascending: false)
                 .range(from: options.offset, to: options.offset + options.limit - 1)
-                .execute().value
+                .execute()
+
+            let response = responseWithCount.value
 
             Logger.i("TransactionsService: Received \(response.count) transactions")
 
-            // Get total count from response headers
-            let totalCount = response.count // Note: Supabase returns count in headers
+            let loadedCount = options.offset + response.count
+            let isTotalCountExact = responseWithCount.count != nil
+            let totalCount = responseWithCount.count ?? loadedCount
+
+            if !isTotalCountExact {
+                Logger.w("TransactionsService: Exact transaction count missing; using loaded-count lower bound")
+            }
 
             if loadMore {
                 // Deduplicate: Filter out transactions that already exist
@@ -228,17 +254,18 @@ class TransactionsService: ObservableObject {
             }
 
             // Update pagination info
-            let hasMore = response.count == options.limit
-            let nextOffset = hasMore ? options.offset + options.limit : nil
+            let hasMore = responseWithCount.count.map { loadedCount < $0 } ?? (response.count == options.limit)
+            let nextOffset = hasMore ? loadedCount : nil
 
             self.paginationInfo = PaginationInfo(
                 totalCount: totalCount,
+                isTotalCountExact: isTotalCountExact,
                 limit: options.limit,
                 hasMore: hasMore,
                 nextOffset: nextOffset
             )
 
-            self.currentOffset = options.offset + response.count
+            self.currentOffset = loadedCount
 
             Logger.i("TransactionsService: Successfully loaded transactions (hasMore: \(hasMore))")
         } catch {
@@ -277,7 +304,7 @@ class TransactionsService: ObservableObject {
         do {
             var query = supabase
                 .from("transactions")
-                .select()
+                .select(count: .exact)
                 .eq("account_id", value: accountId)
 
             // Apply additional filters before ordering
@@ -290,22 +317,32 @@ class TransactionsService: ObservableObject {
             }
 
             // Apply ordering and pagination, then execute
-            let response: [Transaction] = try await query
+            let responseWithCount: PostgrestResponse<[Transaction]> = try await query
                 .order("date", ascending: false)
                 .order("id", ascending: false)
                 .range(from: options.offset, to: options.offset + options.limit - 1)
-                .execute().value
+                .execute()
+            let response = responseWithCount.value
 
             Logger.i("TransactionsService: Received \(response.count) transactions for account \(accountId)")
 
             self.transactions = response
 
-            let hasMore = response.count == options.limit
+            let loadedCount = options.offset + response.count
+            let isTotalCountExact = responseWithCount.count != nil
+            let totalCount = responseWithCount.count ?? loadedCount
+
+            if !isTotalCountExact {
+                Logger.w("TransactionsService: Exact account transaction count missing; using loaded-count lower bound")
+            }
+
+            let hasMore = responseWithCount.count.map { loadedCount < $0 } ?? (response.count == options.limit)
             self.paginationInfo = PaginationInfo(
-                totalCount: response.count,
+                totalCount: totalCount,
+                isTotalCountExact: isTotalCountExact,
                 limit: options.limit,
                 hasMore: hasMore,
-                nextOffset: hasMore ? options.offset + options.limit : nil
+                nextOffset: hasMore ? loadedCount : nil
             )
         } catch {
             Logger.e("TransactionsService: Failed to fetch transactions for account: \(error)")
@@ -380,16 +417,58 @@ class TransactionsService: ObservableObject {
 extension Transaction {
     /// Format date for display
     var formattedDate: String {
+        guard !date.isEmpty else { return "" }
+        
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone(identifier: "UTC")
-
-        if let date = formatter.date(from: date) {
+        
+        var parsedDate: Date? = nil
+        
+        // 1. First, attempt to parse the YYYY-MM-DD prefix (first 10 chars) 
+        // to avoid timezone shifting (e.g. shifts from May 23 evening to May 24 in UTC)
+        if date.count >= 10 {
+            let prefixStr = String(date.prefix(10))
+            formatter.dateFormat = "yyyy-MM-dd"
+            parsedDate = formatter.date(from: prefixStr)
+        }
+        
+        // 2. Fallback to parse full string as standard YYYY-MM-DD
+        if parsedDate == nil {
+            formatter.dateFormat = "yyyy-MM-dd"
+            parsedDate = formatter.date(from: date)
+        }
+        
+        // 3. Fallback for ISO 8601 with fractional seconds (e.g. 2026-05-23T18:57:43.000Z)
+        if parsedDate == nil {
+            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+            parsedDate = formatter.date(from: date)
+        }
+        
+        // 4. Fallback for standard ISO 8601
+        if parsedDate == nil {
+            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+            parsedDate = formatter.date(from: date)
+        }
+        
+        // 5. Fallback: try ISO8601DateFormatter
+        if parsedDate == nil {
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            parsedDate = isoFormatter.date(from: date)
+        }
+        
+        if parsedDate == nil {
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime]
+            parsedDate = isoFormatter.date(from: date)
+        }
+        
+        if let actualDate = parsedDate {
             formatter.dateFormat = "MMM d, yyyy"
             formatter.timeZone = TimeZone(identifier: "UTC")
-            return formatter.string(from: date)
+            return formatter.string(from: actualDate)
         }
-
+        
         return date
     }
 
