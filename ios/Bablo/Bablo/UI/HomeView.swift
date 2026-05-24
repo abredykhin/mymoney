@@ -20,8 +20,12 @@ struct HomeView: View {
     @State private var showingOnboarding = false
     
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: Spacing.sectionSpacing) {
+                HomeTopBarView()
+                    .padding(.horizontal, Spacing.screenEdge)
+                    .padding(.top, Spacing.sm)
+                
                 if isRefreshing {
                     ProgressView()
                         .tint(ColorPalette.primary)

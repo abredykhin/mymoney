@@ -94,6 +94,7 @@ struct BabloApp: App {
                                     .environmentObject(userAccount)
                                     .interactiveDismissDisabled(true)
                             }
+                            .babloTheme(selectedTheme)
                     }
                 } else {
                         // Login/welcome view
