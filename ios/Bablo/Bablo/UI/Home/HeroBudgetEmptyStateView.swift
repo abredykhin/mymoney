@@ -26,7 +26,7 @@ struct HeroBudgetEmptyStateView: View {
             }
             .foregroundColor(ColorPalette.info)
         }
-        .glassCard()
+        .babloCard(tone: .surface)
     }
 }
 
