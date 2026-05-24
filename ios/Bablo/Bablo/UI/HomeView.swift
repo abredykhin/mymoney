@@ -16,6 +16,8 @@ struct HomeView: View {
     @EnvironmentObject private var userAccount: UserAccount
     @EnvironmentObject var navigationState: NavigationState
     @EnvironmentObject private var coachService: CoachService
+    @EnvironmentObject private var streakService: StreakService
+    @EnvironmentObject private var subService: SubscriptionsService
     @State private var isOffline = false
     @State private var isRefreshing = false
     @State private var showingOnboarding = false
@@ -71,6 +73,15 @@ struct HomeView: View {
                         ))
                 }
 
+                // 2c. Streak and Subs widgets side-by-side — only when bank accounts linked
+                if !accountsService.banksWithAccounts.isEmpty {
+                    HStack(spacing: Spacing.md) {
+                        StreakWidgetView()
+                        SubsWidgetView()
+                    }
+                    .padding(.horizontal, Spacing.screenEdge)
+                }
+
                 // Empty state only when no budget data and no bank accounts
                 if !hasBudgetData && !hasBankAccounts {
                     HeroBudgetEmptyStateView()
@@ -121,6 +132,9 @@ struct HomeView: View {
                     try await accountsService.refreshAccounts(forceRefresh: forceRefresh)
                     if !accountsService.banksWithAccounts.isEmpty {
                         _ = try? await coachService.fetchCoachInsights()
+                        try? await streakService.fetchUserStreak()
+                        try? await subService.fetchSubscriptions()
+                        await subService.scanIdleSubscriptions()
                     }
                 } catch {
                     Logger.e("Failed to refresh data: \(error)")
@@ -143,10 +157,18 @@ struct HomeView: View {
                 try await accountsService.refreshAccounts(forceRefresh: true)
                 if !accountsService.banksWithAccounts.isEmpty {
                     _ = try? await coachService.fetchCoachInsights()
+                    try? await streakService.fetchUserStreak()
+                    try? await subService.fetchSubscriptions()
+                    await subService.scanIdleSubscriptions()
                 }
             } catch {
                 Logger.e("Failed to refresh data: \(error)")
             }
+        } else {
+            // Offline fallback: load cached streaks/subscriptions
+            try? await streakService.fetchUserStreak()
+            try? await subService.fetchSubscriptions()
+            await subService.scanIdleSubscriptions()
         }
     }
 }
