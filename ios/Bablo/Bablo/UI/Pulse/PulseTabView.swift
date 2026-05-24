@@ -56,6 +56,14 @@ struct PulseTabView: View {
                 )
                 .padding(.horizontal, theme.metrics.screenPadding)
 
+                TheLineupWidgetView(
+                    items: pulseService.topMerchants,
+                    isLoading: pulseService.isLoadingTopMerchants,
+                    error: pulseService.topMerchantsError,
+                    retry: { Task { await loadTopMerchants() } }
+                )
+                .padding(.horizontal, theme.metrics.screenPadding)
+
                 DailyEnergyWidgetView(
                     items: pulseService.dailyEnergy,
                     period: selectedPeriod.heroPeriod,
@@ -73,7 +81,8 @@ struct PulseTabView: View {
             async let damageReport: () = loadDamageReport()
             async let breakdown: () = loadBreakdown()
             async let energy: () = loadDailyEnergy()
-            _ = await (damageReport, breakdown, energy)
+            async let merchants: () = loadTopMerchants()
+            _ = await (damageReport, breakdown, energy, merchants)
         }
         .onChange(of: trackedCategories) { _, _ in
             guard loadsData else { return }
@@ -84,7 +93,8 @@ struct PulseTabView: View {
             async let damageReport: () = loadDamageReport()
             async let breakdown: () = loadBreakdown()
             async let energy: () = loadDailyEnergy()
-            _ = await (damageReport, breakdown, energy)
+            async let merchants: () = loadTopMerchants()
+            _ = await (damageReport, breakdown, energy, merchants)
         }
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -126,6 +136,11 @@ struct PulseTabView: View {
     private func loadDailyEnergy() async {
         let current = selectedPeriod.currentWindow
         await pulseService.fetchDailyEnergy(startDate: current.startDate, endDate: current.endDate)
+    }
+
+    private func loadTopMerchants() async {
+        let current = selectedPeriod.currentWindow
+        await pulseService.fetchTopMerchants(startDate: current.startDate, endDate: current.endDate)
     }
 }
 
@@ -450,6 +465,13 @@ private enum PulsePreviewFixtures {
                                   percentOfTotal: 0.12, previousAmount: 22),
             CategoryBreakdownItem(bucket: .rest, totalAmount: 74, transactionCount: 5,
                                   percentOfTotal: 0.19, previousAmount: nil),
+        ]
+        service.topMerchants = [
+            TopMerchantItem(merchantName: "Blue Bottle Coffee", totalSpent: 124, transactionCount: 6, personalFinanceCategory: "FOOD_AND_DRINK"),
+            TopMerchantItem(merchantName: "Trader Joe's", totalSpent: 98, transactionCount: 3, personalFinanceCategory: "FOOD_AND_DRINK"),
+            TopMerchantItem(merchantName: "Lyft", totalSpent: 71, transactionCount: 4, personalFinanceCategory: "TRANSPORTATION"),
+            TopMerchantItem(merchantName: "Steam", totalSpent: 59, transactionCount: 2, personalFinanceCategory: "ENTERTAINMENT"),
+            TopMerchantItem(merchantName: "Sweetgreen", totalSpent: 44, transactionCount: 3, personalFinanceCategory: "FOOD_AND_DRINK"),
         ]
         return service
     }
