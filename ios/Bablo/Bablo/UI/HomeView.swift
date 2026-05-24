@@ -51,7 +51,6 @@ struct HomeView: View {
 
                 let shouldShowMoneyWidgets = hasBudgetData || hasBankAccounts || !transactionsService.transactions.isEmpty
 
-                // Show hero section when budget data exists OR bank is linked
                 if hasBudgetData || hasBankAccounts {
                     LiquidHeroView(period: $heroPeriod)
                         .environmentObject(budgetService)
@@ -59,7 +58,6 @@ struct HomeView: View {
                         .padding(.top, Spacing.md)
                 }
 
-                // 2b. AI Coach Card — only when bank accounts linked, recommendation is loaded, and not dismissed
                 if !accountsService.banksWithAccounts.isEmpty && coachService.currentInsight != nil && !coachService.isDismissed {
                     CoachCardView()
                         .transition(.asymmetric(

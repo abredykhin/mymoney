@@ -254,7 +254,6 @@ struct LiquidHeroView: View {
     }
 
     private var statusStrip: some View {
-        // Use the real ratio for the label so over-budget shows "0%", not "2%".
         let realRatio = totalDiscretionary > 0 ? spendable / totalDiscretionary : 0
         let pct = Int((max(0, realRatio) * 100).rounded())
         let badgeBg  = theme.effects.isPopArt ? theme.colors.accent.color : fillGradientColors(for: animatedFill).bottom
