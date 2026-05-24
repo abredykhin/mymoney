@@ -1,0 +1,5 @@
+[
+  {"id": 1, "amount": 85.50, "name": "Trader Joes", "personal_finance_category": "FOOD_AND_DRINK", "type": "depository", "is_recurring": false},
+  {"id": 2, "amount": 42.00, "name": "Chipotle",    "personal_finance_category": "FOOD_AND_DRINK", "type": "depository", "is_recurring": false},
+  {"id": 3, "amount": 55.00, "name": "Shell Gas",   "personal_finance_category": "TRANSPORTATION",  "type": "depository", "is_recurring": false}
+]

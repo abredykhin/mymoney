@@ -28,6 +28,7 @@
 		3A68FA012EFB9FDA00D32561 /* HeroCarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */; };
 		3A68FA072EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */; };
 		3A68FA092EFCD12F00D32561 /* LiquidHeroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA082EFCD12F00D32561 /* LiquidHeroView.swift */; };
+		3A68FA0B2EFCD12F00D32561 /* HomeTopBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA0A2EFCD12F00D32561 /* HomeTopBarView.swift */; };
 		3A68FA102F15FCC600D32561 /* EmailAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA0E2F15FCC600D32561 /* EmailAuthView.swift */; };
 		3A68FA112F15FCC600D32561 /* EmailOTPVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA0F2F15FCC600D32561 /* EmailOTPVerificationView.swift */; };
 		3A68FA132F15FD6E00D32561 /* EmailAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA122F15FD6E00D32561 /* EmailAuthService.swift */; };
@@ -172,6 +173,7 @@
 		3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroCarouselView.swift; sourceTree = "<group>"; };
 		3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroBudgetEmptyStateView.swift; sourceTree = "<group>"; };
 		3A68FA082EFCD12F00D32561 /* LiquidHeroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidHeroView.swift; sourceTree = "<group>"; };
+		3A68FA0A2EFCD12F00D32561 /* HomeTopBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTopBarView.swift; sourceTree = "<group>"; };
 		3A68FA0E2F15FCC600D32561 /* EmailAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailAuthView.swift; sourceTree = "<group>"; };
 		3A68FA0F2F15FCC600D32561 /* EmailOTPVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailOTPVerificationView.swift; sourceTree = "<group>"; };
 		3A68FA122F15FD6E00D32561 /* EmailAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailAuthService.swift; sourceTree = "<group>"; };
@@ -341,6 +343,7 @@
 				3A68F9FD2EFB9FDA00D32561 /* HeroCardView.swift */,
 				3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */,
 				3A68FA082EFCD12F00D32561 /* LiquidHeroView.swift */,
+				3A68FA0A2EFCD12F00D32561 /* HomeTopBarView.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -903,6 +906,7 @@
 				7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */,
 				3A68FA072EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift in Sources */,
 				3A68FA092EFCD12F00D32561 /* LiquidHeroView.swift in Sources */,
+				3A68FA0B2EFCD12F00D32561 /* HomeTopBarView.swift in Sources */,
 				75B4DF0F2DA2F3EB00FF3C1C /* BankListTabView.swift in Sources */,
 				755F88862C86B8D200BEE12A /* BankAccountView.swift in Sources */,
 				3A68F9F92EFB8C0400D32561 /* EmptyTransactionsView.swift in Sources */,
