@@ -36,13 +36,13 @@ struct AuthenticationView: View {
                     .padding(Spacing.md)
                 
                 Button(action: authenticate) {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: authService.biometricType() == .faceID ? "faceid" : "touchid")
                         Text("Try \(authService.biometricType() == .faceID ? "Face ID" : "Touch ID") Again")
                     }
                 }
-                .primaryButton()
-                .padding(.horizontal, Spacing.xxxl)
+                .buttonStyle(.babloPrimary)
+                .padding(.horizontal, 28)
                 
                 Spacer()
                 

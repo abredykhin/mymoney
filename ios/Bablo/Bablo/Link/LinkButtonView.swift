@@ -27,11 +27,16 @@ struct LinkButtonView : View {
                 await loadLinkToken()
             }
         } label: {
-            Text(isLoadingLinkToken ? "Loading..." : "Link new account")
+            HStack(spacing: 8) {
+                if isLoadingLinkToken {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+                Text(isLoadingLinkToken ? "Loading..." : "Link new account")
+            }
         }
-        .primaryButton(isLoading: isLoadingLinkToken)
-        .padding(.horizontal, Spacing.lg)
-        .shadow(Elevation.level2)
+        .buttonStyle(.babloPrimary)
+        .padding(.horizontal, 28)
         .disabled(isLoadingLinkToken)
         .sheet(
             isPresented: $shouldPresentLink,

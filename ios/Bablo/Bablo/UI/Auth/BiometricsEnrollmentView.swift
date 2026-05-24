@@ -28,12 +28,12 @@ struct BiometricEnrollmentView: View {
                 .multilineTextAlignment(.center)
                 .padding(Spacing.md)
             
-            HStack(spacing: Spacing.md) {
+            HStack(spacing: 12) {
                 Button("Skip") {
                     userAccount.enableBiometricAuthentication(false)
                     dismiss()
                 }
-                .secondaryButton()
+                .buttonStyle(.babloSecondary)
                 
                 Button("Enable") {
                     // Perform a test authentication to ensure it works
@@ -49,9 +49,9 @@ struct BiometricEnrollmentView: View {
                         }
                     }
                 }
-                .primaryButton()
+                .buttonStyle(.babloPrimary)
             }
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, 16)
         }
         .padding(Spacing.lg)
     }
