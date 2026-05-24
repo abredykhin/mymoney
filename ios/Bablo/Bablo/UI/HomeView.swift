@@ -77,7 +77,7 @@ struct HomeView: View {
                         }
                         .padding(.horizontal, Spacing.screenEdge)
                     }
-                    
+
                     ComingUpWidgetView()
                         .padding(.horizontal, Spacing.screenEdge)
 

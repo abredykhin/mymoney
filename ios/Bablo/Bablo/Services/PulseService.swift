@@ -78,6 +78,10 @@ final class PulseService: ObservableObject {
     @Published var isLoadingBreakdown = false
     @Published var categoryBreakdownError: Error?
 
+    @Published var dailyEnergy: [DailyEnergyItem] = []
+    @Published var isLoadingDailyEnergy = false
+    @Published var dailyEnergyError: Error?
+
     private let supabase: SupabaseClient
 
     init(supabaseClient: SupabaseClient = SupabaseManager.shared.client) {
@@ -192,6 +196,31 @@ final class PulseService: ObservableObject {
             .gt("amount", value: 0)
             .execute()
             .value
+    }
+
+    // MARK: - Daily Energy
+
+    func fetchDailyEnergy(startDate: String, endDate: String) async {
+        isLoadingDailyEnergy = true
+        dailyEnergyError = nil
+        defer { isLoadingDailyEnergy = false }
+
+        struct Params: Encodable {
+            let week_start: String
+            let week_end: String
+        }
+
+        do {
+            let energy: [DailyEnergyItem] = try await supabase
+                .rpc("get_pulse_weekly_energy", params: Params(week_start: startDate, week_end: endDate))
+                .execute()
+                .value
+            dailyEnergy = energy
+            Logger.i("PulseService: Loaded \(energy.count) daily energy items")
+        } catch {
+            dailyEnergyError = error
+            Logger.e("PulseService: Failed to fetch daily energy: \(error)")
+        }
     }
 }
 
