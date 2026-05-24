@@ -6,6 +6,7 @@ struct PulseTabView: View {
     @State private var selectedPeriod: PulsePeriod = .week
 
     @Environment(\.babloTheme) private var theme
+    @EnvironmentObject private var userAccount: UserAccount
 
     private let loadsData: Bool
 
@@ -17,6 +18,11 @@ struct PulseTabView: View {
     init(pulseService: PulseService, loadsData: Bool = false) {
         self._pulseService = StateObject(wrappedValue: pulseService)
         self.loadsData = loadsData
+    }
+
+    private var trackedCategories: Set<FlexibleSpendingCategory> {
+        let rawValues = userAccount.profile?.trackedSpendingCategories ?? []
+        return Set(rawValues.compactMap { FlexibleSpendingCategory(rawValue: $0) })
     }
 
     var body: some View {
@@ -41,17 +47,33 @@ struct PulseTabView: View {
                     }
                 )
                 .padding(.horizontal, theme.metrics.screenPadding)
+
+                WhereItWentWidgetView(
+                    items: pulseService.categoryBreakdown ?? [],
+                    isLoading: pulseService.isLoadingBreakdown,
+                    error: pulseService.categoryBreakdownError,
+                    retry: { Task { await loadBreakdown() } }
+                )
+                .padding(.horizontal, theme.metrics.screenPadding)
             }
             .padding(.bottom, 96)
         }
         .babloScreenBackground()
         .task(id: selectedPeriod) {
             guard loadsData else { return }
-            await loadDamageReport()
+            async let damageReport: () = loadDamageReport()
+            async let breakdown: () = loadBreakdown()
+            _ = await (damageReport, breakdown)
+        }
+        .onChange(of: trackedCategories) { _, _ in
+            guard loadsData else { return }
+            Task { await loadBreakdown() }
         }
         .refreshable {
             guard loadsData else { return }
-            await loadDamageReport()
+            async let damageReport: () = loadDamageReport()
+            async let breakdown: () = loadBreakdown()
+            _ = await (damageReport, breakdown)
         }
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -65,7 +87,25 @@ struct PulseTabView: View {
                 startDate: current.startDate,
                 endDate: current.endDate,
                 comparisonStartDate: comparison?.startDate,
-                comparisonEndDate: comparison?.endDate
+                comparisonEndDate: comparison?.endDate,
+                comparisonLabel: selectedPeriod.comparisonLabel
+            )
+        } catch {
+            // PulseService owns the published error state.
+        }
+    }
+
+    private func loadBreakdown() async {
+        let current = selectedPeriod.currentWindow
+        let comparison = selectedPeriod.comparisonWindow
+
+        do {
+            try await pulseService.fetchCategoryBreakdown(
+                startDate: current.startDate,
+                endDate: current.endDate,
+                comparisonStartDate: comparison?.startDate,
+                comparisonEndDate: comparison?.endDate,
+                trackedCategories: trackedCategories
             )
         } catch {
             // PulseService owns the published error state.
@@ -247,6 +287,14 @@ private enum PulsePeriod: String, CaseIterable, Hashable {
         }
     }
 
+    var comparisonLabel: String {
+        switch self {
+        case .day:   return "vs yesterday"
+        case .week:  return "vs last wk"
+        case .month: return "vs last mo"
+        }
+    }
+
     var topBarLabel: String {
         switch self {
         case .day:   return topBarDateLabel(for: .day)
@@ -367,6 +415,18 @@ private enum PulsePreviewFixtures {
             totalOut: 387.42,
             spentDeltaFromPrevious: 76
         )
+        service.categoryBreakdown = [
+            CategoryBreakdownItem(bucket: .category(.eatsOut), totalAmount: 142, transactionCount: 11,
+                                  percentOfTotal: 0.37, previousAmount: 103),
+            CategoryBreakdownItem(bucket: .category(.gettingAround), totalAmount: 68, transactionCount: 7,
+                                  percentOfTotal: 0.18, previousAmount: 74),
+            CategoryBreakdownItem(bucket: .category(.fun), totalAmount: 55, transactionCount: 4,
+                                  percentOfTotal: 0.14, previousAmount: 49),
+            CategoryBreakdownItem(bucket: .category(.shopping), totalAmount: 48, transactionCount: 3,
+                                  percentOfTotal: 0.12, previousAmount: 22),
+            CategoryBreakdownItem(bucket: .rest, totalAmount: 74, transactionCount: 5,
+                                  percentOfTotal: 0.19, previousAmount: nil),
+        ]
         return service
     }
 
