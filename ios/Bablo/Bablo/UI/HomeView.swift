@@ -43,31 +43,28 @@ struct HomeView: View {
                     .padding(.horizontal, Spacing.screenEdge)
                 }
                 
-                // Only show charts if we have accounts OR budget data
-                if !accountsService.banksWithAccounts.isEmpty || budgetService.totalBalance?.balance != 0 {
+                let hasBudgetData = budgetService.monthlyIncome > 0 || budgetService.monthlyMandatoryExpenses > 0
+                let hasBankAccounts = !accountsService.banksWithAccounts.isEmpty
+
+                // Show hero section when budget data exists OR bank is linked
+                if hasBudgetData || hasBankAccounts {
                     VStack(spacing: Spacing.sm) {
-                        // 1. Original Hero: Total Balance (Carousel) - Restored to top
-                        HeroCarouselView()
+                        // 1. Liquid spendable hero — primary widget
+                        LiquidHeroView()
                             .environmentObject(budgetService)
+                            .padding(.horizontal, Spacing.screenEdge)
                             .padding(.top, Dimensions.topSpacingReduction)
 
-                        // 2. New Secondary Hero: Variable Spending / "Spend Money"
-                        VariableSpendingView()
-
-                        // 3. Budget Summary Card
-                        HeroCardView(model: HeroCardViewModel(
-                            title: "Monthly Budget",
-                            amount: budgetService.variableBudget,
-                            monthlyChange: budgetService.variableBudget - (budgetService.monthlyIncome - budgetService.monthlyMandatoryExpenses),
-                            isPositive: budgetService.variableBudget >= 0,
-                            currencyCode: "USD",
-                            overrideStatusText: budgetService.variableBudget >= 0 ? "Left to Spend" : "Over Budget"
-                        ))
+                        // 2. Net Available Cash — only with linked bank accounts
+                        if hasBankAccounts {
+                            HeroCarouselView()
+                                .environmentObject(budgetService)
+                        }
                     }
                 }
 
-                // Show empty state IF no accounts linked
-                if accountsService.banksWithAccounts.isEmpty {
+                // Empty state only when no budget data and no bank accounts
+                if !hasBudgetData && !hasBankAccounts {
                     HeroBudgetEmptyStateView()
                         .onTapGesture {
                             showingOnboarding = true
@@ -136,6 +133,7 @@ struct HomeView: View {
         defer { isRefreshing = false }
 
         await userAccount.fetchProfile()
+        await budgetService.fetchBudgetSummary()
 
         if !isOffline {
             do {

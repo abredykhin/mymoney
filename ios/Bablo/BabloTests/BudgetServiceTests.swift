@@ -265,4 +265,156 @@ struct BudgetServiceTests {
         // 4. Assert that the inactive gym membership was scanned as idle
         #expect(service.idleSubscriptionsCount == 1)
     }
+
+    // MARK: - fetchVariableSpend
+
+    @Test @MainActor func testFetchVariableSpendQueriesCorrectView() async throws {
+        let mockData = try loadFixture(name: "variable_transactions")
+        var capturedURL: URL?
+
+        MockURLProtocol.mockHandler = { request in
+            capturedURL = request.url
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
+                                           headerFields: ["Content-Type": "application/json"])!
+            return (response, mockData)
+        }
+
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let client = SupabaseClient(
+            supabaseURL: URL(string: "http://127.0.0.1:54321")!,
+            supabaseKey: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+            options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
+        )
+
+        let service = await BudgetService(supabaseClient: client)
+        try? await service.fetchVariableSpend()
+
+        #expect(capturedURL?.path.contains("/rest/v1/variable_transactions") == true,
+                "Must query variable_transactions view, not raw transactions table")
+    }
+
+    @Test @MainActor func testFetchVariableSpendSumsPositiveAmounts() async throws {
+        // Fixture has 3 expenses: $85.50 + $42.00 + $55.00 = $182.50
+        let mockData = try loadFixture(name: "variable_transactions")
+
+        MockURLProtocol.mockHandler = { request in
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
+                                           headerFields: ["Content-Type": "application/json"])!
+            return (response, mockData)
+        }
+
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let client = SupabaseClient(
+            supabaseURL: URL(string: "http://127.0.0.1:54321")!,
+            supabaseKey: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+            options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
+        )
+
+        let service = await BudgetService(supabaseClient: client)
+        try? await service.fetchVariableSpend()
+        // fetchVariableSpend sets variableSpend via DispatchQueue.main.async — yield to let it run
+        await Task.yield()
+
+        #expect(abs(service.variableSpend - 182.50) < 0.001)
+    }
+
+    @Test @MainActor func testFetchVariableSpendDoesNotQueryTransferParams() async throws {
+        // After moving filter logic to the DB view, the iOS query must not send
+        // NOT ILIKE or subcategory filter params. "ilike" only appears in the URL
+        // if a NOT ILIKE filter was added client-side.
+        let mockData = try loadFixture(name: "variable_transactions")
+        var capturedURL: URL?
+
+        MockURLProtocol.mockHandler = { request in
+            capturedURL = request.url
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
+                                           headerFields: ["Content-Type": "application/json"])!
+            return (response, mockData)
+        }
+
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let client = SupabaseClient(
+            supabaseURL: URL(string: "http://127.0.0.1:54321")!,
+            supabaseKey: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+            options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
+        )
+
+        let service = await BudgetService(supabaseClient: client)
+        try? await service.fetchVariableSpend()
+
+        let query = capturedURL?.query ?? ""
+        #expect(!query.contains("ilike"),
+                "Transfer NOT ILIKE filter must live in the DB view, not the iOS query")
+        #expect(!query.contains("LOAN_PAYMENTS"),
+                "CC-payment filter must live in the DB view, not the iOS query")
+    }
+
+    // MARK: - calculateVariableBudget
+
+    @Test @MainActor func testCalculateVariableBudgetBasicCase() async throws {
+        // income $5000, mandatory $2000, variableSpend $500 → variableBudget = $2500
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let client = SupabaseClient(
+            supabaseURL: URL(string: "http://127.0.0.1:54321")!,
+            supabaseKey: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+            options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
+        )
+
+        let service = await BudgetService(supabaseClient: client)
+        service.monthlyIncome = 5000
+        service.monthlyMandatoryExpenses = 2000
+        service.variableSpend = 500
+        // knownIncomeThisMonth = 0, extraIncomeThisMonth = 0
+        // effectiveIncome = max(5000, 0) + 0 = 5000
+        service.calculateVariableBudget()
+
+        #expect(service.variableBudget == 2500)
+    }
+
+    @Test @MainActor func testCalculateVariableBudgetEffectiveIncomeUsesKnownWhenHigher() async throws {
+        // Plaid detected $8200 this month vs profile $8000 — should use $8200
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let client = SupabaseClient(
+            supabaseURL: URL(string: "http://127.0.0.1:54321")!,
+            supabaseKey: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+            options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
+        )
+
+        let service = await BudgetService(supabaseClient: client)
+        service.monthlyIncome = 8000
+        service.knownIncomeThisMonth = 8200   // e.g., 3-paycheck month
+        service.extraIncomeThisMonth = 0
+        service.monthlyMandatoryExpenses = 3000
+        service.variableSpend = 500
+        service.calculateVariableBudget()
+
+        // effectiveIncome = max(8000, 8200) + 0 = 8200
+        #expect(service.variableBudget == 4700)
+    }
+
+    @Test @MainActor func testCalculateVariableBudgetExtraIncomeAdded() async throws {
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let client = SupabaseClient(
+            supabaseURL: URL(string: "http://127.0.0.1:54321")!,
+            supabaseKey: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+            options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
+        )
+
+        let service = await BudgetService(supabaseClient: client)
+        service.monthlyIncome = 5000
+        service.knownIncomeThisMonth = 5000
+        service.extraIncomeThisMonth = 1000   // freelance payment
+        service.monthlyMandatoryExpenses = 2000
+        service.variableSpend = 500
+        service.calculateVariableBudget()
+
+        // effectiveIncome = max(5000, 5000) + 1000 = 6000
+        #expect(service.variableBudget == 3500)
+    }
 }

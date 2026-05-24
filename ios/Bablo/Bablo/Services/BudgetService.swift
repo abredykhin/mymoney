@@ -306,6 +306,9 @@ class BudgetService: ObservableObject {
     @Published var knownIncomeThisMonth: Double = 0
     @Published var extraIncomeThisMonth: Double = 0
     @Published var variableSpend: Double = 0
+    // Previous-period spend for delta comparison in LiquidHeroView
+    @Published var previousWeekVariableSpend: Double = 0
+    @Published var previousMonthVariableSpend: Double = 0
     
     // Checkpoint 2: Pulse Screen Properties
     @Published var dailyEnergy: [DailyEnergyItem] = []
@@ -461,11 +464,10 @@ class BudgetService: ObservableObject {
             // Use the NEW DB View 'variable_transactions' which already filters out fixed expenses
             let transactions: [TransactionForBreakdown] = try await supabase
                 .from("variable_transactions")
-                .select("id, amount, name, personal_finance_category, type") // Select all required fields for TransactionForBreakdown decoding
+                .select("id, amount, name, personal_finance_category, type")
                 .gte("date", value: startDate)
                 .lte("date", value: endDate)
-                .gt("amount", value: 0) // Expenses only
-                .not("personal_finance_category", operator: .ilike, value: "%transfer%")
+                .gt("amount", value: 0)
                 .execute()
                 .value
             
@@ -600,6 +602,24 @@ class BudgetService: ObservableObject {
         Logger.d("BudgetService: Cleared cache")
     }
 
+    /// Fetch variable spend for an arbitrary date window (start/end as "yyyy-MM-dd")
+    private func fetchVariableSpendRaw(start: String, end: String) async -> Double {
+        do {
+            let transactions: [TransactionForBreakdown] = try await supabase
+                .from("variable_transactions")
+                .select("id, amount, name, personal_finance_category, type")
+                .gte("date", value: start)
+                .lte("date", value: end)
+                .gt("amount", value: 0)
+                .execute()
+                .value
+            return transactions.reduce(0) { $0 + abs($1.amount) }
+        } catch {
+            Logger.e("BudgetService: Failed to fetch variable spend (\(start)–\(end)): \(error)")
+            return 0
+        }
+    }
+
     /// Fetch budget summary from user profile
     func fetchBudgetSummary() async {
         guard let userId = UserAccount.shared.currentUser?.id else {
@@ -628,9 +648,20 @@ class BudgetService: ObservableObject {
             await fetchRecurringStreams() // CHANGED: was fetchBudgetItems()
             await fetchActualIncome()
             try? await fetchVariableSpend() // Fetch variable spend to calc budget
+            await fetchPreviousPeriodSpend()
         } catch {
             Logger.e("BudgetService: Failed to fetch budget summary: \(error)")
         }
+    }
+
+    /// Fetch previous-week and previous-month variable spend for delta display
+    private func fetchPreviousPeriodSpend() async {
+        let ranges = PreviousPeriodDateRange.compute()
+        let wk = await fetchVariableSpendRaw(start: ranges.prevWeekStart, end: ranges.prevWeekEnd)
+        let mo = await fetchVariableSpendRaw(start: ranges.prevMonthStart, end: ranges.prevMonthEnd)
+        previousWeekVariableSpend = wk
+        previousMonthVariableSpend = mo
+        Logger.d("BudgetService: Previous-period spend — week (\(ranges.prevWeekStart)–\(ranges.prevWeekEnd)): \(wk), month (\(ranges.prevMonthStart)–\(ranges.prevMonthEnd)): \(mo)")
     }
 
     /// Fetch all recurring streams (income and expenses) from Plaid
