@@ -6,6 +6,25 @@ struct HomeTopBarView: View {
     @Environment(\.babloTheme) private var theme
     
     private let hasUnreadNotifications = false
+    private let dateRangeLabel: String
+    private let titleText: String?
+    private let actionSystemName: String
+    private let actionAccessibilityLabel: String
+    private let action: (() -> Void)?
+
+    init(
+        dateRangeLabel: String = "MON → SUN",
+        titleText: String? = nil,
+        actionSystemName: String = "bell",
+        actionAccessibilityLabel: String = "Notifications",
+        action: (() -> Void)? = nil
+    ) {
+        self.dateRangeLabel = dateRangeLabel
+        self.titleText = titleText
+        self.actionSystemName = actionSystemName
+        self.actionAccessibilityLabel = actionAccessibilityLabel
+        self.action = action
+    }
     
     private var userName: String {
         HomeGreetingResolver.displayName(
@@ -20,7 +39,6 @@ struct HomeTopBarView: View {
     
     var body: some View {
         HStack(alignment: .center) {
-            // Left Column: Date range and Greeting
             VStack(alignment: .leading, spacing: 2) {
                 dateRangeText
                 greetingText
@@ -28,13 +46,14 @@ struct HomeTopBarView: View {
             
             Spacer()
             
-            // Right Side: Notifications and User Avatar Buttons
             HStack(spacing: theme.effects.isPopArt ? 12 : 10) {
                 notificationButton
                 avatarButton
             }
         }
         .padding(.vertical, 8)
+        .padding(.horizontal, theme.metrics.screenPadding)
+        .padding(.top, Spacing.sm)
     }
     
     // MARK: - Subviews
@@ -42,12 +61,12 @@ struct HomeTopBarView: View {
     @ViewBuilder
     private var dateRangeText: some View {
         if theme.effects.isPopArt {
-            Text("MON → SUN")
+            Text(dateRangeLabel)
                 .font(theme.typography.mono(size: 11, weight: .bold))
                 .tracking(2.0)
                 .foregroundStyle(theme.colors.textSecondary.color)
         } else {
-            Text("MON → SUN")
+            Text(dateRangeLabel)
                 .font(theme.typography.body(size: 11, weight: .semibold))
                 .tracking(1.5)
                 .foregroundStyle(theme.colors.textTertiary.color)
@@ -56,7 +75,13 @@ struct HomeTopBarView: View {
     
     @ViewBuilder
     private var greetingText: some View {
-        if theme.effects.isPopArt {
+        if let titleText {
+            Text(theme.effects.isPopArt ? "\(titleText.uppercased()) !!" : titleText)
+                .font(theme.effects.isPopArt ? theme.typography.display(size: 26, weight: .black) : theme.typography.title(size: 26, weight: .bold))
+                .tracking(theme.effects.isPopArt ? theme.typography.displayTracking : 0)
+                .modifier(HomeTopBarConditionalItalic(isEnabled: theme.effects.isPopArt))
+                .foregroundStyle(theme.colors.textPrimary.color)
+        } else if theme.effects.isPopArt {
             Text("YO, \(userName.uppercased()) ‼️")
                 .font(theme.typography.display(size: 26, weight: .black))
                 .italic()
@@ -74,11 +99,10 @@ struct HomeTopBarView: View {
     
     private var notificationButton: some View {
         Button {
-            // Notifications are not wired yet; keep this as a visual affordance only.
+            action?()
         } label: {
             ZStack {
                 if theme.effects.isPopArt {
-                    // Pop Art: brutalist white square with thick black border
                     Rectangle()
                         .fill(theme.colors.surface.color)
                         .frame(width: 40, height: 40)
@@ -97,11 +121,10 @@ struct HomeTopBarView: View {
                             }
                         }
                     
-                    Image(systemName: "bell")
+                    Image(systemName: actionSystemName)
                         .font(.system(size: 18, weight: .black))
                         .foregroundStyle(theme.colors.textPrimary.color)
                 } else {
-                    // Normal Clean: soft circular/rounded surface
                     Circle()
                         .fill(theme.colors.surface.color)
                         .frame(width: 40, height: 40)
@@ -119,13 +142,14 @@ struct HomeTopBarView: View {
                             }
                         }
                     
-                    Image(systemName: "bell")
+                    Image(systemName: actionSystemName)
                         .font(.system(size: 17, weight: .medium))
                         .foregroundStyle(theme.colors.textPrimary.color)
                 }
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(actionAccessibilityLabel)
     }
     
     private var avatarButton: some View {
@@ -164,6 +188,18 @@ struct HomeTopBarView: View {
             }
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct HomeTopBarConditionalItalic: ViewModifier {
+    let isEnabled: Bool
+
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content.italic()
+        } else {
+            content
+        }
     }
 }
 

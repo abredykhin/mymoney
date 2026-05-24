@@ -22,18 +22,13 @@ struct HomeView: View {
     @State private var isRefreshing = false
     @State private var showingOnboarding = false
     @State private var networkMonitor: NWPathMonitor?
+    @State private var heroPeriod: HeroPeriod = .month
     
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: Spacing.sectionSpacing) {
-                HomeTopBarView()
-                    .padding(.horizontal, Spacing.screenEdge)
-                    .padding(.top, Spacing.sm)
-                
-                if isRefreshing {
-                    ProgressView()
-                        .tint(ColorPalette.primary)
-                }
+                HomeTopBarView(dateRangeLabel: homeTopBarLabel)
+
 
                 if isOffline {
                     HStack {
@@ -58,7 +53,7 @@ struct HomeView: View {
 
                 // Show hero section when budget data exists OR bank is linked
                 if hasBudgetData || hasBankAccounts {
-                    LiquidHeroView()
+                    LiquidHeroView(period: $heroPeriod)
                         .environmentObject(budgetService)
                         .padding(.horizontal, Spacing.screenEdge)
                         .padding(.top, Spacing.md)
@@ -121,6 +116,10 @@ struct HomeView: View {
         }
     }
     
+    private var homeTopBarLabel: String {
+        heroPeriod.topBarLabel
+    }
+
     private func checkNetworkStatus() {
         networkMonitor?.cancel()
         let monitor = NWPathMonitor()
