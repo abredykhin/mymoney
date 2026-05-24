@@ -80,6 +80,9 @@ struct HomeView: View {
                         SubsWidgetView()
                     }
                     .padding(.horizontal, Spacing.screenEdge)
+                    
+                    ComingUpWidgetView()
+                        .padding(.horizontal, Spacing.screenEdge)
                 }
 
                 // Empty state only when no budget data and no bank accounts
