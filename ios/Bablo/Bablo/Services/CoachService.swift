@@ -32,6 +32,7 @@ struct CoachInsight: Codable, Equatable {
 @MainActor
 class CoachService: ObservableObject {
     @Published var currentInsight: CoachInsight? = nil
+    @Published var isDismissed: Bool = false
     @Published var isLoading: Bool = false
     @Published var error: Error?
 
@@ -57,6 +58,7 @@ class CoachService: ObservableObject {
                 )
             )
             self.currentInsight = insight
+            self.isDismissed = false
             Logger.i("CoachService: Loaded Coach insights successfully")
             return insight
         } catch {
@@ -64,5 +66,10 @@ class CoachService: ObservableObject {
             self.error = error
             throw error
         }
+    }
+
+    /// Dismiss the current insight
+    func dismissInsight() {
+        self.isDismissed = true
     }
 }

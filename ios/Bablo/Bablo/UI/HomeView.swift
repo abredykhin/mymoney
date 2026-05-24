@@ -15,6 +15,7 @@ struct HomeView: View {
     @EnvironmentObject private var budgetService: BudgetService
     @EnvironmentObject private var userAccount: UserAccount
     @EnvironmentObject var navigationState: NavigationState
+    @EnvironmentObject private var coachService: CoachService
     @State private var isOffline = false
     @State private var isRefreshing = false
     @State private var showingOnboarding = false
@@ -65,6 +66,15 @@ struct HomeView: View {
                                 .environmentObject(budgetService)
                         }
                     }
+                }
+
+                // 2b. AI Coach Card — only when bank accounts linked, recommendation is loaded, and not dismissed
+                if !accountsService.banksWithAccounts.isEmpty && coachService.currentInsight != nil && !coachService.isDismissed {
+                    CoachCardView()
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.95)),
+                            removal: .opacity.combined(with: .scale(scale: 0.95))
+                        ))
                 }
 
                 // Empty state only when no budget data and no bank accounts
@@ -123,6 +133,9 @@ struct HomeView: View {
                 do {
                     // Refresh both accounts and transactions
                     try await accountsService.refreshAccounts(forceRefresh: forceRefresh)
+                    if !accountsService.banksWithAccounts.isEmpty {
+                        _ = try? await coachService.fetchCoachInsights()
+                    }
                 } catch {
                     Logger.e("Failed to refresh data: \(error)")
                 }
@@ -142,6 +155,9 @@ struct HomeView: View {
         if !isOffline {
             do {
                 try await accountsService.refreshAccounts(forceRefresh: true)
+                if !accountsService.banksWithAccounts.isEmpty {
+                    _ = try? await coachService.fetchCoachInsights()
+                }
             } catch {
                 Logger.e("Failed to refresh data: \(error)")
             }

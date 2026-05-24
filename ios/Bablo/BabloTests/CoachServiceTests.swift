@@ -65,6 +65,42 @@ struct CoachServiceTests {
         #expect(insight.alternativeTip.contains("meal"))
     }
 
+    @Test @MainActor func testCoachInsightsDismissal() async throws {
+        // 1. Configure service
+        let service = CoachService(supabaseClient: TestSupabaseClient.shared)
+        
+        // 2. Initial state: not dismissed
+        #expect(service.isDismissed == false)
+        
+        // 3. Dismiss it
+        service.dismissInsight()
+        #expect(service.isDismissed == true)
+        
+        // 4. Test resetting dismissal on new fetch
+        let mockData = try loadFixture(name: "coach_insight")
+        MockURLProtocol.mockHandler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, mockData)
+        }
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let client = SupabaseClient(
+            supabaseURL: URL(string: "http://127.0.0.1:54321")!,
+            supabaseKey: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+            options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
+        )
+        let mockService = CoachService(supabaseClient: client)
+        mockService.isDismissed = true
+        
+        _ = try await mockService.fetchCoachInsights()
+        #expect(mockService.isDismissed == false)
+    }
+
     // MARK: - Live Local DB Integration Tests
 
     @Test @MainActor func testLiveCoachInsightsIntegration() async throws {
