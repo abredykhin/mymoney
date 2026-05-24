@@ -17,6 +17,7 @@
 		0E7A4C2B1BA54D6AB8D035C1 /* OnboardingNameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7A4C2A1BA54D6AB8D035C1 /* OnboardingNameView.swift */; };
 		0E7A4C2D1BA54D6AB8D035C1 /* OnboardingNameInputViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7A4C2C1BA54D6AB8D035C1 /* OnboardingNameInputViewModel.swift */; };
 		1318B84F8F0244479A7F2FE3 /* WhereItWentWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62941461BBDF45BCAC3D7FBD /* WhereItWentWidgetView.swift */; };
+		522F21627C184781A259930C /* TheLineupWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7345AE9DF34B33BC92C821 /* TheLineupWidgetView.swift */; };
 		1CE016C44405A7A1A8D5C8CC /* StreakServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 369BDB36299D77FAF29E5141 /* StreakServiceTests.swift */; };
 		1D9AD96CAE7DBB9681A92645 /* ComingUpCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09F923CF2BDE9F939F3F6CA6 /* ComingUpCalculator.swift */; };
 		330F6DC2EF9CF04F1F99D6FF /* OnboardingAmountStepper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23C1810B7EF201D0786BA6B6 /* OnboardingAmountStepper.swift */; };
@@ -218,6 +219,7 @@
 		4BF55D04A720BC63115F7BF7 /* TransactionsServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransactionsServiceTests.swift; sourceTree = "<group>"; };
 		5FB55063D775CEC7F1F70CA7 /* IncomeInputViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IncomeInputViewModel.swift; sourceTree = "<group>"; };
 		62941461BBDF45BCAC3D7FBD /* WhereItWentWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhereItWentWidgetView.swift; sourceTree = "<group>"; };
+		1F7345AE9DF34B33BC92C821 /* TheLineupWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheLineupWidgetView.swift; sourceTree = "<group>"; };
 		6B9101DF8EB9E698F0C5E20F /* SubsWidgetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubsWidgetView.swift; sourceTree = "<group>"; };
 		6E5474B40C370C7373F06D32 /* FixedExpenseCategory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FixedExpenseCategory.swift; sourceTree = "<group>"; };
 		754B69422D97D19800C0F001 /* BiometricAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthService.swift; sourceTree = "<group>"; };
@@ -690,6 +692,7 @@
 				75D39AD22F2178B500866367 /* PulseTabView.swift */,
 				F68DAB15582B41BEB2C1B683 /* DailyEnergyWidgetView.swift */,
 				62941461BBDF45BCAC3D7FBD /* WhereItWentWidgetView.swift */,
+				1F7345AE9DF34B33BC92C821 /* TheLineupWidgetView.swift */,
 			);
 			path = Pulse;
 			sourceTree = "<group>";
@@ -967,6 +970,7 @@
 				CEE77D35680A4C4EACF92149 /* FlexibleSpendingCategory+PlaidMapping.swift in Sources */,
 				89D3630D256C4590BF461C80 /* CategoryBreakdown.swift in Sources */,
 				1318B84F8F0244479A7F2FE3 /* WhereItWentWidgetView.swift in Sources */,
+				522F21627C184781A259930C /* TheLineupWidgetView.swift in Sources */,
 				D95B4ECD0B0830645BD96CDE /* IncomeInputViewModel.swift in Sources */,
 				6531D64C6C0991EBCD4DC1D7 /* OnboardingCTAButton.swift in Sources */,
 				DB9C197693D486D311559170 /* StreakService.swift in Sources */,

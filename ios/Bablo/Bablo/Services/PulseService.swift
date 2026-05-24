@@ -82,6 +82,10 @@ final class PulseService: ObservableObject {
     @Published var isLoadingDailyEnergy = false
     @Published var dailyEnergyError: Error?
 
+    @Published var topMerchants: [TopMerchantItem] = []
+    @Published var isLoadingTopMerchants = false
+    @Published var topMerchantsError: Error?
+
     private let supabase: SupabaseClient
 
     init(supabaseClient: SupabaseClient = SupabaseManager.shared.client) {
@@ -220,6 +224,32 @@ final class PulseService: ObservableObject {
         } catch {
             dailyEnergyError = error
             Logger.e("PulseService: Failed to fetch daily energy: \(error)")
+        }
+    }
+
+    // MARK: - Top Merchants
+
+    func fetchTopMerchants(startDate: String, endDate: String) async {
+        isLoadingTopMerchants = true
+        topMerchantsError = nil
+        defer { isLoadingTopMerchants = false }
+
+        struct Params: Encodable {
+            let start_date: String
+            let end_date: String
+            let lim: Int
+        }
+
+        do {
+            let merchants: [TopMerchantItem] = try await supabase
+                .rpc("get_pulse_top_merchants", params: Params(start_date: startDate, end_date: endDate, lim: 5))
+                .execute()
+                .value
+            topMerchants = merchants
+            Logger.i("PulseService: Loaded \(merchants.count) top merchants")
+        } catch {
+            topMerchantsError = error
+            Logger.e("PulseService: Failed to fetch top merchants: \(error)")
         }
     }
 }
