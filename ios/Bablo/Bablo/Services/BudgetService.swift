@@ -100,7 +100,7 @@ struct TotalBalance: Codable, Equatable {
 }
 
 /// Spending breakdown by category
-struct CategoryBreakdownItem: Codable, Identifiable, Equatable {
+struct BudgetCategoryItem: Codable, Identifiable, Equatable {
     let category: String
     let totalSpent: Double
     let transactionCount: Int
@@ -136,7 +136,7 @@ struct CategoryBreakdownItem: Codable, Identifiable, Equatable {
 
 /// Response containing category breakdown
 struct CategoryBreakdownResponse: Codable, Equatable {
-    let breakdown: [CategoryBreakdownItem]
+    let breakdown: [BudgetCategoryItem]
     let startDate: String
     let endDate: String
     let totalSpent: Double
@@ -321,7 +321,7 @@ class BudgetService: ObservableObject {
     }
 
     // Total spend (for Spend Tab)
-    var spendBreakdownItems: [CategoryBreakdownItem] {
+    var spendBreakdownItems: [BudgetCategoryItem] {
         spendBreakdownResponse?.breakdown ?? []
     }
     
@@ -538,7 +538,7 @@ class BudgetService: ObservableObject {
             }
 
             // Create breakdown items with percentages
-            var breakdownItems: [CategoryBreakdownItem] = []
+            var breakdownItems: [BudgetCategoryItem] = []
             for (category, data) in categoryMap {
                 let percent = totalSpent > 0 ? (data.totalSpent / totalSpent * 100) : 0
 
@@ -547,7 +547,7 @@ class BudgetService: ObservableObject {
                 let monthlySpend = range == .month ? data.totalSpent : 0
                 let yearlySpend = range == .year ? data.totalSpent : 0
 
-                let item = CategoryBreakdownItem(
+                let item = BudgetCategoryItem(
                     category: category,
                     totalSpent: data.totalSpent,
                     transactionCount: data.transactionCount,
@@ -583,7 +583,7 @@ class BudgetService: ObservableObject {
     /// Get top spending categories
     /// - Parameter limit: Number of top categories to return
     /// - Returns: Top spending categories
-    func topSpendingCategories(limit: Int = 5) -> [CategoryBreakdownItem] {
+    func topSpendingCategories(limit: Int = 5) -> [BudgetCategoryItem] {
         Array(spendBreakdownItems.prefix(limit))
     }
 

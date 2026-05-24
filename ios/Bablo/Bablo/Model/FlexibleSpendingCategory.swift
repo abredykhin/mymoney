@@ -52,4 +52,17 @@ enum FlexibleSpendingCategory: String, CaseIterable, Identifiable {
         case .travel:        return "✈️"
         }
     }
+
+    var shortName: String {
+        switch self {
+        case .eatsOut:       return "Eats"
+        case .coffeeRuns:    return "Coffee"
+        case .groceries:     return "Groc"
+        case .fun:           return "Fun"
+        case .shopping:      return "Shop"
+        case .gettingAround: return "Transit"
+        case .selfCare:      return "Care"
+        case .travel:        return "Travel"
+        }
+    }
 }
