@@ -84,14 +84,21 @@ export async function updateProfileRecurringSummary(
     }
   }
 
+  // Only overwrite income when Plaid detected recurring streams.
+  // If the sum is 0 (bank just linked, streams not detected yet), preserve
+  // whatever the user entered during onboarding.
+  const profileUpdate: Record<string, unknown> = {
+    monthly_mandatory_expenses: monthlyExpenses,
+    updated_at: new Date().toISOString()
+  };
+  if (monthlyIncome > 0) {
+    profileUpdate.monthly_income = monthlyIncome;
+  }
+
   await supabase
     .from('profiles_table')
-    .update({
-      monthly_income: monthlyIncome,
-      monthly_mandatory_expenses: monthlyExpenses,
-      updated_at: new Date().toISOString()
-    })
+    .update(profileUpdate)
     .eq('id', userId);
 
-  console.log(`✅ Profile updated: income=${monthlyIncome}, expenses=${monthlyExpenses}`);
+  console.log(`✅ Profile updated: income=${monthlyIncome > 0 ? monthlyIncome : '(preserved)' }, expenses=${monthlyExpenses}`);
 }
