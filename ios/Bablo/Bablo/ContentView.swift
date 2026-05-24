@@ -108,7 +108,7 @@ struct ContentView: View {
             }
         case .pulse:
             NavigationStack(path: $navigationState.pulseNavPath) {
-                BabloEmptyTabView()
+                PulseTabView()
             }
         case .goals:
             NavigationStack(path: $navigationState.goalsNavPath) {

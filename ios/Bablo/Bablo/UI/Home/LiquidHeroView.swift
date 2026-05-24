@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Period
 
@@ -6,6 +7,14 @@ enum HeroPeriod: String, CaseIterable {
     case day   = "Day"
     case week  = "Wk"
     case month = "Mo"
+
+    var topBarLabel: String {
+        switch self {
+        case .day:   return topBarDateLabel(for: .day)
+        case .week:  return topBarDateLabel(for: .week)
+        case .month: return topBarDateLabel(for: .month)
+        }
+    }
 }
 
 // MARK: - LiquidHeroView
@@ -14,8 +23,12 @@ struct LiquidHeroView: View {
     @EnvironmentObject private var budgetService: BudgetService
     @Environment(\.babloTheme) private var theme
 
-    @State private var period: HeroPeriod = .month
+    @Binding var period: HeroPeriod
     @State private var animatedFill: Double = 0
+
+    init(period: Binding<HeroPeriod> = .constant(.month)) {
+        self._period = period
+    }
 
     // MARK: - Budget calculator (pure, testable)
 
@@ -44,6 +57,7 @@ struct LiquidHeroView: View {
     var body: some View {
         VStack(spacing: 0) {
             topRow
+                .padding(.bottom, 12)
             liquidCanvas
             statusStrip
         }
@@ -82,50 +96,16 @@ struct LiquidHeroView: View {
             Spacer()
             deltaChip
         }
-        .padding(.horizontal, 14)
-        .padding(.top, 14)
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
     }
 
     private var periodSwitch: some View {
-        let isPopArt = theme.effects.isPopArt
-        let pillFont = Font.system(size: isPopArt ? 12 : 11.5, weight: isPopArt ? .bold : .semibold, design: theme.typography.bodyDesign)
-        return HStack(spacing: 0) {
-            pillButton(period: .day, font: pillFont, isPopArt: isPopArt)
-            if isPopArt {
-                Rectangle()
-                    .fill(theme.colors.line.color)
-                    .frame(width: theme.metrics.borderWidth, height: 28)
-            }
-            pillButton(period: .week, font: pillFont, isPopArt: isPopArt)
-            if isPopArt {
-                Rectangle()
-                    .fill(theme.colors.line.color)
-                    .frame(width: theme.metrics.borderWidth, height: 28)
-            }
-            pillButton(period: .month, font: pillFont, isPopArt: isPopArt)
-        }
-        .background(isPopArt ? theme.colors.surface.color : theme.colors.surfaceMuted.color.opacity(0.9))
-        .clipShape(RoundedRectangle(cornerRadius: isPopArt ? 0 : 999))
-        .overlay {
-            RoundedRectangle(cornerRadius: isPopArt ? 0 : 999)
-                .stroke(theme.colors.line.color, lineWidth: theme.metrics.borderWidth)
-        }
-        .shadow(color: isPopArt ? theme.effects.shadowColor : .clear, radius: 0, x: 3, y: 3)
-    }
-
-    private func pillButton(period p: HeroPeriod, font: Font, isPopArt: Bool) -> some View {
-        let isSelected = period == p
-        return Button { withAnimation(.easeOut(duration: 0.15)) { period = p } } label: {
-            Text(p.rawValue)
-                .font(font)
-                .tracking(isPopArt ? 0.8 : 0.2)
-                .textCase(isPopArt ? .uppercase : nil)
-                .padding(.horizontal, isPopArt ? 13 : 11)
-                .padding(.vertical, isPopArt ? 6 : 5)
-                .background(isSelected ? theme.colors.textPrimary.color : Color.clear)
-                .foregroundStyle(isSelected ? theme.colors.surface.color : theme.colors.textTertiary.color)
-        }
-        .buttonStyle(.plain)
+        BabloSegmentedControl(
+            items: HeroPeriod.allCases.map { .init(id: $0, title: $0.rawValue) },
+            selection: $period,
+            size: .compact
+        )
     }
 
     @ViewBuilder
@@ -165,7 +145,8 @@ struct LiquidHeroView: View {
         let surfaceColor  = theme.colors.surface.color
         let surfaceMuted  = theme.colors.surfaceMuted.color
         let currentFill   = animatedFill
-        let (fillTop, fillBottom) = fillGradientColors(for: currentFill)
+        let fillColors = fillGradientColors(for: currentFill)
+        let (fillTop, fillBottom) = (fillColors.top, fillColors.bottom)
         let amtStr = formatAmount(spendable)
         let fontSize = amountFontSize(for: amtStr)
 
@@ -174,7 +155,9 @@ struct LiquidHeroView: View {
             Canvas { ctx, size in
                 let W = size.width
                 let H = size.height
-                let y0 = H * (1.0 - currentFill)
+                // Prevent the wave from clipping at 100% full or 0% empty by adding a safety margin
+                let waveMargin: Double = 18.0
+                let y0 = waveMargin + (H - waveMargin * 2) * (1.0 - currentFill)
 
                 // 1. Background
                 let bgRect = Path(CGRect(x: 0, y: 0, width: W, height: H))
@@ -203,7 +186,7 @@ struct LiquidHeroView: View {
                 // 2. Compute wave path
                 let wave = makePath(W: W, H: H, y0: y0, t: t, fill: currentFill)
 
-                // 3. Liquid fill
+                // 3. Liquid fill — bright at surface, slightly deeper at bottom
                 if isPopArt {
                     ctx.fill(wave, with: .color(inkColor))
                 } else {
@@ -217,9 +200,9 @@ struct LiquidHeroView: View {
                 // Pop: stroke the wave edge
                 if isPopArt {
                     var edgePath = Path()
-                    edgePath.move(to: CGPoint(x: 0, y: waveY(x: 0, y0: y0, t: t, fill: currentFill)))
+                    edgePath.move(to: CGPoint(x: 0, y: waveY(x: 0, y0: y0, t: t, fill: currentFill, W: W)))
                     var x = 4.0
-                    while x <= W { edgePath.addLine(to: CGPoint(x: x, y: waveY(x: x, y0: y0, t: t, fill: currentFill))); x += 4 }
+                    while x <= W { edgePath.addLine(to: CGPoint(x: x, y: waveY(x: x, y0: y0, t: t, fill: currentFill, W: W))); x += 4 }
                     ctx.stroke(edgePath, with: .color(inkColor), lineWidth: 3)
                 }
 
@@ -236,7 +219,7 @@ struct LiquidHeroView: View {
                 }
 
                 // 5. Amount text — dark (visible above wave)
-                let textPos = CGPoint(x: W / 2, y: H / 2 + 24)
+                let textPos = CGPoint(x: W / 2, y: H / 2)
                 let darkText = ctx.resolve(
                     Text(amtStr)
                         .font(.system(size: fontSize, weight: isPopArt ? .black : .bold, design: .rounded))
@@ -255,14 +238,6 @@ struct LiquidHeroView: View {
                     liqCtx.draw(lightText, at: textPos, anchor: .center)
                 }
 
-                // 7. Surface highlight (default only)
-                if !isPopArt {
-                    var hl = Path()
-                    hl.move(to: CGPoint(x: 0, y: waveY(x: 0, y0: y0, t: t, fill: currentFill)))
-                    var hx = 4.0
-                    while hx <= W { hl.addLine(to: CGPoint(x: hx, y: waveY(x: hx, y0: y0, t: t, fill: currentFill))); hx += 4 }
-                    ctx.stroke(hl, with: .color(.white.opacity(0.55)), lineWidth: 1.2)
-                }
             }
         }
         .frame(height: 280)
@@ -311,7 +286,7 @@ struct LiquidHeroView: View {
                 .background(badgeBg)
                 .clipShape(RoundedRectangle(cornerRadius: 999))
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(theme.colors.surface.color.opacity(theme.effects.isPopArt ? 1 : 0.6))
         .overlay(alignment: .top) {
@@ -323,19 +298,28 @@ struct LiquidHeroView: View {
 
     // MARK: - Wave math
 
-    private func waveY(x: Double, y0: Double, t: Double, fill: Double) -> Double {
-        // Amplitude scales down as the tank empties — nearly flat at 0%, full chop above ~20%.
-        let base = 7 + sin(t * 0.7) * 1.4
-        let amp  = base * min(1.0, fill * 5)
-        return y0 + sin(x * 0.018 + t * 0.85) * amp + sin(x * 0.027 - t * 1.25) * amp * 0.45
+    private func waveY(x: Double, y0: Double, t: Double, fill: Double, W: Double) -> Double {
+        let amp = 10.0 * min(1.0, fill * 5)
+
+        // Gentle whole-container tilt
+        let sloshAngle = sin(t * 0.7) * 0.02
+        let slosh = (x - W / 2) * tan(sloshAngle)
+
+        // One primary wave — a single crest/trough across the full width
+        let wave1 = sin(x * (2.0 * .pi / W) + t * 1.3) * amp
+
+        // Subtle secondary for organic texture only
+        let wave2 = cos(x * (2.0 * .pi / (W * 0.5)) - t * 1.9) * amp * 0.12
+
+        return y0 + slosh + wave1 + wave2
     }
 
     private func makePath(W: Double, H: Double, y0: Double, t: Double, fill: Double) -> Path {
         var path = Path()
-        path.move(to: CGPoint(x: 0, y: waveY(x: 0, y0: y0, t: t, fill: fill)))
+        path.move(to: CGPoint(x: 0, y: waveY(x: 0, y0: y0, t: t, fill: fill, W: W)))
         var x = 4.0
         while x <= W {
-            path.addLine(to: CGPoint(x: x, y: waveY(x: x, y0: y0, t: t, fill: fill)))
+            path.addLine(to: CGPoint(x: x, y: waveY(x: x, y0: y0, t: t, fill: fill, W: W)))
             x += 4
         }
         path.addLine(to: CGPoint(x: W, y: H))
@@ -362,12 +346,23 @@ struct LiquidHeroView: View {
 
     // MARK: - Fill color (green → yellow → red as budget drains)
 
+    // Interpolates between design-system tokens: accent (full) → danger (empty).
+    // top uses the bright accent, bottom uses the deeper accentPressed shade.
     private func fillGradientColors(for fill: Double) -> (top: Color, bottom: Color) {
-        let hue = fill * (120.0 / 360.0)  // fill=1 → 120° green, fill=0 → 0° red
+        let t = max(0, min(1, fill))
         return (
-            top:    Color(hue: hue, saturation: 0.78, brightness: 0.97),
-            bottom: Color(hue: hue, saturation: 0.95, brightness: 0.72)
+            top:    lerpColor(from: theme.colors.danger.color,        to: theme.colors.accent.color,        t: t),
+            bottom: lerpColor(from: theme.colors.danger.color,        to: theme.colors.accentPressed.color, t: t)
         )
+    }
+
+    private func lerpColor(from: Color, to: Color, t: Double) -> Color {
+        var fr: CGFloat = 0, fg: CGFloat = 0, fb: CGFloat = 0
+        var er: CGFloat = 0, eg: CGFloat = 0, eb: CGFloat = 0
+        UIColor(from).getRed(&fr, green: &fg, blue: &fb, alpha: nil)
+        UIColor(to).getRed(&er, green: &eg, blue: &eb, alpha: nil)
+        let s = CGFloat(t)
+        return Color(red: fr + (er - fr) * s, green: fg + (eg - fg) * s, blue: fb + (eb - fb) * s)
     }
 
     // MARK: - Formatting
