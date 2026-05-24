@@ -45,6 +45,22 @@ struct ProfileDecodingTests {
         #expect(profile.trackedSpendingCategories == [])
     }
 
+    @Test func homeGreetingPrefersProfileFirstNameOverEmailFallback() {
+        let user = User(id: "abc-123", name: "abredykhin+5", token: "", email: "abredykhin+5@example.com")
+
+        let displayName = HomeGreetingResolver.displayName(profileFirstName: "Anton", user: user)
+
+        #expect(displayName == "Anton")
+    }
+
+    @Test func homeGreetingDoesNotShowEmailUsernameFallback() {
+        let user = User(id: "abc-123", name: "abredykhin+5", token: "", email: "abredykhin+5@example.com")
+
+        let displayName = HomeGreetingResolver.displayName(profileFirstName: nil, user: user)
+
+        #expect(displayName == "there")
+    }
+
     @Test func profileDecodesEmptyTrackedCategoriesArray() throws {
         let json = """
         {

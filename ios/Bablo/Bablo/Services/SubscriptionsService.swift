@@ -31,12 +31,9 @@ class SubscriptionsService: ObservableObject {
 
         do {
             let streams: [RecurringStream] = try await supabase
-                .from("recurring_streams_table")
+                .from("active_subscription_streams")
                 .select("*")
                 .eq("user_id", value: userId)
-                .eq("type", value: "expense")
-                .eq("is_active", value: true)
-                .eq("is_excluded", value: false)
                 .execute()
                 .value
 
@@ -63,12 +60,9 @@ class SubscriptionsService: ObservableObject {
         do {
             // 1. Fetch active expense streams if not loaded
             let streams = subscriptions.isEmpty ? try await supabase
-                .from("recurring_streams_table")
+                .from("active_subscription_streams")
                 .select("*")
                 .eq("user_id", value: userId)
-                .eq("type", value: "expense")
-                .eq("is_active", value: true)
-                .eq("is_excluded", value: false)
                 .execute()
                 .value as [RecurringStream] : subscriptions
 

@@ -21,6 +21,7 @@ struct HomeView: View {
     @State private var isOffline = false
     @State private var isRefreshing = false
     @State private var showingOnboarding = false
+    @State private var networkMonitor: NWPathMonitor?
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -53,15 +54,14 @@ struct HomeView: View {
                 let hasBudgetData = budgetService.monthlyIncome > 0 || budgetService.monthlyMandatoryExpenses > 0
                 let hasBankAccounts = !accountsService.banksWithAccounts.isEmpty
 
+                let shouldShowMoneyWidgets = hasBudgetData || hasBankAccounts || !transactionsService.transactions.isEmpty
+
                 // Show hero section when budget data exists OR bank is linked
                 if hasBudgetData || hasBankAccounts {
-                    VStack(spacing: Spacing.sm) {
-                        // 1. Liquid spendable hero — primary widget
-                        LiquidHeroView()
-                            .environmentObject(budgetService)
-                            .padding(.horizontal, Spacing.screenEdge)
-                            .padding(.top, Dimensions.topSpacingReduction)
-                    }
+                    LiquidHeroView()
+                        .environmentObject(budgetService)
+                        .padding(.horizontal, Spacing.screenEdge)
+                        .padding(.top, Spacing.md)
                 }
 
                 // 2b. AI Coach Card — only when bank accounts linked, recommendation is loaded, and not dismissed
@@ -73,15 +73,20 @@ struct HomeView: View {
                         ))
                 }
 
-                // 2c. Streak and Subs widgets side-by-side — only when bank accounts linked
-                if !accountsService.banksWithAccounts.isEmpty {
-                    HStack(spacing: Spacing.md) {
-                        StreakWidgetView()
-                        SubsWidgetView()
+                // 2c. Secondary money widgets
+                if shouldShowMoneyWidgets {
+                    if hasBankAccounts {
+                        HStack(spacing: Spacing.md) {
+                            StreakWidgetView()
+                            SubsWidgetView()
+                        }
+                        .padding(.horizontal, Spacing.screenEdge)
                     }
-                    .padding(.horizontal, Spacing.screenEdge)
                     
                     ComingUpWidgetView()
+                        .padding(.horizontal, Spacing.screenEdge)
+
+                    RecentWidgetView()
                         .padding(.horizontal, Spacing.screenEdge)
                 }
 
@@ -93,9 +98,8 @@ struct HomeView: View {
                         }
                         .padding(.top, Spacing.xl)
                 }
-
-                Spacer()
             }
+            .padding(.bottom, 96)
         }
         .sheet(isPresented: $showingOnboarding) {
             OnboardingWizard()
@@ -111,9 +115,14 @@ struct HomeView: View {
             // Check network status when view appears
             checkNetworkStatus()
         }
+        .onDisappear {
+            networkMonitor?.cancel()
+            networkMonitor = nil
+        }
     }
     
     private func checkNetworkStatus() {
+        networkMonitor?.cancel()
         let monitor = NWPathMonitor()
         let queue = DispatchQueue(label: "NetworkMonitor")
         
@@ -123,6 +132,7 @@ struct HomeView: View {
             }
         }
         monitor.start(queue: queue)
+        networkMonitor = monitor
     }
     
     private func checkConnectivityAndRefresh(forceRefresh: Bool = true) {
@@ -133,12 +143,11 @@ struct HomeView: View {
                 do {
                     // Refresh both accounts and transactions
                     try await accountsService.refreshAccounts(forceRefresh: forceRefresh)
-                    if !accountsService.banksWithAccounts.isEmpty {
-                        _ = try? await coachService.fetchCoachInsights()
-                        try? await streakService.fetchUserStreak()
-                        try? await subService.fetchSubscriptions()
-                        await subService.scanIdleSubscriptions()
-                    }
+                    try? await transactionsService.fetchRecentTransactions(forceRefresh: forceRefresh, limit: 5)
+                    _ = try? await coachService.fetchCoachInsights()
+                    await refreshStreakIfBankLinked()
+                    try? await subService.fetchSubscriptions()
+                    await subService.scanIdleSubscriptions()
                 } catch {
                     Logger.e("Failed to refresh data: \(error)")
                 }
@@ -158,20 +167,28 @@ struct HomeView: View {
         if !isOffline {
             do {
                 try await accountsService.refreshAccounts(forceRefresh: true)
-                if !accountsService.banksWithAccounts.isEmpty {
-                    _ = try? await coachService.fetchCoachInsights()
-                    try? await streakService.fetchUserStreak()
-                    try? await subService.fetchSubscriptions()
-                    await subService.scanIdleSubscriptions()
-                }
+                try? await transactionsService.fetchRecentTransactions(forceRefresh: true, limit: 5)
+                _ = try? await coachService.fetchCoachInsights()
+                await refreshStreakIfBankLinked()
+                try? await subService.fetchSubscriptions()
+                await subService.scanIdleSubscriptions()
             } catch {
                 Logger.e("Failed to refresh data: \(error)")
             }
         } else {
             // Offline fallback: load cached streaks/subscriptions
-            try? await streakService.fetchUserStreak()
+            await refreshStreakIfBankLinked()
             try? await subService.fetchSubscriptions()
             await subService.scanIdleSubscriptions()
         }
+    }
+
+    private func refreshStreakIfBankLinked() async {
+        guard !accountsService.banksWithAccounts.isEmpty else {
+            streakService.clearStreak()
+            return
+        }
+
+        try? await streakService.fetchUserStreak()
     }
 }

@@ -41,13 +41,13 @@ Deno.serve(async (req: Request) => {
       .eq('user_id', user.id)
       .gte('date', startDateStr);
 
-    // Fetch active recurring streams
+    // Fetch active subscription streams. The view intentionally excludes rent/mortgage
+    // so fixed housing costs don't get framed as subscription leaks.
     const { data: subs } = await supabase
-      .from('recurring_streams_table')
+      .from('active_subscription_streams')
       .select('description, monthly_amount, last_date')
       .eq('user_id', user.id)
-      .eq('type', 'expense')
-      .eq('is_active', true);
+      .order('monthly_amount', { ascending: false });
 
     const fallbackResponse = {
       badge: "COACH • INSIGHT",

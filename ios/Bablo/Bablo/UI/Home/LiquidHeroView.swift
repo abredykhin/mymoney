@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Period
 
 enum HeroPeriod: String, CaseIterable {
-    case day   = "Dy"
+    case day   = "Day"
     case week  = "Wk"
     case month = "Mo"
 }

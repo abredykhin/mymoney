@@ -30,12 +30,27 @@ class StreakService: ObservableObject {
                 .execute()
                 .value
             
-            self.userStreak = streak.first
+            self.userStreak = streak.first?.limitedToTrackedWindow()
             Logger.i("StreakService: Loaded streak tracker successfully: \(self.userStreak?.currentStreak ?? 0) days")
         } catch {
             Logger.e("StreakService: Failed to fetch user spending streak: \(error)")
             self.error = error
             throw error
         }
+    }
+
+    func clearStreak() {
+        userStreak = nil
+        error = nil
+    }
+}
+
+private extension UserStreak {
+    func limitedToTrackedWindow() -> UserStreak {
+        UserStreak(
+            currentStreak: min(max(currentStreak, 0), 90),
+            maxStreak: min(max(maxStreak, 0), 90),
+            last10DaysStatus: Array(last10DaysStatus.prefix(10))
+        )
     }
 }
