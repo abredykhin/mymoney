@@ -52,6 +52,7 @@ struct ContentView: View {
     @EnvironmentObject var userAccount: UserAccount
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var accountsService: AccountsService
+    @EnvironmentObject var coachService: CoachService
     @StateObject private var navigationState = NavigationState()
     @Environment(\.scenePhase) private var scenePhase
     @State private var previousScenePhase: ScenePhase = .active
@@ -115,7 +116,8 @@ struct ContentView: View {
             }
         case .coach:
             NavigationStack(path: $navigationState.coachNavPath) {
-                BabloEmptyTabView()
+                CoachTabView()
+                    .environmentObject(navigationState)
             }
         case .me:
             NavigationStack(path: $navigationState.meNavPath) {
@@ -306,6 +308,7 @@ private struct ContentViewPreviewHost: View {
     @StateObject private var budgetService = BudgetService()
     @StateObject private var transactionsService = TransactionsService()
     @StateObject private var plaidService = PlaidService()
+    @StateObject private var coachService = CoachService()
 
     var body: some View {
         ContentView()
@@ -315,6 +318,7 @@ private struct ContentViewPreviewHost: View {
             .environmentObject(budgetService)
             .environmentObject(transactionsService)
             .environmentObject(plaidService)
+            .environmentObject(coachService)
             .environment(\.managedObjectContext, CoreDataStack.shared.viewContext)
             .babloTheme(theme)
             .onAppear {

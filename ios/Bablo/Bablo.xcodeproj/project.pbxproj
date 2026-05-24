@@ -92,6 +92,8 @@
 		757ABF492C18195400DF8C95 /* GoalsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */; };
 		757ABF492C18195400DF8CA8 /* BabloTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CA8 /* BabloTests.swift */; };
 		757ABF492C18195400DF8CAD /* CoachServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CAD /* CoachServiceTests.swift */; };
+		3A88FA0A2EFCD12F00D32511 /* CoachCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A88FA0A2EFCD12F00D32510 /* CoachCardView.swift */; };
+		3A88FA0A2EFCD12F00D32521 /* CoachTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A88FA0A2EFCD12F00D32520 /* CoachTabView.swift */; };
 		757ABF492C18195400DF8CB0 /* DesignSystemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CB0 /* DesignSystemTests.swift */; };
 		757ABF492C18195400DF8CB1 /* AuthLoginViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CB1 /* AuthLoginViewModelTests.swift */; };
 		757ABF532C18195400DF8CA8 /* BabloUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF522C18195400DF8CA8 /* BabloUITests.swift */; };
@@ -278,6 +280,8 @@
 		75D39A472EEE878500866367 /* TransactionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsService.swift; sourceTree = "<group>"; };
 		75D39A522EEE878500866367 /* GoalsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsService.swift; sourceTree = "<group>"; };
 		75D39AC12EEE5C7600866367 /* CoachService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachService.swift; sourceTree = "<group>"; };
+		3A88FA0A2EFCD12F00D32510 /* CoachCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachCardView.swift; sourceTree = "<group>"; };
+		3A88FA0A2EFCD12F00D32520 /* CoachTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachTabView.swift; sourceTree = "<group>"; };
 		75E49BA42CA27E67008D72F8 /* TransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionView.swift; sourceTree = "<group>"; };
 		75E49BA92CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv */ = {isa = PBXFileReference; lastKnownFileType = text; path = "transactions-personal-finance-category-taxonomy.csv"; sourceTree = "<group>"; };
 		75E49BAB2CA3EACF008D72F8 /* Dates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dates.swift; sourceTree = "<group>"; };
@@ -344,8 +348,17 @@
 				3A68F9FE2EFB9FDA00D32561 /* HeroCarouselView.swift */,
 				3A68FA082EFCD12F00D32561 /* LiquidHeroView.swift */,
 				3A68FA0A2EFCD12F00D32561 /* HomeTopBarView.swift */,
+				3A88FA0A2EFCD12F00D32510 /* CoachCardView.swift */,
 			);
 			path = Home;
+			sourceTree = "<group>";
+		};
+		3A88FA0A2EFCD12F00D32530 /* Coach */ = {
+			isa = PBXGroup;
+			children = (
+				3A88FA0A2EFCD12F00D32520 /* CoachTabView.swift */,
+			);
+			path = Coach;
 			sourceTree = "<group>";
 		};
 		3A68FA142F29000C00D32561 /* Components */ = {
@@ -635,6 +648,7 @@
 			isa = PBXGroup;
 			children = (
 				3A68F9FF2EFB9FDA00D32561 /* Home */,
+				3A88FA0A2EFCD12F00D32530 /* Coach */,
 				754B69452D97D65800C0F001 /* Auth */,
 				7549AB452D0E495200313F5C /* Onboarding */,
 				75579F212CD6F2B600845A62 /* Profile */,
@@ -907,6 +921,8 @@
 				3A68FA072EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift in Sources */,
 				3A68FA092EFCD12F00D32561 /* LiquidHeroView.swift in Sources */,
 				3A68FA0B2EFCD12F00D32561 /* HomeTopBarView.swift in Sources */,
+				3A88FA0A2EFCD12F00D32511 /* CoachCardView.swift in Sources */,
+				3A88FA0A2EFCD12F00D32521 /* CoachTabView.swift in Sources */,
 				75B4DF0F2DA2F3EB00FF3C1C /* BankListTabView.swift in Sources */,
 				755F88862C86B8D200BEE12A /* BankAccountView.swift in Sources */,
 				3A68F9F92EFB8C0400D32561 /* EmptyTransactionsView.swift in Sources */,

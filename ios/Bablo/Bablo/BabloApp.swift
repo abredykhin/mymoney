@@ -16,6 +16,7 @@ struct BabloApp: App {
     @StateObject var budgetService = BudgetService()
     @StateObject var transactionsService = TransactionsService()
     @StateObject var plaidService = PlaidService()
+    @StateObject var coachService = CoachService()
     @State private var showBiometricEnrollment = false
     @State private var showAuthView = false
     @State private var isPresentingRequiredOnboarding = false
@@ -48,6 +49,7 @@ struct BabloApp: App {
                         .environmentObject(budgetService)
                         .environmentObject(transactionsService)
                         .environmentObject(plaidService)
+                        .environmentObject(coachService)
                         .environment(\.managedObjectContext, coreDataStack.viewContext)
                         .babloTheme(selectedTheme)
                         .onAppear {
@@ -62,6 +64,7 @@ struct BabloApp: App {
                             .environmentObject(budgetService)
                             .environmentObject(transactionsService)
                             .environmentObject(plaidService)
+                            .environmentObject(coachService)
                             .environment(\.managedObjectContext, coreDataStack.viewContext)
                             .blur(radius: (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated) || showAuthView ? 20 : 0)
                             .animation(.default, value: userAccount.isBiometricallyAuthenticated)
