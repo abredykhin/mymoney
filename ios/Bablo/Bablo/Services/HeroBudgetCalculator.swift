@@ -8,7 +8,14 @@ struct HeroBudgetCalculator {
 
     let monthlyIncome: Double
     let monthlyMandatoryExpenses: Double
-    let variableSpend: Double               // current month variable spend (post-filter)
+    let knownIncomeThisMonth: Double
+    let extraIncomeThisMonth: Double
+    let variableSpend: Double               // month-to-date variable spend
+    let currentWeekVariableSpend: Double    // actual spend in the current calendar week
+    let todayVariableSpend: Double          // actual spend so far today
+    let liquidCashAvailable: Double?
+    let spendingPlanMode: SpendingPlanMode
+    let upcomingUnpaidExpenses: Double
     let previousWeekVariableSpend: Double
     let previousMonthVariableSpend: Double
 
@@ -21,7 +28,27 @@ struct HeroBudgetCalculator {
 
     /// Monthly discretionary = income − mandatory expenses, floored to 0.
     var monthlyDiscretionary: Double {
-        max(0, monthlyIncome - monthlyMandatoryExpenses)
+        max(0, effectiveIncome - monthlyMandatoryExpenses)
+    }
+
+    var effectiveIncome: Double {
+        // Edge Case D: The Paycheck Illusion
+        // If no paycheck has landed yet (knownIncomeThisMonth < 30% of expected) and the user has linked
+        // bank accounts (liquidCashAvailable != nil), expected monthlyIncome is decayed linearly
+        // from Day 15 down to 0 at month-end to prevent overspending on unreceived salary.
+        // Once any actual paycheck lands (knownIncomeThisMonth >= 30%), no decay applies.
+        let expected: Double
+        let salaryThreshold = monthlyIncome * 0.30
+        if knownIncomeThisMonth < salaryThreshold, liquidCashAvailable != nil, dayOfMonth > 15 {
+            let totalDays = Double(daysInMonth)
+            let currentDay = Double(dayOfMonth)
+            let gracePeriod = 15.0
+            let decayFactor = max(0.0, 1.0 - (currentDay - gracePeriod) / (totalDays - gracePeriod))
+            expected = monthlyIncome * decayFactor
+        } else {
+            expected = monthlyIncome
+        }
+        return max(expected, knownIncomeThisMonth) + extraIncomeThisMonth
     }
 
     /// Weekly discretionary = monthly prorated over 7 days.
@@ -46,20 +73,14 @@ struct HeroBudgetCalculator {
 
     // MARK: - Derived: how much has been spent so far in the period
 
-    /// Monthly: use the actual variable spend from the DB.
+    /// Monthly: actual month-to-date variable spend from the DB.
     var monthlySpentSoFar: Double { variableSpend }
 
-    /// Weekly: prorate the month-to-date spend over 7 days.
-    var weeklySpentSoFar: Double {
-        guard dayOfMonth > 0 else { return 0 }
-        return (variableSpend / Double(dayOfMonth)) * 7
-    }
+    /// Weekly: actual spend in the current calendar week (Mon–today).
+    var weeklySpentSoFar: Double { currentWeekVariableSpend }
 
-    /// Daily: average daily spend so far this month.
-    var dailySpentSoFar: Double {
-        guard dayOfMonth > 0 else { return 0 }
-        return variableSpend / Double(dayOfMonth)
-    }
+    /// Daily: actual spend recorded so far today.
+    var dailySpentSoFar: Double { todayVariableSpend }
 
     func spentSoFar(for period: HeroPeriod) -> Double {
         switch period {
@@ -69,16 +90,73 @@ struct HeroBudgetCalculator {
         }
     }
 
+    // MARK: - Derived: budget baseline (stable denominator for "X of Y" display)
+
+    func budget(for period: HeroPeriod) -> Double {
+        switch period {
+        case .month:
+            guard spendingPlanMode == .safeToSpend, let liquidCashAvailable else {
+                return monthlyDiscretionary
+            }
+            // For monthly, the baseline budget is capped by the safe cash available before MTD spending.
+            // safeCash is net liquid cash minus upcoming unpaid mandatory bills in this month.
+            let safeCash = max(0, liquidCashAvailable - upcomingUnpaidExpenses)
+            return max(0, min(monthlyDiscretionary, safeCash + variableSpend))
+            
+        case .week:
+            // Capped weekly budget baseline before this week's spending started.
+            let monthlyRemainingBeforeThisWeek = monthlyDiscretionary - (variableSpend - currentWeekVariableSpend)
+            return max(0, min(weeklyDiscretionary, monthlyRemainingBeforeThisWeek))
+            
+        case .day:
+            // Capped daily budget baseline before today's spending started.
+            let monthlyRemainingBeforeToday = monthlyDiscretionary - (variableSpend - todayVariableSpend)
+            return max(0, min(dailyDiscretionary, monthlyRemainingBeforeToday))
+        }
+    }
+
+    // MARK: - Derived: monthly remaining (used as a cap for sub-month periods)
+
+    /// How much of the monthly discretionary budget is still available.
+    var monthlySpendable: Double {
+        max(0, monthlyDiscretionary - monthlySpentSoFar)
+    }
+
     // MARK: - Derived: spendable remaining
 
     func spendable(for period: HeroPeriod) -> Double {
-        max(0, totalDiscretionary(for: period) - spentSoFar(for: period))
+        let planRemaining = budget(for: period) - spentSoFar(for: period)
+
+        switch period {
+        case .month:
+            guard spendingPlanMode == .safeToSpend, let liquidCashAvailable else {
+                return planRemaining
+            }
+            // Monthly budget is already capped by initial cash, so planRemaining is safe.
+            return planRemaining
+
+        case .week, .day:
+            guard spendingPlanMode == .safeToSpend, let liquidCashAvailable else {
+                return planRemaining
+            }
+            // Under Safe-to-Spend, never show a weekly or daily discretionary budget
+            // that exceeds the actual total liquid cash available for the month.
+            let safeMonthlyRemaining = spendable(for: .month)
+            return max(0, min(planRemaining, safeMonthlyRemaining))
+        }
     }
 
-    // MARK: - Derived: liquid fill ratio (clamped to [0.02, 1.0])
+    // MARK: - Derived: effective budget (denominator for "X of Y" display and fill ratio)
+
+    /// Stable budget baseline that does not expand when overspent.
+    func effectiveBudget(for period: HeroPeriod) -> Double {
+        budget(for: period)
+    }
+
+    // MARK: - Derived: liquid fill ratio (clamped to [0.10, 1.0])
 
     func fillTarget(for period: HeroPeriod) -> Double {
-        let budget = totalDiscretionary(for: period)
+        let budget = effectiveBudget(for: period)
         guard budget > 0 else { return 0.10 }
         let ratio = spendable(for: period) / budget
         // At 0% remaining show a deliberate red pool (10%) rather than an empty gray card.
@@ -97,16 +175,30 @@ struct HeroBudgetCalculator {
         case .day:   return nil
         case .week:
             prev = previousWeekVariableSpend
-            curr = weeklySpentSoFar
+            curr = currentWeekVariableSpend   // actual this-week spend, not MTD proration
             suffix = "vs last wk"
         case .month:
             prev = previousMonthVariableSpend
             curr = variableSpend
             suffix = "vs last mo"
         }
-        guard prev > 0 || curr > 0 else { return nil }
+        // Show delta only when there is effective income to provide context,
+        // and when the current period has real spending to compare.
+        guard effectiveIncome > 0 else { return nil }
+        guard curr > 0 else { return nil }
         let delta = Int((prev - curr).rounded())
         let sign = delta >= 0 ? "+" : "-"
-        return "\(sign)$\(abs(delta).formatted()) \(suffix)"
+        return "\(sign)$\(compactDollar(abs(delta))) \(suffix)"
+    }
+
+    // MARK: - Formatting helpers
+
+    /// Compact dollar string: exact below $1 K, "2.6K" / "26K" at higher amounts.
+    private func compactDollar(_ n: Int) -> String {
+        guard n >= 1_000 else { return n.formatted() }
+        let k = Double(n) / 1_000
+        if k >= 10 { return "\(Int(k.rounded()))K" }
+        let tenths = Int((k * 10).rounded())
+        return tenths % 10 == 0 ? "\(tenths / 10)K" : "\(tenths / 10).\(tenths % 10)K"
     }
 }

@@ -78,6 +78,74 @@ struct SubscriptionsServiceTests {
         #expect(service.subscriptions.first?.description == "Netflix")
     }
 
+    @Test @MainActor func fetchSubscriptionsDoesNotDuplicateSubscriptionFilteringWhenViewIsMissing() async throws {
+        var didRequestFallback = false
+
+        MockURLProtocol.mockHandler = { request in
+            let url = request.url!
+
+            if url.path.contains("/rest/v1/active_subscription_streams") {
+                let response = HTTPURLResponse(
+                    url: url,
+                    statusCode: 404,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                let errorJSON = #"{"code":"42P01","message":"relation \"public.active_subscription_streams\" does not exist"}"#
+                return (response, Data(errorJSON.utf8))
+            }
+
+            if url.path.contains("/rest/v1/recurring_streams_table") {
+                didRequestFallback = true
+                let response = HTTPURLResponse(
+                    url: url,
+                    statusCode: 500,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                let errorJSON = #"{"message":"client should not query raw recurring streams for subscription filtering"}"#
+                return (response, Data(errorJSON.utf8))
+            }
+
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: 500,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, Data("[]".utf8))
+        }
+
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+
+        let client = SupabaseClient(
+            supabaseURL: URL(string: "http://127.0.0.1:54321")!,
+            supabaseKey: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+            options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
+        )
+
+        let service = SubscriptionsService(supabaseClient: client)
+
+        UserAccount.shared.currentUser = Bablo.User(
+            id: "5f6bb5c6-faf0-484f-aee1-23316a77ea90",
+            name: "Test User",
+            token: "mock_token",
+            email: "test@example.com"
+        )
+
+        do {
+            try await service.fetchSubscriptions()
+            Issue.record("Expected the missing database view error to be surfaced")
+        } catch {
+            // The app should rely on the database view instead of duplicating
+            // subscription candidate logic against raw recurring streams.
+        }
+
+        #expect(!didRequestFallback)
+        #expect(service.subscriptions.isEmpty)
+    }
+
     @Test @MainActor func testScanIdleSubscriptions() async throws {
         // Intercept network call for idle scan
         MockURLProtocol.mockHandler = { request in

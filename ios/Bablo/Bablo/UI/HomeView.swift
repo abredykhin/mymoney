@@ -140,6 +140,7 @@ struct HomeView: View {
                 do {
                     // Refresh both accounts and transactions
                     try await accountsService.refreshAccounts(forceRefresh: forceRefresh)
+                    try? await budgetService.fetchTotalBalance()
                     try? await transactionsService.fetchRecentTransactions(forceRefresh: forceRefresh, limit: 5)
                     _ = try? await coachService.fetchCoachInsights()
                     await refreshStreakIfBankLinked()
@@ -160,10 +161,12 @@ struct HomeView: View {
 
         await userAccount.fetchProfile()
         await budgetService.fetchBudgetSummary()
+        try? await budgetService.fetchTotalBalance()
 
         if !isOffline {
             do {
                 try await accountsService.refreshAccounts(forceRefresh: true)
+                try? await budgetService.fetchTotalBalance()
                 try? await transactionsService.fetchRecentTransactions(forceRefresh: true, limit: 5)
                 _ = try? await coachService.fetchCoachInsights()
                 await refreshStreakIfBankLinked()

@@ -30,6 +30,22 @@ Deno.serve(async (req: Request) => {
       .eq('id', user.id)
       .single();
 
+    // Fetch accounts to calculate net liquid cash
+    const { data: accounts } = await supabase
+      .from('accounts')
+      .select('current_balance, type')
+      .eq('hidden', false);
+
+    const netCash = (accounts || []).reduce((sum, acc) => {
+      const type = (acc.type || '').toLowerCase();
+      if (type === 'depository') {
+        return sum + Number(acc.current_balance || 0);
+      } else if (type === 'credit') {
+        return sum - Number(acc.current_balance || 0);
+      }
+      return sum;
+    }, 0);
+
     // Fetch last 14 days of transactions
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 14);
@@ -48,6 +64,12 @@ Deno.serve(async (req: Request) => {
       .select('description, monthly_amount, last_date')
       .eq('user_id', user.id)
       .order('monthly_amount', { ascending: false });
+
+    // Fetch active mandatory expense streams (including rent/mortgage) for upcoming bill alerts
+    const { data: mandatoryStreams } = await supabase
+      .from('active_mandatory_expense_streams')
+      .select('description, average_amount, monthly_amount, predicted_next_date, personal_finance_category')
+      .eq('user_id', user.id);
 
     const fallbackResponse = {
       badge: "COACH • INSIGHT",
@@ -78,22 +100,27 @@ Deno.serve(async (req: Request) => {
         Analyze the following financial data and write a short, highly-contextual spending nudge.
         
         User Context:
-        - Monthly Income: $${profile?.monthly_income ?? 0}
-        - Fixed Expenses: $${profile?.monthly_mandatory_expenses ?? 0}
+        - Current Net Cash Available (Bank minus Credit Debt): $${netCash}
+        - Monthly Income (Expected): $${profile?.monthly_income ?? 0}
+        - Fixed Expenses (Expected Monthly): $${profile?.monthly_mandatory_expenses ?? 0}
+        
+        Upcoming/Active Bills (Mandatory Recurring Streams):
+        ${JSON.stringify(mandatoryStreams || [])}
         
         Recent Transactions (Last 14 Days):
         ${JSON.stringify(txs || [])}
         
-        Active Recurring Subscriptions:
+        Active Recurring Subscriptions (Optional):
         ${JSON.stringify(subs || [])}
         
         Rules:
-        1. Focus on the single largest area of overspending or variable leak (e.g. Dining out, Coffee, Subscriptions).
-        2. Give a highly specific, mathematical recommendation (e.g., "Pause coffee for 3 days and bank ~$24").
-        3. Keep the output extremely brief (max 2 sentences for notification, 2 for detail).
-        4. Return a valid JSON object matching this structure EXACTLY:
+        1. CASH SQUEEZE RULE (High Priority): If the user's Current Net Cash Available is low (e.g. under $1,000) and they have a large mandatory bill (like rent, mortgage, or credit payment) due in the next 10 days that exceeds their cash available, prioritize alerting them about this squeeze. Challenge them to a "zero-spend lockdown" until the next paycheck hits.
+        2. Otherwise, focus on the single largest area of overspending or variable leak (e.g. Dining out, Coffee, Subscriptions).
+        3. Give a highly specific, mathematical recommendation (e.g., "Pause coffee for 3 days and bank ~$24").
+        4. Keep the output extremely brief (max 2 sentences for notification, 2 for detail).
+        5. Return a valid JSON object matching this structure EXACTLY:
         {
-          "badge": "COACH • JUST NOW",
+          "badge": "COACH • URGENT" or "COACH • INSIGHT",
           "headline": "headline message here",
           "nudge_text": "nudge text with pacing and exact numbers here",
           "action_label": "action button text",

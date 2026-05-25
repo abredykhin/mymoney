@@ -37,6 +37,7 @@ struct Profile: Codable, Equatable {
     let firstName: String?
     let monthlyIncome: Double
     let monthlyMandatoryExpenses: Double
+    let spendingPlanMode: SpendingPlanMode
     let trackedSpendingCategories: [String]
 
     enum CodingKeys: String, CodingKey {
@@ -45,6 +46,7 @@ struct Profile: Codable, Equatable {
         case firstName = "first_name"
         case monthlyIncome = "monthly_income"
         case monthlyMandatoryExpenses = "monthly_mandatory_expenses"
+        case spendingPlanMode = "spending_plan_mode"
         case trackedSpendingCategories = "tracked_spending_categories"
     }
 
@@ -55,6 +57,8 @@ struct Profile: Codable, Equatable {
         firstName = try c.decodeIfPresent(String.self, forKey: .firstName)
         monthlyIncome = try c.decode(Double.self, forKey: .monthlyIncome)
         monthlyMandatoryExpenses = try c.decode(Double.self, forKey: .monthlyMandatoryExpenses)
+        let rawSpendingPlanMode = try c.decodeIfPresent(String.self, forKey: .spendingPlanMode)
+        spendingPlanMode = rawSpendingPlanMode.flatMap(SpendingPlanMode.init(rawValue:)) ?? .safeToSpend
         trackedSpendingCategories = (try? c.decodeIfPresent([String].self, forKey: .trackedSpendingCategories)) ?? []
     }
 }
@@ -96,6 +100,7 @@ class UserAccount: ObservableObject {
 
     @Published var currentUser: User? = nil
     @Published var profile: Profile? = nil
+    @Published var spendingPlanMode: SpendingPlanMode = .safeToSpend
     @Published var isSignedIn: Bool = false
     @Published var isBiometricallyAuthenticated = false
     @Published var isBiometricEnabled = false
@@ -114,6 +119,7 @@ class UserAccount: ObservableObject {
         !hasCompletedOnboarding && !isBudgetSetup
     }
 
+    private let spendingPlanModeStore = SpendingPlanModeStore()
     private let valet = Valet.valet(with: Identifier(nonEmpty: "BabloApp")!, accessibility: .whenUnlocked)
     private let supabase = SupabaseManager.shared.client
 
@@ -140,6 +146,7 @@ class UserAccount: ObservableObject {
                 await MainActor.run {
                     self.currentUser = nil
                     self.profile = nil
+                    self.spendingPlanMode = .safeToSpend
                     self.isSignedIn = false
                 }
             case .tokenRefreshed:
@@ -163,6 +170,7 @@ class UserAccount: ObservableObject {
                 self.profile = nil
             }
             self.currentUser = user
+            self.spendingPlanMode = self.spendingPlanModeStore.mode(for: user.id)
             self.isSignedIn = true
         }
 
@@ -186,6 +194,8 @@ class UserAccount: ObservableObject {
             
             await MainActor.run {
                 self.profile = fetchedProfile
+                self.spendingPlanMode = fetchedProfile.spendingPlanMode
+                self.spendingPlanModeStore.save(fetchedProfile.spendingPlanMode, for: user.id)
                 Logger.i("UserAccount: Profile fetched for \(fetchedProfile.username). Budget setup: \(isBudgetSetup)")
             }
         } catch let error as PostgrestError where error.code == "PGRST116" {
@@ -243,6 +253,34 @@ class UserAccount: ObservableObject {
             .execute()
 
         await fetchProfile()
+    }
+
+    /// Save the user's selected Home hero spending plan mode.
+    func updateSpendingPlanMode(_ mode: SpendingPlanMode) async throws {
+        guard let user = currentUser else { return }
+
+        let previousMode = spendingPlanMode
+        spendingPlanMode = mode
+        spendingPlanModeStore.save(mode, for: user.id)
+
+        struct SpendingPlanModeUpdate: Encodable {
+            let spending_plan_mode: String
+        }
+
+        do {
+            try await supabase
+                .from("profiles")
+                .update(SpendingPlanModeUpdate(spending_plan_mode: mode.rawValue))
+                .eq("id", value: user.id)
+                .execute()
+
+            await fetchProfile()
+        } catch {
+            spendingPlanMode = previousMode
+            spendingPlanModeStore.save(previousMode, for: user.id)
+            Logger.e("UserAccount: Failed to update spending plan mode: \(error)")
+            throw error
+        }
     }
 
     /// Upsert manual recurring streams for fixed expense categories (onboarding Step 4).

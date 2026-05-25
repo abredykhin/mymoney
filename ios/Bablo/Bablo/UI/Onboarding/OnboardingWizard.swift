@@ -117,10 +117,6 @@ struct OnboardingWizard: View {
         .sheet(isPresented: $shouldPresentLink, onDismiss: {
             plaidService.currentHandler = nil
             authManager.recordSuccessfulAuthentication()
-            // If they just linked a bank, jump to accounts-connected screen
-            if !accountsService.banksWithAccounts.isEmpty {
-                withAnimation { currentStep = .accountsConnected }
-            }
         }) {
             if let linkController {
                 linkController.ignoresSafeArea()
@@ -258,8 +254,11 @@ struct OnboardingWizard: View {
         var config = LinkTokenConfiguration(token: token) { success in
             Task {
                 try? await plaidService.saveNewItem(publicToken: success.publicToken, institutionId: success.metadata.institution.id)
-                try? await accountsService.refreshAccounts()
-                await MainActor.run { self.shouldPresentLink = false }
+                try? await accountsService.refreshAccounts(forceRefresh: true)
+                await MainActor.run {
+                    self.shouldPresentLink = false
+                    withAnimation { self.currentStep = .accountsConnected }
+                }
             }
         }
         config.onExit = { _ in shouldPresentLink = false }
