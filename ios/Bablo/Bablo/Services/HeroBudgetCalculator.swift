@@ -166,7 +166,9 @@ struct HeroBudgetCalculator {
     // MARK: - Derived: delta label vs previous period
 
     /// Returns "+$42 vs last wk" / "-$12 vs last mo" (nil when no prior data).
-    /// Positive delta = spent LESS than the previous period (more money left).
+    /// Positive delta = MORE left than at this point last period (currentSpendable > previousSpendable).
+    /// Since both spendables share the same budget denominator the arithmetic reduces to
+    /// previousSpend − currentSpend, which is what the implementation computes.
     func deltaLabel(for period: HeroPeriod) -> String? {
         let prev: Double
         let curr: Double
@@ -186,6 +188,18 @@ struct HeroBudgetCalculator {
         // and when the current period has real spending to compare.
         guard effectiveIncome > 0 else { return nil }
         guard curr > 0 else { return nil }
+        // Only compare against a previous period that was within budget.
+        // If last period's spending exceeded the discretionary budget, it contained
+        // extraordinary expenses (e.g. one-time legal fees) that sit outside the
+        // discretionary framework — projecting them in would produce a fictional
+        // "remaining" figure for last period and a misleading delta.
+        let periodBudget: Double
+        switch period {
+        case .week:  periodBudget = weeklyDiscretionary
+        case .month: periodBudget = monthlyDiscretionary
+        case .day:   periodBudget = dailyDiscretionary
+        }
+        guard prev <= periodBudget else { return nil }
         let delta = Int((prev - curr).rounded())
         let sign = delta >= 0 ? "+" : "-"
         return "\(sign)$\(compactDollar(abs(delta))) \(suffix)"

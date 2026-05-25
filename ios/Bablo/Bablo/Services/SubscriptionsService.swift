@@ -9,6 +9,7 @@ import Supabase
 @MainActor
 class SubscriptionsService: ObservableObject {
     @Published var subscriptions: [RecurringStream] = []
+    @Published var allRecurringStreams: [RecurringStream] = []
     @Published var idleCount: Int = 0
     @Published var isLoading: Bool = false
     @Published var error: Error? = nil
@@ -30,15 +31,24 @@ class SubscriptionsService: ObservableObject {
         defer { isLoading = false }
 
         do {
-            let streams: [RecurringStream] = try await supabase
+            async let fetchSubs: [RecurringStream] = supabase
                 .from("active_subscription_streams")
                 .select("*")
                 .eq("user_id", value: userId)
                 .execute()
                 .value
+            
+            async let fetchAllStreams: [RecurringStream] = supabase
+                .from("active_mandatory_expense_streams")
+                .select("*")
+                .eq("user_id", value: userId)
+                .execute()
+                .value
 
-            self.subscriptions = streams
-            Logger.i("SubscriptionsService: Loaded \(streams.count) active subscriptions")
+            let (subs, all) = try await (fetchSubs, fetchAllStreams)
+            self.subscriptions = subs
+            self.allRecurringStreams = all
+            Logger.i("SubscriptionsService: Loaded \(subs.count) active subscriptions and \(all.count) active recurring streams")
         } catch {
             Logger.e("SubscriptionsService: Failed to fetch subscriptions: \(error)")
             self.error = error

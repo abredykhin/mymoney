@@ -12,7 +12,7 @@ import Supabase
 struct SubscriptionsServiceTests {
     
     @Test @MainActor func testFetchSubscriptions() async throws {
-        // Intercept network call to fetch subscriptions
+        // Intercept network call to fetch subscriptions and all recurring streams
         MockURLProtocol.mockHandler = { request in
             let url = request.url!
             let response = HTTPURLResponse(
@@ -22,30 +22,55 @@ struct SubscriptionsServiceTests {
                 headerFields: ["Content-Type": "application/json"]
             )!
             
-            #expect(url.path.contains("/rest/v1/active_subscription_streams"))
             #expect(url.query?.contains("user_id=eq.") == true)
             
-            let streamsJSON = """
-            [
-              {
-                "id": 101,
-                "description": "Netflix",
-                "merchant_name": "Netflix",
-                "frequency": "MONTHLY",
-                "average_amount": 15.99,
-                "monthly_amount": 15.99,
-                "type": "expense",
-                "status": "MATURE",
-                "is_active": true,
-                "is_user_modified": false,
-                "user_marked_recurring": null,
-                "is_excluded": false,
-                "is_manual": false,
-                "match_pattern": null
-              }
-            ]
-            """
-            return (response, streamsJSON.data(using: .utf8)!)
+            if url.path.contains("/rest/v1/active_subscription_streams") {
+                let streamsJSON = """
+                [
+                  {
+                    "id": 101,
+                    "description": "Netflix",
+                    "merchant_name": "Netflix",
+                    "frequency": "MONTHLY",
+                    "average_amount": 15.99,
+                    "monthly_amount": 15.99,
+                    "type": "expense",
+                    "status": "MATURE",
+                    "is_active": true,
+                    "is_user_modified": false,
+                    "user_marked_recurring": null,
+                    "is_excluded": false,
+                    "is_manual": false,
+                    "match_pattern": null
+                  }
+                ]
+                """
+                return (response, streamsJSON.data(using: .utf8)!)
+            } else if url.path.contains("/rest/v1/active_mandatory_expense_streams") {
+                let streamsJSON = """
+                [
+                  {
+                    "id": 102,
+                    "description": "Rent",
+                    "merchant_name": "Rent",
+                    "frequency": "MONTHLY",
+                    "average_amount": 1500.0,
+                    "monthly_amount": 1500.0,
+                    "type": "expense",
+                    "status": "MATURE",
+                    "is_active": true,
+                    "is_user_modified": false,
+                    "user_marked_recurring": null,
+                    "is_excluded": false,
+                    "is_manual": false,
+                    "match_pattern": null
+                  }
+                ]
+                """
+                return (response, streamsJSON.data(using: .utf8)!)
+            }
+            
+            return (response, "[]".data(using: .utf8)!)
         }
         
         let config = URLSessionConfiguration.ephemeral
@@ -69,6 +94,7 @@ struct SubscriptionsServiceTests {
         
         // Assert initial state is empty
         #expect(service.subscriptions.isEmpty)
+        #expect(service.allRecurringStreams.isEmpty)
         
         // Fetch
         try await service.fetchSubscriptions()
@@ -76,6 +102,10 @@ struct SubscriptionsServiceTests {
         // Assert loaded from the database-filtered subscriptions endpoint.
         #expect(service.subscriptions.count == 1)
         #expect(service.subscriptions.first?.description == "Netflix")
+        
+        // Assert all recurring streams loaded.
+        #expect(service.allRecurringStreams.count == 1)
+        #expect(service.allRecurringStreams.first?.description == "Rent")
     }
 
     @Test @MainActor func fetchSubscriptionsDoesNotDuplicateSubscriptionFilteringWhenViewIsMissing() async throws {

@@ -5,7 +5,7 @@ struct RecentWidgetView: View {
     @Environment(\.babloTheme) private var theme
 
     private var recentTransactions: [Transaction] {
-        Array(transactionsService.transactions.prefix(4))
+        Array(transactionsService.transactions.prefix(8))
     }
 
     var body: some View {

@@ -372,6 +372,30 @@ struct HeroBudgetCalculatorTests {
         #expect(c.deltaLabel(for: .day) == nil)
     }
 
+    /// Previous month had extraordinary spending beyond the discretionary budget
+    /// (e.g. large legal fees). Comparing remaining budget against a fictional negative
+    /// baseline is meaningless — the label must be hidden.
+    @Test func deltaLabelMonthHiddenWhenPreviousMonthExceededBudget() {
+        // income=10990, mandatory=4366 → discretionary=6624
+        // prevMonthSpend=30900 > 6624 → nil
+        let c = calc(income: 10_990, mandatory: 4_366, variableSpend: 5_990, prevMonth: 30_900)
+        #expect(c.deltaLabel(for: .month) == nil)
+    }
+
+    /// Previous month within budget — delta is a valid remaining-budget comparison and must show.
+    @Test func deltaLabelMonthShownWhenPreviousMonthWithinBudget() {
+        // income=10990, mandatory=4366 → discretionary=6624
+        // prevMonthSpend=4000 <= 6624, currSpend=5990 → delta = 4000-5990 = -1990 → "-$1,990 vs last mo"
+        let c = calc(income: 10_990, mandatory: 4_366, variableSpend: 5_990, prevMonth: 4_000)
+        #expect(c.deltaLabel(for: .month) != nil)
+    }
+
+    /// Same guard for weeks: if the previous week blew its budget, hide the label.
+    @Test func deltaLabelWeekHiddenWhenPreviousWeekExceededBudget() {
+        // discretionary=3000/31*7≈677, prevWeek=1500 > 677 → nil
+        let c = calc(income: 5_000, mandatory: 2_000, currentWeekVariableSpend: 200, prevWeek: 1_500)
+        #expect(c.deltaLabel(for: .week) == nil)
+    }
 
     // MARK: - Monthly cap: week/day cannot exceed what's left for the month
 
