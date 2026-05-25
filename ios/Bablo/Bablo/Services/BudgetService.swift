@@ -172,38 +172,36 @@ enum SpendDateRange: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Get start date for this range
+    /// Get start date for this range, in local time to match Plaid transaction dates.
     func startDate() -> String {
-        var calendar = Calendar.current
-        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let calendar = Calendar.current   // local timezone, local locale
         let now = Date()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        dateFormatter.timeZone = TimeZone(identifier: "UTC")
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.calendar = calendar
+        fmt.timeZone = calendar.timeZone
 
         let startDate: Date
         switch self {
         case .week:
             startDate = calendar.date(byAdding: .day, value: -7, to: now) ?? now
         case .month:
-            // Get the first day of the current month
             let components = calendar.dateComponents([.year, .month], from: now)
             startDate = calendar.date(from: components) ?? now
         case .year:
-            // Get the first day of the current year
             let components = calendar.dateComponents([.year], from: now)
             startDate = calendar.date(from: components) ?? now
         }
 
-        return dateFormatter.string(from: startDate)
+        return fmt.string(from: startDate)
     }
 
-    /// Get end date (today)
+    /// Get end date (today) in local time.
     func endDate() -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        dateFormatter.timeZone = TimeZone(identifier: "UTC")
-        return dateFormatter.string(from: Date())
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.timeZone = Calendar.current.timeZone
+        return fmt.string(from: Date())
     }
 }
 
@@ -302,6 +300,34 @@ class BudgetService: ObservableObject {
     @Published var allBudgetItems: [BudgetItem] = []
     @Published var allRecurringStreams: [RecurringStream] = []
     
+    /// Total upcoming unpaid mandatory expenses in the next 14 days.
+    /// This rolling 14-day lookahead window prevents "month-boundary cliffs" (e.g., rent due
+    /// on the 1st of the next month is captured on the 25th of the current month).
+    var upcomingUnpaidBills: Double {
+        let calendar = Calendar.current
+        let now = Date()
+        let todayStr = SpendDateRange.month.endDate() // "yyyy-MM-dd" local date
+        
+        guard let fourteenDaysLater = calendar.date(byAdding: .day, value: 14, to: now) else { return 0 }
+        
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.calendar = calendar
+        fmt.timeZone = calendar.timeZone
+        
+        let fourteenDaysLaterStr = fmt.string(from: fourteenDaysLater)
+        
+        return allRecurringStreams.reduce(0.0) { sum, stream in
+            guard let nextDateStr = stream.predictedNextDate else { return sum }
+            
+            // The bill must be scheduled for today or in the future AND fall within the next 14 days.
+            if nextDateStr >= todayStr && nextDateStr <= fourteenDaysLaterStr {
+                return sum + stream.averageAmount
+            }
+            return sum
+        }
+    }
+    
     // Dynamic income data
     @Published var knownIncomeThisMonth: Double = 0
     @Published var extraIncomeThisMonth: Double = 0
@@ -309,6 +335,9 @@ class BudgetService: ObservableObject {
     // Previous-period spend for delta comparison in LiquidHeroView
     @Published var previousWeekVariableSpend: Double = 0
     @Published var previousMonthVariableSpend: Double = 0
+    // Current-period actuals (actual calendar-week and today spend, not MTD prorations)
+    @Published var currentWeekVariableSpend: Double = 0
+    @Published var todayVariableSpend: Double = 0
     
     // Checkpoint 2: Pulse Screen Properties
     @Published var dailyEnergy: [DailyEnergyItem] = []
@@ -326,70 +355,6 @@ class BudgetService: ObservableObject {
     }
     
     // MARK: - Hero Card Helpers
-    
-    /// Estimated total variable spending for the month
-    var variableSpendingProjection: Double {
-        let currentVariableSpend = variableSpend
-        
-        let calendar = Calendar.current
-        let now = Date()
-        
-        // Get number of days in current month
-        guard let range = calendar.range(of: .day, in: .month, for: now) else { return currentVariableSpend }
-        let totalDaysInMonth = Double(range.count)
-        
-        // Get current day of month
-        let currentDay = Double(calendar.component(.day, from: now))
-        
-        // Avoid division by zero
-        if currentDay == 0 { return 0 }
-        
-        // Simple linear extrapolation
-        return (currentVariableSpend / currentDay) * totalDaysInMonth
-    }
-    
-    var daysRemainingInMonth: Int {
-        let calendar = Calendar.current
-        let now = Date()
-        guard let range = calendar.range(of: .day, in: .month, for: now) else { return 0 }
-        let totalDays = range.count
-        let currentDay = calendar.component(.day, from: now)
-        return max(0, totalDays - currentDay)
-    }
-    
-    var daysRemainingInCurrentWeek: Int {
-        // Assuming week ends on Saturday (or standard Gregorian). 
-        // 1 = Sunday, 7 = Saturday.
-        let calendar = Calendar.current
-        let weekday = calendar.component(.weekday, from: Date()) // 1...7
-        // Let's assume we want days left including today? Or remaining?
-        // "Safe to spend for the rest of this week" implies remaining days.
-        // If today is Monday (2), and week ends Saturday (7), we have Tue, Wed, Thu, Fri, Sat = 5 days.
-        // Let's strictly say "Days until end of week".
-        // Use user's locale for week definition?
-        // Simple approach: 7 - weekday + 1 (if we count today) or just strict remaining.
-        // User asked: "how many days are left in this week"
-        
-        // Support Sunday-start or Monday-start based on Locale?
-        // Let's use 7 (Saturday) as end for standard US, but let's standardise to "End of Week" 
-        // being the start of next week - 1 day.
-        
-        // Simple logic: Days until the next Sunday (start of new week).
-        // If today is Sunday (1), days remaining = 6 (Mon-Sat)? Or is Sunday the end?
-        // Let's assume standard ISO week (Monday start)? Or US (Sunday start)?
-        // MyMoney seems generic. Let's assume "Rest of this week" means until next Monday?? 
-        // Or until Saturday night?
-        
-        // Let's go with: Week ends on Saturday.
-        
-        // If today is Friday (6), days left = 1 (Saturday).
-        // If today is Saturday (7), days left = 0.
-        
-        // Let's include TODAY in the logic "Safe to spend THIS week", usually implies the budget for `today...end_of_week`.
-        // So if today is Fri, I have budget for Fri, Sat. = 2 days.
-        
-        return 7 - weekday + 1
-    }
 
     // MARK: - Public Methods
 
@@ -644,20 +609,26 @@ class BudgetService: ObservableObject {
             await fetchRecurringStreams() // CHANGED: was fetchBudgetItems()
             await fetchActualIncome()
             try? await fetchVariableSpend() // Fetch variable spend to calc budget
-            await fetchPreviousPeriodSpend()
+            await fetchAllPeriodSpend()
         } catch {
             Logger.e("BudgetService: Failed to fetch budget summary: \(error)")
         }
     }
 
-    /// Fetch previous-week and previous-month variable spend for delta display
-    private func fetchPreviousPeriodSpend() async {
+    /// Fetch spend for all comparison windows used by the hero card delta label and fill.
+    /// Runs all four DB queries concurrently.
+    private func fetchAllPeriodSpend() async {
         let ranges = PreviousPeriodDateRange.compute()
-        let wk = await fetchVariableSpendRaw(start: ranges.prevWeekStart, end: ranges.prevWeekEnd)
-        let mo = await fetchVariableSpendRaw(start: ranges.prevMonthStart, end: ranges.prevMonthEnd)
-        previousWeekVariableSpend = wk
-        previousMonthVariableSpend = mo
-        Logger.d("BudgetService: Previous-period spend — week (\(ranges.prevWeekStart)–\(ranges.prevWeekEnd)): \(wk), month (\(ranges.prevMonthStart)–\(ranges.prevMonthEnd)): \(mo)")
+        async let wk   = fetchVariableSpendRaw(start: ranges.prevWeekStart,    end: ranges.prevWeekSameDayEnd)
+        async let mo   = fetchVariableSpendRaw(start: ranges.prevMonthStart,   end: ranges.prevMonthSameDayEnd)
+        async let curWk = fetchVariableSpendRaw(start: ranges.currentWeekStart, end: ranges.todayDate)
+        async let today = fetchVariableSpendRaw(start: ranges.todayDate,        end: ranges.todayDate)
+        let (prevWk, prevMo, thisWk, thisDay) = await (wk, mo, curWk, today)
+        previousWeekVariableSpend  = prevWk
+        previousMonthVariableSpend = prevMo
+        currentWeekVariableSpend   = thisWk
+        todayVariableSpend         = thisDay
+        Logger.d("BudgetService: Period spend — prevWk: \(prevWk), prevMo: \(prevMo), curWk: \(thisWk), today: \(thisDay)")
     }
 
     /// Fetch all recurring streams (income and expenses) from Plaid
@@ -666,43 +637,37 @@ class BudgetService: ObservableObject {
 
         do {
             let streams: [RecurringStream] = try await supabase
-                .from("recurring_streams_table")
+                .from("active_mandatory_expense_streams")
                 .select("*")
                 .eq("user_id", value: userId)
-                .eq("is_active", value: true)
-                .eq("is_excluded", value: false)
                 .execute()
                 .value
 
             self.allRecurringStreams = streams
-            Logger.i("BudgetService: Loaded \(streams.count) recurring streams from Plaid")
+            Logger.i("BudgetService: Loaded \(streams.count) active mandatory expense streams")
         } catch {
-            Logger.e("BudgetService: Failed to fetch recurring streams: \(error)")
+            Logger.e("BudgetService: Failed to fetch active mandatory expense streams: \(error)")
         }
     }
 
     /// Fetch actual income transactions for the current month and categorize them
     func fetchActualIncome() async {
-        guard let userId = UserAccount.shared.currentUser?.id else { return }
+        guard UserAccount.shared.currentUser?.id != nil else { return }
         
         let range = SpendDateRange.month
         let startDate = range.startDate()
         let endDate = range.endDate()
         
         do {
-            // Fetch all income transactions in date range from the 'transactions' view to get account type
-            // Sign logic: Negative amounts are income
+            // Fetch income from the DB-filtered view. The view excludes transfers,
+            // brokerage movements, wire reversals, and other non-spendable inflows.
             let transactions: [TransactionForBreakdown] = try await supabase
-                .from("transactions")
+                .from("spendable_income_transactions")
                 .select("amount, name, type, is_recurring")
                 .gte("date", value: startDate)
                 .lte("date", value: endDate)
-                .lt("amount", value: 0) // Negative = Money In
                 .execute()
                 .value
-            
-            let incomeStreams = allRecurringStreams
-                .filter { $0.type == "income" }
             
             var knownTotal: Double = 0
             var extraTotal: Double = 0

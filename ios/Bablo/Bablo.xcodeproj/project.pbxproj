@@ -96,6 +96,7 @@
 		757ABF792C181C3D00DF8CA8 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF782C181C3D00DF8CA8 /* Logger.swift */; };
 		757ABF7B2C181C4200DF8CA8 /* View+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */; };
 		757ABF872C181D3400DF8CA8 /* UserAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF862C181D3400DF8CA8 /* UserAccount.swift */; };
+		757ABF882C181D3400DF8CA8 /* SpendingPlanMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF882C181D3300DF8CA8 /* SpendingPlanMode.swift */; };
 		757ABF8A2C181DCC00DF8CA8 /* Valet in Frameworks */ = {isa = PBXBuildFile; productRef = 757ABF892C181DCC00DF8CA8 /* Valet */; };
 		757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF922C18243100DF8CA8 /* WelcomeView.swift */; };
 		7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7590F2972C86470400BCCDE6 /* HomeView.swift */; };
@@ -132,6 +133,7 @@
 		A1B2C3D4E5F60003AABBCCDD /* PreviousPeriodDateRangeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002AABBCCDD /* PreviousPeriodDateRangeTests.swift */; };
 		A1B2C3D4E5F60005AABBCCDD /* HeroBudgetCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60004AABBCCDD /* HeroBudgetCalculator.swift */; };
 		A1B2C3D4E5F60007AABBCCDD /* HeroBudgetCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60006AABBCCDD /* HeroBudgetCalculatorTests.swift */; };
+		B2C3D4E5F60009AABBCCDDEE /* SpendingPlanModeStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60008AABBCCDDEE /* SpendingPlanModeStoreTests.swift */; };
 		A1B2C3D4E5F60009AABBCCDD /* PulseServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60008AABBCCDD /* PulseServiceTests.swift */; };
 		A89308744EEB0F67DC368913 /* TransactionsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF55D04A720BC63115F7BF7 /* TransactionsServiceTests.swift */; };
 		B8203166A3A9DB62F68CD955 /* OnboardingFixedExpensesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB442FCBA28DFC63AED0C61 /* OnboardingFixedExpensesView.swift */; };
@@ -255,6 +257,7 @@
 		757ABF782C181C3D00DF8CA8 /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		757ABF7A2C181C4200DF8CA8 /* View+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Extensions.swift"; sourceTree = "<group>"; };
 		757ABF862C181D3400DF8CA8 /* UserAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAccount.swift; sourceTree = "<group>"; };
+		757ABF882C181D3300DF8CA8 /* SpendingPlanMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingPlanMode.swift; sourceTree = "<group>"; };
 		757ABF922C18243100DF8CA8 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		7590F2972C86470400BCCDE6 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		7590F29A2C86471D00BCCDE6 /* LinkButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkButtonView.swift; sourceTree = "<group>"; };
@@ -285,6 +288,7 @@
 		A1B2C3D4E5F60002AABBCCDD /* PreviousPeriodDateRangeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviousPeriodDateRangeTests.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60004AABBCCDD /* HeroBudgetCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroBudgetCalculator.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60006AABBCCDD /* HeroBudgetCalculatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroBudgetCalculatorTests.swift; sourceTree = "<group>"; };
+		B2C3D4E5F60008AABBCCDDEE /* SpendingPlanModeStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingPlanModeStoreTests.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60008AABBCCDD /* PulseServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulseServiceTests.swift; sourceTree = "<group>"; };
 		A3B29B2642CB14C35C129E02 /* OnboardingCTAButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingCTAButton.swift; sourceTree = "<group>"; };
 		AC25787544568673BCA76D74 /* ComingUpWidgetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComingUpWidgetView.swift; sourceTree = "<group>"; };
@@ -590,6 +594,7 @@
 				C54E0A69D0900E1468D5091D /* ProfileDecodingTests.swift */,
 				A1B2C3D4E5F60002AABBCCDD /* PreviousPeriodDateRangeTests.swift */,
 				A1B2C3D4E5F60006AABBCCDD /* HeroBudgetCalculatorTests.swift */,
+				B2C3D4E5F60008AABBCCDDEE /* SpendingPlanModeStoreTests.swift */,
 				A1B2C3D4E5F60008AABBCCDD /* PulseServiceTests.swift */,
 				C59BAE89E94D453197B27FD8 /* PlaidCategoryMapperTests.swift */,
 				EE66F55007324FE2A12DEE9C /* CategoryBreakdownTests.swift */,
@@ -635,6 +640,7 @@
 			children = (
 				75668FDB2D83D012003A3D97 /* Cache */,
 				757ABF862C181D3400DF8CA8 /* UserAccount.swift */,
+				757ABF882C181D3300DF8CA8 /* SpendingPlanMode.swift */,
 				6E5474B40C370C7373F06D32 /* FixedExpenseCategory.swift */,
 				F627E8B0014BC6160A998D2B /* FlexibleSpendingCategory.swift */,
 				C90B633301DD401FB4FCCB9B /* FlexibleSpendingCategory+PlaidMapping.swift */,
@@ -896,6 +902,7 @@
 				754B694B2D97D8E500C0F001 /* BiometricsEnrollmentView.swift in Sources */,
 				754B69432D97D19800C0F001 /* BiometricAuthService.swift in Sources */,
 				757ABF872C181D3400DF8CA8 /* UserAccount.swift in Sources */,
+				757ABF882C181D3400DF8CA8 /* SpendingPlanMode.swift in Sources */,
 				75668FE22D83D753003A3D97 /* TransactionsManager.swift in Sources */,
 				75D39A482EEE878500866367 /* TransactionsService.swift in Sources */,
 				75D39A492EEE878500866367 /* AccountsService.swift in Sources */,
@@ -1007,6 +1014,7 @@
 				F8E5C258DCB524B34EECA4E7 /* ProfileDecodingTests.swift in Sources */,
 				A1B2C3D4E5F60003AABBCCDD /* PreviousPeriodDateRangeTests.swift in Sources */,
 				A1B2C3D4E5F60007AABBCCDD /* HeroBudgetCalculatorTests.swift in Sources */,
+				B2C3D4E5F60009AABBCCDDEE /* SpendingPlanModeStoreTests.swift in Sources */,
 				A1B2C3D4E5F60009AABBCCDD /* PulseServiceTests.swift in Sources */,
 				F83BC2B9D87F40C49452EB32 /* PlaidCategoryMapperTests.swift in Sources */,
 				EAA8C3A1F8A7496FB5FC7818 /* CategoryBreakdownTests.swift in Sources */,

@@ -21,6 +21,7 @@ enum HeroPeriod: String, CaseIterable {
 
 struct LiquidHeroView: View {
     @EnvironmentObject private var budgetService: BudgetService
+    @EnvironmentObject private var userAccount: UserAccount
     @Environment(\.babloTheme) private var theme
 
     @Binding var period: HeroPeriod
@@ -38,7 +39,14 @@ struct LiquidHeroView: View {
         return HeroBudgetCalculator(
             monthlyIncome: budgetService.monthlyIncome,
             monthlyMandatoryExpenses: budgetService.monthlyMandatoryExpenses,
+            knownIncomeThisMonth: budgetService.knownIncomeThisMonth,
+            extraIncomeThisMonth: budgetService.extraIncomeThisMonth,
             variableSpend: budgetService.variableSpend,
+            currentWeekVariableSpend: budgetService.currentWeekVariableSpend,
+            todayVariableSpend: budgetService.todayVariableSpend,
+            liquidCashAvailable: budgetService.totalBalance?.balance,
+            spendingPlanMode: userAccount.spendingPlanMode,
+            upcomingUnpaidExpenses: budgetService.upcomingUnpaidBills,
             previousWeekVariableSpend: budgetService.previousWeekVariableSpend,
             previousMonthVariableSpend: budgetService.previousMonthVariableSpend,
             dayOfMonth: cal.component(.day, from: now),
@@ -46,7 +54,7 @@ struct LiquidHeroView: View {
         )
     }
 
-    private var totalDiscretionary: Double { calculator.totalDiscretionary(for: period) }
+    private var effectiveBudget: Double     { calculator.effectiveBudget(for: period) }
     private var spentSoFar: Double         { calculator.spentSoFar(for: period) }
     private var spendable: Double          { calculator.spendable(for: period) }
     private var fillTarget: Double         { calculator.fillTarget(for: period) }
@@ -94,7 +102,6 @@ struct LiquidHeroView: View {
         HStack {
             periodSwitch
             Spacer()
-            deltaChip
         }
         .padding(.horizontal, 16)
         .padding(.top, 16)
@@ -123,6 +130,7 @@ struct LiquidHeroView: View {
                     ))
                     .tracking(isPopArt ? 0.6 : 0)
                     .textCase(isPopArt ? .uppercase : nil)
+                    .lineLimit(1)
             }
             .foregroundStyle(isPopArt ? theme.colors.surface.color : theme.colors.textSecondary.color)
             .padding(.horizontal, 9)
@@ -254,7 +262,7 @@ struct LiquidHeroView: View {
     }
 
     private var statusStrip: some View {
-        let realRatio = totalDiscretionary > 0 ? spendable / totalDiscretionary : 0
+        let realRatio = effectiveBudget > 0 ? spendable / effectiveBudget : 0
         let pct = Int((max(0, realRatio) * 100).rounded())
         let badgeBg  = theme.effects.isPopArt ? theme.colors.accent.color : fillGradientColors(for: animatedFill).bottom
         let badgeFg: Color = theme.effects.isPopArt ? theme.colors.accentInk.color : .white
@@ -263,7 +271,7 @@ struct LiquidHeroView: View {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(theme.colors.textPrimary.color)
 
-            Text("of \(moneyStr(totalDiscretionary))")
+            Text("of \(moneyStr(effectiveBudget))")
                 .font(.system(size: 12))
                 .foregroundStyle(theme.colors.textTertiary.color)
 
@@ -376,11 +384,19 @@ struct LiquidHeroView: View {
     }
 
     private func formatAmount(_ v: Double) -> String {
-        "$\(Int(abs(v).rounded()).formatted())"
+        let amount = Int(v.rounded())
+        if amount < 0 {
+            return "-$\(abs(amount).formatted())"
+        }
+        return "$\(amount.formatted())"
     }
 
     private func moneyStr(_ v: Double) -> String {
-        "$\(Int(abs(v).rounded()).formatted())"
+        let amount = Int(v.rounded())
+        if amount < 0 {
+            return "-$\(abs(amount).formatted())"
+        }
+        return "$\(amount.formatted())"
     }
 }
 
@@ -397,7 +413,7 @@ private func previewServices() -> [BudgetService] {
     return [
         make(spent: 0),      // 100% full
         make(spent: 1_560),  // 48%  mid-spend  (3000 * 0.52)
-        make(spent: 9_000),  // 0%   over budget → 0.02 floor
+        make(spent: 9_000),  // 0%   over budget → red floor
     ]
 }
 
@@ -417,6 +433,7 @@ private struct HeroPreviewShell: View {
                             .padding(.horizontal, 16)
                         LiquidHeroView()
                             .environmentObject(services[i])
+                            .environmentObject(UserAccount.shared)
                             .padding(.horizontal, 16)
                     }
                 }

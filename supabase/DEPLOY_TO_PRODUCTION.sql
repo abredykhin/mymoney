@@ -25,10 +25,15 @@ CREATE TABLE profiles_table
   first_name text,
   monthly_income numeric(28,2) DEFAULT 0,
   monthly_mandatory_expenses numeric(28,2) DEFAULT 0,
+  spending_plan_mode text NOT NULL DEFAULT 'safe_to_spend',
   tracked_spending_categories text[] NOT NULL DEFAULT '{}',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+ALTER TABLE profiles_table
+  ADD CONSTRAINT profiles_table_spending_plan_mode_check
+  CHECK (spending_plan_mode IN ('safe_to_spend', 'monthly_plan'));
 
 CREATE TRIGGER profiles_updated_at_timestamp
 BEFORE UPDATE ON profiles_table
@@ -43,6 +48,7 @@ AS
     first_name,
     monthly_income,
     monthly_mandatory_expenses,
+    spending_plan_mode,
     tracked_spending_categories,
     created_at,
     updated_at
@@ -503,9 +509,178 @@ AS
     created_at,
     updated_at,
     tracked_spending_categories,
-    first_name
+    first_name,
+    spending_plan_mode
   FROM
     public.profiles_table;
+
+-- =============================================================================
+-- Migration: 20260524200054 — Add spending plan mode to profiles
+-- =============================================================================
+
+ALTER TABLE public.profiles_table
+    ADD COLUMN IF NOT EXISTS spending_plan_mode text NOT NULL DEFAULT 'safe_to_spend';
+
+ALTER TABLE public.profiles_table
+    DROP CONSTRAINT IF EXISTS profiles_table_spending_plan_mode_check;
+
+ALTER TABLE public.profiles_table
+    ADD CONSTRAINT profiles_table_spending_plan_mode_check
+    CHECK (spending_plan_mode IN ('safe_to_spend', 'monthly_plan'));
+
+CREATE OR REPLACE VIEW public.profiles
+WITH (security_invoker = true)
+AS
+  SELECT
+    id,
+    username,
+    monthly_income,
+    monthly_mandatory_expenses,
+    created_at,
+    updated_at,
+    tracked_spending_categories,
+    first_name,
+    spending_plan_mode
+  FROM
+    public.profiles_table;
+
+-- =============================================================================
+-- Migration: 20260524190944 — Exclude manual rent mortgage subscription label
+-- =============================================================================
+
+CREATE OR REPLACE VIEW public.active_subscription_streams
+WITH (security_invoker = true)
+AS
+SELECT *
+FROM public.recurring_streams_table
+WHERE type = 'expense'
+  AND is_active = true
+  AND is_excluded = false
+  AND status <> 'TOMBSTONED'
+  AND COALESCE(personal_finance_category, '') NOT IN (
+    'RENT_OR_MORTGAGE'
+  )
+  AND COALESCE(personal_finance_subcategory, '') NOT IN (
+    'RENT_AND_UTILITIES_RENT',
+    'RENT_OR_MORTGAGE'
+  )
+  AND LOWER(BTRIM(COALESCE(merchant_name, ''))) NOT IN (
+    'rent',
+    'rent payment',
+    'rent / mortgage',
+    'apartment rent',
+    'mortgage',
+    'mortgage payment'
+  )
+  AND LOWER(BTRIM(description)) NOT IN (
+    'rent',
+    'rent payment',
+    'rent / mortgage',
+    'apartment rent',
+    'mortgage',
+    'mortgage payment'
+  );
+
+GRANT SELECT ON public.active_subscription_streams TO authenticated;
+
+-- =============================================================================
+-- Migration: 20260524192339 — Spendable income transactions view
+-- =============================================================================
+
+CREATE OR REPLACE VIEW public.spendable_income_transactions
+WITH (security_invoker = true)
+AS
+SELECT t.*
+FROM public.transactions t
+WHERE t.amount < 0
+  AND COALESCE(t.type, '') NOT IN ('credit', 'loan')
+  AND t.personal_finance_category = 'INCOME'
+  AND NOT (
+    COALESCE(t.name, '') ILIKE ANY (ARRAY[
+      '%transfer%',
+      '%wire%',
+      '%reversal%',
+      '%brokerage%',
+      '%bkrg%',
+      '%schwab%',
+      '%moneylink%',
+      '%invest%',
+      '%healthequity%'
+    ])
+    OR COALESCE(t.merchant_name, '') ILIKE ANY (ARRAY[
+      '%transfer%',
+      '%wire%',
+      '%reversal%',
+      '%brokerage%',
+      '%bkrg%',
+      '%schwab%',
+      '%moneylink%',
+      '%invest%',
+      '%healthequity%'
+    ])
+  );
+
+GRANT SELECT ON public.spendable_income_transactions TO authenticated;
+
+-- =============================================================================
+-- Migration: 20260524192715 — Active mandatory expense streams view
+-- =============================================================================
+
+CREATE OR REPLACE VIEW public.active_mandatory_expense_streams
+WITH (security_invoker = true)
+AS
+SELECT rs.*
+FROM public.recurring_streams_table rs
+WHERE rs.type = 'expense'
+  AND rs.is_active = true
+  AND rs.is_excluded = false
+  AND rs.status <> 'TOMBSTONED'
+  AND NOT (
+    rs.is_manual = true
+    AND LOWER(BTRIM(rs.description)) IN (
+      'rent',
+      'rent payment',
+      'rent / mortgage',
+      'apartment rent',
+      'mortgage',
+      'mortgage payment'
+    )
+    AND EXISTS (
+      SELECT 1
+      FROM public.recurring_streams_table auto_rs
+      WHERE auto_rs.user_id = rs.user_id
+        AND auto_rs.type = 'expense'
+        AND auto_rs.is_active = true
+        AND auto_rs.is_excluded = false
+        AND auto_rs.is_manual = false
+        AND auto_rs.status <> 'TOMBSTONED'
+        AND (
+          auto_rs.personal_finance_subcategory IN (
+            'RENT_AND_UTILITIES_RENT',
+            'RENT_OR_MORTGAGE'
+          )
+          OR LOWER(BTRIM(COALESCE(auto_rs.merchant_name, ''))) IN (
+            'rent',
+            'rent payment',
+            'rent / mortgage',
+            'apartment rent',
+            'mortgage',
+            'mortgage payment'
+          )
+          OR LOWER(BTRIM(auto_rs.description)) IN (
+            'rent',
+            'rent payment',
+            'rent / mortgage',
+            'apartment rent',
+            'mortgage',
+            'mortgage payment'
+          )
+        )
+    )
+  );
+
+GRANT SELECT ON public.active_mandatory_expense_streams TO authenticated;
+GRANT SELECT ON public.active_mandatory_expense_streams TO service_role;
 
 -- =============================================================================
 -- DONE! Database is ready for the iOS app.

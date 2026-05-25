@@ -14,6 +14,7 @@ struct ProfileDecodingTests {
           "first_name": "Mia",
           "monthly_income": 5500.00,
           "monthly_mandatory_expenses": 1282.00,
+          "spending_plan_mode": "monthly_plan",
           "tracked_spending_categories": ["eats_out", "coffee_runs", "fun"]
         }
         """.data(using: .utf8)!
@@ -25,6 +26,7 @@ struct ProfileDecodingTests {
         #expect(profile.firstName == "Mia")
         #expect(profile.monthlyIncome == 5500.0)
         #expect(profile.monthlyMandatoryExpenses == 1282.0)
+        #expect(profile.spendingPlanMode == .monthlyPlan)
         #expect(profile.trackedSpendingCategories == ["eats_out", "coffee_runs", "fun"])
     }
 
@@ -42,7 +44,24 @@ struct ProfileDecodingTests {
         let decoder = JSONDecoder()
         let profile = try decoder.decode(Profile.self, from: json)
         #expect(profile.firstName == nil)
+        #expect(profile.spendingPlanMode == .safeToSpend)
         #expect(profile.trackedSpendingCategories == [])
+    }
+
+    @Test func profileDecodesUnknownSpendingPlanModeAsSafeToSpend() throws {
+        let json = """
+        {
+          "id": "abc-123",
+          "username": "test@example.com",
+          "monthly_income": 0.0,
+          "monthly_mandatory_expenses": 0.0,
+          "spending_plan_mode": "future_mode"
+        }
+        """.data(using: .utf8)!
+
+        let profile = try JSONDecoder().decode(Profile.self, from: json)
+
+        #expect(profile.spendingPlanMode == .safeToSpend)
     }
 
     @Test func homeGreetingPrefersProfileFirstNameOverEmailFallback() {

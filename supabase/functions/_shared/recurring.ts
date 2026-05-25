@@ -59,18 +59,25 @@ export async function updateProfileRecurringSummary(
 ): Promise<void> {
   console.log('📍 Updating profile recurring summary');
 
-  // Get all active, non-excluded streams (excluding TOMBSTONED)
-  const { data: streams } = await supabase
+  // Get DB-filtered mandatory expense streams. The view owns de-dupe rules
+  // such as suppressing manual rent when Plaid has detected the same rent.
+  const { data: expenseStreams } = await supabase
+    .from('active_mandatory_expense_streams')
+    .select('type, monthly_amount, user_marked_recurring, is_excluded, status')
+    .eq('user_id', userId);
+
+  const { data: incomeStreams } = await supabase
     .from('recurring_streams_table')
     .select('type, monthly_amount, user_marked_recurring, is_excluded, status')
     .eq('user_id', userId)
+    .eq('type', 'income')
     .eq('is_active', true)
-    .neq('status', 'TOMBSTONED');  // Critical: Don't include ended subscriptions
+    .neq('status', 'TOMBSTONED');
 
   let monthlyIncome = 0;
   let monthlyExpenses = 0;
 
-  for (const stream of streams || []) {
+  for (const stream of [...(expenseStreams || []), ...(incomeStreams || [])]) {
     const shouldInclude =
       stream.user_marked_recurring === true ||
       (stream.user_marked_recurring === null && !stream.is_excluded);

@@ -242,6 +242,52 @@ struct BudgetServiceTests {
                 "CC-payment filter must live in the DB view, not the iOS query")
     }
 
+    // MARK: - fetchActualIncome
+
+    @Test @MainActor func testFetchActualIncomeQueriesSpendableIncomeView() async throws {
+        var capturedURL: URL?
+
+        MockURLProtocol.mockHandler = { request in
+            capturedURL = request.url
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
+                                           headerFields: ["Content-Type": "application/json"])!
+            let incomeJSON = """
+            [
+              {
+                "id": 1,
+                "amount": -5495.36,
+                "name": "GOOGLE LLC PAYROLL PPD ID: J770493581",
+                "personal_finance_category": "INCOME",
+                "type": "depository",
+                "is_recurring": false
+              }
+            ]
+            """
+            return (response, Data(incomeJSON.utf8))
+        }
+
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let client = SupabaseClient(
+            supabaseURL: URL(string: "http://127.0.0.1:54321")!,
+            supabaseKey: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+            options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
+        )
+
+        UserAccount.shared.currentUser = Bablo.User(
+            id: "5f6bb5c6-faf0-484f-aee1-23316a77ea90",
+            name: "Test User",
+            token: "mock_token",
+            email: "test@example.com"
+        )
+
+        let service = await BudgetService(supabaseClient: client)
+        await service.fetchActualIncome()
+
+        #expect(capturedURL?.path.contains("/rest/v1/spendable_income_transactions") == true,
+                "Income classification should live in the DB view, not raw transactions")
+    }
+
     // MARK: - calculateVariableBudget
 
     @Test @MainActor func testCalculateVariableBudgetBasicCase() async throws {

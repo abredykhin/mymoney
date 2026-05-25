@@ -12,68 +12,109 @@ struct ProfileView: View {
     @EnvironmentObject var userAccount: UserAccount
     @Environment(\.colorScheme) var colorScheme
     @State private var showingClearCacheAlert = false
+    @State private var settingsError: String?
     
     var body: some View {
         ZStack {
             ColorPalette.backgroundSecondary
                 .ignoresSafeArea()
             
-            VStack(spacing: 0) {
-                if let name = userAccount.currentUser?.name {
-                    VStack(spacing: Spacing.sm) {
-                        Text("Hello,")
-                            .font(Typography.bodySemibold)
-                            .foregroundColor(ColorPalette.textSecondary)
-                        
-                        Text(name)
-                            .font(Typography.h2)
-                            .fontWeight(.bold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, Spacing.xxl)
-                    .background(ColorPalette.backgroundPrimary)
-                }
-                
-                List {
-                    Section {
-                        Button(action: {
-                            showingClearCacheAlert = true
-                        }) {
-                            HStack {
-                                Text("Clear Cache Data")
-                                    .font(Typography.body)
-                                Spacer()
-                                Image(systemName: "trash.circle")
-                                    .foregroundColor(ColorPalette.info)
-                            }
-                            .foregroundColor(ColorPalette.textPrimary)
+            ScrollView {
+                VStack(spacing: Spacing.lg) {
+                    if let name = userAccount.currentUser?.name {
+                        VStack(spacing: Spacing.sm) {
+                            Text("Hello,")
+                                .font(Typography.bodySemibold)
+                                .foregroundColor(ColorPalette.textSecondary)
+
+                            Text(name)
+                                .font(Typography.h2)
+                                .fontWeight(.bold)
                         }
-                        
-                        Button(action: handleSignOut) {
-                            HStack {
-                                Text("Sign Out")
-                                    .font(Typography.body)
-                                Spacer()
-                                Image(systemName: "arrow.right.circle")
-                                    .foregroundColor(ColorPalette.error)
-                            }
-                            .foregroundColor(ColorPalette.error)
-                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, Spacing.xxl)
+                        .background(ColorPalette.backgroundPrimary)
                     }
+
+                    settingsCard
+                    accountCard
                 }
-                .listStyle(InsetGroupedListStyle())
-                .alert("Clear Cache", isPresented: $showingClearCacheAlert) {
-                    Button("Cancel", role: .cancel) { }
-                    Button("Clear", role: .destructive) {
-                        clearCoreDataCache()
-                    }
-                } message: {
-                    Text("This will clear all locally stored data. Are you sure?")
-                }
+                .padding(.horizontal, Spacing.lg)
+                .padding(.bottom, Spacing.xl)
             }
+        }
+        .alert("Clear Cache", isPresented: $showingClearCacheAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Clear", role: .destructive) {
+                clearCoreDataCache()
+            }
+        } message: {
+            Text("This will clear all locally stored data. Are you sure?")
+        }
+        .alert("Settings Error", isPresented: Binding(
+            get: { settingsError != nil },
+            set: { if !$0 { settingsError = nil } }
+        )) {
+            Button("OK", role: .cancel) { settingsError = nil }
+        } message: {
+            Text(settingsError ?? "")
         }
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var settingsCard: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            Label("Settings", systemImage: "gearshape")
+                .font(Typography.bodySemibold)
+                .foregroundColor(ColorPalette.textPrimary)
+
+            Picker("Spending Plan", selection: Binding(
+                get: { userAccount.spendingPlanMode },
+                set: { newMode in
+                    Task {
+                        await saveSpendingPlanMode(newMode)
+                    }
+                }
+            )) {
+                ForEach(SpendingPlanMode.allCases, id: \.self) { mode in
+                    Text(mode.displayName).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+        }
+        .profileCardStyle()
+    }
+
+    private var accountCard: some View {
+        VStack(spacing: 0) {
+            ProfileActionRow(
+                title: "Clear Cache Data",
+                systemImage: "trash.circle",
+                tint: ColorPalette.info,
+                isDestructive: false,
+                action: { showingClearCacheAlert = true }
+            )
+
+            Divider()
+
+            ProfileActionRow(
+                title: "Sign Out",
+                systemImage: "arrow.right.circle",
+                tint: ColorPalette.error,
+                isDestructive: true,
+                action: handleSignOut
+            )
+        }
+        .profileCardStyle()
+    }
+
+    private func saveSpendingPlanMode(_ mode: SpendingPlanMode) async {
+        do {
+            try await userAccount.updateSpendingPlanMode(mode)
+        } catch {
+            settingsError = error.localizedDescription
+        }
     }
     
     private func clearCoreDataCache() {
@@ -121,5 +162,37 @@ struct ProfileView: View {
     
     private func handleSignOut() {
         userAccount.signOut()
+    }
+}
+
+private struct ProfileActionRow: View {
+    let title: String
+    let systemImage: String
+    let tint: Color
+    let isDestructive: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Text(title)
+                    .font(Typography.body)
+                Spacer()
+                Image(systemName: systemImage)
+                    .foregroundColor(tint)
+            }
+            .foregroundColor(isDestructive ? ColorPalette.error : ColorPalette.textPrimary)
+            .padding(.vertical, Spacing.md)
+        }
+    }
+}
+
+private extension View {
+    func profileCardStyle() -> some View {
+        self
+            .padding(Spacing.lg)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(ColorPalette.backgroundPrimary)
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous))
     }
 }
