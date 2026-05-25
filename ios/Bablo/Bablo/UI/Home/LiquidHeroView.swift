@@ -60,6 +60,19 @@ struct LiquidHeroView: View {
     private var fillTarget: Double         { calculator.fillTarget(for: period) }
     private var deltaLabel: String?        { calculator.deltaLabel(for: period) }
 
+    /// Denominator text shown in the status strip.
+    /// Monthly shows income ("of $X earned"); week/day show the period budget.
+    private var denominatorText: String {
+        switch period {
+        case .month:
+            let income = calculator.effectiveIncome
+            guard income > 0 else { return "of \(moneyStr(effectiveBudget))" }
+            return "of \(moneyStr(income)) earned"
+        case .week, .day:
+            return "of \(moneyStr(effectiveBudget))"
+        }
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -102,6 +115,7 @@ struct LiquidHeroView: View {
         HStack {
             periodSwitch
             Spacer()
+            deltaChip
         }
         .padding(.horizontal, 16)
         .padding(.top, 16)
@@ -262,7 +276,13 @@ struct LiquidHeroView: View {
     }
 
     private var statusStrip: some View {
-        let realRatio = effectiveBudget > 0 ? spendable / effectiveBudget : 0
+        let denominator: Double = {
+            if period == .month, calculator.effectiveIncome > 0 {
+                return calculator.effectiveIncome
+            }
+            return effectiveBudget
+        }()
+        let realRatio = denominator > 0 ? spendable / denominator : 0
         let pct = Int((max(0, realRatio) * 100).rounded())
         let badgeBg  = theme.effects.isPopArt ? theme.colors.accent.color : fillGradientColors(for: animatedFill).bottom
         let badgeFg: Color = theme.effects.isPopArt ? theme.colors.accentInk.color : .white
@@ -271,7 +291,7 @@ struct LiquidHeroView: View {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(theme.colors.textPrimary.color)
 
-            Text("of \(moneyStr(effectiveBudget))")
+            Text(denominatorText)
                 .font(.system(size: 12))
                 .foregroundStyle(theme.colors.textTertiary.color)
 

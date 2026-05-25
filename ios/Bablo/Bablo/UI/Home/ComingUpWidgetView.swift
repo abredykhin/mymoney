@@ -12,7 +12,7 @@ struct ComingUpWidgetView: View {
     private var calculator: ComingUpCalculator {
         // Safe default: use standard UTC timezone for database dates and local calendar to determine current day
         ComingUpCalculator(
-            subscriptions: subService.subscriptions,
+            subscriptions: subService.allRecurringStreams,
             currentDate: Date(),
             timeZone: TimeZone(identifier: "UTC")!
         )
@@ -263,7 +263,7 @@ struct ComingUpWidgetPreviewWrapper: View {
             let datePlus6 = calendar.date(byAdding: .day, value: 6, to: today)!
             let datePlus8 = calendar.date(byAdding: .day, value: 8, to: today)!
             
-            self.subService.subscriptions = [
+            self.subService.allRecurringStreams = [
                 RecurringStream(
                     id: 1, plaidStreamId: "plaid_1", description: "Spotify Premium",
                     merchantName: "Spotify", personalFinanceCategory: "ENTERTAINMENT",

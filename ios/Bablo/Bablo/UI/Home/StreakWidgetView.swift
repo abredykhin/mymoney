@@ -67,13 +67,18 @@ struct StreakWidgetView: View {
                 // Pill status chart
                 HStack(spacing: 5) {
                     ForEach(0..<10) { index in
+                        let isToday = (index == 9)
                         let isUnderBudget = index < statusPills.count ? statusPills[index] : false
+                        
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
                             .fill(isUnderBudget ? theme.colors.accent.color : theme.colors.surfaceMuted.color)
                             .frame(maxWidth: .infinity)
                             .frame(height: 18)
                             .overlay {
-                                if isPopArt {
+                                if isToday {
+                                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                                        .stroke(theme.colors.lineStrong.color, lineWidth: isPopArt ? 2.5 : 1.2)
+                                } else if isPopArt {
                                     RoundedRectangle(cornerRadius: 3, style: .continuous)
                                         .stroke(theme.colors.lineStrong.color, lineWidth: 1.0)
                                 }
