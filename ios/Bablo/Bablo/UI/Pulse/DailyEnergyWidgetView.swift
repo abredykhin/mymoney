@@ -24,7 +24,7 @@ struct DailyEnergyWidgetView: View {
 
     private var bars: [EnergyBar] {
         switch period {
-        case .day, .week:
+        case .day:
             return items.map { item in
                 EnergyBar(
                     id: item.weekday,
@@ -35,15 +35,17 @@ struct DailyEnergyWidgetView: View {
                     peakAmount: item.peakAmount
                 )
             }
-        case .month:
+        case .week:
             return weeklyBars(from: items)
+        case .month:
+            return monthlyBars(from: items)
         }
     }
 
-    private var avgPerDay: Double {
-        let days = items.filter { $0.totalSpent > 0 }
-        guard !days.isEmpty else { return 0 }
-        return items.reduce(0) { $0 + $1.totalSpent } / Double(days.count)
+    private var avgPerBar: Double {
+        let activeBars = bars.filter { $0.amount > 0 }
+        guard !activeBars.isEmpty else { return 0 }
+        return bars.reduce(0) { $0 + $1.amount } / Double(activeBars.count)
     }
 
     private var peakBar: EnergyBar? {
@@ -77,17 +79,33 @@ struct DailyEnergyWidgetView: View {
         .accessibilityIdentifier("home.dailyEnergy")
     }
 
+    private var widgetTitle: String {
+        switch period {
+        case .month: return "Monthly energy"
+        case .week: return "Weekly energy"
+        default: return "Daily energy"
+        }
+    }
+
+    private var avgSuffix: String {
+        switch period {
+        case .month: return "/mo"
+        case .week: return "/wk"
+        default: return "/day"
+        }
+    }
+
     private func header(isPopArt: Bool) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(isPopArt ? "DAILY ENERGY" : "Daily energy")
+            Text(isPopArt ? widgetTitle.uppercased() : widgetTitle)
                 .font(theme.typography.title(size: 18, weight: isPopArt ? .black : .bold))
                 .foregroundStyle(theme.colors.textPrimary.color)
 
             Group {
                 if isLoading && items.isEmpty {
                     Text("Loading…")
-                } else if avgPerDay > 0 {
-                    Text("avg \(avgPerDay.formatted(.currency(code: "USD").precision(.fractionLength(0))))/day")
+                } else if avgPerBar > 0 {
+                    Text("avg \(avgPerBar.formatted(.currency(code: "USD").precision(.fractionLength(0))))\(avgSuffix)")
                 } else {
                     Text("no spending this period")
                 }
@@ -128,47 +146,111 @@ struct DailyEnergyWidgetView: View {
         }
     }
 
-    // MARK: - Month grouping
+    // MARK: - Week grouping
 
     private func weeklyBars(from items: [DailyEnergyItem]) -> [EnergyBar] {
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
-        var cal = Calendar(identifier: .iso8601)
-        cal.timeZone = TimeZone(identifier: "UTC")!
+        let cal = Calendar.bablo
 
         struct WeekAccum {
             var total: Double = 0
             var peakAmount: Double = 0
             var peakMerchant: String = "No Spend"
+            var startOfWeek: Date = Date()
         }
 
-        var groups: [Int: WeekAccum] = [:]
+        var weekGroups: [String: WeekAccum] = [:]
 
         for item in items {
             guard let date = fmt.date(from: item.dateLabel) else { continue }
-            let weekOfYear = cal.component(.weekOfYear, from: date)
-            var acc = groups[weekOfYear] ?? WeekAccum()
+            let startOfWeek = cal.dateInterval(of: .weekOfYear, for: date)?.start ?? date
+            let key = fmt.string(from: startOfWeek)
+
+            var acc = weekGroups[key] ?? WeekAccum(startOfWeek: startOfWeek)
             acc.total += item.totalSpent
             if item.peakAmount > acc.peakAmount {
                 acc.peakAmount = item.peakAmount
                 acc.peakMerchant = item.peakMerchant
             }
-            groups[weekOfYear] = acc
+            weekGroups[key] = acc
+        }
+
+        let sortedKeys = weekGroups.keys.sorted()
+        let maxTotal = weekGroups.values.map(\.total).max() ?? 0
+        let peakKey = maxTotal > 0 ? sortedKeys.first(where: { weekGroups[$0]!.total == maxTotal }) : nil
+
+        let weekFmt = DateFormatter()
+        weekFmt.setLocalizedDateFormatFromTemplate("dMMM")
+        weekFmt.calendar = cal
+
+        return sortedKeys.map { key in
+            let acc = weekGroups[key]!
+            let label = weekFmt.string(from: acc.startOfWeek)
+
+            return EnergyBar(
+                id: key,
+                label: label,
+                amount: acc.total,
+                isPeak: key == peakKey,
+                peakMerchant: acc.peakMerchant,
+                peakAmount: acc.peakAmount
+            )
+        }
+    }
+
+    // MARK: - Month grouping
+
+    private func monthlyBars(from items: [DailyEnergyItem]) -> [EnergyBar] {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = .current
+
+        struct MonthAccum {
+            var total: Double = 0
+            var peakAmount: Double = 0
+            var peakMerchant: String = "No Spend"
+        }
+
+        var groups: [String: MonthAccum] = [:]
+
+        for item in items {
+            guard let date = fmt.date(from: item.dateLabel) else { continue }
+            let year = cal.component(.year, from: date)
+            let month = cal.component(.month, from: date)
+            let key = String(format: "%04d-%02d", year, month)
+            var acc = groups[key] ?? MonthAccum()
+            acc.total += item.totalSpent
+            if item.peakAmount > acc.peakAmount {
+                acc.peakAmount = item.peakAmount
+                acc.peakMerchant = item.peakMerchant
+            }
+            groups[key] = acc
         }
 
         let sortedKeys = groups.keys.sorted()
         let maxTotal = groups.values.map(\.total).max() ?? 0
-        var peakAssigned = false
+        let peakKey = maxTotal > 0 ? sortedKeys.first(where: { groups[$0]!.total == maxTotal }) : nil
 
-        return sortedKeys.enumerated().map { idx, key in
+        let monthFmt = DateFormatter()
+        monthFmt.dateFormat = "MMM"
+        monthFmt.calendar = cal
+
+        return sortedKeys.map { key in
             let acc = groups[key]!
-            let isPeak = !peakAssigned && acc.total == maxTotal && maxTotal > 0
-            if isPeak { peakAssigned = true }
+            let parts = key.split(separator: "-")
+            var dc = DateComponents()
+            dc.year = Int(parts[0])
+            dc.month = Int(parts[1])
+            dc.day = 1
+            let label = cal.date(from: dc).map { monthFmt.string(from: $0) } ?? key
+
             return EnergyBar(
-                id: "W\(idx + 1)",
-                label: "W\(idx + 1)",
+                id: key,
+                label: label,
                 amount: acc.total,
-                isPeak: isPeak,
+                isPeak: key == peakKey,
                 peakMerchant: acc.peakMerchant,
                 peakAmount: acc.peakAmount
             )
@@ -222,7 +304,7 @@ private struct EnergyBarColumn: View {
     }
 
     private var barColor: Color {
-        bar.isPeak ? theme.colors.accent.color : theme.colors.surfaceMuted.color
+        bar.isPeak ? theme.colors.danger.color : theme.colors.surfaceMuted.color
     }
 
     var body: some View {
@@ -308,6 +390,33 @@ private enum DailyEnergyPreviewFixtures {
         DailyEnergyItem(weekday: "Sun", dateLabel: "2026-05-24", totalSpent: 20, isPeak: false, peakMerchant: "Netflix", peakCategory: nil, peakAmount: 20),
     ]
 
+    static func fiveWeeksItems() -> [DailyEnergyItem] {
+        var items: [DailyEnergyItem] = []
+        let cal = Calendar.bablo
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        let baseDate = fmt.date(from: "2026-04-20")!
+        
+        for day in 0..<35 {
+            if let date = cal.date(byAdding: .day, value: day, to: baseDate) {
+                let dateStr = fmt.string(from: date)
+                let weekday = cal.shortWeekdaySymbols[cal.component(.weekday, from: date) - 1]
+                let amount = Double.random(in: 20...150)
+                let isPeak = day == 25 // make one day peak in the last week
+                items.append(DailyEnergyItem(
+                    weekday: weekday,
+                    dateLabel: dateStr,
+                    totalSpent: amount,
+                    isPeak: isPeak,
+                    peakMerchant: isPeak ? "Whole Foods" : "Merchant",
+                    peakCategory: nil,
+                    peakAmount: isPeak ? 95 : amount * 0.5
+                ))
+            }
+        }
+        return items
+    }
+
     static func monthItems() -> [DailyEnergyItem] {
         let calendar = Calendar(identifier: .iso8601)
         let base = DateFormatter()
@@ -324,24 +433,32 @@ private enum DailyEnergyPreviewFixtures {
     }
 }
 
-#Preview("Daily Energy · Week · Plain") {
+#Preview("Daily Energy · Day · Plain") {
     ScrollView {
-        DailyEnergyWidgetView(items: DailyEnergyPreviewFixtures.weekItems, period: .week)
+        DailyEnergyWidgetView(items: DailyEnergyPreviewFixtures.weekItems, period: .day)
             .padding()
     }
     .babloScreenBackground()
 }
 
-#Preview("Daily Energy · Week · Pop") {
+#Preview("Weekly Energy · Plain") {
     ScrollView {
-        DailyEnergyWidgetView(items: DailyEnergyPreviewFixtures.weekItems, period: .week)
+        DailyEnergyWidgetView(items: DailyEnergyPreviewFixtures.fiveWeeksItems(), period: .week)
+            .padding()
+    }
+    .babloScreenBackground()
+}
+
+#Preview("Weekly Energy · Pop") {
+    ScrollView {
+        DailyEnergyWidgetView(items: DailyEnergyPreviewFixtures.fiveWeeksItems(), period: .week)
             .padding()
     }
     .babloScreenBackground()
     .babloTheme(.pop)
 }
 
-#Preview("Daily Energy · Month · Plain") {
+#Preview("Monthly Energy · Plain") {
     ScrollView {
         DailyEnergyWidgetView(items: DailyEnergyPreviewFixtures.monthItems(), period: .month)
             .padding()

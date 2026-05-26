@@ -109,9 +109,10 @@ struct HeroBudgetCalculator {
             return max(0, min(weeklyDiscretionary, monthlyRemainingBeforeThisWeek))
             
         case .day:
-            // Capped daily budget baseline before today's spending started.
-            let monthlyRemainingBeforeToday = monthlyDiscretionary - (variableSpend - todayVariableSpend)
-            return max(0, min(dailyDiscretionary, monthlyRemainingBeforeToday))
+            // Daily budget = weekly budget / 7.
+            // Spending within this allowance each day for a full week exactly hits the weekly budget,
+            // answering "what can I safely spend today without blowing the week?"
+            return budget(for: .week) / 7
         }
     }
 

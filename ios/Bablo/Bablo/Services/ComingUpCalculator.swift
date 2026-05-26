@@ -24,7 +24,7 @@ struct ComingUpCalculator {
     }
 
     func daysRemaining(for targetDate: Date) -> Int {
-        var calendar = Calendar.current
+        var calendar = Calendar.bablo
         calendar.timeZone = timeZone
         let startOfCurrent = calendar.startOfDay(for: currentDate)
         let startOfTarget = calendar.startOfDay(for: targetDate)

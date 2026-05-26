@@ -4,6 +4,7 @@ import SwiftUI
 struct PulseTabView: View {
     @StateObject private var pulseService: PulseService
     @State private var selectedPeriod: PulsePeriod = .week
+    @State private var isShowingAllMerchants = false
 
     @Environment(\.babloTheme) private var theme
     @EnvironmentObject private var userAccount: UserAccount
@@ -69,7 +70,8 @@ struct PulseTabView: View {
                     items: pulseService.topMerchants,
                     isLoading: pulseService.isLoadingTopMerchants,
                     error: pulseService.topMerchantsError,
-                    retry: { Task { await loadTopMerchants() } }
+                    retry: { Task { await loadTopMerchants() } },
+                    onAllTapped: { isShowingAllMerchants = true }
                 )
                 .padding(.horizontal, theme.metrics.screenPadding)
             }
@@ -97,6 +99,15 @@ struct PulseTabView: View {
             _ = await (damageReport, breakdown, energy, merchants)
         }
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $isShowingAllMerchants) {
+            AllMerchantsSheetView(
+                pulseService: pulseService,
+                initialPeriod: selectedPeriod,
+                dismissAction: { isShowingAllMerchants = false }
+            )
+            .presentationDetents([PresentationDetent.fraction(0.85), PresentationDetent.large])
+            .presentationDragIndicator(Visibility.visible)
+        }
     }
 
     private func loadDamageReport() async {
@@ -134,8 +145,40 @@ struct PulseTabView: View {
     }
 
     private func loadDailyEnergy() async {
-        let current = selectedPeriod.currentWindow
-        await pulseService.fetchDailyEnergy(startDate: current.startDate, endDate: current.endDate)
+        let window: PulseDateWindow
+        switch selectedPeriod {
+        case .month:
+            window = monthlyEnergyWindow
+        case .week:
+            window = weeklyEnergyWindow
+        case .day:
+            window = selectedPeriod.currentWindow
+        }
+        await pulseService.fetchDailyEnergy(startDate: window.startDate, endDate: window.endDate)
+    }
+
+    private var weeklyEnergyWindow: PulseDateWindow {
+        let cal = Calendar.bablo
+        let now = Date()
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.calendar = cal
+        fmt.timeZone = cal.timeZone
+        let thisWeekStart = cal.dateInterval(of: .weekOfYear, for: now)?.start ?? now
+        let start = cal.date(byAdding: .weekOfYear, value: -4, to: thisWeekStart) ?? now
+        return PulseDateWindow(startDate: fmt.string(from: start), endDate: fmt.string(from: now))
+    }
+
+    private var monthlyEnergyWindow: PulseDateWindow {
+        let cal = Calendar.bablo
+        let now = Date()
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.calendar = cal
+        fmt.timeZone = cal.timeZone
+        let thisMonthStart = cal.dateInterval(of: .month, for: now)?.start ?? now
+        let start = cal.date(byAdding: .month, value: -2, to: thisMonthStart) ?? now
+        return PulseDateWindow(startDate: fmt.string(from: start), endDate: fmt.string(from: now))
     }
 
     private func loadTopMerchants() async {
@@ -297,7 +340,7 @@ private struct SummaryCell: View {
     }
 }
 
-private enum PulsePeriod: String, CaseIterable, Hashable {
+enum PulsePeriod: String, CaseIterable, Hashable {
     case day
     case week
     case month
@@ -335,11 +378,19 @@ private enum PulsePeriod: String, CaseIterable, Hashable {
     }
 
     var currentWindow: PulseDateWindow {
-        PulseDateWindow.current(period: self)
+        currentWindow(calendar: .bablo)
     }
 
     var comparisonWindow: PulseDateWindow? {
-        PulseDateWindow.previous(period: self, relativeTo: currentWindow)
+        comparisonWindow(calendar: .bablo)
+    }
+
+    func currentWindow(calendar: Calendar = .bablo) -> PulseDateWindow {
+        PulseDateWindow.current(period: self, calendar: calendar)
+    }
+
+    func comparisonWindow(calendar: Calendar = .bablo) -> PulseDateWindow? {
+        PulseDateWindow.previous(period: self, relativeTo: currentWindow(calendar: calendar), calendar: calendar)
     }
 
     var heroPeriod: HeroPeriod {
@@ -351,14 +402,12 @@ private enum PulsePeriod: String, CaseIterable, Hashable {
     }
 }
 
-private struct PulseDateWindow {
+struct PulseDateWindow {
     let startDate: String
     let endDate: String
 
-    static func current(period: PulsePeriod, now: Date = Date()) -> PulseDateWindow {
-        var calendar = Calendar(identifier: .iso8601)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-
+    static func current(period: PulsePeriod, now: Date = Date(), calendar: Calendar = .bablo) -> PulseDateWindow {
+        let cal = calendar
         let end = now
         let start: Date
 
@@ -366,22 +415,22 @@ private struct PulseDateWindow {
         case .day:
             start = end
         case .week:
-            start = calendar.date(byAdding: .day, value: -6, to: end) ?? end
+            start = cal.dateInterval(of: .weekOfYear, for: end)?.start ?? end
         case .month:
-            let components = calendar.dateComponents([.year, .month], from: end)
-            start = calendar.date(from: components) ?? end
+            let components = cal.dateComponents([.year, .month], from: end)
+            start = cal.date(from: components) ?? end
         }
 
-        return make(start: start, end: end, calendar: calendar)
+        return make(start: start, end: end, calendar: cal)
     }
 
-    static func previous(period: PulsePeriod, relativeTo current: PulseDateWindow) -> PulseDateWindow? {
-        var calendar = Calendar(identifier: .iso8601)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
+    static func previous(period: PulsePeriod, relativeTo current: PulseDateWindow, calendar: Calendar = .bablo) -> PulseDateWindow? {
+        let cal = calendar
+        let fmt = dateFormatter(calendar: cal)
 
         guard
-            let start = dateFormatter.date(from: current.startDate),
-            let end = dateFormatter.date(from: current.endDate)
+            let start = fmt.date(from: current.startDate),
+            let end = fmt.date(from: current.endDate)
         else { return nil }
 
         let previousStart: Date?
@@ -389,33 +438,35 @@ private struct PulseDateWindow {
 
         switch period {
         case .day:
-            previousStart = calendar.date(byAdding: .day, value: -1, to: start)
-            previousEnd = calendar.date(byAdding: .day, value: -1, to: end)
+            previousStart = cal.date(byAdding: .day, value: -1, to: start)
+            previousEnd = cal.date(byAdding: .day, value: -1, to: end)
         case .week:
-            previousStart = calendar.date(byAdding: .day, value: -7, to: start)
-            previousEnd = calendar.date(byAdding: .day, value: -7, to: end)
+            previousStart = cal.date(byAdding: .day, value: -7, to: start)
+            previousEnd = cal.date(byAdding: .day, value: -7, to: end)
         case .month:
-            previousStart = calendar.date(byAdding: .month, value: -1, to: start)
-            previousEnd = calendar.date(byAdding: .day, value: -1, to: start)
+            previousStart = cal.date(byAdding: .month, value: -1, to: start)
+            previousEnd = cal.date(byAdding: .day, value: -1, to: start)
         }
 
         guard let previousStart, let previousEnd else { return nil }
-        return make(start: previousStart, end: previousEnd, calendar: calendar)
+        return make(start: previousStart, end: previousEnd, calendar: cal)
     }
 
     private static func make(start: Date, end: Date, calendar: Calendar) -> PulseDateWindow {
-        PulseDateWindow(
-            startDate: dateFormatter.string(from: start),
-            endDate: dateFormatter.string(from: end)
+        let fmt = dateFormatter(calendar: calendar)
+        return PulseDateWindow(
+            startDate: fmt.string(from: start),
+            endDate: fmt.string(from: end)
         )
     }
 
-    private static let dateFormatter: DateFormatter = {
+    private static func dateFormatter(calendar: Calendar) -> DateFormatter {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
         return formatter
-    }()
+    }
 }
 
 private struct PulseConditionalItalic: ViewModifier {

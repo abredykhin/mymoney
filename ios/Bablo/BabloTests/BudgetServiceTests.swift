@@ -184,6 +184,37 @@ struct BudgetServiceTests {
                 "Must query variable_transactions view, not raw transactions table")
     }
 
+    @Test @MainActor func testFetchVariableSpendFiltersBySpendDate() async throws {
+        let mockData = try loadFixture(name: "variable_transactions")
+        var capturedURL: URL?
+
+        MockURLProtocol.mockHandler = { request in
+            capturedURL = request.url
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
+                                           headerFields: ["Content-Type": "application/json"])!
+            return (response, mockData)
+        }
+
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let client = SupabaseClient(
+            supabaseURL: URL(string: "http://127.0.0.1:54321")!,
+            supabaseKey: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+            options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
+        )
+
+        let service = await BudgetService(supabaseClient: client)
+        try? await service.fetchVariableSpend()
+
+        let query = capturedURL?.query ?? ""
+        #expect(query.contains("spend_date=gte."),
+                "Variable spend date windows must use canonical spend_date")
+        #expect(query.contains("spend_date=lte."),
+                "Variable spend date windows must use canonical spend_date")
+        #expect(!query.contains("?date=gte.") && !query.contains("&date=gte."),
+                "Raw Plaid date can be future-dated for pending transactions")
+    }
+
     @Test @MainActor func testFetchVariableSpendSumsPositiveAmounts() async throws {
         // Fixture has 3 expenses: $85.50 + $42.00 + $55.00 = $182.50
         let mockData = try loadFixture(name: "variable_transactions")

@@ -116,4 +116,26 @@ struct ComingUpCalculatorTests {
         #expect(upcoming[0].merchantName == "Spotify")
         #expect(upcoming[1].merchantName == "Rent")
     }
+    
+    @Test func testDaysRemaining_UTCOffset_Evening() {
+        let laTimeZone = TimeZone(identifier: "America/Los_Angeles")!
+        let utcTimeZone = TimeZone(identifier: "UTC")!
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        formatter.timeZone = laTimeZone
+        
+        // Sunday May 24, 2026 at 6:30 PM (18:30) PDT = Monday May 25, 2026 at 1:30 AM UTC
+        let eveningDate = formatter.date(from: "2026-05-24 18:30")!
+        
+        let billStream = createStream(id: 1, name: "Legit Bill", nextDate: "2026-05-27")
+        
+        // 1. In UTC timezone, because current day rolled over to May 25th, days remaining should be 2:
+        let utcCalc = ComingUpCalculator(subscriptions: [billStream], currentDate: eveningDate, timeZone: utcTimeZone)
+        #expect(utcCalc.daysRemaining(for: billStream) == 2)
+        
+        // 2. In Local Pacific timezone, current day remains May 24th, so days remaining should be 3:
+        let laCalc = ComingUpCalculator(subscriptions: [billStream], currentDate: eveningDate, timeZone: laTimeZone)
+        #expect(laCalc.daysRemaining(for: billStream) == 3)
+    }
 }
