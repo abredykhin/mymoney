@@ -194,10 +194,10 @@ final class PulseService: ObservableObject {
     private func fetchTransactionsForBreakdown(startDate: String, endDate: String) async throws -> [BreakdownTransaction] {
         return try await supabase
             .from("transactions")
-            .select("amount, personal_finance_category, personal_finance_subcategory")
-            .gte("date", value: startDate)
-            .lte("date", value: endDate)
-            .gt("amount", value: 0)
+            .select("amount, name, date, authorized_date, spend_date, type, personal_finance_category, personal_finance_subcategory, is_spend, is_income")
+            .gte("spend_date", value: startDate)
+            .lte("spend_date", value: endDate)
+            .eq("is_spend", value: true)
             .execute()
             .value
     }
@@ -229,7 +229,7 @@ final class PulseService: ObservableObject {
 
     // MARK: - Top Merchants
 
-    func fetchTopMerchants(startDate: String, endDate: String) async {
+    func fetchTopMerchants(startDate: String, endDate: String, limit: Int = 5) async {
         isLoadingTopMerchants = true
         topMerchantsError = nil
         defer { isLoadingTopMerchants = false }
@@ -242,7 +242,7 @@ final class PulseService: ObservableObject {
 
         do {
             let merchants: [TopMerchantItem] = try await supabase
-                .rpc("get_pulse_top_merchants", params: Params(start_date: startDate, end_date: endDate, lim: 5))
+                .rpc("get_pulse_top_merchants", params: Params(start_date: startDate, end_date: endDate, lim: limit))
                 .execute()
                 .value
             topMerchants = merchants
@@ -256,12 +256,32 @@ final class PulseService: ObservableObject {
 
 struct BreakdownTransaction: Codable {
     let amount: Double
+    let name: String?
+    let date: String?
+    let authorizedDate: String?
+    var spendDate: String? = nil
+    let accountType: String?
     let personal_finance_category: String?
     let personal_finance_subcategory: String?
+    let isSpend: Bool
+    let isIncome: Bool
 
-    var isTransfer: Bool {
-        guard let cat = personal_finance_category?.uppercased() else { return false }
-        return cat.hasPrefix("TRANSFER")
+    func isInEffectiveDateWindow(startDate: String, endDate: String) -> Bool {
+        guard let effectiveDate = spendDate ?? authorizedDate ?? date else { return true }
+        return effectiveDate >= startDate && effectiveDate <= endDate
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case amount
+        case name
+        case date
+        case authorizedDate = "authorized_date"
+        case spendDate = "spend_date"
+        case accountType = "type"
+        case personal_finance_category
+        case personal_finance_subcategory
+        case isSpend = "is_spend"
+        case isIncome = "is_income"
     }
 }
 

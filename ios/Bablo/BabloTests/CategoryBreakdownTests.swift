@@ -6,36 +6,39 @@ struct CategoryBreakdownTests {
 
     // MARK: - Helpers
 
+    /// Build a BreakdownTransaction.
+    /// `isSpend` defaults to `amount > 0` — override to `false` for transactions
+    /// the DB view would exclude (investment moves, credit-card payments, etc.).
     private func makeTxn(
         amount: Double,
         primary: String?,
-        detailed: String? = nil
+        detailed: String? = nil,
+        name: String? = nil,
+        date: String? = nil,
+        authorizedDate: String? = nil,
+        accountType: String? = nil,
+        isSpend: Bool? = nil,
+        isIncome: Bool = false
     ) -> BreakdownTransaction {
         BreakdownTransaction(
             amount: amount,
+            name: name,
+            date: date,
+            authorizedDate: authorizedDate,
+            accountType: accountType,
             personal_finance_category: primary,
-            personal_finance_subcategory: detailed
+            personal_finance_subcategory: detailed,
+            isSpend: isSpend ?? (amount > 0),
+            isIncome: isIncome
         )
     }
 
-    // MARK: - Exclusion: transfers
+    // MARK: - is_spend filter (mirrors DB view logic)
 
-    @Test func transferCategoryTransactionsAreExcluded() {
+    @Test func transferInIsExcluded() {
+        // DB sets is_spend = false for TRANSFER_IN (except ACCOUNT_TRANSFER)
         let txns = [
-            makeTxn(amount: 100, primary: "TRANSFER_OUT"),
-            makeTxn(amount: 50, primary: "FOOD_AND_DRINK", detailed: "FOOD_AND_DRINK_RESTAURANT"),
-        ]
-
-        let result = CategoryBreakdownBuilder.build(currentTransactions: txns, trackedCategories: [])
-
-        #expect(result.count == 1)
-        #expect(result.first?.bucket == .category(.eatsOut))
-        #expect(result.first?.totalAmount == 50)
-    }
-
-    @Test func transferInCategoryTransactionsAreExcluded() {
-        let txns = [
-            makeTxn(amount: 200, primary: "TRANSFER_IN"),
+            makeTxn(amount: 200, primary: "TRANSFER_IN", isSpend: false),
             makeTxn(amount: 30, primary: "ENTERTAINMENT"),
         ]
 
@@ -43,6 +46,92 @@ struct CategoryBreakdownTests {
 
         #expect(result.count == 1)
         #expect(result.first?.bucket == .category(.fun))
+    }
+
+    @Test func transferOutAccountTransferIsIncluded() {
+        // Therapy payments, Venmo — DB sets is_spend = true
+        let txns = [
+            makeTxn(amount: 160, primary: "TRANSFER_OUT", detailed: "TRANSFER_OUT_ACCOUNT_TRANSFER"),
+            makeTxn(amount: 50, primary: "FOOD_AND_DRINK", detailed: "FOOD_AND_DRINK_RESTAURANT"),
+        ]
+
+        let result = CategoryBreakdownBuilder.build(currentTransactions: txns, trackedCategories: [])
+
+        let eats = result.first(where: { $0.bucket == .category(.eatsOut) })
+        let rest = result.first(where: { $0.bucket == .rest })
+        #expect(eats?.totalAmount == 50)
+        #expect(rest?.totalAmount == 160)
+    }
+
+    @Test func transferOutWithdrawalIsIncluded() {
+        // ATM cash withdrawals — DB sets is_spend = true
+        let txns = [
+            makeTxn(amount: 303, primary: "TRANSFER_OUT", detailed: "TRANSFER_OUT_WITHDRAWAL"),
+            makeTxn(amount: 40, primary: "ENTERTAINMENT"),
+        ]
+
+        let result = CategoryBreakdownBuilder.build(currentTransactions: txns, trackedCategories: [])
+
+        let rest = result.first(where: { $0.bucket == .rest })
+        #expect(rest?.totalAmount == 303)
+    }
+
+    @Test func transferOutInvestmentFundsExcluded() {
+        // $70k brokerage / Robinhood — DB sets is_spend = false; must NOT inflate spending
+        let txns = [
+            makeTxn(amount: 70_000, primary: "TRANSFER_OUT", detailed: "TRANSFER_OUT_INVESTMENT_AND_RETIREMENT_FUNDS", isSpend: false),
+            makeTxn(amount: 14_163, primary: "TRANSFER_OUT", detailed: "TRANSFER_OUT_INVESTMENT_AND_RETIREMENT_FUNDS", isSpend: false),
+            makeTxn(amount: 50, primary: "FOOD_AND_DRINK"),
+        ]
+
+        let result = CategoryBreakdownBuilder.build(currentTransactions: txns, trackedCategories: [])
+
+        #expect(result.count == 1)
+        #expect(result.first?.totalAmount == 50)
+    }
+
+    @Test func transferOutOtherTransferIsIncluded() {
+        // Wire transfers and small purchases like Oaks Corner — DB sets is_spend = true
+        let txns = [
+            makeTxn(amount: 47_413, primary: "TRANSFER_OUT", detailed: "TRANSFER_OUT_OTHER_TRANSFER_OUT"),
+            makeTxn(amount: 9, primary: "TRANSFER_OUT", detailed: "TRANSFER_OUT_OTHER_TRANSFER_OUT"),
+            makeTxn(amount: 30, primary: "ENTERTAINMENT"),
+        ]
+
+        let result = CategoryBreakdownBuilder.build(currentTransactions: txns, trackedCategories: [])
+
+        let rest = result.first(where: { $0.bucket == .rest })
+        let fun = result.first(where: { $0.bucket == .category(.fun) })
+        #expect(rest?.totalAmount == 47_413 + 9)
+        #expect(fun?.totalAmount == 30)
+    }
+
+    @Test func wireReversalNegativeAmountIsExcluded() {
+        // TRANSFER_IN_ACCOUNT_TRANSFER with negative amount — DB sets is_spend = false
+        // (it contributes to is_income and total_in in the damage report RPC, not spending)
+        let reversal = makeTxn(
+            amount: -47_413,
+            primary: "TRANSFER_IN",
+            detailed: "TRANSFER_IN_ACCOUNT_TRANSFER",
+            isSpend: false,
+            isIncome: true
+        )
+        let result = CategoryBreakdownBuilder.build(currentTransactions: [reversal], trackedCategories: [])
+        #expect(result.isEmpty)
+    }
+
+    @Test func brokerageInvestmentTransfersExcluded() {
+        // Schwab MoneyLink and CC payment confirmations — DB sets is_spend = false
+        let txns = [
+            makeTxn(amount: 28_748, primary: "TRANSFER_IN", detailed: "TRANSFER_IN_INVESTMENT_AND_RETIREMENT_FUNDS", isSpend: false),
+            makeTxn(amount: 343, primary: "TRANSFER_IN", detailed: "TRANSFER_IN_CASH_ADVANCES_AND_LOANS", isSpend: false),
+            makeTxn(amount: 50, primary: "FOOD_AND_DRINK"),
+        ]
+
+        let result = CategoryBreakdownBuilder.build(currentTransactions: txns, trackedCategories: [])
+
+        #expect(result.count == 1)
+        #expect(result.first?.totalAmount == 50)
     }
 
     // MARK: - Exclusion: negative amounts (income/credits)
@@ -108,12 +197,13 @@ struct CategoryBreakdownTests {
         #expect(rest?.totalAmount == 40)
     }
 
-    @Test func emptyTrackedCategoriesShowsAllMappedIndividually() {
+    @Test func emptyTrackedCategoriesShowsAllMappedIndividuallyAndExcludesCCPayments() {
         let txns = [
             makeTxn(amount: 50, primary: "FOOD_AND_DRINK", detailed: "FOOD_AND_DRINK_RESTAURANT"),
             makeTxn(amount: 30, primary: "ENTERTAINMENT"),
             makeTxn(amount: 20, primary: "TRANSPORTATION"),
-            makeTxn(amount: 15, primary: "LOAN_PAYMENTS"),  // unmapped → rest
+            // DB sets is_spend = false for CC payments
+            makeTxn(amount: 15, primary: "LOAN_PAYMENTS", detailed: "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT", isSpend: false),
         ]
 
         let result = CategoryBreakdownBuilder.build(currentTransactions: txns, trackedCategories: [])
@@ -122,10 +212,48 @@ struct CategoryBreakdownTests {
         #expect(buckets.contains(.category(.eatsOut)))
         #expect(buckets.contains(.category(.fun)))
         #expect(buckets.contains(.category(.gettingAround)))
-        #expect(buckets.contains(.rest))
+        #expect(!buckets.contains(.rest))
+    }
 
-        let rest = result.first(where: { $0.bucket == .rest })
-        #expect(rest?.totalAmount == 15)
+    @Test func nullCategoryPaymentNamedTransactionsAreExcluded() {
+        // DB sets is_spend = false for NULL-category transactions whose name contains "Payment"
+        let txns = [
+            makeTxn(amount: 125, primary: nil, name: "Payment Thank You", isSpend: false),
+            makeTxn(amount: 75, primary: nil, name: "Corner Store"),
+        ]
+
+        let result = CategoryBreakdownBuilder.build(currentTransactions: txns, trackedCategories: [])
+
+        #expect(result.count == 1)
+        #expect(result.first?.bucket == .rest)
+        #expect(result.first?.totalAmount == 75)
+    }
+
+    @Test func effectiveDateOutsideWindowIsExcluded() {
+        let txns = [
+            makeTxn(
+                amount: 77.51,
+                primary: "GENERAL_MERCHANDISE",
+                date: "2026-05-24",
+                authorizedDate: "2026-04-30"
+            ),
+            makeTxn(
+                amount: 40,
+                primary: "GENERAL_MERCHANDISE",
+                date: "2026-05-24",
+                authorizedDate: "2026-05-24"
+            ),
+        ]
+
+        let result = CategoryBreakdownBuilder.build(
+            currentTransactions: txns,
+            trackedCategories: [],
+            startDate: "2026-05-01",
+            endDate: "2026-05-24"
+        )
+
+        #expect(result.count == 1)
+        #expect(result.first?.totalAmount == 40)
     }
 
     @Test func unmappedPlaidCategoryGoesToRest() {
@@ -138,6 +266,21 @@ struct CategoryBreakdownTests {
 
         let rest = result.first(where: { $0.bucket == .rest })
         #expect(rest?.totalAmount == 120)
+    }
+
+    @Test func transferOutWithNoSubcategoryIsExcluded() {
+        // TRANSFER_OUT with unknown/missing subcategory — DB sets is_spend = false (safe default)
+        let txns = [
+            makeTxn(amount: 500, primary: "TRANSFER_OUT", isSpend: false),
+            makeTxn(amount: 200, primary: "TRANSFER_IN", isSpend: false),
+            makeTxn(amount: 40, primary: "ENTERTAINMENT"),
+        ]
+
+        let result = CategoryBreakdownBuilder.build(currentTransactions: txns, trackedCategories: [])
+
+        #expect(result.count == 1)
+        #expect(result.first?.bucket == .category(.fun))
+        #expect(result.first?.totalAmount == 40)
     }
 
     // MARK: - Aggregation
@@ -206,7 +349,7 @@ struct CategoryBreakdownTests {
 
     @Test func restBucketIsAlwaysLastRegardlessOfAmount() {
         let txns = [
-            makeTxn(amount: 500, primary: "LOAN_PAYMENTS"),  // unmapped → rest (highest)
+            makeTxn(amount: 500, primary: "BANK_FEES"),  // unmapped -> rest (highest)
             makeTxn(amount: 50, primary: "FOOD_AND_DRINK"),
             makeTxn(amount: 30, primary: "ENTERTAINMENT"),
         ]
@@ -307,11 +450,11 @@ struct CategoryBreakdownTests {
 
     @Test func restBucketTrendUsesAggregatedPreviousAmount() {
         let current = [
-            makeTxn(amount: 50, primary: "LOAN_PAYMENTS"),
+            makeTxn(amount: 50, primary: "BANK_FEES"),
             makeTxn(amount: 30, primary: "BANK_FEES"),
         ]
         let previous = [
-            makeTxn(amount: 40, primary: "LOAN_PAYMENTS"),
+            makeTxn(amount: 40, primary: "BANK_FEES"),
             makeTxn(amount: 20, primary: "BANK_FEES"),
         ]
 
@@ -352,16 +495,6 @@ struct CategoryBreakdownTests {
 
     @Test func emptyTransactionsReturnsEmptyBreakdown() {
         let result = CategoryBreakdownBuilder.build(currentTransactions: [], trackedCategories: [])
-        #expect(result.isEmpty)
-    }
-
-    @Test func onlyTransfersReturnsEmptyBreakdown() {
-        let txns = [
-            makeTxn(amount: 100, primary: "TRANSFER_OUT"),
-            makeTxn(amount: 200, primary: "TRANSFER_IN"),
-        ]
-
-        let result = CategoryBreakdownBuilder.build(currentTransactions: txns, trackedCategories: [])
         #expect(result.isEmpty)
     }
 }

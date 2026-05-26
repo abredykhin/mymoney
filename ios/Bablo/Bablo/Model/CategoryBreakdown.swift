@@ -79,10 +79,18 @@ enum CategoryBreakdownBuilder {
     static func build(
         currentTransactions: [BreakdownTransaction],
         previousTransactions: [BreakdownTransaction] = [],
-        trackedCategories: Set<FlexibleSpendingCategory>
+        trackedCategories: Set<FlexibleSpendingCategory>,
+        startDate: String? = nil,
+        endDate: String? = nil
     ) -> [CategoryBreakdownItem] {
-        let filteredCurrent  = currentTransactions.filter(isSpendingTransaction)
-        let filteredPrevious = previousTransactions.filter(isSpendingTransaction)
+        let filteredCurrent = currentTransactions.filter {
+            isSpendingTransaction($0)
+                && isInWindow($0, startDate: startDate, endDate: endDate)
+        }
+        let filteredPrevious = previousTransactions.filter {
+            isSpendingTransaction($0)
+                && isInWindow($0, startDate: startDate, endDate: endDate)
+        }
 
         let showIndividually: (FlexibleSpendingCategory) -> Bool = trackedCategories.isEmpty
             ? { _ in true }
@@ -129,7 +137,16 @@ enum CategoryBreakdownBuilder {
     // MARK: - Private helpers
 
     private static func isSpendingTransaction(_ txn: BreakdownTransaction) -> Bool {
-        txn.amount > 0 && !txn.isTransfer
+        txn.isSpend
+    }
+
+    private static func isInWindow(
+        _ txn: BreakdownTransaction,
+        startDate: String?,
+        endDate: String?
+    ) -> Bool {
+        guard let startDate, let endDate else { return true }
+        return txn.isInEffectiveDateWindow(startDate: startDate, endDate: endDate)
     }
 
     private static func bucket(

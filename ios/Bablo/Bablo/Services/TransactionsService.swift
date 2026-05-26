@@ -19,6 +19,7 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
     let amount: Double
     let date: String
     let authorized_date: String? // Authorized date
+    var spend_date: String? = nil // Canonical date for user-facing spend rollups
     let name: String
     let merchant_name: String? // Keep snake_case for compatibility
     let pending: Bool
@@ -41,6 +42,7 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
         case amount
         case date
         case authorized_date
+        case spend_date
         case name
         case merchant_name
         case pending
@@ -62,6 +64,7 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
     var accountId: Int { account_id }
     var merchantName: String? { merchant_name }
     var transactionId: String { transaction_id }
+    var spendDate: String { spend_date ?? authorized_date ?? date }
     var isoCurrencyCode: String? { iso_currency_code }
     var paymentChannel: String? { payment_channel }
     var userId: String? { user_id }
@@ -214,11 +217,11 @@ class TransactionsService: ObservableObject {
             }
 
             if let startDate = options.filter.startDate {
-                query = query.gte("date", value: startDate)
+                query = query.gte("spend_date", value: startDate)
             }
 
             if let endDate = options.filter.endDate {
-                query = query.lte("date", value: endDate)
+                query = query.lte("spend_date", value: endDate)
             }
 
             if let search = options.filter.search, !search.isEmpty {
@@ -227,7 +230,7 @@ class TransactionsService: ObservableObject {
 
             // Apply ordering and pagination, then execute
             let responseWithCount: PostgrestResponse<[Transaction]> = try await query
-                .order("date", ascending: false)
+                .order("spend_date", ascending: false)
                 .order("id", ascending: false)
                 .range(from: options.offset, to: options.offset + options.limit - 1)
                 .execute()
@@ -309,16 +312,16 @@ class TransactionsService: ObservableObject {
 
             // Apply additional filters before ordering
             if let startDate = options.filter.startDate {
-                query = query.gte("date", value: startDate)
+                query = query.gte("spend_date", value: startDate)
             }
 
             if let endDate = options.filter.endDate {
-                query = query.lte("date", value: endDate)
+                query = query.lte("spend_date", value: endDate)
             }
 
             // Apply ordering and pagination, then execute
             let responseWithCount: PostgrestResponse<[Transaction]> = try await query
-                .order("date", ascending: false)
+                .order("spend_date", ascending: false)
                 .order("id", ascending: false)
                 .range(from: options.offset, to: options.offset + options.limit - 1)
                 .execute()
@@ -381,8 +384,8 @@ class TransactionsService: ObservableObject {
             let transactions: [Transaction] = try await supabase
                 .from("transactions")
                 .select()
-                .gte("date", value: startDate)
-                .lte("date", value: endDate)
+                .gte("spend_date", value: startDate)
+                .lte("spend_date", value: endDate)
                 .gt("amount", value: 0) // Only expenses
                 .execute()
                 .value
@@ -417,7 +420,8 @@ class TransactionsService: ObservableObject {
 extension Transaction {
     /// Format date for display
     var formattedDate: String {
-        guard !date.isEmpty else { return "" }
+        let displayDate = spendDate
+        guard !displayDate.isEmpty else { return "" }
         
         let formatter = DateFormatter()
         formatter.timeZone = TimeZone(identifier: "UTC")
@@ -426,8 +430,8 @@ extension Transaction {
         
         // 1. First, attempt to parse the YYYY-MM-DD prefix (first 10 chars) 
         // to avoid timezone shifting (e.g. shifts from May 23 evening to May 24 in UTC)
-        if date.count >= 10 {
-            let prefixStr = String(date.prefix(10))
+        if displayDate.count >= 10 {
+            let prefixStr = String(displayDate.prefix(10))
             formatter.dateFormat = "yyyy-MM-dd"
             parsedDate = formatter.date(from: prefixStr)
         }
@@ -435,32 +439,32 @@ extension Transaction {
         // 2. Fallback to parse full string as standard YYYY-MM-DD
         if parsedDate == nil {
             formatter.dateFormat = "yyyy-MM-dd"
-            parsedDate = formatter.date(from: date)
+            parsedDate = formatter.date(from: displayDate)
         }
         
         // 3. Fallback for ISO 8601 with fractional seconds (e.g. 2026-05-23T18:57:43.000Z)
         if parsedDate == nil {
             formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-            parsedDate = formatter.date(from: date)
+            parsedDate = formatter.date(from: displayDate)
         }
         
         // 4. Fallback for standard ISO 8601
         if parsedDate == nil {
             formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-            parsedDate = formatter.date(from: date)
+            parsedDate = formatter.date(from: displayDate)
         }
         
         // 5. Fallback: try ISO8601DateFormatter
         if parsedDate == nil {
             let isoFormatter = ISO8601DateFormatter()
             isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            parsedDate = isoFormatter.date(from: date)
+            parsedDate = isoFormatter.date(from: displayDate)
         }
         
         if parsedDate == nil {
             let isoFormatter = ISO8601DateFormatter()
             isoFormatter.formatOptions = [.withInternetDateTime]
-            parsedDate = isoFormatter.date(from: date)
+            parsedDate = isoFormatter.date(from: displayDate)
         }
         
         if let actualDate = parsedDate {
@@ -469,7 +473,7 @@ extension Transaction {
             return formatter.string(from: actualDate)
         }
         
-        return date
+        return displayDate
     }
 
     /// Format amount for display

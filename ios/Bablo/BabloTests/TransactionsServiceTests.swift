@@ -101,6 +101,43 @@ struct TransactionsServiceTests {
         #expect(service.paginationInfo?.hasMore == true)
         #expect(service.paginationInfo?.nextOffset == 52)
     }
+
+    @Test @MainActor func testFetchTransactionsFiltersAndOrdersBySpendDate() async throws {
+        var capturedURL: URL?
+
+        MockURLProtocol.mockHandler = { request in
+            capturedURL = request.url
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: [
+                    "Content-Type": "application/json",
+                    "Content-Range": "items 0-1/2"
+                ]
+            )!
+
+            return (response, Self.twoTransactionsJSON.data(using: .utf8)!)
+        }
+
+        let service = TransactionsService(supabaseClient: Self.makeMockClient())
+        let options = FetchOptions(
+            limit: 2,
+            filter: TransactionFilter(startDate: "2026-05-24", endDate: "2026-05-24")
+        )
+
+        try await service.fetchTransactions(options: options)
+
+        let query = capturedURL?.query ?? ""
+        #expect(query.contains("spend_date=gte.2026-05-24"),
+                "Transaction date filtering must use canonical spend_date")
+        #expect(query.contains("spend_date=lte.2026-05-24"),
+                "Transaction date filtering must use canonical spend_date")
+        #expect(query.contains("order=spend_date.desc"),
+                "Transaction list ordering must follow canonical spend_date")
+        #expect(!query.contains("?date=gte.") && !query.contains("&date=gte."),
+                "Raw Plaid date can be future-dated for pending transactions")
+    }
     
     @Test func testTransactionAmountSignFormatting() {
         let expense = Transaction(

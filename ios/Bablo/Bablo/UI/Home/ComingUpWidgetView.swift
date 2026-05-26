@@ -10,11 +10,11 @@ struct ComingUpWidgetView: View {
     @Environment(\.babloTheme) private var theme
     
     private var calculator: ComingUpCalculator {
-        // Safe default: use standard UTC timezone for database dates and local calendar to determine current day
+        // Use device's local timezone so that days remaining calculations align with the user's calendar day
         ComingUpCalculator(
             subscriptions: subService.allRecurringStreams,
             currentDate: Date(),
-            timeZone: TimeZone(identifier: "UTC")!
+            timeZone: .current
         )
     }
     
@@ -253,7 +253,7 @@ struct ComingUpWidgetPreviewWrapper: View {
         
         if !isEmpty {
             // Seed upcoming bills matching the target mock mockup dates exactly
-            let calendar = Calendar.current
+            let calendar = Calendar.bablo
             let today = Date()
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd"

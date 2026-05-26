@@ -34,7 +34,7 @@ struct LiquidHeroView: View {
     // MARK: - Budget calculator (pure, testable)
 
     private var calculator: HeroBudgetCalculator {
-        let cal = Calendar.current
+        let cal = Calendar.bablo
         let now = Date()
         return HeroBudgetCalculator(
             monthlyIncome: budgetService.monthlyIncome,
@@ -60,16 +60,22 @@ struct LiquidHeroView: View {
     private var fillTarget: Double         { calculator.fillTarget(for: period) }
     private var deltaLabel: String?        { calculator.deltaLabel(for: period) }
 
-    /// Denominator text shown in the status strip.
-    /// Monthly shows income ("of $X earned"); week/day show the period budget.
     private var denominatorText: String {
         switch period {
         case .month:
             let income = calculator.effectiveIncome
-            guard income > 0 else { return "of \(moneyStr(effectiveBudget))" }
-            return "of \(moneyStr(income)) earned"
+            guard income > 0 else { return "of \(moneyStr(effectiveBudget)) budget" }
+            return "of \(moneyStr(income)) budget"
         case .week, .day:
-            return "of \(moneyStr(effectiveBudget))"
+            return "of \(moneyStr(effectiveBudget)) budget"
+        }
+    }
+
+    private var overBudgetPeriodLabel: String {
+        switch period {
+        case .day:   return "today"
+        case .week:  return "this week"
+        case .month: return "this month"
         }
     }
 
@@ -276,6 +282,7 @@ struct LiquidHeroView: View {
     }
 
     private var statusStrip: some View {
+        let isOver = spendable < 0
         let denominator: Double = {
             if period == .month, calculator.effectiveIncome > 0 {
                 return calculator.effectiveIncome
@@ -287,19 +294,24 @@ struct LiquidHeroView: View {
         let badgeBg  = theme.effects.isPopArt ? theme.colors.accent.color : fillGradientColors(for: animatedFill).bottom
         let badgeFg: Color = theme.effects.isPopArt ? theme.colors.accentInk.color : .white
         return HStack(spacing: 6) {
-            Text(moneyStr(spendable))
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(theme.colors.textPrimary.color)
-
-            Text(denominatorText)
-                .font(.system(size: 12))
-                .foregroundStyle(theme.colors.textTertiary.color)
+            if isOver {
+                Text("over by \(moneyStr(abs(spendable)))")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.colors.danger.color)
+            } else {
+                Text(moneyStr(spendable))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.colors.textPrimary.color)
+                Text(denominatorText)
+                    .font(.system(size: 12))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+            }
 
             Text("·")
                 .font(.system(size: 12))
                 .foregroundStyle(theme.colors.textTertiary.color)
 
-            Text(periodLabel)
+            Text(isOver ? overBudgetPeriodLabel : periodLabel)
                 .font(.system(size: 12))
                 .foregroundStyle(theme.colors.textTertiary.color)
 

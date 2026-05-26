@@ -174,7 +174,7 @@ enum SpendDateRange: String, CaseIterable, Identifiable {
 
     /// Get start date for this range, in local time to match Plaid transaction dates.
     func startDate() -> String {
-        let calendar = Calendar.current   // local timezone, local locale
+        let calendar = Calendar.bablo   // local timezone, local locale
         let now = Date()
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
@@ -200,7 +200,7 @@ enum SpendDateRange: String, CaseIterable, Identifiable {
     func endDate() -> String {
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
-        fmt.timeZone = Calendar.current.timeZone
+        fmt.timeZone = Calendar.bablo.timeZone
         return fmt.string(from: Date())
     }
 }
@@ -304,7 +304,7 @@ class BudgetService: ObservableObject {
     /// This rolling 14-day lookahead window prevents "month-boundary cliffs" (e.g., rent due
     /// on the 1st of the next month is captured on the 25th of the current month).
     var upcomingUnpaidBills: Double {
-        let calendar = Calendar.current
+        let calendar = Calendar.bablo
         let now = Date()
         let todayStr = SpendDateRange.month.endDate() // "yyyy-MM-dd" local date
         
@@ -426,8 +426,8 @@ class BudgetService: ObservableObject {
             let transactions: [TransactionForBreakdown] = try await supabase
                 .from("variable_transactions")
                 .select("id, amount, name, personal_finance_category, type")
-                .gte("date", value: startDate)
-                .lte("date", value: endDate)
+                .gte("spend_date", value: startDate)
+                .lte("spend_date", value: endDate)
                 .gt("amount", value: 0)
                 .execute()
                 .value
@@ -462,15 +462,13 @@ class BudgetService: ObservableObject {
         Logger.d("BudgetService: Fetching TOTAL spending breakdown (\(range.displayName))")
 
         do {
-            // Use standard 'transactions' view - NO Filtering
             let transactions: [TransactionForBreakdown] = try await supabase
                 .from("transactions")
                 .select("id, amount, name, personal_finance_category, type")
-                .gte("date", value: startDate)
-                .lte("date", value: endDate)
-                .gt("amount", value: 0) // Positive amounts are expenses
-                .not("personal_finance_category", operator: .ilike, value: "%transfer%") 
-                .order("date", ascending: false)
+                .gte("spend_date", value: startDate)
+                .lte("spend_date", value: endDate)
+                .eq("is_spend", value: true)
+                .order("spend_date", ascending: false)
                 .execute()
                 .value
 
@@ -569,8 +567,8 @@ class BudgetService: ObservableObject {
             let transactions: [TransactionForBreakdown] = try await supabase
                 .from("variable_transactions")
                 .select("id, amount, name, personal_finance_category, type")
-                .gte("date", value: start)
-                .lte("date", value: end)
+                .gte("spend_date", value: start)
+                .lte("spend_date", value: end)
                 .gt("amount", value: 0)
                 .execute()
                 .value
@@ -664,8 +662,8 @@ class BudgetService: ObservableObject {
             let transactions: [TransactionForBreakdown] = try await supabase
                 .from("spendable_income_transactions")
                 .select("amount, name, type, is_recurring")
-                .gte("date", value: startDate)
-                .lte("date", value: endDate)
+                .gte("spend_date", value: startDate)
+                .lte("spend_date", value: endDate)
                 .execute()
                 .value
             

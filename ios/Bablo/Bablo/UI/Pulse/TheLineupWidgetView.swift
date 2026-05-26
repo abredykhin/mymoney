@@ -7,6 +7,7 @@ struct TheLineupWidgetView: View {
     var isLoading: Bool = false
     var error: Error? = nil
     var retry: (() -> Void)? = nil
+    var onAllTapped: (() -> Void)? = nil
 
     @Environment(\.babloTheme) private var theme
 
@@ -31,13 +32,18 @@ struct TheLineupWidgetView: View {
 
                 Spacer()
 
-                HStack(spacing: 2) {
-                    Text("All")
-                        .font(theme.typography.body(size: 13, weight: .semibold))
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .semibold))
+                Button {
+                    onAllTapped?()
+                } label: {
+                    HStack(spacing: 2) {
+                        Text("All")
+                            .font(theme.typography.body(size: 13, weight: .semibold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .foregroundStyle(theme.colors.textSecondary.color)
                 }
-                .foregroundStyle(theme.colors.textSecondary.color)
+                .buttonStyle(.plain)
             }
 
             // Content

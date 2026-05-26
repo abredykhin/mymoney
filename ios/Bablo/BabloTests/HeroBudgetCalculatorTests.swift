@@ -420,8 +420,10 @@ struct HeroBudgetCalculatorTests {
                 "weekly spendable should equal the monthly remaining when it is the binding constraint")
     }
 
-    @Test func daySpendableCannotExceedMonthlyRemaining() {
-        // Monthly remaining = $50, daily budget = $213 → day capped at $50.
+    @Test func dailyBudgetIsWeeklyBudgetDividedBy7() {
+        // Monthly remaining = $50, weekly budget capped at $50.
+        // Daily budget = $50 / 7 ≈ $7.14 — NOT the full $50 monthly remaining.
+        // Spending $7.14 per day for 7 days = $50 = the weekly cap.
         let c = calc(
             income: 6_626,
             mandatory: 0,
@@ -429,8 +431,17 @@ struct HeroBudgetCalculatorTests {
             todayVariableSpend: 0,
             daysInMonth: 31
         )
-        #expect(c.spendable(for: .day) <= 50 + 0.01)
-        #expect(abs(c.spendable(for: .day) - 50) < 0.01)
+        let expectedWeekly = c.budget(for: .week)  // $50 (capped by monthly remaining)
+        let expectedDaily  = expectedWeekly / 7
+        #expect(abs(c.budget(for: .day) - expectedDaily) < 0.01)
+        #expect(abs(c.spendable(for: .day) - expectedDaily) < 0.01)
+    }
+
+    @Test func dailyBudgetIsWeeklyDivBy7_NormalCase() {
+        // No cap binding: weekly = 3000/31*7 ≈ $677.42; daily = $677.42/7 ≈ $96.77
+        let c = calc(income: 5_000, mandatory: 2_000, variableSpend: 0, daysInMonth: 31)
+        let expectedDaily = c.budget(for: .week) / 7
+        #expect(abs(c.budget(for: .day) - expectedDaily) < 0.001)
     }
 
     @Test func weekSpendableIsUncappedWhenMonthHasPlenty() {

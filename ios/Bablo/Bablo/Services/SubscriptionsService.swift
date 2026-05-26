@@ -60,7 +60,7 @@ class SubscriptionsService: ObservableObject {
     func scanIdleSubscriptions() async {
         guard let userId = UserAccount.shared.currentUser?.id else { return }
         
-        let calendar = Calendar.current
+        let calendar = Calendar.bablo
         let now = Date()
         guard let fortyFiveDaysAgo = calendar.date(byAdding: .day, value: -45, to: now) else { return }
         

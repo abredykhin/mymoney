@@ -79,13 +79,17 @@ struct PulseServiceTests {
           { "date": "2026-05-06", "total_in": 240.00, "total_out": 311.42 }
         ]
         """.data(using: .utf8)!
-        var requestCount = 0
+        var statsRequestCount = 0
 
         MockURLProtocol.mockHandler = { request in
-            requestCount += 1
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
                                            headerFields: ["Content-Type": "application/json"])!
-            return (response, requestCount == 1 ? currentWeek : previousWeek)
+            if request.url?.path.contains("/rpc/get_daily_transaction_stats") == true {
+                statsRequestCount += 1
+                return (response, statsRequestCount == 1 ? currentWeek : previousWeek)
+            }
+            // Return empty mock response for other requests like auth token refresh
+            return (response, "{}".data(using: .utf8)!)
         }
 
         let service = PulseService(supabaseClient: Self.makeMockClient())
@@ -94,7 +98,8 @@ struct PulseServiceTests {
             startDate: "2026-05-13",
             endDate: "2026-05-19",
             comparisonStartDate: "2026-05-06",
-            comparisonEndDate: "2026-05-12"
+            comparisonEndDate: "2026-05-12",
+            comparisonLabel: "vs last wk"
         )
 
         #expect(service.damageReport?.spentDeltaFromPrevious == 76)

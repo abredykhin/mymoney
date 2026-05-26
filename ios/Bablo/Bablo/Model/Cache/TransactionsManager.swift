@@ -146,13 +146,14 @@ class TransactionsManager {
         let iso8601Formatter = ISO8601DateFormatter()
         iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        if let date = iso8601Formatter.date(from: transaction.date) {
+        let canonicalDate = transaction.spendDate
+        if let date = iso8601Formatter.date(from: canonicalDate) {
             entity.date = date
-        } else if let date = dateFormatter.date(from: transaction.date) {
+        } else if let date = dateFormatter.date(from: canonicalDate) {
             entity.date = date
         } else {
             entity.date = Date()
-            Logger.w("Could not parse transaction date: \(transaction.date)")
+            Logger.w("Could not parse transaction spend date: \(canonicalDate)")
         }
 
         if let authorizedDateString = transaction.authorized_date {
@@ -189,9 +190,10 @@ class TransactionsManager {
         let iso8601Formatter = ISO8601DateFormatter()
         iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        if let date = iso8601Formatter.date(from: transaction.date) {
+        let canonicalDate = transaction.spendDate
+        if let date = iso8601Formatter.date(from: canonicalDate) {
             entity.date = date
-        } else if let date = dateFormatter.date(from: transaction.date) {
+        } else if let date = dateFormatter.date(from: canonicalDate) {
             entity.date = date
         }
 
@@ -231,6 +233,7 @@ class TransactionsManager {
             amount: entity.amount,
             date: dateString,
             authorized_date: authorizedDateString,
+            spend_date: dateString,
             name: entity.name ?? "",
             merchant_name: entity.merchantName,
             pending: entity.pending,
