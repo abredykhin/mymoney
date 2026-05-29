@@ -102,7 +102,7 @@ struct CategoryBreakdownTests {
 
         let rest = result.first(where: { $0.bucket == .rest })
         let fun = result.first(where: { $0.bucket == .category(.fun) })
-        #expect(rest?.totalAmount == 47_413 + 9)
+        #expect(rest?.totalAmount == 47_422.0)
         #expect(fun?.totalAmount == 30)
     }
 

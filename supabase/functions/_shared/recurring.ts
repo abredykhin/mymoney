@@ -15,20 +15,30 @@ export async function updateTransactionRecurringFlags(
     .update({ is_recurring: false })
     .eq('user_id', userId);
 
-  // Get all active streams (excluding TOMBSTONED)
-  const { data: streams } = await supabase
+  // Income streams: all active recurring income (e.g. paychecks)
+  const { data: incomeStreams } = await supabase
     .from('recurring_streams_table')
     .select('id, user_marked_recurring, is_excluded, status, is_active')
     .eq('user_id', userId)
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .eq('type', 'income');
 
-  for (const stream of streams || []) {
+  // Expense streams: only mandatory fixed expenses (excludes GENERAL_MERCHANDISE
+  // and other variable-spend categories that Plaid incorrectly calls "recurring")
+  const { data: expenseStreams } = await supabase
+    .from('active_mandatory_expense_streams')
+    .select('id, user_marked_recurring, is_excluded, status')
+    .eq('user_id', userId);
+
+  const streams = [...(incomeStreams ?? []), ...(expenseStreams ?? [])];
+
+  for (const stream of streams) {
     const shouldMarkRecurring =
       stream.user_marked_recurring === true ||
       (stream.user_marked_recurring === null &&
        !stream.is_excluded &&
        stream.status !== 'TOMBSTONED' &&
-       stream.is_active === true);
+       (stream as any).is_active !== false);
 
     if (!shouldMarkRecurring) continue;
 

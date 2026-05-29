@@ -130,14 +130,14 @@ struct HeroBudgetCalculator {
 
         switch period {
         case .month:
-            guard spendingPlanMode == .safeToSpend, let liquidCashAvailable else {
+            guard spendingPlanMode == .safeToSpend, liquidCashAvailable != nil else {
                 return planRemaining
             }
             // Monthly budget is already capped by initial cash, so planRemaining is safe.
             return planRemaining
 
         case .week, .day:
-            guard spendingPlanMode == .safeToSpend, let liquidCashAvailable else {
+            guard spendingPlanMode == .safeToSpend, liquidCashAvailable != nil else {
                 return planRemaining
             }
             // Under Safe-to-Spend, never show a weekly or daily discretionary budget
@@ -215,5 +215,247 @@ struct HeroBudgetCalculator {
         if k >= 10 { return "\(Int(k.rounded()))K" }
         let tenths = Int((k * 10).rounded())
         return tenths % 10 == 0 ? "\(tenths / 10)K" : "\(tenths / 10).\(tenths % 10)K"
+    }
+}
+
+// MARK: - Mandatory stream row for the obligations step
+
+struct HeroBudgetMandatoryRow: Identifiable, Equatable {
+    var id: Int
+    let name: String
+    let monthlyAmount: Double
+    let averageAmount: Double
+    let frequency: String
+    let isUpcoming: Bool
+    let frequencyDisplay: String
+}
+
+// MARK: - Money left breakdown
+
+struct HeroBudgetBreakdownCalculator {
+    let calculator: HeroBudgetCalculator
+    let period: HeroPeriod
+
+    var finalAmount: Double {
+        calculator.spendable(for: period)
+    }
+
+    var reconciledAmount: Double {
+        steps.reduce(0) { $0 + $1.amount }
+    }
+
+    /// True when the liquid-cash safety cap is tighter than the income-based discretionary budget.
+    var isCashCapped: Bool {
+        guard calculator.spendingPlanMode == .safeToSpend,
+              let liquid = calculator.liquidCashAvailable else { return false }
+        let safeCash = max(0, liquid - calculator.upcomingUnpaidExpenses)
+        return (safeCash + calculator.monthlySpentSoFar) < calculator.monthlyDiscretionary
+    }
+
+    /// Step number that contains the variable-spending rows (always the last step).
+    var spendStepNumber: Int { steps.last?.number ?? 2 }
+
+    /// Step number for the monthly obligations rows, or nil when there is no such step.
+    var mandatoryStepNumber: Int? {
+        guard period == .month, !isCashCapped,
+              calculator.monthlyMandatoryExpenses > 0 else { return nil }
+        return 2
+    }
+
+    var steps: [HeroBudgetBreakdownStep] {
+        switch period {
+        case .month:
+            return isCashCapped ? cashCappedMonthlySteps : incomeMonthlySteps
+        case .week, .day:
+            return periodSteps
+        }
+    }
+
+    // Monthly income-based flow: income → obligations → spending = what's left
+    private var incomeMonthlySteps: [HeroBudgetBreakdownStep] {
+        var result: [HeroBudgetBreakdownStep] = []
+        var running = 0.0
+
+        let inc = calculator.effectiveIncome
+        running += inc
+        result.append(HeroBudgetBreakdownStep(
+            number: 1,
+            title: "Income this month",
+            amount: inc,
+            afterAmount: running,
+            tone: .positive
+        ))
+
+        if calculator.monthlyMandatoryExpenses > 0 {
+            let mandatory = -calculator.monthlyMandatoryExpenses
+            running += mandatory
+            result.append(HeroBudgetBreakdownStep(
+                number: 2,
+                title: "Monthly obligations",
+                amount: mandatory,
+                afterAmount: running,
+                tone: .negative
+            ))
+        }
+
+        result.append(HeroBudgetBreakdownStep(
+            number: result.count + 1,
+            title: "What you've spent this month",
+            amount: -calculator.monthlySpentSoFar,
+            afterAmount: finalAmount,
+            tone: .negative
+        ))
+
+        return result
+    }
+
+    // Monthly cash-capped flow: safe budget → spending = what's left
+    private var cashCappedMonthlySteps: [HeroBudgetBreakdownStep] {
+        [
+            HeroBudgetBreakdownStep(
+                number: 1,
+                title: "Start with safe cash",
+                amount: calculator.effectiveBudget(for: .month),
+                afterAmount: calculator.effectiveBudget(for: .month),
+                tone: .positive
+            ),
+            HeroBudgetBreakdownStep(
+                number: 2,
+                title: "What you've spent this month",
+                amount: -calculator.monthlySpentSoFar,
+                afterAmount: finalAmount,
+                tone: .negative
+            )
+        ]
+    }
+
+    // Week / day two-step flow
+    private var periodSteps: [HeroBudgetBreakdownStep] {
+        [
+            HeroBudgetBreakdownStep(
+                number: 1,
+                title: startingStepTitle,
+                amount: calculator.effectiveBudget(for: period),
+                afterAmount: calculator.effectiveBudget(for: period),
+                tone: .positive
+            ),
+            HeroBudgetBreakdownStep(
+                number: 2,
+                title: burnedStepTitle,
+                amount: -calculator.spentSoFar(for: period),
+                afterAmount: finalAmount,
+                tone: .negative
+            )
+        ]
+    }
+
+    // Context rows are only used for week/day to show the monthly cap.
+    // Monthly steps are self-explanatory and need no additional context rows.
+    var contextRows: [HeroBudgetContextRow] {
+        guard period != .month else { return [] }
+
+        return [
+            HeroBudgetContextRow(
+                title: "Monthly room left",
+                detail: "Caps this period when the month is tighter",
+                amount: calculator.monthlySpendable
+            )
+        ]
+    }
+
+    static func accountAuditRows(accounts: [HeroBudgetAccountInput]) -> HeroBudgetAccountAuditRows {
+        let counted = accounts.compactMap { account -> HeroBudgetAccountAuditRow? in
+            switch account.type.lowercased() {
+            case "depository":
+                return HeroBudgetAccountAuditRow(
+                    name: account.name,
+                    detail: account.mask.map { "••\($0)" } ?? "Cash account",
+                    amount: account.currentBalance,
+                    isCounted: true
+                )
+            case "credit":
+                return HeroBudgetAccountAuditRow(
+                    name: account.name,
+                    detail: account.mask.map { "••\($0)" } ?? "Credit balance",
+                    amount: -account.currentBalance,
+                    isCounted: true
+                )
+            default:
+                return nil
+            }
+        }
+
+        return HeroBudgetAccountAuditRows(counted: counted, notCounted: [])
+    }
+
+    private var startingStepTitle: String {
+        switch period {
+        case .day:   return "Start with today's room"
+        case .week:  return "Start with this week's room"
+        case .month: return "Start with safe cash"
+        }
+    }
+
+    private var burnedStepTitle: String {
+        switch period {
+        case .day:   return "What you've spent today"
+        case .week:  return "What you've spent this week"
+        case .month: return "What you've spent this month"
+        }
+    }
+
+}
+
+struct HeroBudgetBreakdownStep: Identifiable, Equatable {
+    enum Tone: Equatable {
+        case positive
+        case neutral
+        case negative
+    }
+
+    var id: Int { number }
+    let number: Int
+    let title: String
+    let amount: Double
+    let afterAmount: Double
+    let tone: Tone
+}
+
+struct HeroBudgetContextRow: Identifiable, Equatable {
+    var id: String { title }
+    let title: String
+    let detail: String
+    let amount: Double
+}
+
+struct HeroBudgetAccountInput: Equatable {
+    let name: String
+    let mask: String?
+    let type: String
+    let currentBalance: Double
+}
+
+struct HeroBudgetAccountAuditRows: Equatable {
+    let counted: [HeroBudgetAccountAuditRow]
+    let notCounted: [HeroBudgetAccountAuditRow]
+
+    var countedTotal: Double {
+        counted.reduce(0) { $0 + $1.amount }
+    }
+}
+
+struct HeroBudgetAccountAuditRow: Identifiable, Equatable {
+    var id: String { "\(name)-\(detail)-\(amount)" }
+    let name: String
+    let detail: String
+    let amount: Double
+    let isCounted: Bool
+
+    var displayAmount: String {
+        let rounded = Int(amount.rounded())
+        if rounded < 0 {
+            return "-$\(abs(rounded).formatted())"
+        }
+        return "$\(rounded.formatted())"
     }
 }
