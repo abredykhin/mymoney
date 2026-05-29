@@ -40,6 +40,98 @@ struct HeroBudgetCalculatorTests {
         )
     }
 
+    @Test func breakdownReconcilesMonthToHeroSpendable() {
+        let c = calc(
+            income: 5_000,
+            mandatory: 2_000,
+            variableSpend: 725,
+            currentWeekVariableSpend: 180,
+            todayVariableSpend: 45
+        )
+
+        let breakdown = HeroBudgetBreakdownCalculator(calculator: c, period: .month)
+
+        #expect(breakdown.finalAmount == c.spendable(for: .month))
+        #expect(breakdown.reconciledAmount == c.spendable(for: .month))
+        #expect(breakdown.steps.map(\.amount).reduce(0, +) == c.spendable(for: .month))
+    }
+
+    @Test func breakdownReconcilesWeekToHeroSpendable() {
+        let c = calc(
+            income: 5_000,
+            mandatory: 2_000,
+            variableSpend: 900,
+            currentWeekVariableSpend: 210,
+            daysInMonth: 30
+        )
+
+        let breakdown = HeroBudgetBreakdownCalculator(calculator: c, period: .week)
+
+        #expect(abs(breakdown.finalAmount - c.spendable(for: .week)) < 0.001)
+        #expect(abs(breakdown.reconciledAmount - c.spendable(for: .week)) < 0.001)
+    }
+
+    @Test func breakdownUsesSafeToSpendCashCapLanguageWhenCashBinds() {
+        let c = calc(
+            income: 10_000,
+            mandatory: 2_000,
+            variableSpend: 500,
+            liquidCashAvailable: 1_000,
+            spendingPlanMode: .safeToSpend,
+            upcomingUnpaid: 300
+        )
+
+        let breakdown = HeroBudgetBreakdownCalculator(calculator: c, period: .month)
+
+        // Cash-capped mode: no context rows (step titles are self-explanatory), 2-step flow
+        #expect(breakdown.contextRows.isEmpty)
+        #expect(breakdown.isCashCapped)
+        #expect(breakdown.steps.first?.title == "Start with safe cash")
+        #expect(breakdown.steps.count == 2)
+    }
+
+    @Test func breakdownMonthlyIncomeModeHasThreeSteps() {
+        let c = calc(
+            income: 10_000,
+            mandatory: 2_000,
+            variableSpend: 500
+        )
+
+        let breakdown = HeroBudgetBreakdownCalculator(calculator: c, period: .month)
+
+        #expect(!breakdown.isCashCapped)
+        #expect(breakdown.steps.count == 3)
+        #expect(breakdown.steps[0].title == "Income this month")
+        #expect(breakdown.steps[1].title == "Monthly obligations")
+        #expect(breakdown.steps[2].title == "What you've spent this month")
+        #expect(breakdown.steps.map(\.amount).reduce(0, +) == c.spendable(for: .month))
+    }
+
+    @Test func breakdownMonthlyIncomeModeNoMandatoryHasTwoSteps() {
+        let c = calc(income: 5_000, mandatory: 0, variableSpend: 300)
+        let breakdown = HeroBudgetBreakdownCalculator(calculator: c, period: .month)
+
+        #expect(breakdown.steps.count == 2)
+        #expect(breakdown.steps[0].title == "Income this month")
+        #expect(breakdown.steps[1].title == "What you've spent this month")
+        #expect(breakdown.steps.map(\.amount).reduce(0, +) == c.spendable(for: .month))
+    }
+
+    @Test func accountAuditOmitsNonLiquidAccountsFromNotCountedExplainer() {
+        let rows = HeroBudgetBreakdownCalculator.accountAuditRows(
+            accounts: [
+                .init(name: "Chase Checking", mask: "3382", type: "depository", currentBalance: 1_247),
+                .init(name: "Apple Card", mask: nil, type: "credit", currentBalance: 118),
+                .init(name: "Robinhood", mask: nil, type: "investment", currentBalance: 2_340),
+                .init(name: "Student Loan", mask: nil, type: "loan", currentBalance: 900)
+            ]
+        )
+
+        #expect(rows.counted.map(\.displayAmount) == ["$1,247", "-$118"])
+        #expect(rows.notCounted.isEmpty)
+        #expect(rows.countedTotal == 1_129)
+    }
+
     // MARK: - Monthly discretionary
 
     @Test func monthlyDiscretionaryPositive() {

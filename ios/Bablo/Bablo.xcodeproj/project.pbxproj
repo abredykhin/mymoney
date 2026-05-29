@@ -27,6 +27,7 @@
 		3A4919582F25E9BA00C0E820 /* Dimensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4919572F25E9BA00C0E820 /* Dimensions.swift */; };
 		3A68FA072EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */; };
 		3A68FA092EFCD12F00D32561 /* LiquidHeroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA082EFCD12F00D32561 /* LiquidHeroView.swift */; };
+		4D4D4C002F2A000100BEEF01 /* MoneyLeftBreakdownSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4D4C002F2A000000BEEF01 /* MoneyLeftBreakdownSheetView.swift */; };
 		3A68FA0B2EFCD12F00D32561 /* HomeTopBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA0A2EFCD12F00D32561 /* HomeTopBarView.swift */; };
 		3A68FA102F15FCC600D32561 /* EmailAuthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA0E2F15FCC600D32561 /* EmailAuthView.swift */; };
 		3A68FA112F15FCC600D32561 /* EmailOTPVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA0F2F15FCC600D32561 /* EmailOTPVerificationView.swift */; };
@@ -188,6 +189,7 @@
 		3A4919572F25E9BA00C0E820 /* Dimensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dimensions.swift; sourceTree = "<group>"; };
 		3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeroBudgetEmptyStateView.swift; sourceTree = "<group>"; };
 		3A68FA082EFCD12F00D32561 /* LiquidHeroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidHeroView.swift; sourceTree = "<group>"; };
+		4D4D4C002F2A000000BEEF01 /* MoneyLeftBreakdownSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyLeftBreakdownSheetView.swift; sourceTree = "<group>"; };
 		3A68FA0A2EFCD12F00D32561 /* HomeTopBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTopBarView.swift; sourceTree = "<group>"; };
 		3A68FA0E2F15FCC600D32561 /* EmailAuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailAuthView.swift; sourceTree = "<group>"; };
 		3A68FA0F2F15FCC600D32561 /* EmailOTPVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailOTPVerificationView.swift; sourceTree = "<group>"; };
@@ -351,6 +353,7 @@
 			children = (
 				3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */,
 				3A68FA082EFCD12F00D32561 /* LiquidHeroView.swift */,
+				4D4D4C002F2A000000BEEF01 /* MoneyLeftBreakdownSheetView.swift */,
 				3A68FA0A2EFCD12F00D32561 /* HomeTopBarView.swift */,
 				3A88FA0A2EFCD12F00D32510 /* CoachCardView.swift */,
 				D47E430694C60746ECE37F8E /* HomeWidgetCard.swift */,
@@ -907,6 +910,7 @@
 				7590F2982C86470400BCCDE6 /* HomeView.swift in Sources */,
 				3A68FA072EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift in Sources */,
 				3A68FA092EFCD12F00D32561 /* LiquidHeroView.swift in Sources */,
+				4D4D4C002F2A000100BEEF01 /* MoneyLeftBreakdownSheetView.swift in Sources */,
 				3A68FA0B2EFCD12F00D32561 /* HomeTopBarView.swift in Sources */,
 				3A88FA0A2EFCD12F00D32511 /* CoachCardView.swift in Sources */,
 				3A88FA0A2EFCD12F00D32521 /* CoachTabView.swift in Sources */,

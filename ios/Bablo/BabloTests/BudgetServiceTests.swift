@@ -319,6 +319,180 @@ struct BudgetServiceTests {
                 "Income classification should live in the DB view, not raw transactions")
     }
 
+    // MARK: - fetchHeroExcludedTransactionRows
+
+    @Test @MainActor func testFetchHeroExcludedTransactionRowsQueriesRawTransactionsWithCalculationFlags() async throws {
+        var capturedURLs: [URL] = []
+
+        MockURLProtocol.mockHandler = { request in
+            capturedURLs.append(request.url!)
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
+                                           headerFields: ["Content-Type": "application/json"])!
+            if request.url?.query?.contains("amount=lt.0") == true {
+                let cardPaymentsJSON = """
+                [
+                  {
+                    "amount": -3734.26,
+                    "personal_finance_subcategory": "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT"
+                  }
+                ]
+                """
+                return (response, Data(cardPaymentsJSON.utf8))
+            }
+
+            let json = """
+            [
+              {
+                "id": 1,
+                "amount": 2500,
+                "name": "CHASE CREDIT CARD PAYMENT",
+                "personal_finance_category": "LOAN_PAYMENTS",
+                "personal_finance_subcategory": "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT",
+                "type": "depository",
+                "is_recurring": false,
+                "is_spend": false,
+                "is_income": false
+              },
+              {
+                "id": 2,
+                "amount": -2500,
+                "name": "Payment Thank You",
+                "personal_finance_category": "TRANSFER_IN",
+                "personal_finance_subcategory": "TRANSFER_IN_CASH_ADVANCES_AND_LOANS",
+                "type": "credit",
+                "is_recurring": false,
+                "is_spend": false,
+                "is_income": false
+              },
+              {
+                "id": 3,
+                "amount": 47413,
+                "name": "DOMESTIC WIRE TRANSFER",
+                "personal_finance_category": "TRANSFER_OUT",
+                "personal_finance_subcategory": "TRANSFER_OUT_OTHER_TRANSFER_OUT",
+                "type": "depository",
+                "is_recurring": false,
+                "is_spend": true,
+                "is_income": false
+              },
+              {
+                "id": 4,
+                "amount": 42,
+                "name": "SAFEWAY",
+                "personal_finance_category": "FOOD_AND_DRINK",
+                "personal_finance_subcategory": "FOOD_AND_DRINK_GROCERIES",
+                "type": "credit",
+                "is_recurring": false,
+                "is_spend": true,
+                "is_income": false
+              },
+              {
+                "id": 5,
+                "amount": 3734.26,
+                "name": "Robinhood",
+                "personal_finance_category": "TRANSFER_OUT",
+                "personal_finance_subcategory": "TRANSFER_OUT_INVESTMENT_AND_RETIREMENT_FUNDS",
+                "type": "depository",
+                "is_recurring": false,
+                "is_spend": false,
+                "is_income": false
+              }
+            ]
+            """
+            return (response, Data(json.utf8))
+        }
+
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let client = SupabaseClient(
+            supabaseURL: URL(string: "http://127.0.0.1:54321")!,
+            supabaseKey: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+            options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
+        )
+
+        let service = await BudgetService(supabaseClient: client)
+        let rows = await service.fetchHeroExcludedTransactionRows(for: .month)
+
+        let positiveSpendURL = capturedURLs.first { $0.query?.contains("amount=gt.0") == true }
+        let cardPaymentURL = capturedURLs.first { $0.query?.contains("amount=lt.0") == true }
+        let query = positiveSpendURL?.query ?? ""
+        #expect(positiveSpendURL?.path.contains("/rest/v1/transactions") == true)
+        #expect(query.contains("is_income=eq.false"))
+        #expect(query.contains("amount=gt.0"))
+        #expect(query.contains("spend_date=gte."))
+        #expect(query.contains("spend_date=lte."))
+        #expect(!query.contains("is_recurring=eq."),
+                "Excluded rows should include ignored recurring transactions too")
+        #expect(cardPaymentURL?.query?.contains("amount=lt.0") == true,
+                "Card-payment matching query must run and decode from a minimal amount-only response")
+        #expect(Set(rows.map(\.name)) == Set(["Domestic Wire Transfer", "Robinhood", "Chase Credit Card Payment"]))
+        #expect(rows.filter { $0.detail == "Credit card payment" }.count == 2)
+        #expect(rows.contains { $0.detail == "Already in cash balance; not variable spend" })
+    }
+
+    @Test @MainActor func testFetchHeroSpendBreakdownRowsUsesTrackedFlexibleCategories() async throws {
+        var capturedURL: URL?
+
+        MockURLProtocol.mockHandler = { request in
+            capturedURL = request.url
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
+                                           headerFields: ["Content-Type": "application/json"])!
+            let json = """
+            [
+              {
+                "id": 1,
+                "amount": 25,
+                "name": "BLUE BOTTLE COFFEE",
+                "personal_finance_category": "FOOD_AND_DRINK",
+                "personal_finance_subcategory": "FOOD_AND_DRINK_COFFEE_SHOP",
+                "type": "depository"
+              },
+              {
+                "id": 2,
+                "amount": 75,
+                "name": "SAFEWAY",
+                "personal_finance_category": "FOOD_AND_DRINK",
+                "personal_finance_subcategory": "FOOD_AND_DRINK_GROCERIES",
+                "type": "depository"
+              },
+              {
+                "id": 3,
+                "amount": 40,
+                "name": "AMC",
+                "personal_finance_category": "ENTERTAINMENT",
+                "personal_finance_subcategory": "ENTERTAINMENT_TV_AND_MOVIES",
+                "type": "depository"
+              },
+              {
+                "id": 4,
+                "amount": 30,
+                "name": "VENMO",
+                "personal_finance_category": "TRANSFER_OUT",
+                "personal_finance_subcategory": "TRANSFER_OUT_ACCOUNT_TRANSFER",
+                "type": "depository"
+              }
+            ]
+            """
+            return (response, Data(json.utf8))
+        }
+
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let client = SupabaseClient(
+            supabaseURL: URL(string: "http://127.0.0.1:54321")!,
+            supabaseKey: "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
+            options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
+        )
+
+        let service = await BudgetService(supabaseClient: client)
+        let rows = await service.fetchHeroSpendBreakdownRows(for: .month, trackedCategories: [.coffeeRuns])
+
+        #expect(capturedURL?.query?.contains("personal_finance_subcategory") == true)
+        #expect(rows.map(\.category) == ["Everything else", "Coffee runs"])
+        #expect(rows.first?.amount == 145)
+        #expect(rows.first?.transactionCount == 3)
+    }
+
     // MARK: - calculateVariableBudget
 
     @Test @MainActor func testCalculateVariableBudgetBasicCase() async throws {

@@ -26,6 +26,7 @@ struct LiquidHeroView: View {
 
     @Binding var period: HeroPeriod
     @State private var animatedFill: Double = 0
+    @State private var isShowingBreakdown = false
 
     init(period: Binding<HeroPeriod> = .constant(.month)) {
         self._period = period
@@ -105,6 +106,17 @@ struct LiquidHeroView: View {
             x: theme.effects.shadowX,
             y: theme.effects.shadowY
         )
+        .contentShape(RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous))
+        .onTapGesture {
+            isShowingBreakdown = true
+        }
+        .accessibilityAddTraits(.isButton)
+        .sheet(isPresented: $isShowingBreakdown) {
+            MoneyLeftBreakdownSheetView(period: period)
+                .presentationDetents([.medium, .large])
+                .presentationContentInteraction(.resizes)
+                .presentationDragIndicator(.visible)
+        }
         .onChange(of: fillTarget) { _, newValue in
             withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
                 animatedFill = newValue

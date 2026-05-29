@@ -156,6 +156,40 @@ struct CategoryBreakdownResponse: Codable, Equatable {
     }
 }
 
+struct HeroSpendBreakdownRow: Identifiable, Equatable {
+    var id: String { category }
+    let category: String
+    let amount: Double
+    let transactionCount: Int
+    let examples: [String]
+
+    var detail: String {
+        if examples.isEmpty {
+            return "\(transactionCount) transaction\(transactionCount == 1 ? "" : "s")"
+        }
+        return examples.joined(separator: ", ")
+    }
+}
+
+struct HeroIncomeBreakdownRow: Identifiable, Equatable {
+    var id: String { "\(name)-\(amount)" }
+    let name: String
+    let amount: Double
+    let isRecurring: Bool
+}
+
+struct HeroExcludedTransactionRow: Identifiable, Equatable {
+    var id: String { "\(name)-\(detail)-\(amount)" }
+    let name: String
+    let detail: String
+    let amount: Double
+
+    var displayAmount: String {
+        let rounded = Int(abs(amount).rounded())
+        return "$\(rounded.formatted())"
+    }
+}
+
 /// Date range for spending analysis
 enum SpendDateRange: String, CaseIterable, Identifiable {
     case week
@@ -550,6 +584,138 @@ class BudgetService: ObservableObject {
         Array(spendBreakdownItems.prefix(limit))
     }
 
+    func fetchHeroSpendBreakdownRows(
+        for period: HeroPeriod,
+        trackedCategories: Set<FlexibleSpendingCategory> = [],
+        limit: Int = 6
+    ) async -> [HeroSpendBreakdownRow] {
+        let window = heroDateWindow(for: period)
+
+        do {
+            let transactions: [TransactionForBreakdown] = try await supabase
+                .from("variable_transactions")
+                .select("id, amount, name, personal_finance_category, personal_finance_subcategory, type")
+                .gte("spend_date", value: window.start)
+                .lte("spend_date", value: window.end)
+                .gt("amount", value: 0)
+                .execute()
+                .value
+
+            var buckets: [String: (amount: Double, count: Int, examples: [String])] = [:]
+            for transaction in transactions {
+                let category = displaySpendBucket(
+                    primary: transaction.personalFinanceCategory,
+                    detailed: transaction.personalFinanceSubcategory,
+                    trackedCategories: trackedCategories
+                )
+                var bucket = buckets[category] ?? (amount: 0, count: 0, examples: [])
+                bucket.amount += abs(transaction.amount)
+                bucket.count += 1
+                let merchant = cleanMerchantName(transaction.name)
+                if !merchant.isEmpty && !bucket.examples.contains(merchant) && bucket.examples.count < 2 {
+                    bucket.examples.append(merchant)
+                }
+                buckets[category] = bucket
+            }
+
+            return buckets
+                .map { category, bucket in
+                    HeroSpendBreakdownRow(
+                        category: category,
+                        amount: bucket.amount,
+                        transactionCount: bucket.count,
+                        examples: bucket.examples
+                    )
+                }
+                .sorted { $0.amount > $1.amount }
+                .prefix(limit)
+                .map { $0 }
+        } catch {
+            Logger.e("BudgetService: Failed to fetch hero spend rows: \(error)")
+            return []
+        }
+    }
+
+    func fetchHeroIncomeRowsForCurrentMonth(limit: Int = 4) async -> [HeroIncomeBreakdownRow] {
+        let window = heroDateWindow(for: .month)
+
+        do {
+            let transactions: [TransactionForBreakdown] = try await supabase
+                .from("spendable_income_transactions")
+                .select("amount, name, type, is_recurring")
+                .gte("spend_date", value: window.start)
+                .lte("spend_date", value: window.end)
+                .execute()
+                .value
+
+            // Group by cleaned name so two biweekly paychecks with the same
+            // source don't show as near-duplicate rows.
+            var groups: [String: (amount: Double, count: Int, isRecurring: Bool)] = [:]
+            for tx in transactions where tx.type != "credit" && tx.type != "loan" {
+                let key = cleanIncomeName(tx.name)
+                var g = groups[key] ?? (amount: 0, count: 0, isRecurring: false)
+                g.amount += abs(tx.amount)
+                g.count += 1
+                g.isRecurring = g.isRecurring || (tx.isRecurring == true)
+                groups[key] = g
+            }
+            return groups
+                .map { name, g in
+                    let displayName = g.count > 1 ? "\(name) ×\(g.count)" : name
+                    return HeroIncomeBreakdownRow(name: displayName, amount: g.amount, isRecurring: g.isRecurring)
+                }
+                .sorted { $0.amount > $1.amount }
+                .prefix(limit)
+                .map { $0 }
+        } catch {
+            Logger.e("BudgetService: Failed to fetch hero income rows: \(error)")
+            return []
+        }
+    }
+
+    func fetchHeroExcludedTransactionRows(for period: HeroPeriod, limit: Int = 6) async -> [HeroExcludedTransactionRow] {
+        let window = heroDateWindow(for: period)
+
+        do {
+            let transactions: [TransactionForBreakdown] = try await supabase
+                .from("transactions")
+                .select("id, amount, name, personal_finance_category, personal_finance_subcategory, type, is_recurring, is_spend, is_income")
+                .gte("spend_date", value: window.start)
+                .lte("spend_date", value: window.end)
+                .gt("amount", value: 0)
+                .eq("is_income", value: false)
+                .order("amount", ascending: false)
+                .limit(100)
+                .execute()
+                .value
+            let cardPayments: [HeroCardPaymentMatch] = try await supabase
+                .from("transactions")
+                .select("amount, personal_finance_subcategory")
+                .gte("spend_date", value: window.start)
+                .lte("spend_date", value: window.end)
+                .lt("amount", value: 0)
+                .eq("personal_finance_subcategory", value: "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT")
+                .limit(100)
+                .execute()
+                .value
+            let cardPaymentAmounts = Set(cardPayments.map { roundedCents(abs($0.amount)) })
+
+            return transactions
+                .filter { isExcludedFromHeroSpend($0) }
+                .prefix(limit)
+                .map { transaction in
+                    HeroExcludedTransactionRow(
+                        name: cleanMerchantName(transaction.name),
+                        detail: exclusionReason(for: transaction, cardPaymentAmounts: cardPaymentAmounts),
+                        amount: transaction.amount
+                    )
+                }
+        } catch {
+            Logger.e("BudgetService: Failed to fetch hero excluded transaction rows: \(error)")
+            return []
+        }
+    }
+
     /// Clear cached data
     func clearCache() {
         totalBalance = nil
@@ -577,6 +743,148 @@ class BudgetService: ObservableObject {
             Logger.e("BudgetService: Failed to fetch variable spend (\(start)–\(end)): \(error)")
             return 0
         }
+    }
+
+    private func heroDateWindow(for period: HeroPeriod) -> (start: String, end: String) {
+        switch period {
+        case .day:
+            let today = PreviousPeriodDateRange.compute(calendar: .bablo).todayDate
+            return (today, today)
+        case .week:
+            let ranges = PreviousPeriodDateRange.compute(calendar: .bablo)
+            return (ranges.currentWeekStart, ranges.todayDate)
+        case .month:
+            return (SpendDateRange.month.startDate(), SpendDateRange.month.endDate())
+        }
+    }
+
+    private func displayCategory(_ rawCategory: String?) -> String {
+        guard let rawCategory, !rawCategory.isEmpty else { return "Other" }
+        let map: [String: String] = [
+            "FOOD_AND_DRINK":          "Food & Drink",
+            "GENERAL_MERCHANDISE":     "Shopping",
+            "GENERAL_SERVICES":        "Services",
+            "TRANSFER_OUT":            "Transfers & Cash",
+            "TRANSPORTATION":          "Transportation",
+            "PERSONAL_CARE":           "Personal Care",
+            "ENTERTAINMENT":           "Entertainment",
+            "HOME_IMPROVEMENT":        "Home",
+            "MEDICAL":                 "Medical",
+            "TRAVEL":                  "Travel",
+            "GOVERNMENT_AND_NON_PROFIT": "Donations",
+            "RENT_AND_UTILITIES":      "Bills",
+            "BANK_FEES":               "Bank Fees",
+            "LOAN_PAYMENTS":           "Loan Payments",
+        ]
+        return map[rawCategory] ?? rawCategory
+            .split(separator: "_")
+            .map { $0.lowercased().capitalized }
+            .joined(separator: " ")
+    }
+
+    private func displaySpendBucket(
+        primary: String?,
+        detailed: String?,
+        trackedCategories: Set<FlexibleSpendingCategory>
+    ) -> String {
+        guard let category = FlexibleSpendingCategory.map(primary: primary, detailed: detailed) else {
+            return "Everything else"
+        }
+
+        if trackedCategories.isEmpty || trackedCategories.contains(category) {
+            return category.displayName
+        }
+
+        return "Everything else"
+    }
+
+    private func cleanMerchantName(_ raw: String) -> String {
+        var name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Strip transaction sub-IDs: "Amazon.com*5J94D85I3" → "Amazon.com"
+        if let r = name.range(of: #"\*[A-Z0-9]+"#, options: .regularExpression) {
+            name = String(name[..<r.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        // Known ugly bank strings
+        if name.uppercased().hasPrefix("NON-CHASE ATM") || name.uppercased().hasPrefix("NON CHASE ATM") {
+            return "ATM Withdrawal"
+        }
+        // Title-case all-caps bank descriptions (>4 chars to skip tickers/codes)
+        if name.count > 4 && name == name.uppercased() {
+            name = name.split(separator: " ").map { word -> String in
+                let w = String(word)
+                let lower = w.lowercased()
+                // Preserve common uppercase acronyms
+                let acronyms: Set<String> = ["llc", "atm", "ach", "ppd", "usa", "us", "nyc", "sf"]
+                return acronyms.contains(lower) ? w.uppercased() : lower.prefix(1).uppercased() + lower.dropFirst()
+            }.joined(separator: " ")
+        }
+        return name
+    }
+
+    private func exclusionReason(for transaction: TransactionForBreakdown, cardPaymentAmounts: Set<Int> = []) -> String {
+        let category = transaction.personalFinanceCategory ?? ""
+        let subcategory = transaction.personalFinanceSubcategory ?? ""
+        let name = transaction.name.lowercased()
+        let type = transaction.type?.lowercased() ?? ""
+
+        if subcategory == "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT" {
+            return "Credit card payment"
+        }
+        if cardPaymentAmounts.contains(roundedCents(abs(transaction.amount))) &&
+            (name.contains("card") || name.contains("citi") || name.contains("robinhood")) {
+            return "Credit card payment"
+        }
+        if category == "TRANSFER_IN" || category == "TRANSFER_OUT" || name.contains("transfer") {
+            if subcategory == "TRANSFER_OUT_OTHER_TRANSFER_OUT" {
+                return "Already in cash balance; not variable spend"
+            }
+            return "Transfer between accounts"
+        }
+        if type == "investment" || subcategory.contains("INVESTMENT_AND_RETIREMENT") {
+            return "Investment movement"
+        }
+        if transaction.amount <= 0 {
+            return "Not spendable income"
+        }
+        return "Outside the safe-spend calculation"
+    }
+
+    private func roundedCents(_ amount: Double) -> Int {
+        Int((amount * 100).rounded())
+    }
+
+    private func isExcludedFromHeroSpend(_ transaction: TransactionForBreakdown) -> Bool {
+        guard transaction.amount > 0 else { return false }
+        if transaction.isSpend != true { return true }
+        return transaction.personalFinanceSubcategory == "TRANSFER_OUT_OTHER_TRANSFER_OUT"
+    }
+
+    private func cleanIncomeName(_ raw: String) -> String {
+        var name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Strip bank PPD/ACH/WEB ID suffixes
+        for suffix in [" PPD ID:", " ACH ID:", " WEB ID:", " CCD ID:", " TEL ID:"] {
+            if let r = name.range(of: suffix) {
+                name = String(name[..<r.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+                break
+            }
+        }
+        // Trim common payroll noise suffixes
+        for suffix in [" PAYROLL", " DIRECT DEP", " DIR DEP"] {
+            if name.uppercased().hasSuffix(suffix) {
+                name = String(name.dropLast(suffix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+                break
+            }
+        }
+        // Title-case all-caps names
+        if name.count > 4 && name == name.uppercased() {
+            name = name.split(separator: " ").map { word -> String in
+                let w = String(word)
+                let lower = w.lowercased()
+                let acronyms: Set<String> = ["llc", "inc", "usa", "us", "atm"]
+                return acronyms.contains(lower) ? w.uppercased() : lower.prefix(1).uppercased() + lower.dropFirst()
+            }.joined(separator: " ")
+        }
+        return name
     }
 
     /// Fetch budget summary from user profile
@@ -890,16 +1198,32 @@ private struct TransactionForBreakdown: Codable {
     let amount: Double
     let name: String
     let personalFinanceCategory: String?
+    let personalFinanceSubcategory: String?
     let type: String?
     let isRecurring: Bool? // NEW
+    let isSpend: Bool?
+    let isIncome: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id
         case amount
         case name
         case personalFinanceCategory = "personal_finance_category"
+        case personalFinanceSubcategory = "personal_finance_subcategory"
         case type
         case isRecurring = "is_recurring"
+        case isSpend = "is_spend"
+        case isIncome = "is_income"
+    }
+}
+
+private struct HeroCardPaymentMatch: Codable {
+    let amount: Double
+    let personalFinanceSubcategory: String?
+
+    enum CodingKeys: String, CodingKey {
+        case amount
+        case personalFinanceSubcategory = "personal_finance_subcategory"
     }
 }
 
