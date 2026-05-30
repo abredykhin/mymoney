@@ -139,6 +139,23 @@ struct StreakServiceTests {
         ])
     }
 
+    @Test func streakDetailCalendarStatusesHaveClearDisplayLabels() {
+        #expect(StreakCalendarDayStatus.unknown.displayLabel == "No data")
+        #expect(StreakCalendarDayStatus.underBudget.displayLabel == "Under budget")
+        #expect(StreakCalendarDayStatus.overBudget.displayLabel == "Over budget")
+        #expect(StreakCalendarDayStatus.today.displayLabel == "Today under budget")
+    }
+
+    @Test func streakFreezeMarkersExplainWhatTheyMean() {
+        let streak = UserStreak(
+            currentStreak: 3,
+            maxStreak: 6,
+            last10DaysStatus: Array(repeating: true, count: 10)
+        )
+
+        #expect(streak.freezeMarkerSummary == "Earned every 3 under-budget days. They are streak checkpoints, not extra spending money.")
+    }
+
     private func makeMockClient(returning data: Data) -> SupabaseClient {
         MockURLProtocol.mockHandler = { request in
             let url = request.url!

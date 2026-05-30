@@ -84,7 +84,13 @@ private struct RecentTransactionRow: View {
     @Environment(\.babloTheme) private var theme
 
     private var amountColor: Color {
-        transaction.isExpense ? theme.colors.textPrimary.color : theme.colors.accent.color
+        if transaction.isSpend {
+            return theme.colors.textPrimary.color
+        } else if transaction.isIncome {
+            return theme.colors.accent.color
+        } else {
+            return theme.colors.textSecondary.color
+        }
     }
 
     private var presentation: RecentTransactionPresentation {
@@ -146,10 +152,20 @@ struct RecentTransactionPresentation {
         formatter.maximumFractionDigits = value.rounded() == value ? 0 : 2
 
         let formatted = formatter.string(from: NSNumber(value: value)) ?? "$\(Int(value.rounded()))"
-        return transaction.isExpense ? "-\(formatted)" : "+\(formatted)"
+        
+        if transaction.isSpend {
+            return "-\(formatted)"
+        } else if transaction.isIncome {
+            return "+\(formatted)"
+        } else {
+            return transaction.amount > 0 ? "-\(formatted)" : "+\(formatted)"
+        }
     }
 
     private static func categoryText(for transaction: Transaction) -> String {
+        if transaction.isActualTransfer {
+            return "Transfer"
+        }
         let category = transaction.personalFinanceCategory ?? transaction.primaryCategory ?? "Transaction"
         return category
             .replacingOccurrences(of: "_", with: " ")
@@ -158,6 +174,9 @@ struct RecentTransactionPresentation {
     }
 
     private static func iconName(for transaction: Transaction) -> String {
+        if transaction.isActualTransfer {
+            return "arrow.left.arrow.right"
+        }
         let category = (transaction.personalFinanceCategory ?? transaction.primaryCategory ?? "").lowercased()
         if category.contains("food") || category.contains("restaurant") {
             return "fork.knife"

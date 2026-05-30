@@ -45,11 +45,22 @@ class SubscriptionsService: ObservableObject {
                 .eq("user_id", value: userId)
                 .execute()
                 .value
+            
+            async let fetchIncomeStreams: [RecurringStream] = supabase
+                .from("recurring_streams_table")
+                .select("*")
+                .eq("user_id", value: userId)
+                .eq("type", value: "income")
+                .eq("is_active", value: true)
+                .eq("is_excluded", value: false)
+                .neq("status", value: "TOMBSTONED")
+                .execute()
+                .value
 
-            let (subs, all) = try await (fetchSubs, fetchAllStreams)
+            let (subs, expenses, incomes) = try await (fetchSubs, fetchAllStreams, fetchIncomeStreams)
             self.subscriptions = subs
-            self.allRecurringStreams = all
-            Logger.i("SubscriptionsService: Loaded \(subs.count) active subscriptions and \(all.count) active recurring streams")
+            self.allRecurringStreams = expenses + incomes
+            Logger.i("SubscriptionsService: Loaded \(subs.count) subscriptions, \(expenses.count) expense streams, and \(incomes.count) income streams")
         } catch {
             Logger.e("SubscriptionsService: Failed to fetch subscriptions: \(error)")
             self.error = error

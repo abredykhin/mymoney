@@ -126,24 +126,23 @@ struct HeroBudgetCalculator {
     // MARK: - Derived: spendable remaining
 
     func spendable(for period: HeroPeriod) -> Double {
-        let planRemaining = budget(for: period) - spentSoFar(for: period)
-
+        let rawSpendable = effectiveBudget(for: period) - spentSoFar(for: period)
+        
         switch period {
         case .month:
-            guard spendingPlanMode == .safeToSpend, liquidCashAvailable != nil else {
-                return planRemaining
-            }
-            // Monthly budget is already capped by initial cash, so planRemaining is safe.
-            return planRemaining
-
+            return rawSpendable
+            
         case .week, .day:
             guard spendingPlanMode == .safeToSpend, liquidCashAvailable != nil else {
-                return planRemaining
+                return rawSpendable
             }
-            // Under Safe-to-Spend, never show a weekly or daily discretionary budget
-            // that exceeds the actual total liquid cash available for the month.
+            
             let safeMonthlyRemaining = spendable(for: .month)
-            return max(0, min(planRemaining, safeMonthlyRemaining))
+            if safeMonthlyRemaining < 0 {
+                return max(rawSpendable, safeMonthlyRemaining)
+            } else {
+                return rawSpendable
+            }
         }
     }
 
@@ -151,7 +150,20 @@ struct HeroBudgetCalculator {
 
     /// Stable budget baseline that does not expand when overspent.
     func effectiveBudget(for period: HeroPeriod) -> Double {
-        budget(for: period)
+        switch period {
+        case .month:
+            return budget(for: .month)
+            
+        case .week, .day:
+            let rawBudget = budget(for: period)
+            guard spendingPlanMode == .safeToSpend, liquidCashAvailable != nil else {
+                return rawBudget
+            }
+            
+            // Remaining monthly budget before this period's spending started.
+            let monthlyRemainingBeforePeriod = spendable(for: .month) + spentSoFar(for: period)
+            return max(0, min(rawBudget, monthlyRemainingBeforePeriod))
+        }
     }
 
     // MARK: - Derived: liquid fill ratio (clamped to [0.10, 1.0])
@@ -253,7 +265,7 @@ struct HeroBudgetBreakdownCalculator {
     }
 
     /// Step number that contains the variable-spending rows (always the last step).
-    var spendStepNumber: Int { steps.last?.number ?? 2 }
+    var spendStepNumber: Int { 2 }
 
     /// Step number for the monthly obligations rows, or nil when there is no such step.
     var mandatoryStepNumber: Int? {
@@ -334,22 +346,25 @@ struct HeroBudgetBreakdownCalculator {
         ]
     }
 
-    // Week / day two-step flow
+    // Week / day flow
     private var periodSteps: [HeroBudgetBreakdownStep] {
-        [
+        let budget = calculator.effectiveBudget(for: period)
+        let spent = calculator.spentSoFar(for: period)
+        
+        return [
             HeroBudgetBreakdownStep(
                 number: 1,
                 title: startingStepTitle,
-                amount: calculator.effectiveBudget(for: period),
-                afterAmount: calculator.effectiveBudget(for: period),
+                amount: budget,
+                afterAmount: budget,
                 tone: .positive,
                 transactionSource: nil     // prorated budget number, no transactions
             ),
             HeroBudgetBreakdownStep(
                 number: 2,
                 title: burnedStepTitle,
-                amount: -calculator.spentSoFar(for: period),
-                afterAmount: finalAmount,
+                amount: -spent,
+                afterAmount: budget - spent,
                 tone: .negative,
                 transactionSource: .variableSpend
             )

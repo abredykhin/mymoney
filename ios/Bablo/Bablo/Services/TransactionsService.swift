@@ -35,6 +35,9 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
     let personal_finance_subcategory: String? // Personal finance subcategory
     let created_at: String? // Created timestamp
     let updated_at: String? // Updated timestamp
+    var is_spend: Bool? = nil
+    var is_income: Bool? = nil
+
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -58,6 +61,8 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
         case personal_finance_subcategory
         case created_at
         case updated_at
+        case is_spend
+        case is_income
     }
 
     // Computed properties for camelCase access (if needed)
@@ -82,6 +87,27 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
 
     var isExpense: Bool {
         amount > 0
+    }
+
+    var isSpend: Bool {
+        if let isSpendFlag = is_spend {
+            return isSpendFlag
+        }
+        return amount > 0 && !isTransfer
+    }
+
+    var isIncome: Bool {
+        if let isIncomeFlag = is_income {
+            return isIncomeFlag
+        }
+        return amount < 0 && !isTransfer
+    }
+
+    var isActualTransfer: Bool {
+        if is_spend != nil || is_income != nil {
+            return !(is_spend ?? false) && !(is_income ?? false)
+        }
+        return isTransfer
     }
 
     var absoluteAmount: Double {

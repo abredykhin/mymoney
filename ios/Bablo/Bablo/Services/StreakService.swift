@@ -11,6 +11,19 @@ enum StreakCalendarDayStatus: Equatable {
     case underBudget
     case overBudget
     case today
+
+    var displayLabel: String {
+        switch self {
+        case .unknown:
+            return "No data"
+        case .underBudget:
+            return "Under budget"
+        case .overBudget:
+            return "Over budget"
+        case .today:
+            return "Today under budget"
+        }
+    }
 }
 
 struct StreakCalendarCell: Identifiable, Equatable {
@@ -44,6 +57,10 @@ extension UserStreak {
 
     var earnedFreezeCount: Int {
         min(max(currentStreak / 3, 0), 3)
+    }
+
+    var freezeMarkerSummary: String {
+        "Earned every 3 under-budget days. They are streak checkpoints, not extra spending money."
     }
 
     var detailMilestones: [StreakDetailMilestone] {

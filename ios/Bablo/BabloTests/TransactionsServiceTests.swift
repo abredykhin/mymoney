@@ -171,7 +171,7 @@ struct TransactionsServiceTests {
         #expect(inflow.isExpense == false)
     }
 
-    @Test func testRecentTransactionPresentationFormatsExpenseAndIncome() {
+    @Test func testRecentTransactionPresentationFormatsExpenseAndIncomeAndTransfer() {
         let expense = Transaction(
             id: 1, account_id: 10, amount: 6.50, date: "2026-05-23", authorized_date: nil,
             name: "Blue Bottle Coffee", merchant_name: "Blue Bottle", pending: false, category: nil,
@@ -190,14 +190,37 @@ struct TransactionsServiceTests {
             created_at: nil, updated_at: nil
         )
 
+        let transfer = Transaction(
+            id: 3, account_id: 10, amount: -4817.01, date: "2026-05-23", authorized_date: nil,
+            name: "Manual CR-Bkrg", merchant_name: nil, pending: false, category: nil,
+            transaction_id: "tx_3", pending_transaction_transaction_id: nil, iso_currency_code: "USD",
+            payment_channel: nil, user_id: nil, logo_url: nil, website: nil,
+            personal_finance_category: "INCOME", personal_finance_subcategory: "INCOME_WAGES",
+            created_at: nil, updated_at: nil,
+            is_spend: false, is_income: false
+        )
+
         let expensePresentation = RecentTransactionPresentation(transaction: expense)
         let incomePresentation = RecentTransactionPresentation(transaction: income)
+        let transferPresentation = RecentTransactionPresentation(transaction: transfer)
 
         #expect(expensePresentation.amountText == "-$6.50")
         #expect(incomePresentation.amountText == "+$154")
+        #expect(transferPresentation.amountText == "+$4,817.01")
         #expect(expensePresentation.categoryText == "Food And Drink")
+        #expect(transferPresentation.categoryText == "Transfer")
         #expect(incomePresentation.iconName == "arrow.down.circle.fill")
+        #expect(transferPresentation.iconName == "arrow.left.arrow.right")
+        
+        #expect(expense.isSpend == true)
+        #expect(expense.isIncome == false)
+        #expect(income.isSpend == false)
+        #expect(income.isIncome == true)
+        #expect(transfer.isSpend == false)
+        #expect(transfer.isIncome == false)
+        #expect(transfer.isActualTransfer == true)
     }
+
     
     @Test func testTransactionDateEdgeCases() {
         func makeTx(date: String) -> Transaction {

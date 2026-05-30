@@ -220,7 +220,7 @@ private struct TransactionListRow: View {
             VStack(alignment: .trailing, spacing: 2) {
                 Text(amountText)
                     .font(theme.typography.body(size: 14, weight: .bold))
-                    .foregroundStyle(transaction.isExpense ? theme.colors.textPrimary.color : theme.colors.success.color)
+                    .foregroundStyle(transaction.isSpend ? theme.colors.textPrimary.color : (transaction.isIncome ? theme.colors.success.color : theme.colors.textSecondary.color))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 if transaction.pending {
@@ -235,7 +235,14 @@ private struct TransactionListRow: View {
 
     private var amountText: String {
         let value = transaction.absoluteAmount
-        let prefix = transaction.isExpense ? "-" : "+"
+        let prefix: String
+        if transaction.isSpend {
+            prefix = "-"
+        } else if transaction.isIncome {
+            prefix = "+"
+        } else {
+            prefix = transaction.amount > 0 ? "-" : "+"
+        }
         let formatted = NumberFormatter.currency.string(from: NSNumber(value: value)) ?? "$\(Int(value.rounded()))"
         return "\(prefix)\(formatted)"
     }
@@ -253,6 +260,7 @@ private struct TransactionListRow: View {
     }
 
     private var iconName: String {
+        if transaction.isActualTransfer { return "arrow.left.arrow.right" }
         let cat = (transaction.personal_finance_category ?? "").lowercased()
         if cat.contains("food") || cat.contains("restaurant") { return "fork.knife" }
         if cat.contains("transport") || cat.contains("travel") { return "car.fill" }
@@ -346,7 +354,7 @@ struct TransactionDetailSheet: View {
                     VStack(alignment: .center, spacing: 6) {
                         Text(amountText)
                             .font(theme.typography.display(size: 44, weight: .black))
-                            .foregroundStyle(transaction.isExpense ? theme.colors.textPrimary.color : theme.colors.success.color)
+                            .foregroundStyle(transaction.isSpend ? theme.colors.textPrimary.color : (transaction.isIncome ? theme.colors.success.color : theme.colors.textSecondary.color))
                             .lineLimit(1)
                             .minimumScaleFactor(0.6)
                             .frame(maxWidth: .infinity)
@@ -405,7 +413,14 @@ struct TransactionDetailSheet: View {
 
     private var amountText: String {
         let value = transaction.absoluteAmount
-        let prefix = transaction.isExpense ? "-" : "+"
+        let prefix: String
+        if transaction.isSpend {
+            prefix = "-"
+        } else if transaction.isIncome {
+            prefix = "+"
+        } else {
+            prefix = transaction.amount > 0 ? "-" : "+"
+        }
         let formatted = NumberFormatter.currency.string(from: NSNumber(value: value)) ?? "$\(Int(value.rounded()))"
         return "\(prefix)\(formatted)"
     }

@@ -722,4 +722,58 @@ struct HeroBudgetCalculatorTests {
         )
         #expect(c.effectiveIncome == 5000)
     }
+
+    @Test func breakdownReconcilesWithCapAdjustments() {
+        let c = calc(
+            income: 10_000,
+            mandatory: 1_000,
+            variableSpend: 5_000,
+            currentWeekVariableSpend: 2_000,
+            todayVariableSpend: 55,
+            liquidCashAvailable: 1_000, // Safe-to-Spend cash binds!
+            spendingPlanMode: .safeToSpend,
+            daysInMonth: 30
+        )
+        let breakdown = HeroBudgetBreakdownCalculator(calculator: c, period: .day)
+        
+        #expect(breakdown.steps.count == 2)
+        #expect(breakdown.steps[0].title == "Start with today's room")
+        #expect(breakdown.steps[1].title == "What you've spent today")
+        
+        // Sum of all steps MUST exactly match finalAmount
+        let sum = breakdown.steps.map(\.amount).reduce(0, +)
+        #expect(abs(sum - breakdown.finalAmount) < 0.01)
+    }
+
+    @Test func overspentDailyPeriodGoesNegative() {
+        let c = calc(
+            income: 10_000,
+            mandatory: 1_000,
+            variableSpend: 500,
+            todayVariableSpend: 400, // daily budget is ~42.8, spent 400!
+            liquidCashAvailable: 5_000,
+            spendingPlanMode: .safeToSpend,
+            daysInMonth: 30
+        )
+        let spendable = c.spendable(for: .day)
+        #expect(spendable < 0)
+        #expect(abs(spendable - (c.budget(for: .day) - 400)) < 0.01)
+    }
+
+    @Test func weekOverspendingCappedByMonthOverspending() {
+        let c = calc(
+            income: 10_000,
+            mandatory: 1_000,
+            variableSpend: 15_568, // monthly spend
+            currentWeekVariableSpend: 7_511, // weekly spend
+            liquidCashAvailable: 2_281,
+            spendingPlanMode: .safeToSpend,
+            daysInMonth: 31
+        )
+        // monthly discretionary = 9000
+        // monthly remaining = 9000 - 15568 = -6568
+        // weekly remaining without capping would be 2165 - 7511 = -5346 (wait, if monthlyRemainingBeforeThisWeek was 9000 - (15568 - 7511) = 9000 - 8057 = 943. So rawWeek budget is 943. So raw weekly remaining is 943 - 7511 = -6568).
+        // Let's check that the weekly overspending matches monthly overspending and does not exceed it.
+        #expect(abs(c.spendable(for: .week) - c.spendable(for: .month)) < 0.01)
+    }
 }
