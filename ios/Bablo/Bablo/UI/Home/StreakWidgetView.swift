@@ -8,6 +8,11 @@ import SwiftUI
 struct StreakWidgetView: View {
     @EnvironmentObject var streakService: StreakService
     @Environment(\.babloTheme) private var theme
+    let onTap: () -> Void
+
+    init(onTap: @escaping () -> Void = {}) {
+        self.onTap = onTap
+    }
 
     private var currentStreak: Int {
         streakService.userStreak?.currentStreak ?? 0
@@ -88,6 +93,580 @@ struct StreakWidgetView: View {
                 .padding(.top, 4)
             }
         }
+        .contentShape(RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous))
+        .onTapGesture(perform: onTap)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityLabel("Open saving streak")
+    }
+}
+
+struct StreakDetailView: View {
+    @EnvironmentObject private var streakService: StreakService
+    @Environment(\.babloTheme) private var theme
+    @Environment(\.dismiss) private var dismiss
+
+    private var streak: UserStreak {
+        streakService.userStreak ?? UserStreak(
+            currentStreak: 0,
+            maxStreak: 0,
+            last10DaysStatus: Array(repeating: false, count: 10)
+        )
+    }
+
+    private var title: String {
+        streak.currentStreak > 0 ? "You're on fire" : "Start the chain"
+    }
+
+    private var subtitle: String {
+        streak.currentStreak > 0
+            ? "Every day under budget keeps it alive"
+            : "Stay under budget today to start your streak"
+    }
+
+    private var progressTitle: String {
+        streak.daysToNextMilestone == 0
+            ? "Legend run unlocked"
+            : "Next: \(streak.nextMilestoneDay)-day milestone"
+    }
+
+    private var footerTitle: String {
+        if streak.daysToNextMilestone == 0 {
+            return "Legend status is live"
+        }
+        return "\(streak.daysToNextMilestone) days to \(streak.nextMilestoneDay)d"
+    }
+
+    var body: some View {
+        ZStack {
+            theme.colors.appBackground.color.ignoresSafeArea()
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 22) {
+                    header
+                    hero
+                    progress
+                    statStrip
+                    calendarSection
+                    freezeCard
+                    milestones
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+                .padding(.bottom, 96)
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(theme.colors.textPrimary.color)
+                        .frame(width: 44, height: 44)
+                        .background(theme.colors.surfaceMuted.color)
+                        .clipShape(Circle())
+                        .overlay {
+                            Circle()
+                                .stroke(theme.colors.line.color, lineWidth: theme.metrics.borderWidth)
+                        }
+                }
+                .accessibilityLabel("Close streak detail")
+            }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            footer
+        }
+        .task {
+            if streakService.userStreak == nil && !streakService.isLoading {
+                try? await streakService.fetchUserStreak()
+            }
+        }
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("SAVING STREAK")
+                .font(theme.typography.mono(size: 12, weight: .bold))
+                .tracking(2.4)
+                .foregroundStyle(theme.colors.textTertiary.color)
+
+            Text(title)
+                .font(theme.typography.display(size: 32, weight: .black))
+                .foregroundStyle(theme.colors.textPrimary.color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+
+            Text(subtitle)
+                .font(theme.typography.body(size: 17, weight: .medium))
+                .foregroundStyle(theme.colors.textSecondary.color)
+                .lineLimit(2)
+        }
+        .padding(.top, 8)
+    }
+
+    private var hero: some View {
+        HStack(alignment: .center, spacing: 18) {
+            ZStack {
+                Circle()
+                    .fill(theme.colors.accent.color)
+                    .shadow(color: theme.colors.accent.color.opacity(0.45), radius: 22, x: 0, y: 12)
+
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 40, weight: .black))
+                    .foregroundStyle(theme.colors.accentInk.color)
+            }
+            .frame(width: 94, height: 94)
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 7) {
+                    Text("\(streak.currentStreak)")
+                        .font(theme.typography.display(size: 58, weight: .black))
+                        .foregroundStyle(theme.colors.textPrimary.color)
+                        .monospacedDigit()
+
+                    Text("days")
+                        .font(theme.typography.body(size: 24, weight: .bold))
+                        .foregroundStyle(theme.colors.textSecondary.color)
+                }
+
+                HStack(spacing: 8) {
+                    if streak.currentStreak > 0 && streak.currentStreak >= streak.maxStreak {
+                        Text("PERSONAL BEST")
+                            .font(theme.typography.mono(size: 13, weight: .black))
+                            .tracking(0.8)
+                            .foregroundStyle(theme.colors.accent.color)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 6)
+                            .background(theme.colors.accentDeep.color)
+                            .clipShape(Capsule())
+                    }
+
+                    Text(streak.daysToNextMilestone == 0 ? "Keep the run alive" : "\(streak.daysToNextMilestone) to the next milestone")
+                        .font(theme.typography.body(size: 14, weight: .semibold))
+                        .foregroundStyle(theme.colors.textTertiary.color)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var progress: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack {
+                Text(progressTitle.uppercased())
+                    .font(theme.typography.mono(size: 12, weight: .black))
+                    .tracking(2)
+                    .foregroundStyle(theme.colors.textTertiary.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+
+                Spacer()
+
+                Text("\(min(streak.currentStreak, streak.nextMilestoneDay))/\(streak.nextMilestoneDay)")
+                    .font(theme.typography.mono(size: 14, weight: .black))
+                    .foregroundStyle(theme.colors.textSecondary.color)
+            }
+
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(theme.colors.surfaceMuted.color)
+                        .overlay {
+                            Capsule()
+                                .stroke(theme.colors.line.color, lineWidth: theme.metrics.borderWidth)
+                        }
+
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [theme.colors.accentPressed.color, theme.colors.accent.color],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: max(12, proxy.size.width * streak.milestoneProgress))
+                }
+            }
+            .frame(height: 13)
+        }
+    }
+
+    private var statStrip: some View {
+        HStack(spacing: 0) {
+            StreakStatCell(label: "CURRENT", value: "\(streak.currentStreak)d")
+            Divider().frame(height: 42)
+            StreakStatCell(label: "LONGEST", value: "\(streak.maxStreak)d")
+            Divider().frame(height: 42)
+            StreakStatCell(label: "MARKERS", value: "\(streak.earnedFreezeCount)")
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var calendarSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("RECENT DAYS")
+                .font(theme.typography.mono(size: 12, weight: .black))
+                .tracking(2)
+                .foregroundStyle(theme.colors.textTertiary.color)
+
+            StreakCalendarGrid(cells: streak.detailCalendarCells)
+
+            HStack(spacing: 18) {
+                StreakLegend(color: theme.colors.accent.color, label: "Under budget")
+                StreakLegend(color: theme.colors.surfaceMuted.color, label: "Over", outlined: true)
+            }
+        }
+        .padding(.top, 6)
+    }
+
+    private var freezeCard: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .fill(theme.colors.info.color.opacity(0.18))
+
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(theme.colors.info.color)
+            }
+            .frame(width: 58, height: 58)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(streak.earnedFreezeCount) freeze markers")
+                    .font(theme.typography.body(size: 20, weight: .black))
+                    .foregroundStyle(theme.colors.textPrimary.color)
+
+                Text("A marker every 3 under-budget days. Spending still counts normally today.")
+                    .font(theme.typography.body(size: 15, weight: .medium))
+                    .foregroundStyle(theme.colors.textSecondary.color)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 6) {
+                ForEach(0..<max(streak.earnedFreezeCount, 1), id: \.self) { index in
+                    Circle()
+                        .fill(index < streak.earnedFreezeCount ? theme.colors.info.color : theme.colors.line.color)
+                        .frame(width: 9, height: 9)
+                }
+            }
+        }
+        .babloCard(tone: .muted, padding: 14)
+    }
+
+    private var milestones: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("MILESTONES")
+                .font(theme.typography.mono(size: 12, weight: .black))
+                .tracking(2)
+                .foregroundStyle(theme.colors.textTertiary.color)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(streak.detailMilestones) { milestone in
+                        StreakMilestoneCard(milestone: milestone)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .scrollClipDisabled()
+        }
+    }
+
+    private var footer: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(footerTitle)
+                    .font(theme.typography.body(size: 17, weight: .black))
+                    .foregroundStyle(theme.colors.textPrimary.color)
+
+                Text("Stay under budget today")
+                    .font(theme.typography.body(size: 15, weight: .medium))
+                    .foregroundStyle(theme.colors.textSecondary.color)
+            }
+
+            Spacer()
+
+            NavigationLink(value: HomeDestination.budgetBreakdown(.month)) {
+                HStack(spacing: 8) {
+                    Text("Review")
+                    Image(systemName: "arrow.up.right")
+                        .font(.system(size: 13, weight: .black))
+                }
+                .font(theme.typography.body(size: 16, weight: .black))
+                .foregroundStyle(theme.colors.surface.color)
+                .padding(.horizontal, 20)
+                .frame(height: 48)
+                .background(theme.colors.textPrimary.color)
+                .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 14)
+        .padding(.bottom, 12)
+        .background(theme.colors.surface.color)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(theme.colors.line.color)
+                .frame(height: theme.metrics.borderWidth)
+        }
+    }
+}
+
+private struct StreakStatCell: View {
+    let label: String
+    let value: String
+
+    @Environment(\.babloTheme) private var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(theme.typography.mono(size: 12, weight: .black))
+                .tracking(2)
+                .foregroundStyle(theme.colors.textTertiary.color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+
+            Text(value)
+                .font(theme.typography.display(size: 31, weight: .black))
+                .foregroundStyle(theme.colors.textPrimary.color)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.74)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+    }
+}
+
+private struct StreakCalendarGrid: View {
+    let cells: [StreakCalendarCell]
+
+    @Environment(\.babloTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hasAppeared = false
+
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
+    private let weekdays = ["M", "T", "W", "T", "F", "S", "S"]
+
+    var body: some View {
+        VStack(spacing: 9) {
+            HStack(spacing: 6) {
+                ForEach(Array(weekdays.enumerated()), id: \.offset) { _, day in
+                    Text(day)
+                        .font(theme.typography.mono(size: 12, weight: .bold))
+                        .foregroundStyle(theme.colors.textTertiary.color)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+
+            LazyVGrid(columns: columns, spacing: 6) {
+                ForEach(Array(cells.enumerated()), id: \.element.id) { index, cell in
+                    StreakCalendarCellView(cell: cell)
+                        .aspectRatio(1, contentMode: .fit)
+                        .scaleEffect(scale(for: cell))
+                        .opacity(opacity(for: cell))
+                        .animation(animation(for: index, cell: cell), value: hasAppeared)
+                }
+            }
+        }
+        .onAppear {
+            hasAppeared = false
+            DispatchQueue.main.async {
+                hasAppeared = true
+            }
+        }
+    }
+
+    private func scale(for cell: StreakCalendarCell) -> CGFloat {
+        guard !reduceMotion, cell.status == .underBudget || cell.status == .today else { return 1 }
+        return hasAppeared ? 1 : 0.7
+    }
+
+    private func opacity(for cell: StreakCalendarCell) -> Double {
+        guard !reduceMotion, cell.status == .underBudget || cell.status == .today else { return 1 }
+        return hasAppeared ? 1 : 0.25
+    }
+
+    private func animation(for index: Int, cell: StreakCalendarCell) -> Animation? {
+        guard !reduceMotion, cell.status == .underBudget || cell.status == .today else { return nil }
+        return .spring(response: 0.36, dampingFraction: 0.68)
+            .delay(Double(index) * 0.012)
+    }
+}
+
+private struct StreakCalendarCellView: View {
+    let cell: StreakCalendarCell
+
+    @Environment(\.babloTheme) private var theme
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(fillColor)
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(borderColor, lineWidth: borderWidth)
+            }
+            .overlay {
+                if cell.status == .today {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(theme.colors.accentInk.color)
+                } else if cell.status == .overBudget {
+                    Circle()
+                        .fill(theme.colors.textTertiary.color)
+                        .frame(width: 5, height: 5)
+                }
+            }
+            .shadow(
+                color: cell.status == .today ? theme.colors.accent.color.opacity(0.24) : .clear,
+                radius: 6,
+                x: 0,
+                y: 3
+            )
+    }
+
+    private var fillColor: Color {
+        switch cell.status {
+        case .unknown:
+            return theme.colors.surface.color.opacity(0.55)
+        case .underBudget, .today:
+            return theme.colors.accent.color
+        case .overBudget:
+            return theme.colors.surfaceMuted.color
+        }
+    }
+
+    private var borderColor: Color {
+        switch cell.status {
+        case .today:
+            return theme.colors.accentPressed.color
+        case .underBudget:
+            return theme.colors.accent.color.opacity(0.35)
+        default:
+            return theme.colors.line.color
+        }
+    }
+
+    private var borderWidth: CGFloat {
+        cell.status == .today ? 3 : theme.metrics.borderWidth
+    }
+}
+
+private struct StreakLegend: View {
+    let color: Color
+    let label: String
+    var outlined = false
+
+    @Environment(\.babloTheme) private var theme
+
+    var body: some View {
+        HStack(spacing: 7) {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(color)
+                .frame(width: 13, height: 13)
+                .overlay {
+                    if outlined {
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .stroke(theme.colors.line.color, lineWidth: theme.metrics.borderWidth)
+                    }
+                }
+
+            Text(label)
+                .font(theme.typography.body(size: 14, weight: .medium))
+                .foregroundStyle(theme.colors.textTertiary.color)
+        }
+    }
+}
+
+private struct StreakMilestoneCard: View {
+    let milestone: StreakDetailMilestone
+
+    @Environment(\.babloTheme) private var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center) {
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text("\(milestone.day)")
+                        .font(theme.typography.display(size: 31, weight: .black))
+                        .monospacedDigit()
+
+                    Text("d")
+                        .font(theme.typography.body(size: 13, weight: .black))
+                }
+
+                Spacer()
+
+                ZStack {
+                    Circle()
+                        .fill(iconBackground)
+                        .overlay {
+                            Circle()
+                                .stroke(iconBorder, lineWidth: theme.metrics.borderWidth)
+                        }
+
+                    Image(systemName: milestone.isReached ? "checkmark" : "flame")
+                        .font(.system(size: 13, weight: .black))
+                }
+                .frame(width: 28, height: 28)
+            }
+
+            Text(milestone.title)
+                .font(theme.typography.body(size: 16, weight: .black))
+                .foregroundStyle(titleColor)
+                .lineLimit(3)
+                .minimumScaleFactor(0.78)
+
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(titleColor)
+        .padding(14)
+        .frame(width: 132, height: 138, alignment: .topLeading)
+        .background(cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(cardBorder, lineWidth: theme.metrics.borderWidth)
+        }
+        .shadow(
+            color: milestone.isFeatured ? theme.colors.accent.color.opacity(0.22) : .clear,
+            radius: 14,
+            x: 0,
+            y: 8
+        )
+        .opacity(milestone.isReached || milestone.isFeatured ? 1 : 0.62)
+    }
+
+    private var cardBackground: Color {
+        milestone.isFeatured ? theme.colors.accent.color : theme.colors.surface.color
+    }
+
+    private var cardBorder: Color {
+        milestone.isFeatured ? theme.colors.accent.color : theme.colors.line.color
+    }
+
+    private var titleColor: Color {
+        milestone.isFeatured ? theme.colors.accentInk.color : theme.colors.textPrimary.color
+    }
+
+    private var iconBackground: Color {
+        if milestone.isReached {
+            return milestone.isFeatured ? Color.white.opacity(0.35) : theme.colors.accent.color
+        }
+        return theme.colors.surfaceMuted.color
+    }
+
+    private var iconBorder: Color {
+        milestone.isReached ? .clear : theme.colors.line.color
     }
 }
 

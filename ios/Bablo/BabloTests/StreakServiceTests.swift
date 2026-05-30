@@ -86,6 +86,59 @@ struct StreakServiceTests {
         #expect(service.userStreak?.maxStreak == 90)
     }
 
+    @Test func streakDetailProgressTargetsTheNextMilestone() {
+        let streak = UserStreak(
+            currentStreak: 7,
+            maxStreak: 12,
+            last10DaysStatus: [true, true, false, true, true, true, true, false, true, true]
+        )
+
+        #expect(streak.nextMilestoneDay == 14)
+        #expect(streak.daysToNextMilestone == 7)
+        #expect(streak.milestoneProgress == 0.5)
+    }
+
+    @Test func streakDetailMilestonesUseOnlyCurrentProductRewards() {
+        let streak = UserStreak(
+            currentStreak: 30,
+            maxStreak: 30,
+            last10DaysStatus: Array(repeating: true, count: 10)
+        )
+
+        let milestones = streak.detailMilestones
+
+        #expect(milestones.map(\.day) == [3, 7, 14, 30, 60])
+        #expect(milestones.map(\.title).contains("$15 boost to a goal") == false)
+        #expect(milestones.map(\.title).contains("$5 coffee, on Bablo") == false)
+        #expect(milestones.first(where: { $0.day == 30 })?.isFeatured == true)
+        #expect(milestones.first(where: { $0.day == 60 })?.isReached == false)
+    }
+
+    @Test func streakDetailCalendarPadsKnownStatusesIntoFiveWeekGrid() {
+        let streak = UserStreak(
+            currentStreak: 5,
+            maxStreak: 5,
+            last10DaysStatus: [true, false, true, true, true, false, true, true, true, true]
+        )
+
+        let cells = streak.detailCalendarCells
+
+        #expect(cells.count == 35)
+        #expect(cells.prefix(25).allSatisfy { $0.status == .unknown })
+        #expect(cells.suffix(10).map(\.status) == [
+            .underBudget,
+            .underBudget,
+            .underBudget,
+            .underBudget,
+            .overBudget,
+            .underBudget,
+            .underBudget,
+            .underBudget,
+            .overBudget,
+            .today
+        ])
+    }
+
     private func makeMockClient(returning data: Data) -> SupabaseClient {
         MockURLProtocol.mockHandler = { request in
             let url = request.url!

@@ -16,6 +16,9 @@ enum HomeDestination: Hashable {
 
     /// Transaction list for one of the breakdown steps.
     case breakdownTransactions(BreakdownTransactionSource, HeroPeriod)
+
+    /// Detail screen for the user's saving streak.
+    case streakDetail
 }
 
 // MARK: - Transaction source

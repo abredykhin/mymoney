@@ -74,7 +74,9 @@ struct HomeView: View {
                 if shouldShowMoneyWidgets {
                     if hasBankAccounts {
                         HStack(spacing: Spacing.md) {
-                            StreakWidgetView()
+                            StreakWidgetView {
+                                navigationState.homeNavPath.append(HomeDestination.streakDetail)
+                            }
                             SubsWidgetView()
                         }
                         .padding(.horizontal, Spacing.screenEdge)
@@ -104,6 +106,8 @@ struct HomeView: View {
                 MoneyLeftBreakdownView(period: period)
             case .breakdownTransactions(let source, let period):
                 BreakdownTransactionListView(source: source, period: period)
+            case .streakDetail:
+                StreakDetailView()
             }
         }
         .sheet(isPresented: $showingOnboarding) {
