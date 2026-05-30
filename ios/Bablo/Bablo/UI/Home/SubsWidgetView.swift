@@ -955,7 +955,7 @@ struct SubsWidgetPreviewWrapper: View {
                     type: "expense", status: "MATURE", isActive: true,
                     firstDate: nil, lastDate: nil, predictedNextDate: nil,
                     isUserModified: false, userMarkedRecurring: nil,
-                    isExcluded: false, isManual: false, matchPattern: nil
+                    isExcluded: false, isManual: false, matchPattern: nil, accountId: nil
                 ),
                 RecurringStream(
                     id: 2, plaidStreamId: "plaid_2", description: "Netflix Standard",
@@ -965,7 +965,7 @@ struct SubsWidgetPreviewWrapper: View {
                     type: "expense", status: "MATURE", isActive: true,
                     firstDate: nil, lastDate: nil, predictedNextDate: nil,
                     isUserModified: false, userMarkedRecurring: nil,
-                    isExcluded: false, isManual: false, matchPattern: nil
+                    isExcluded: false, isManual: false, matchPattern: nil, accountId: nil
                 ),
                 RecurringStream(
                     id: 3, plaidStreamId: "plaid_3", description: "Canva Pro",
@@ -975,7 +975,7 @@ struct SubsWidgetPreviewWrapper: View {
                     type: "expense", status: "MATURE", isActive: true,
                     firstDate: nil, lastDate: nil, predictedNextDate: nil,
                     isUserModified: false, userMarkedRecurring: nil,
-                    isExcluded: false, isManual: false, matchPattern: nil
+                    isExcluded: false, isManual: false, matchPattern: nil, accountId: nil
                 ),
                 RecurringStream(
                     id: 4, plaidStreamId: "plaid_4", description: "Figma Team",
@@ -985,7 +985,7 @@ struct SubsWidgetPreviewWrapper: View {
                     type: "expense", status: "MATURE", isActive: true,
                     firstDate: nil, lastDate: nil, predictedNextDate: nil,
                     isUserModified: false, userMarkedRecurring: nil,
-                    isExcluded: false, isManual: false, matchPattern: nil
+                    isExcluded: false, isManual: false, matchPattern: nil, accountId: nil
                 ),
                 RecurringStream(
                     id: 5, plaidStreamId: "plaid_5", description: "Adobe CC",
@@ -995,7 +995,7 @@ struct SubsWidgetPreviewWrapper: View {
                     type: "expense", status: "MATURE", isActive: true,
                     firstDate: nil, lastDate: nil, predictedNextDate: nil,
                     isUserModified: false, userMarkedRecurring: nil,
-                    isExcluded: false, isManual: false, matchPattern: nil
+                    isExcluded: false, isManual: false, matchPattern: nil, accountId: nil
                 ),
                 RecurringStream(
                     id: 6, plaidStreamId: "plaid_6", description: "Google One",
@@ -1005,7 +1005,7 @@ struct SubsWidgetPreviewWrapper: View {
                     type: "expense", status: "MATURE", isActive: true,
                     firstDate: nil, lastDate: nil, predictedNextDate: nil,
                     isUserModified: false, userMarkedRecurring: nil,
-                    isExcluded: false, isManual: false, matchPattern: nil
+                    isExcluded: false, isManual: false, matchPattern: nil, accountId: nil
                 )
             ]
         }

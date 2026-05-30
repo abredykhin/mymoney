@@ -7,7 +7,11 @@ import SwiftUI
 
 struct ComingUpWidgetView: View {
     @EnvironmentObject var subService: SubscriptionsService
+    @EnvironmentObject var accountsService: AccountsService
+    @EnvironmentObject var budgetService: BudgetService
     @Environment(\.babloTheme) private var theme
+    
+    @State private var showingDetailsSheet = false
     
     private var calculator: ComingUpCalculator {
         // Use device's local timezone so that days remaining calculations align with the user's calendar day
@@ -40,14 +44,19 @@ struct ComingUpWidgetView: View {
                 
                 Spacer()
                 
-                // "All >" Button (Visual representation only, non-interactive for now)
-                HStack(spacing: 4) {
-                    Text("All")
-                        .font(theme.typography.body(size: 13, weight: .bold))
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .bold))
+                // "All >" Button (Tappable trigger for upcoming detail sheet)
+                Button(action: {
+                    showingDetailsSheet = true
+                }) {
+                    HStack(spacing: 4) {
+                        Text("All")
+                            .font(theme.typography.body(size: 13, weight: .bold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundStyle(theme.colors.textTertiary.color)
                 }
-                .foregroundStyle(theme.colors.textTertiary.color)
+                .buttonStyle(.plain)
                 .padding(.top, 2)
             }
             
@@ -94,6 +103,19 @@ struct ComingUpWidgetView: View {
             x: isPopArt ? 3 : 0,
             y: isPopArt ? 3 : 6
         )
+        .contentShape(RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous))
+        .onTapGesture {
+            showingDetailsSheet = true
+        }
+        .sheet(isPresented: $showingDetailsSheet) {
+            ComingUpDetailsSheetView()
+                .environmentObject(subService)
+                .environmentObject(accountsService)
+                .environmentObject(budgetService)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+                .presentationCornerRadius(32)
+        }
     }
 }
 
@@ -272,7 +294,7 @@ struct ComingUpWidgetPreviewWrapper: View {
                     type: "expense", status: "MATURE", isActive: true,
                     firstDate: nil, lastDate: nil, predictedNextDate: formatter.string(from: datePlus2),
                     isUserModified: false, userMarkedRecurring: nil,
-                    isExcluded: false, isManual: false, matchPattern: nil
+                    isExcluded: false, isManual: false, matchPattern: nil, accountId: nil
                 ),
                 RecurringStream(
                     id: 2, plaidStreamId: "plaid_2", description: "Rent",
@@ -282,7 +304,7 @@ struct ComingUpWidgetPreviewWrapper: View {
                     type: "expense", status: "MATURE", isActive: true,
                     firstDate: nil, lastDate: nil, predictedNextDate: formatter.string(from: datePlus6),
                     isUserModified: false, userMarkedRecurring: nil,
-                    isExcluded: false, isManual: false, matchPattern: nil
+                    isExcluded: false, isManual: false, matchPattern: nil, accountId: nil
                 ),
                 RecurringStream(
                     id: 3, plaidStreamId: "plaid_3", description: "Verizon Wireless",
@@ -292,7 +314,7 @@ struct ComingUpWidgetPreviewWrapper: View {
                     type: "expense", status: "MATURE", isActive: true,
                     firstDate: nil, lastDate: nil, predictedNextDate: formatter.string(from: datePlus8),
                     isUserModified: false, userMarkedRecurring: nil,
-                    isExcluded: false, isManual: false, matchPattern: nil
+                    isExcluded: false, isManual: false, matchPattern: nil, accountId: nil
                 )
             ]
         }

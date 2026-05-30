@@ -162,6 +162,7 @@
 		CEE77D35680A4C4EACF92149 /* FlexibleSpendingCategory+PlaidMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90B633301DD401FB4FCCB9B /* FlexibleSpendingCategory+PlaidMapping.swift */; };
 		D95B4ECD0B0830645BD96CDE /* IncomeInputViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB55063D775CEC7F1F70CA7 /* IncomeInputViewModel.swift */; };
 		DB9C197693D486D311559170 /* StreakService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E602630704DDD82AD6732BB4 /* StreakService.swift */; };
+		E1B4B76E356B782273AF3065 /* ComingUpDetailsSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3255FFECD0F13F2CE07BFC5E /* ComingUpDetailsSheetView.swift */; };
 		E30FF4D93B2D638DF0CE09C5 /* PulseDateWindowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03FA8E0BA4377F6BFD275DB0 /* PulseDateWindowTests.swift */; };
 		EAA8C3A1F8A7496FB5FC7818 /* CategoryBreakdownTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE66F55007324FE2A12DEE9C /* CategoryBreakdownTests.swift */; };
 		F83BC2B9D87F40C49452EB32 /* PlaidCategoryMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C59BAE89E94D453197B27FD8 /* PlaidCategoryMapperTests.swift */; };
@@ -253,6 +254,7 @@
 		2F88093E2C1616E2ABB9FDF2 /* OnboardingSandboxView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingSandboxView.swift; sourceTree = "<group>"; };
 		301BE479CB5C48F1F16D0E81 /* OnboardingIncomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingIncomeView.swift; sourceTree = "<group>"; };
 		30A726813159D2417CAD8610 /* BabloButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BabloButton.swift; sourceTree = "<group>"; };
+		3255FFECD0F13F2CE07BFC5E /* ComingUpDetailsSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComingUpDetailsSheetView.swift; sourceTree = "<group>"; };
 		32F9BEB353D9D114FEED3FDB /* BabloCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BabloCard.swift; sourceTree = "<group>"; };
 		33AAE6BCA749D795968BA995 /* OnboardingCTAButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingCTAButton.swift; sourceTree = "<group>"; };
 		34CDD6268271E407922269F3 /* AuthenticationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthenticationView.swift; sourceTree = "<group>"; };
@@ -751,6 +753,7 @@
 				6B9101DF8EB9E698F0C5E20F /* SubsWidgetView.swift */,
 				AC25787544568673BCA76D74 /* ComingUpWidgetView.swift */,
 				434D1815D10F4CEAB94A9F21 /* RecentWidgetView.swift */,
+				3255FFECD0F13F2CE07BFC5E /* ComingUpDetailsSheetView.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -1741,6 +1744,7 @@
 				190EBFD3E890777F7AFD5B75 /* BabloProgressBar.swift in Sources */,
 				9202A2698767F83598B77F67 /* AccountEntity+Extensions.swift in Sources */,
 				BBEC5329C3B22505BA4DFA4E /* RecurringTransactionsView.swift in Sources */,
+				E1B4B76E356B782273AF3065 /* ComingUpDetailsSheetView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

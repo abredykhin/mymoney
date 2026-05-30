@@ -322,6 +322,7 @@ private func createStream(
         userMarkedRecurring: nil,
         isExcluded: false,
         isManual: false,
-        matchPattern: nil
+        matchPattern: nil,
+        accountId: nil
     )
 }

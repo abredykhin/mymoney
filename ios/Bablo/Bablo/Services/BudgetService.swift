@@ -35,6 +35,7 @@ struct RecurringStream: Codable, Identifiable, Equatable {
     let isExcluded: Bool
     let isManual: Bool
     let matchPattern: String?
+    let accountId: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -58,6 +59,7 @@ struct RecurringStream: Codable, Identifiable, Equatable {
         case isExcluded = "is_excluded"
         case isManual = "is_manual"
         case matchPattern = "match_pattern"
+        case accountId = "account_id"
     }
 
     /// Human-readable frequency label
