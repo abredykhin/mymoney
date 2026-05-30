@@ -8,6 +8,8 @@
     "eta_date": "2027-12-31",
     "category_icon": "✈️",
     "is_active": true,
+    "color": "#A9F236",
+    "priority": 0,
     "created_at": "2026-05-23T00:00:00Z",
     "updated_at": "2026-05-23T00:00:00Z"
   }

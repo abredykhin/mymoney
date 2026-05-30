@@ -18,9 +18,7 @@ extension AccountEntity {
         self.updatedAt = account.updated_at
         self.mask = account.mask
         self.officialName = account.official_name
-        // Update hidden status if present
-        if let hidden = account.hidden {
-            self.hidden = hidden
-        }
+        // Update hidden status
+        self.hidden = account.hidden
     }
 }

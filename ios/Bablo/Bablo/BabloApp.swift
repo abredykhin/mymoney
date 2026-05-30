@@ -19,6 +19,7 @@ struct BabloApp: App {
     @StateObject var coachService = CoachService()
     @StateObject var streakService = StreakService()
     @StateObject var subService = SubscriptionsService()
+    @StateObject var goalsService = GoalsService()
     @State private var showBiometricEnrollment = false
     @State private var showAuthView = false
     @State private var isPresentingRequiredOnboarding = false
@@ -54,6 +55,7 @@ struct BabloApp: App {
                         .environmentObject(coachService)
                         .environmentObject(streakService)
                         .environmentObject(subService)
+                        .environmentObject(goalsService)
                         .environment(\.managedObjectContext, coreDataStack.viewContext)
                         .babloTheme(selectedTheme)
                         .onAppear {
@@ -71,6 +73,7 @@ struct BabloApp: App {
                             .environmentObject(coachService)
                             .environmentObject(streakService)
                             .environmentObject(subService)
+                            .environmentObject(goalsService)
                             .environment(\.managedObjectContext, coreDataStack.viewContext)
                             .blur(radius: (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated) || showAuthView ? 20 : 0)
                             .animation(.default, value: userAccount.isBiometricallyAuthenticated)
@@ -163,6 +166,7 @@ struct BabloApp: App {
                 accountsService.clearCache()
                 transactionsService.clearCache()
                 budgetService.clearCache()
+                goalsService.clearCache()
 
                 if newUserID != nil {
                     Logger.i("BabloApp: Cleared user-scoped caches for auth transition")
