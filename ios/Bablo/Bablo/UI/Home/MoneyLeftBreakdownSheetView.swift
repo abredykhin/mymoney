@@ -1,11 +1,10 @@
 import SwiftUI
 
-struct MoneyLeftBreakdownSheetView: View {
+struct MoneyLeftBreakdownView: View {
     @EnvironmentObject private var budgetService: BudgetService
     @EnvironmentObject private var accountsService: AccountsService
     @EnvironmentObject private var userAccount: UserAccount
     @Environment(\.babloTheme) private var theme
-    @Environment(\.dismiss) private var dismiss
 
     let period: HeroPeriod
 
@@ -98,79 +97,43 @@ struct MoneyLeftBreakdownSheetView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Fixed header — never scrolls
-            header
-                .padding(.horizontal, 20)
-                .padding(.top, 18)
-                .padding(.bottom, 16)
-
-            Rectangle()
-                .fill(theme.colors.line.color)
-                .frame(height: 1)
-
-            // Scrollable content below the fixed header
-            GeometryReader { proxy in
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        explainer
-                        steps
-                        whatsLeftCard
-                        accountAudit
-                    }
-                    .frame(width: max(0, proxy.size.width - 40), alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
-                    .padding(.bottom, 28)
-                }
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 18) {
+                amountHero
+                explainer
+                steps
+                whatsLeftCard
+                accountAudit
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .padding(.bottom, 32)
         }
-        .background(theme.colors.appBackground.color.ignoresSafeArea())
+        .babloScreenBackground()
+        .navigationTitle("How we got this")
+        .navigationBarTitleDisplayMode(.inline)
         .task(id: period) {
             await loadDetails()
         }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("HOW WE GOT THIS")
-                        .font(theme.typography.body(size: 14, weight: .black))
-                        .tracking(3)
-                        .foregroundStyle(theme.colors.textTertiary.color)
-                    Text(moneyStr(breakdown.finalAmount))
-                        .font(theme.typography.display(size: 58, weight: .black))
-                        .foregroundStyle(theme.colors.textPrimary.color)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                }
-
-                Spacer()
-
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(theme.colors.textPrimary.color)
-                        .frame(width: 44, height: 44)
-                        .background(theme.colors.surfaceMuted.color)
-                        .clipShape(Circle())
-                        .overlay {
-                            Circle()
-                                .stroke(theme.colors.line.color, lineWidth: theme.metrics.borderWidth)
-                        }
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Close breakdown")
-            }
-
+    /// Large amount displayed at the top of the scrollable content,
+    /// replacing the fixed header that belonged to the old sheet presentation.
+    private var amountHero: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(moneyStr(breakdown.finalAmount))
+                .font(theme.typography.display(size: 52, weight: .black))
+                .foregroundStyle(theme.colors.textPrimary.color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
             Text("\(periodPhrase) · \(period.topBarLabel.capitalized)")
                 .font(theme.typography.body(size: 15, weight: .semibold))
                 .foregroundStyle(theme.colors.textSecondary.color)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 4)
     }
 
-    // Only a bottom border — the header/separator above already provides the top visual divider.
     private var explainer: some View {
         Text("Follow the money. Each step pulls a chunk out until you're left with what's actually yours to spend.")
             .font(theme.typography.body(size: 15, weight: .regular))
@@ -187,13 +150,20 @@ struct MoneyLeftBreakdownSheetView: View {
     private var steps: some View {
         VStack(spacing: 0) {
             ForEach(Array(breakdown.steps.enumerated()), id: \.element.id) { idx, step in
+                // Map the step's transaction source to a navigation destination.
+                // Steps with nil source (calculated values) are non-tappable.
+                let navDest: HomeDestination? = step.transactionSource.map {
+                    .breakdownTransactions($0, period)
+                }
+
                 BreakdownStepCard(
                     step: step,
                     contextRows: step.number == 1 ? breakdown.contextRows : [],
                     spendRows: step.number == breakdown.spendStepNumber ? spendRows : [],
                     incomeRows: period == .month && !breakdown.isCashCapped && step.number == 1 ? incomeRows : [],
                     mandatoryRows: step.number == breakdown.mandatoryStepNumber ? mandatoryRows : [],
-                    isLoading: isLoadingDetails && step.number == breakdown.spendStepNumber
+                    isLoading: isLoadingDetails && step.number == breakdown.spendStepNumber,
+                    navigationDestination: navDest
                 )
 
                 if idx < breakdown.steps.count - 1 {
@@ -338,33 +308,20 @@ private struct BreakdownStepCard: View {
     let incomeRows: [HeroIncomeBreakdownRow]
     let mandatoryRows: [HeroBudgetMandatoryRow]
     let isLoading: Bool
+    /// When non-nil, the step header becomes a NavigationLink to this destination.
+    let navigationDestination: HomeDestination?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Step header
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text("\(step.number)")
-                    .font(theme.typography.body(size: 16, weight: .black))
-                    .foregroundStyle(step.tone == .positive ? .white : theme.colors.surface.color)
-                    .frame(width: 34, height: 34)
-                    .background(stepColor)
-                    .clipShape(Circle())
-
-                Text(step.title)
-                    .font(theme.typography.title(size: 18, weight: .black))
-                    .foregroundStyle(theme.colors.textPrimary.color)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.82)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Spacer(minLength: 8)
-
-                Text(signedMoney(step.amount))
-                    .font(theme.typography.mono(size: 21, weight: .bold))
-                    .foregroundStyle(step.amount < 0 ? theme.colors.warning.color : theme.colors.success.color)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .layoutPriority(1)
+            // Step header — tappable when navigationDestination is set
+            if let dest = navigationDestination {
+                NavigationLink(value: dest) {
+                    stepHeaderContent
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            } else {
+                stepHeaderContent
             }
 
             // Income sub-rows (step 1 in monthly income mode)
@@ -471,6 +428,44 @@ private struct BreakdownStepCard: View {
                 .stroke(theme.colors.line.color, lineWidth: theme.metrics.borderWidth)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The header row shared by both the plain and NavigationLink variants.
+    private var stepHeaderContent: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            // Numbered badge
+            Text("\(step.number)")
+                .font(theme.typography.body(size: 16, weight: .black))
+                .foregroundStyle(step.tone == .positive ? .white : theme.colors.surface.color)
+                .frame(width: 34, height: 34)
+                .background(stepColor)
+                .clipShape(Circle())
+
+            // Title — the primary tap label
+            Text(step.title)
+                .font(theme.typography.title(size: 18, weight: .black))
+                .foregroundStyle(theme.colors.textPrimary.color)
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 8)
+
+            // Signed amount
+            Text(signedMoney(step.amount))
+                .font(theme.typography.mono(size: 21, weight: .bold))
+                .foregroundStyle(step.amount < 0 ? theme.colors.warning.color : theme.colors.success.color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .layoutPriority(1)
+
+            // Chevron: only shown on tappable steps to signal drilldown
+            if navigationDestination != nil {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+            }
+        }
     }
 
     private var stepColor: Color {

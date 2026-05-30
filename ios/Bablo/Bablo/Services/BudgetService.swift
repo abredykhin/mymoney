@@ -657,6 +657,50 @@ class BudgetService: ObservableObject {
         }
     }
 
+    // MARK: - Breakdown transaction lists (for drill-down navigation)
+
+    /// All variable (non-recurring) expense transactions for the given period, newest first.
+    /// Backs the "What you've spent…" step card drill-down.
+    func fetchVariableTransactionList(for period: HeroPeriod) async -> [Transaction] {
+        let window = heroDateWindow(for: period)
+        do {
+            let transactions: [Transaction] = try await supabase
+                .from("variable_transactions")
+                .select("id, account_id, amount, date, authorized_date, spend_date, name, merchant_name, pending, transaction_id, iso_currency_code, personal_finance_category, personal_finance_subcategory, logo_url, payment_channel, user_id, website, created_at, updated_at, category, pending_transaction_transaction_id")
+                .gte("spend_date", value: window.start)
+                .lte("spend_date", value: window.end)
+                .gt("amount", value: 0)
+                .order("spend_date", ascending: false)
+                .order("amount", ascending: false)
+                .execute()
+                .value
+            return transactions
+        } catch {
+            Logger.e("BudgetService: Failed to fetch variable transaction list: \(error)")
+            return []
+        }
+    }
+
+    /// Spendable income transactions for the current month, newest first.
+    /// Backs the "Income this month" step card drill-down.
+    func fetchIncomeTransactionList() async -> [Transaction] {
+        let window = heroDateWindow(for: .month)
+        do {
+            let transactions: [Transaction] = try await supabase
+                .from("spendable_income_transactions")
+                .select("id, account_id, amount, date, authorized_date, spend_date, name, merchant_name, pending, transaction_id, iso_currency_code, personal_finance_category, personal_finance_subcategory, logo_url, payment_channel, user_id, website, created_at, updated_at, category, pending_transaction_transaction_id")
+                .gte("spend_date", value: window.start)
+                .lte("spend_date", value: window.end)
+                .order("spend_date", ascending: false)
+                .execute()
+                .value
+            return transactions
+        } catch {
+            Logger.e("BudgetService: Failed to fetch income transaction list: \(error)")
+            return []
+        }
+    }
+
     /// Clear cached data
     func clearCache() {
         totalBalance = nil

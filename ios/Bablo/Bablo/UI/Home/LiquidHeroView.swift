@@ -26,10 +26,14 @@ struct LiquidHeroView: View {
 
     @Binding var period: HeroPeriod
     @State private var animatedFill: Double = 0
-    @State private var isShowingBreakdown = false
 
-    init(period: Binding<HeroPeriod> = .constant(.month)) {
+    /// Called when the user taps the hero card body (not the period control).
+    /// The parent is responsible for performing navigation.
+    var onTap: () -> Void = {}
+
+    init(period: Binding<HeroPeriod> = .constant(.month), onTap: @escaping () -> Void = {}) {
         self._period = period
+        self.onTap = onTap
     }
 
     // MARK: - Budget calculator (pure, testable)
@@ -108,15 +112,10 @@ struct LiquidHeroView: View {
         )
         .contentShape(RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous))
         .onTapGesture {
-            isShowingBreakdown = true
+            onTap()
         }
         .accessibilityAddTraits(.isButton)
-        .sheet(isPresented: $isShowingBreakdown) {
-            MoneyLeftBreakdownSheetView(period: period)
-                .presentationDetents([.medium, .large])
-                .presentationContentInteraction(.resizes)
-                .presentationDragIndicator(.visible)
-        }
+        .accessibilityHint("View budget breakdown")
         .onChange(of: fillTarget) { _, newValue in
             withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
                 animatedFill = newValue

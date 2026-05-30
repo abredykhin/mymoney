@@ -283,7 +283,8 @@ struct HeroBudgetBreakdownCalculator {
             title: "Income this month",
             amount: inc,
             afterAmount: running,
-            tone: .positive
+            tone: .positive,
+            transactionSource: .income
         ))
 
         if calculator.monthlyMandatoryExpenses > 0 {
@@ -294,7 +295,8 @@ struct HeroBudgetBreakdownCalculator {
                 title: "Monthly obligations",
                 amount: mandatory,
                 afterAmount: running,
-                tone: .negative
+                tone: .negative,
+                transactionSource: .obligations
             ))
         }
 
@@ -303,7 +305,8 @@ struct HeroBudgetBreakdownCalculator {
             title: "What you've spent this month",
             amount: -calculator.monthlySpentSoFar,
             afterAmount: finalAmount,
-            tone: .negative
+            tone: .negative,
+            transactionSource: .variableSpend
         ))
 
         return result
@@ -317,14 +320,16 @@ struct HeroBudgetBreakdownCalculator {
                 title: "Start with safe cash",
                 amount: calculator.effectiveBudget(for: .month),
                 afterAmount: calculator.effectiveBudget(for: .month),
-                tone: .positive
+                tone: .positive,
+                transactionSource: nil     // calculated cap, not a transaction set
             ),
             HeroBudgetBreakdownStep(
                 number: 2,
                 title: "What you've spent this month",
                 amount: -calculator.monthlySpentSoFar,
                 afterAmount: finalAmount,
-                tone: .negative
+                tone: .negative,
+                transactionSource: .variableSpend
             )
         ]
     }
@@ -337,14 +342,16 @@ struct HeroBudgetBreakdownCalculator {
                 title: startingStepTitle,
                 amount: calculator.effectiveBudget(for: period),
                 afterAmount: calculator.effectiveBudget(for: period),
-                tone: .positive
+                tone: .positive,
+                transactionSource: nil     // prorated budget number, no transactions
             ),
             HeroBudgetBreakdownStep(
                 number: 2,
                 title: burnedStepTitle,
                 amount: -calculator.spentSoFar(for: period),
                 afterAmount: finalAmount,
-                tone: .negative
+                tone: .negative,
+                transactionSource: .variableSpend
             )
         ]
     }
@@ -419,6 +426,9 @@ struct HeroBudgetBreakdownStep: Identifiable, Equatable {
     let amount: Double
     let afterAmount: Double
     let tone: Tone
+    /// Which pool of transactions this step links to. `nil` means the step is
+    /// a calculated number with no drillable transactions (e.g. "Start with safe cash").
+    let transactionSource: BreakdownTransactionSource?
 }
 
 struct HeroBudgetContextRow: Identifiable, Equatable {
