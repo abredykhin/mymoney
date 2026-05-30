@@ -52,10 +52,14 @@ struct HomeView: View {
                 let shouldShowMoneyWidgets = hasBudgetData || hasBankAccounts || !transactionsService.transactions.isEmpty
 
                 if hasBudgetData || hasBankAccounts {
-                    LiquidHeroView(period: $heroPeriod)
-                        .environmentObject(budgetService)
-                        .padding(.horizontal, Spacing.screenEdge)
-                        .padding(.top, Spacing.md)
+                    LiquidHeroView(period: $heroPeriod, onTap: {
+                        navigationState.homeNavPath.append(
+                            HomeDestination.budgetBreakdown(heroPeriod)
+                        )
+                    })
+                    .environmentObject(budgetService)
+                    .padding(.horizontal, Spacing.screenEdge)
+                    .padding(.top, Spacing.md)
                 }
 
                 if !accountsService.banksWithAccounts.isEmpty && coachService.currentInsight != nil && !coachService.isDismissed {
@@ -93,6 +97,14 @@ struct HomeView: View {
                 }
             }
             .padding(.bottom, 96)
+        }
+        .navigationDestination(for: HomeDestination.self) { destination in
+            switch destination {
+            case .budgetBreakdown(let period):
+                MoneyLeftBreakdownView(period: period)
+            case .breakdownTransactions(let source, let period):
+                BreakdownTransactionListView(source: source, period: period)
+            }
         }
         .sheet(isPresented: $showingOnboarding) {
             OnboardingWizard()
