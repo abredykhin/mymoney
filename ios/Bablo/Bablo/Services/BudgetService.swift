@@ -392,8 +392,9 @@ class BudgetService: ObservableObject {
 
     // MARK: - Public Methods
 
-    /// Fetch total balance across all visible accounts
-    /// Logic: Net Available Cash = (Depository Accounts) - (Credit Card Debt)
+    /// Fetch total balance across all visible accounts via DB aggregate RPC.
+    /// Aggregation logic lives in get_net_cash_balance():
+    ///   depository → positive, credit → negative, investments/loans → excluded.
     func fetchTotalBalance() async throws {
         isLoadingBalance = true
         balanceError = nil
@@ -405,37 +406,18 @@ class BudgetService: ObservableObject {
         Logger.d("BudgetService: Fetching total balance")
 
         do {
-            // Query all non-hidden accounts
-            let accounts: [AccountBalance] = try await supabase
-                .from("accounts")
-                .select("current_balance, type") // Select type to filter logic
-                .eq("hidden", value: false)
+            let results: [TotalBalance] = try await supabase
+                .rpc("get_net_cash_balance")
                 .execute()
                 .value
 
-            // Calculate Net Available Cash
-            // 1. Add Depository (Checking, Savings, etc.)
-            // 2. Subtract Credit (Credit Card debt, which is usually positive in Plaid/DB)
-            // 3. Ignore Investments, Loans, etc. for "Cash" metric
-            let total = accounts.reduce(0.0) { result, account in
-                if account.type.caseInsensitiveCompare("depository") == .orderedSame {
-                    // Money we have
-                    return result + account.currentBalance
-                } else if account.type.caseInsensitiveCompare("credit") == .orderedSame {
-                    // Money we owe (Debt) - Subtract it from available cash
-                    // Assuming positive balance means debt (standard Plaid)
-                    return result - account.currentBalance
-                }
-                return result
+            guard let result = results.first else {
+                self.totalBalance = TotalBalance(balance: 0, asOf: nil, iso_currency_code: "USD")
+                return
             }
 
-            Logger.i("BudgetService: Net Available Cash: $\(total) (from \(accounts.count) accounts)")
-
-            self.totalBalance = TotalBalance(
-                balance: total,
-                asOf: ISO8601DateFormatter().string(from: Date()),
-                iso_currency_code: "USD"
-            )
+            Logger.i("BudgetService: Net Available Cash: $\(result.balance)")
+            self.totalBalance = result
         } catch {
             Logger.e("BudgetService: Failed to fetch total balance: \(error)")
             self.balanceError = error
@@ -446,34 +428,24 @@ class BudgetService: ObservableObject {
     /// Fetch variable spending (filtered by DB view) for the current month
     /// Used for Home Screen Budget Calculation
     func fetchVariableSpend(range: SpendDateRange = .month) async throws {
-        // We typically care about the current month for budget
-        // but can support other ranges if needed.
-        // For now, let's stick to current month logic for the Home Screen.
-        
         let startDate = range.startDate()
         let endDate = range.endDate()
-        
+
         Logger.d("BudgetService: Fetching variable spend (\(range.displayName))")
-        
+
         do {
-            // Use the NEW DB View 'variable_transactions' which already filters out fixed expenses
-            let transactions: [TransactionForBreakdown] = try await supabase
-                .from("variable_transactions")
-                .select("id, amount, name, personal_finance_category, type")
-                .gte("spend_date", value: startDate)
-                .lte("spend_date", value: endDate)
-                .gt("amount", value: 0)
+            struct Params: Encodable { let p_start: String; let p_end: String }
+            let total: Double = try await supabase
+                .rpc("get_variable_spend", params: Params(p_start: startDate, p_end: endDate))
                 .execute()
                 .value
-            
-            let total = transactions.reduce(0) { $0 + abs($1.amount) }
-            
+
             DispatchQueue.main.async {
                 self.variableSpend = total
                 self.calculateVariableBudget()
             }
-            
-            Logger.i("BudgetService: Variable Spend (DB filtered): $\(total)")
+
+            Logger.i("BudgetService: Variable Spend (DB aggregate): $\(total)")
         } catch {
             Logger.e("BudgetService: Failed to fetch variable spend: \(error)")
         }
@@ -495,69 +467,41 @@ class BudgetService: ObservableObject {
 
         Logger.d("BudgetService: Fetching TOTAL spending breakdown (\(range.displayName))")
 
+        struct Params: Encodable { let p_start: String; let p_end: String }
+        struct BreakdownRow: Codable {
+            let category: String
+            let totalSpent: Double
+            let transactionCount: Int
+            let percentOfTotal: Double
+            enum CodingKeys: String, CodingKey {
+                case category
+                case totalSpent       = "total_spent"
+                case transactionCount = "transaction_count"
+                case percentOfTotal   = "percent_of_total"
+            }
+        }
+
         do {
-            let transactions: [TransactionForBreakdown] = try await supabase
-                .from("transactions")
-                .select("id, amount, name, personal_finance_category, type")
-                .gte("spend_date", value: startDate)
-                .lte("spend_date", value: endDate)
-                .eq("is_spend", value: true)
-                .order("spend_date", ascending: false)
+            let rows: [BreakdownRow] = try await supabase
+                .rpc("get_spending_breakdown", params: Params(p_start: startDate, p_end: endDate))
                 .execute()
                 .value
 
-            Logger.i("BudgetService: Received \(transactions.count) total transactions for breakdown")
+            Logger.i("BudgetService: Received \(rows.count) spending categories from DB")
 
-            // No client-side filtering needed anymore for Spend Tab!
-            // We want to see Rent/Mortgage here.
-            
-            // Group by category and calculate totals
-            var categoryMap: [String: CategoryData] = [:]
-            var totalSpent: Double = 0
+            let totalSpent = rows.reduce(0.0) { $0 + $1.totalSpent }
 
-            for transaction in transactions {
-                // In Supabase, personal_finance_category is a string
-                let category = transaction.personalFinanceCategory ?? "Uncategorized"
-                let amount = abs(transaction.amount)
-
-                totalSpent += amount
-
-                if var existing = categoryMap[category] {
-                    existing.totalSpent += amount
-                    existing.transactionCount += 1
-                    categoryMap[category] = existing
-                } else {
-                    categoryMap[category] = CategoryData(
-                        totalSpent: amount,
-                        transactionCount: 1
-                    )
-                }
-            }
-
-            // Create breakdown items with percentages
-            var breakdownItems: [BudgetCategoryItem] = []
-            for (category, data) in categoryMap {
-                let percent = totalSpent > 0 ? (data.totalSpent / totalSpent * 100) : 0
-
-                // Set the appropriate spend field based on the range
-                let weeklySpend = range == .week ? data.totalSpent : 0
-                let monthlySpend = range == .month ? data.totalSpent : 0
-                let yearlySpend = range == .year ? data.totalSpent : 0
-
-                let item = BudgetCategoryItem(
-                    category: category,
-                    totalSpent: data.totalSpent,
-                    transactionCount: data.transactionCount,
-                    percentOfTotal: percent,
-                    weekly_spend: weeklySpend,
-                    monthly_spend: monthlySpend,
-                    yearly_spend: yearlySpend
+            let breakdownItems = rows.map { row in
+                BudgetCategoryItem(
+                    category: row.category,
+                    totalSpent: row.totalSpent,
+                    transactionCount: row.transactionCount,
+                    percentOfTotal: row.percentOfTotal,
+                    weekly_spend:  range == .week  ? row.totalSpent : 0,
+                    monthly_spend: range == .month ? row.totalSpent : 0,
+                    yearly_spend:  range == .year  ? row.totalSpent : 0
                 )
-                breakdownItems.append(item)
             }
-
-            // Sort by amount descending
-            breakdownItems.sort { $0.totalSpent > $1.totalSpent }
 
             self.spendBreakdownResponse = CategoryBreakdownResponse(
                 breakdown: breakdownItems,
@@ -565,9 +509,6 @@ class BudgetService: ObservableObject {
                 endDate: endDate,
                 totalSpent: totalSpent
             )
-            
-            // Note: We do NOT calculate variable budget here anymore.
-            // That is handled by fetchVariableSpend().
 
             Logger.i("BudgetService: Total spending breakdown complete (\(breakdownItems.count) categories, total: $\(totalSpent))")
         } catch {
@@ -727,18 +668,15 @@ class BudgetService: ObservableObject {
         Logger.d("BudgetService: Cleared cache")
     }
 
-    /// Fetch variable spend for an arbitrary date window (start/end as "yyyy-MM-dd")
+    /// Fetch variable spend for an arbitrary date window via DB scalar RPC.
     private func fetchVariableSpendRaw(start: String, end: String) async -> Double {
         do {
-            let transactions: [TransactionForBreakdown] = try await supabase
-                .from("variable_transactions")
-                .select("id, amount, name, personal_finance_category, type")
-                .gte("spend_date", value: start)
-                .lte("spend_date", value: end)
-                .gt("amount", value: 0)
+            struct Params: Encodable { let p_start: String; let p_end: String }
+            let total: Double = try await supabase
+                .rpc("get_variable_spend", params: Params(p_start: start, p_end: end))
                 .execute()
                 .value
-            return transactions.reduce(0) { $0 + abs($1.amount) }
+            return total
         } catch {
             Logger.e("BudgetService: Failed to fetch variable spend (\(start)–\(end)): \(error)")
             return 0
@@ -921,20 +859,54 @@ class BudgetService: ObservableObject {
         }
     }
 
-    /// Fetch spend for all comparison windows used by the hero card delta label and fill.
-    /// Runs all four DB queries concurrently.
+    /// Fetch all four comparison windows in a single DB round trip.
     private func fetchAllPeriodSpend() async {
         let ranges = PreviousPeriodDateRange.compute()
-        async let wk   = fetchVariableSpendRaw(start: ranges.prevWeekStart,    end: ranges.prevWeekSameDayEnd)
-        async let mo   = fetchVariableSpendRaw(start: ranges.prevMonthStart,   end: ranges.prevMonthSameDayEnd)
-        async let curWk = fetchVariableSpendRaw(start: ranges.currentWeekStart, end: ranges.todayDate)
-        async let today = fetchVariableSpendRaw(start: ranges.todayDate,        end: ranges.todayDate)
-        let (prevWk, prevMo, thisWk, thisDay) = await (wk, mo, curWk, today)
-        previousWeekVariableSpend  = prevWk
-        previousMonthVariableSpend = prevMo
-        currentWeekVariableSpend   = thisWk
-        todayVariableSpend         = thisDay
-        Logger.d("BudgetService: Period spend — prevWk: \(prevWk), prevMo: \(prevMo), curWk: \(thisWk), today: \(thisDay)")
+
+        struct Params: Encodable {
+            let p_prev_week_start: String
+            let p_prev_week_same_day_end: String
+            let p_prev_month_start: String
+            let p_prev_month_same_day_end: String
+            let p_current_week_start: String
+            let p_today: String
+        }
+        struct PeriodRow: Codable {
+            let prevWeek: Double
+            let prevMonth: Double
+            let currentWeek: Double
+            let today: Double
+            enum CodingKeys: String, CodingKey {
+                case prevWeek    = "prev_week"
+                case prevMonth   = "prev_month"
+                case currentWeek = "current_week"
+                case today
+            }
+        }
+
+        do {
+            let params = Params(
+                p_prev_week_start:         ranges.prevWeekStart,
+                p_prev_week_same_day_end:  ranges.prevWeekSameDayEnd,
+                p_prev_month_start:        ranges.prevMonthStart,
+                p_prev_month_same_day_end: ranges.prevMonthSameDayEnd,
+                p_current_week_start:      ranges.currentWeekStart,
+                p_today:                   ranges.todayDate
+            )
+            let rows: [PeriodRow] = try await supabase
+                .rpc("get_period_spend_comparison", params: params)
+                .execute()
+                .value
+            if let row = rows.first {
+                previousWeekVariableSpend  = row.prevWeek
+                previousMonthVariableSpend = row.prevMonth
+                currentWeekVariableSpend   = row.currentWeek
+                todayVariableSpend         = row.today
+                Logger.d("BudgetService: Period spend — prevWk: \(row.prevWeek), prevMo: \(row.prevMonth), curWk: \(row.currentWeek), today: \(row.today)")
+            }
+        } catch {
+            Logger.e("BudgetService: Failed to fetch period spend comparison: \(error)")
+        }
     }
 
     /// Fetch all recurring streams (income and expenses) from Plaid
@@ -956,51 +928,38 @@ class BudgetService: ObservableObject {
         }
     }
 
-    /// Fetch actual income transactions for the current month and categorize them
+    /// Fetch actual income for the current month via DB aggregate RPC.
+    /// The DB function buckets known (recurring) vs extra (one-off) income
+    /// using the spendable_income_transactions view, which already excludes
+    /// transfers, brokerage movements, and credit/loan account inflows.
     func fetchActualIncome() async {
         guard UserAccount.shared.currentUser?.id != nil else { return }
-        
-        let range = SpendDateRange.month
-        let startDate = range.startDate()
-        let endDate = range.endDate()
-        
+
+        let startDate = SpendDateRange.month.startDate()
+        let endDate   = SpendDateRange.month.endDate()
+
+        struct Params: Encodable { let p_start: String; let p_end: String }
+        struct IncomeSummary: Codable {
+            let knownIncome: Double
+            let extraIncome: Double
+            enum CodingKeys: String, CodingKey {
+                case knownIncome = "known_income"
+                case extraIncome = "extra_income"
+            }
+        }
+
         do {
-            // Fetch income from the DB-filtered view. The view excludes transfers,
-            // brokerage movements, wire reversals, and other non-spendable inflows.
-            let transactions: [TransactionForBreakdown] = try await supabase
-                .from("spendable_income_transactions")
-                .select("amount, name, type, is_recurring")
-                .gte("spend_date", value: startDate)
-                .lte("spend_date", value: endDate)
+            let rows: [IncomeSummary] = try await supabase
+                .rpc("get_monthly_income_summary",
+                     params: Params(p_start: startDate, p_end: endDate))
                 .execute()
                 .value
-            
-            var knownTotal: Double = 0
-            var extraTotal: Double = 0
-            
-            for tx in transactions {
-                // LIABILITY ACCOUNT INFLOW RULE: Ignore inflows on credit/loan accounts
-                if tx.type == "credit" || tx.type == "loan" {
-                    Logger.d("BudgetService: Ignoring income-like transaction on \(tx.type ?? "unknown") account: \(tx.name)")
-                    continue
-                }
-                
-                let amount = abs(tx.amount)
-                
-                // If already marked as recurring by backend, count as known
-                if tx.isRecurring == true {
-                    knownTotal += amount
-                } else {
-                    // This is a one-off income transaction
-                    extraTotal += amount
-                }
+
+            if let summary = rows.first {
+                self.knownIncomeThisMonth = summary.knownIncome
+                self.extraIncomeThisMonth = summary.extraIncome
+                Logger.i("BudgetService: Income Analysis - Known: $\(summary.knownIncome), Extra: $\(summary.extraIncome)")
             }
-            
-            self.knownIncomeThisMonth = knownTotal
-            self.extraIncomeThisMonth = extraTotal
-            
-            Logger.i("BudgetService: Income Analysis - Known: $\(knownTotal), Extra: $\(extraTotal)")
-            
         } catch {
             Logger.e("BudgetService: Failed to fetch actual income: \(error)")
         }
@@ -1180,18 +1139,6 @@ class BudgetService: ObservableObject {
 
 // MARK: - Private Models
 
-/// Simple account balance model for aggregation
-/// Simple account balance model for aggregation
-private struct AccountBalance: Codable {
-    let currentBalance: Double
-    let type: String
-
-    enum CodingKeys: String, CodingKey {
-        case currentBalance = "current_balance"
-        case type
-    }
-}
-
 /// Transaction model for breakdown analysis
 private struct TransactionForBreakdown: Codable {
     let id: Int?
@@ -1227,8 +1174,3 @@ private struct HeroCardPaymentMatch: Codable {
     }
 }
 
-/// Temporary data structure for category aggregation
-private struct CategoryData {
-    var totalSpent: Double
-    var transactionCount: Int
-}
