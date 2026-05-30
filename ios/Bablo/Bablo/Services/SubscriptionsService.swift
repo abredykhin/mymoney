@@ -11,6 +11,7 @@ class SubscriptionsService: ObservableObject {
     @Published var subscriptions: [RecurringStream] = []
     @Published var allRecurringStreams: [RecurringStream] = []
     @Published var idleCount: Int = 0
+    @Published var idleSubscriptionIDs: Set<Int> = []
     @Published var isLoading: Bool = false
     @Published var error: Error? = nil
 
@@ -91,6 +92,7 @@ class SubscriptionsService: ObservableObject {
             
             // 3. Any active expense stream NOT in the activeStreamIds set is "idle"
             let idleStreams = streams.filter { !activeStreamIds.contains($0.id) }
+            self.idleSubscriptionIDs = Set(idleStreams.map(\.id))
             self.idleCount = idleStreams.count
             Logger.i("SubscriptionsService: Scanned \(streams.count) subscriptions, found \(idleCount) idle subscriptions")
         } catch {

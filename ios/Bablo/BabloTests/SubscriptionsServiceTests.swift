@@ -246,5 +246,82 @@ struct SubscriptionsServiceTests {
         
         // Assert scanned idle using the database-filtered subscriptions endpoint.
         #expect(service.idleCount == 1)
+        #expect(service.idleSubscriptionIDs == [102])
     }
+
+    @Test func subscriptionDetailSummaryUsesIdleIdsForCountsAndSavings() {
+        let streams = [
+            createStream(id: 1, name: "Spotify", monthlyAmount: 11.99, category: "ENTERTAINMENT", subcategory: "MUSIC"),
+            createStream(id: 2, name: "Netflix", monthlyAmount: 15.49, category: "ENTERTAINMENT", subcategory: "VIDEO"),
+            createStream(id: 3, name: "Figma", monthlyAmount: 12.00, category: "GENERAL_SERVICES", subcategory: "CREATIVE")
+        ]
+
+        let summary = SubsDetailSummary(
+            streams: streams,
+            idleSubscriptionIDs: [2, 3],
+            fallbackIdleCount: 0
+        )
+
+        #expect(abs(summary.totalMonthlyCost - 39.48) < 0.001)
+        #expect(summary.activeCount == 1)
+        #expect(summary.idleCount == 2)
+        #expect(abs(summary.idleMonthlyCost - 27.49) < 0.001)
+        #expect(summary.sortedStreams.map(\.id) == [2, 3, 1])
+        #expect(summary.categoryBreakdowns.map(\.title) == ["Video", "Work", "Music"])
+    }
+
+    @Test func subscriptionRowMetadataUsesChargeLanguageInsteadOfUsageLanguage() {
+        let calendar = Calendar.bablo
+        let currentDate = calendar.date(from: DateComponents(year: 2026, month: 5, day: 30))!
+        let stream = createStream(
+            id: 1,
+            name: "Spotify",
+            monthlyAmount: 11.99,
+            category: "ENTERTAINMENT",
+            subcategory: "MUSIC",
+            lastDate: "2026-05-27"
+        )
+
+        let metadata = SubsStreamRowMetadata(
+            stream: stream,
+            isIdle: false,
+            currentDate: currentDate
+        )
+
+        #expect(metadata.statusText == "CHARGED MAY 27")
+    }
+}
+
+private func createStream(
+    id: Int,
+    name: String,
+    monthlyAmount: Double,
+    category: String,
+    subcategory: String?,
+    lastDate: String? = nil,
+    predictedNextDate: String? = nil
+) -> RecurringStream {
+    RecurringStream(
+        id: id,
+        plaidStreamId: "plaid_\(id)",
+        description: name,
+        merchantName: name,
+        personalFinanceCategory: category,
+        personalFinanceSubcategory: subcategory,
+        frequency: "MONTHLY",
+        averageAmount: monthlyAmount,
+        monthlyAmount: monthlyAmount,
+        isoCurrencyCode: "USD",
+        type: "expense",
+        status: "MATURE",
+        isActive: true,
+        firstDate: nil,
+        lastDate: lastDate,
+        predictedNextDate: predictedNextDate,
+        isUserModified: false,
+        userMarkedRecurring: nil,
+        isExcluded: false,
+        isManual: false,
+        matchPattern: nil
+    )
 }
