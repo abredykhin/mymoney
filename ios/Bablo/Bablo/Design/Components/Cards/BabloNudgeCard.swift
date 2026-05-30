@@ -221,15 +221,3 @@ struct BabloNudgeCard: View {
         }
     }
 }
-
-// Inline helper for conditional italic fonts
-private extension View {
-    @ViewBuilder
-    func conditionalItalic(_ active: Bool) -> some View {
-        if active {
-            self.italic()
-        } else {
-            self
-        }
-    }
-}

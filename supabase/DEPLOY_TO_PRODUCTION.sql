@@ -1634,5 +1634,204 @@ WHERE t.amount < 0
 GRANT SELECT ON public.spendable_income_transactions TO authenticated;
 
 -- =============================================================================
+-- MIGRATION: Goals & Streaks (20260523000001) & Goals Enhancements (20260530183019)
+-- =============================================================================
+
+-- 1. Create savings_goals_table
+CREATE TABLE IF NOT EXISTS public.savings_goals_table (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES public.profiles_table(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    target_amount NUMERIC(28,2) NOT NULL CHECK (target_amount > 0),
+    current_amount NUMERIC(28,2) NOT NULL DEFAULT 0 CHECK (current_amount >= 0),
+    eta_date DATE,
+    category_icon TEXT DEFAULT '✈️',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    color TEXT NOT NULL DEFAULT '#A9F236',
+    priority INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_savings_goals_user_id ON public.savings_goals_table(user_id);
+
+ALTER TABLE public.savings_goals_table ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage their own savings goals" ON public.savings_goals_table;
+CREATE POLICY "Users can manage their own savings goals"
+    ON public.savings_goals_table FOR ALL
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+-- 2. Create savings_deposits_table
+CREATE TABLE IF NOT EXISTS public.savings_deposits_table (
+    id SERIAL PRIMARY KEY,
+    goal_id INTEGER NOT NULL REFERENCES public.savings_goals_table(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.profiles_table(id) ON DELETE CASCADE,
+    amount NUMERIC(28,2) NOT NULL CHECK (amount > 0),
+    deposit_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_savings_deposits_goal_date ON public.savings_deposits_table(goal_id, deposit_date);
+
+ALTER TABLE public.savings_deposits_table ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage their own savings deposits" ON public.savings_deposits_table;
+CREATE POLICY "Users can manage their own savings deposits"
+    ON public.savings_deposits_table FOR ALL
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+-- 3. Trigger to update current savings amounts automatically
+CREATE OR REPLACE FUNCTION public.update_goal_current_amount()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE public.savings_goals_table
+        SET current_amount = current_amount + NEW.amount
+        WHERE id = NEW.goal_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE public.savings_goals_table
+        SET current_amount = current_amount - OLD.amount
+        WHERE id = OLD.goal_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_update_goal_amount ON public.savings_deposits_table;
+CREATE TRIGGER trigger_update_goal_amount
+AFTER INSERT OR DELETE ON public.savings_deposits_table
+FOR EACH ROW EXECUTE FUNCTION public.update_goal_current_amount();
+
+-- 4. RPC: get_goals_summary
+DROP FUNCTION IF EXISTS public.get_goals_summary();
+CREATE OR REPLACE FUNCTION public.get_goals_summary()
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY INVOKER
+AS $$
+DECLARE
+  v_user_id UUID := auth.uid();
+  v_total_stashed NUMERIC := 0;
+  v_total_target  NUMERIC := 0;
+  v_funded_pct    NUMERIC := 0;
+  v_goal_count    INTEGER := 0;
+  v_this_month    NUMERIC := 0;
+  v_depository_balance NUMERIC := 0;
+  v_vault_covered BOOLEAN := true;
+  v_goals         JSON;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT
+    COALESCE(SUM(g.current_amount), 0),
+    COALESCE(SUM(g.target_amount), 0),
+    COUNT(*)
+  INTO v_total_stashed, v_total_target, v_goal_count
+  FROM public.savings_goals_table g
+  WHERE g.user_id = v_user_id
+    AND g.is_active = true;
+
+  IF v_total_target > 0 THEN
+    v_funded_pct := ROUND((v_total_stashed / v_total_target) * 100, 1);
+  END IF;
+
+  SELECT COALESCE(SUM(d.amount), 0)
+  INTO v_this_month
+  FROM public.savings_deposits_table d
+  WHERE d.user_id = v_user_id
+    AND d.deposit_date >= DATE_TRUNC('month', CURRENT_DATE);
+
+  SELECT COALESCE(SUM(a.current_balance), 0)
+  INTO v_depository_balance
+  FROM public.accounts_table a
+  INNER JOIN public.items_table i ON a.item_id = i.id
+  WHERE i.user_id = v_user_id
+    AND a.type = 'depository'
+    AND a.hidden = false;
+
+  v_vault_covered := v_total_stashed <= v_depository_balance;
+
+  SELECT json_agg(goal_data ORDER BY g.priority ASC, g.created_at ASC)
+  INTO v_goals
+  FROM public.savings_goals_table g
+  CROSS JOIN LATERAL (
+    SELECT COALESCE(
+      SUM(d.amount) / NULLIF(
+        GREATEST(
+          DATE_PART('day', CURRENT_DATE - MIN(d.deposit_date)) / 7.0,
+          1
+        ), 0
+      ),
+      0
+    ) AS weekly_rate
+    FROM public.savings_deposits_table d
+    WHERE d.goal_id = g.id
+      AND d.deposit_date >= CURRENT_DATE - INTERVAL '56 days'
+  ) rate_calc
+  CROSS JOIN LATERAL (
+    SELECT COALESCE(SUM(d2.amount), 0) AS goal_this_month
+    FROM public.savings_deposits_table d2
+    WHERE d2.goal_id = g.id
+      AND d2.deposit_date >= DATE_TRUNC('month', CURRENT_DATE)
+  ) month_calc
+  CROSS JOIN LATERAL (
+    SELECT
+      ROUND(LEAST(g.current_amount / NULLIF(g.target_amount, 0) * 100, 100), 1) AS pct,
+      CASE
+        WHEN g.current_amount >= g.target_amount THEN NULL
+        WHEN rate_calc.weekly_rate > 0 THEN
+          CURRENT_DATE + (CEIL((g.target_amount - g.current_amount) / rate_calc.weekly_rate) * 7)::INTEGER
+        ELSE NULL
+      END AS eta_date,
+      CASE
+        WHEN g.current_amount >= g.target_amount THEN 'funded'
+        WHEN rate_calc.weekly_rate <= 0 THEN 'at risk'
+        WHEN ROUND(g.current_amount / NULLIF(g.target_amount, 0) * 100, 1) >= 75 THEN 'almost'
+        WHEN g.eta_date IS NOT NULL AND g.eta_date <= CURRENT_DATE + INTERVAL '30 days' THEN 'on track'
+        WHEN ROUND(g.current_amount / NULLIF(g.target_amount, 0) * 100, 1) >= 25 THEN 'on track'
+        ELSE 'building'
+      END AS status_label
+  ) derived
+  CROSS JOIN LATERAL (
+    SELECT json_build_object(
+      'id',             g.id,
+      'name',           g.name,
+      'category_icon',  g.category_icon,
+      'target_amount',  g.target_amount,
+      'current_amount', g.current_amount,
+      'eta_date',       derived.eta_date,
+      'is_active',      g.is_active,
+      'color',          g.color,
+      'priority',       g.priority,
+      'pct',            derived.pct,
+      'weekly_rate',    ROUND(rate_calc.weekly_rate, 0),
+      'this_month',     month_calc.goal_this_month,
+      'status_label',   derived.status_label
+    ) AS goal_data
+  ) packed
+  WHERE g.user_id = v_user_id
+    AND g.is_active = true;
+
+  RETURN json_build_object(
+    'total_stashed',       v_total_stashed,
+    'total_target',        v_total_target,
+    'funded_pct',          v_funded_pct,
+    'goal_count',          v_goal_count,
+    'this_month',          v_this_month,
+    'depository_balance',  v_depository_balance,
+    'vault_covered',       v_vault_covered,
+    'goals',               COALESCE(v_goals, '[]'::JSON)
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_goals_summary() TO authenticated;
+
+-- =============================================================================
 -- DONE! Database is ready for the iOS app.
 -- =============================================================================

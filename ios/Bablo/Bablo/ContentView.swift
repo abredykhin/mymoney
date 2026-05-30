@@ -112,7 +112,7 @@ struct ContentView: View {
             }
         case .goals:
             NavigationStack(path: $navigationState.goalsNavPath) {
-                BabloEmptyTabView()
+                GoalsTabView()
             }
         case .coach:
             NavigationStack(path: $navigationState.coachNavPath) {
