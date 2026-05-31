@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RecentWidgetView: View {
     @EnvironmentObject private var transactionsService: TransactionsService
+    @EnvironmentObject private var navigationState: NavigationState
     @Environment(\.babloTheme) private var theme
 
     private var recentTransactions: [Transaction] {
@@ -25,10 +26,15 @@ struct RecentWidgetView: View {
 
                 Spacer()
 
-                Image(systemName: "arrow.up.arrow.down")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(theme.colors.textTertiary.color)
-                    .padding(.top, 3)
+                Button {
+                    navigationState.homeNavPath.append(HomeDestination.allTransactions)
+                } label: {
+                    Text("All >")
+                        .font(theme.typography.body(size: 13, weight: .bold))
+                        .foregroundStyle(theme.colors.textTertiary.color)
+                        .padding(.top, 3)
+                }
+                .buttonStyle(.plain)
             }
 
             if recentTransactions.isEmpty {

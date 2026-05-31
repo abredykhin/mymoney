@@ -19,6 +19,9 @@ enum HomeDestination: Hashable {
 
     /// Detail screen for the user's saving streak.
     case streakDetail
+
+    /// The full paginated list of all transactions.
+    case allTransactions
 }
 
 // MARK: - Transaction source

@@ -108,6 +108,8 @@ struct HomeView: View {
                 BreakdownTransactionListView(source: source, period: period)
             case .streakDetail:
                 StreakDetailView()
+            case .allTransactions:
+                AllTransactionsView()
             }
         }
         .sheet(isPresented: $showingOnboarding) {
