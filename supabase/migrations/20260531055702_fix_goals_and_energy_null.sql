@@ -1,18 +1,6 @@
--- Goals Enhancements Migration
--- Adds color and priority columns to savings_goals_table
--- Adds get_goals_summary() RPC with per-goal ETA, weekly rate, vault coverage
-
--- 1. Add missing columns to savings_goals_table
-ALTER TABLE public.savings_goals_table
-  ADD COLUMN IF NOT EXISTS color TEXT NOT NULL DEFAULT '#A9F236',
-  ADD COLUMN IF NOT EXISTS priority INTEGER NOT NULL DEFAULT 0;
-
--- 2. RPC: get_goals_summary
--- Returns vault-level aggregates and per-goal analytics computed from deposit history.
--- Weekly rate = average weekly deposits over the last 8 weeks.
--- ETA = current_date + ceil(remaining / weekly_rate) * 7 days.
--- Vault coverage = sum(current_amount) vs sum of depository account balances.
+-- Fix DATE_PART bug in get_goals_summary by using direct days subtraction (which yields integer)
 DROP FUNCTION IF EXISTS public.get_goals_summary();
+
 CREATE OR REPLACE FUNCTION public.get_goals_summary()
 RETURNS JSON
 LANGUAGE plpgsql
@@ -29,12 +17,10 @@ DECLARE
   v_vault_covered BOOLEAN := true;
   v_goals         JSON;
 BEGIN
-  -- Guard: require authenticated user
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
-  -- Aggregate vault-level totals from all active goals
   SELECT
     COALESCE(SUM(g.current_amount), 0),
     COALESCE(SUM(g.target_amount), 0),
@@ -44,19 +30,16 @@ BEGIN
   WHERE g.user_id = v_user_id
     AND g.is_active = true;
 
-  -- Funded percentage
   IF v_total_target > 0 THEN
     v_funded_pct := ROUND((v_total_stashed / v_total_target) * 100, 1);
   END IF;
 
-  -- Deposits made this calendar month
   SELECT COALESCE(SUM(d.amount), 0)
   INTO v_this_month
   FROM public.savings_deposits_table d
   WHERE d.user_id = v_user_id
     AND d.deposit_date >= DATE_TRUNC('month', CURRENT_DATE);
 
-  -- Total depository balance (checking + savings accounts, excluding credit)
   SELECT COALESCE(SUM(a.current_balance), 0)
   INTO v_depository_balance
   FROM public.accounts_table a
@@ -65,15 +48,12 @@ BEGIN
     AND a.type = 'depository'
     AND a.hidden = false;
 
-  -- Vault coverage check
   v_vault_covered := v_total_stashed <= v_depository_balance;
 
-  -- Per-goal analytics
   SELECT json_agg(goal_data ORDER BY g.priority ASC, g.created_at ASC)
   INTO v_goals
   FROM public.savings_goals_table g
   CROSS JOIN LATERAL (
-    -- Weekly deposit rate: average over last 8 complete weeks
     SELECT COALESCE(
       SUM(d.amount) / NULLIF(
         GREATEST(
@@ -88,14 +68,12 @@ BEGIN
       AND d.deposit_date >= CURRENT_DATE - INTERVAL '56 days'
   ) rate_calc
   CROSS JOIN LATERAL (
-    -- Deposits this month for this goal
     SELECT COALESCE(SUM(d2.amount), 0) AS goal_this_month
     FROM public.savings_deposits_table d2
     WHERE d2.goal_id = g.id
       AND d2.deposit_date >= DATE_TRUNC('month', CURRENT_DATE)
   ) month_calc
   CROSS JOIN LATERAL (
-    -- Compute pct, eta, status_label
     SELECT
       ROUND(LEAST(g.current_amount / NULLIF(g.target_amount, 0) * 100, 100), 1) AS pct,
       CASE
@@ -146,5 +124,57 @@ BEGIN
 END;
 $$;
 
--- Grant execute to authenticated users
 GRANT EXECUTE ON FUNCTION public.get_goals_summary() TO authenticated;
+
+
+-- Fix nullable peak day decoding issue in get_pulse_weekly_energy by defaulting to false instead of null
+DROP FUNCTION IF EXISTS public.get_pulse_weekly_energy(date, date);
+
+CREATE OR REPLACE FUNCTION public.get_pulse_weekly_energy(week_start DATE, week_end DATE)
+RETURNS TABLE (weekday TEXT, date_label DATE, total_spent DOUBLE PRECISION,
+               is_peak BOOLEAN, peak_merchant TEXT, peak_category TEXT, peak_amount DOUBLE PRECISION)
+LANGUAGE plpgsql SECURITY INVOKER SET search_path = public
+AS $$
+DECLARE peak_date DATE;
+BEGIN
+    SELECT t.spend_date INTO peak_date
+    FROM public.transactions t
+    WHERE t.user_id = auth.uid()
+      AND t.spend_date BETWEEN week_start AND week_end
+      AND t.is_spend
+    GROUP BY t.spend_date
+    ORDER BY SUM(t.amount) DESC LIMIT 1;
+
+    RETURN QUERY
+    WITH daily_totals AS (
+        SELECT t.spend_date AS t_date, SUM(t.amount)::double precision AS t_sum
+        FROM public.transactions t
+        WHERE t.user_id = auth.uid()
+          AND t.spend_date BETWEEN week_start AND week_end
+          AND t.is_spend
+        GROUP BY t.spend_date
+    ),
+    peak_transactions AS (
+        SELECT DISTINCT ON (t.spend_date)
+            t.spend_date AS t_date,
+            COALESCE(t.merchant_name, t.name) AS merchant,
+            t.personal_finance_category AS category,
+            t.amount::double precision AS amount
+        FROM public.transactions t
+        WHERE t.user_id = auth.uid()
+          AND t.spend_date BETWEEN week_start AND week_end
+          AND t.is_spend
+        ORDER BY t.spend_date, t.amount DESC
+    )
+    SELECT TO_CHAR(d.date_series, 'Dy'), d.date_series::date,
+           COALESCE(dt.t_sum, 0.0)::double precision, COALESCE(d.date_series::date = peak_date, FALSE),
+           COALESCE(pt.merchant, 'No Spend'), pt.category, COALESCE(pt.amount, 0.0)::double precision
+    FROM GENERATE_SERIES(week_start::timestamp, week_end::timestamp, '1 day'::interval) d(date_series)
+    LEFT JOIN daily_totals dt ON dt.t_date = d.date_series::date
+    LEFT JOIN peak_transactions pt ON pt.t_date = d.date_series::date
+    ORDER BY d.date_series ASC;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.get_pulse_weekly_energy(date, date) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_pulse_weekly_energy(date, date) TO authenticated;

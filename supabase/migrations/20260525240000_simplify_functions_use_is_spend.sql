@@ -164,7 +164,7 @@ BEGIN
         ORDER BY t.spend_date, t.amount DESC
     )
     SELECT TO_CHAR(d.date_series, 'Dy'), d.date_series::date,
-           COALESCE(dt.t_sum, 0.0)::double precision, (d.date_series::date = peak_date),
+           COALESCE(dt.t_sum, 0.0)::double precision, COALESCE(d.date_series::date = peak_date, FALSE),
            COALESCE(pt.merchant, 'No Spend'), pt.category, COALESCE(pt.amount, 0.0)::double precision
     FROM GENERATE_SERIES(week_start::timestamp, week_end::timestamp, '1 day'::interval) d(date_series)
     LEFT JOIN daily_totals dt ON dt.t_date = d.date_series::date
@@ -190,7 +190,7 @@ BEGIN
       AND t.spend_date BETWEEN start_date AND end_date
       AND t.is_spend
     GROUP BY COALESCE(t.merchant_name, t.name)
-    ORDER BY total_spent DESC LIMIT lim;
+    ORDER BY SUM(t.amount) DESC LIMIT lim;
 END;
 $$;
 REVOKE EXECUTE ON FUNCTION public.get_pulse_top_merchants(date, date, integer) FROM PUBLIC;

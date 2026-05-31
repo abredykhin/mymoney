@@ -62,6 +62,7 @@ struct ContentView: View {
             ZStack {
                 currentTabView
             }
+            .environmentObject(navigationState)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 BabloTabBar(selection: $navigationState.selectedTab)
             }

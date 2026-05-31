@@ -107,7 +107,7 @@ struct MoneyLeftBreakdownView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
-            .padding(.bottom, 32)
+            .padding(.bottom, 96)
         }
         .babloScreenBackground()
         .navigationTitle("How we got this")
@@ -153,11 +153,12 @@ struct MoneyLeftBreakdownView: View {
                 // Map the step's transaction source to a navigation destination.
                 // Steps with nil source (calculated values) are non-tappable.
                 let navDest: HomeDestination? = step.transactionSource.map {
-                    .breakdownTransactions($0, period)
+                    .breakdownTransactions($0, period, nil)
                 }
 
                 BreakdownStepCard(
                     step: step,
+                    period: period,
                     contextRows: step.number == 1 ? breakdown.contextRows : [],
                     spendRows: step.number == breakdown.spendStepNumber ? spendRows : [],
                     incomeRows: period == .month && !breakdown.isCashCapped && step.number == 1 ? incomeRows : [],
@@ -303,6 +304,7 @@ private struct BreakdownStepCard: View {
     @Environment(\.babloTheme) private var theme
 
     let step: HeroBudgetBreakdownStep
+    let period: HeroPeriod
     let contextRows: [HeroBudgetContextRow]
     let spendRows: [HeroSpendBreakdownRow]
     let incomeRows: [HeroIncomeBreakdownRow]
@@ -362,13 +364,29 @@ private struct BreakdownStepCard: View {
             } else if !spendRows.isEmpty {
                 VStack(spacing: 6) {
                     ForEach(spendRows) { row in
-                        SheetInfoRow(
-                            symbol: categorySymbol(for: row.category),
-                            title: row.category,
-                            detail: row.detail,
-                            amount: row.amount,
-                            isNegative: true
-                        )
+                        if let _ = navigationDestination {
+                            let categoryDest = HomeDestination.breakdownTransactions(step.transactionSource ?? .variableSpend, period, row.category)
+                            NavigationLink(value: categoryDest) {
+                                SheetInfoRow(
+                                    symbol: categorySymbol(for: row.category),
+                                    title: row.category,
+                                    detail: row.detail,
+                                    amount: row.amount,
+                                    isNegative: true,
+                                    isTappable: true
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            SheetInfoRow(
+                                symbol: categorySymbol(for: row.category),
+                                title: row.category,
+                                detail: row.detail,
+                                amount: row.amount,
+                                isNegative: true,
+                                isTappable: false
+                            )
+                        }
                     }
                 }
             }
@@ -443,9 +461,10 @@ private struct BreakdownStepCard: View {
 
             // Title — the primary tap label
             Text(step.title)
-                .font(theme.typography.title(size: 18, weight: .black))
+                .font(theme.typography.title(size: 16, weight: .black))
                 .foregroundStyle(theme.colors.textPrimary.color)
                 .lineLimit(2)
+                .minimumScaleFactor(0.8)
                 .fixedSize(horizontal: false, vertical: true)
 
             Spacer(minLength: 8)
@@ -552,13 +571,24 @@ private struct SheetInfoRow: View {
     let detail: String
     let amount: Double
     let isNegative: Bool
+    var isTappable: Bool = false
+
+    private var categoryEmoji: String? {
+        FlexibleSpendingCategory.allCases.first(where: { $0.displayName == title })?.emoji
+    }
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            Image(systemName: symbol)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(theme.colors.textSecondary.color)
-                .frame(width: 22)
+            if let emoji = categoryEmoji {
+                Text(emoji)
+                    .font(.system(size: 16))
+                    .frame(width: 22)
+            } else {
+                Image(systemName: symbol)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(theme.colors.textSecondary.color)
+                    .frame(width: 22)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -584,6 +614,12 @@ private struct SheetInfoRow: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.82)
                 .layoutPriority(1)
+            
+            if isTappable {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

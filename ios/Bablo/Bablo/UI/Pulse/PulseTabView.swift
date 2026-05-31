@@ -8,6 +8,7 @@ struct PulseTabView: View {
 
     @Environment(\.babloTheme) private var theme
     @EnvironmentObject private var userAccount: UserAccount
+    @EnvironmentObject private var navigationState: NavigationState
 
     private let loadsData: Bool
 
@@ -62,12 +63,18 @@ struct PulseTabView: View {
                     period: selectedPeriod.heroPeriod,
                     isLoading: pulseService.isLoadingDailyEnergy,
                     error: pulseService.dailyEnergyError,
-                    retry: { Task { await loadDailyEnergy() } }
+                    retry: { Task { await loadDailyEnergy() } },
+                    onBarTapped: { startDate, endDate, title in
+                        navigationState.pulseNavPath.append(
+                            PulseDestination.transactions(startDate: startDate, endDate: endDate, title: title)
+                        )
+                    }
                 )
                 .padding(.horizontal, theme.metrics.screenPadding)
                 
                 TheLineupWidgetView(
                     items: pulseService.topMerchants,
+                    totalSpentOfPeriod: pulseService.damageReport?.totalOut,
                     isLoading: pulseService.isLoadingTopMerchants,
                     error: pulseService.topMerchantsError,
                     retry: { Task { await loadTopMerchants() } },
@@ -99,6 +106,12 @@ struct PulseTabView: View {
             _ = await (damageReport, breakdown, energy, merchants)
         }
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(for: PulseDestination.self) { destination in
+            switch destination {
+            case .transactions(let startDate, let endDate, let title):
+                AllTransactionsView(startDate: startDate, endDate: endDate, title: title)
+            }
+        }
         .sheet(isPresented: $isShowingAllMerchants) {
             AllMerchantsSheetView(
                 pulseService: pulseService,
@@ -400,6 +413,10 @@ enum PulsePeriod: String, CaseIterable, Hashable {
         case .month: return .month
         }
     }
+}
+
+enum PulseDestination: Hashable {
+    case transactions(startDate: String, endDate: String, title: String)
 }
 
 struct PulseDateWindow {

@@ -302,6 +302,5 @@ struct BabloListSheet<FilterValue: Hashable, SortValue: Hashable, Content: View>
             }
         }
         .background(theme.colors.surface.color)
-        .ignoresSafeArea(edges: .bottom)
     }
 }

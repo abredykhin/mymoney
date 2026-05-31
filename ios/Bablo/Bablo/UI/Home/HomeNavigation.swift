@@ -15,7 +15,7 @@ enum HomeDestination: Hashable {
     case budgetBreakdown(HeroPeriod)
 
     /// Transaction list for one of the breakdown steps.
-    case breakdownTransactions(BreakdownTransactionSource, HeroPeriod)
+    case breakdownTransactions(BreakdownTransactionSource, HeroPeriod, String? = nil)
 
     /// Detail screen for the user's saving streak.
     case streakDetail

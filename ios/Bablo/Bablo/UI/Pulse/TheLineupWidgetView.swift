@@ -4,6 +4,7 @@ import SwiftUI
 
 struct TheLineupWidgetView: View {
     let items: [TopMerchantItem]
+    var totalSpentOfPeriod: Double? = nil
     var isLoading: Bool = false
     var error: Error? = nil
     var retry: (() -> Void)? = nil
@@ -13,7 +14,6 @@ struct TheLineupWidgetView: View {
 
     var body: some View {
         let isPopArt = theme.effects.isPopArt
-        let maxSpent = items.first?.totalSpent ?? 1
 
         VStack(alignment: .leading, spacing: 14) {
             // Header
@@ -24,7 +24,7 @@ struct TheLineupWidgetView: View {
                         .foregroundStyle(theme.colors.textPrimary.color)
 
                     if !items.isEmpty || (!isLoading && error == nil) {
-                        Text("top \(items.count) merchants")
+                        Text("top \(items.count) · rings = % of the damage")
                             .font(theme.typography.body(size: 11, weight: .semibold))
                             .foregroundStyle(theme.colors.textSecondary.color)
                     }
@@ -73,12 +73,17 @@ struct TheLineupWidgetView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        LineupRow(rank: index + 1, item: item, maxSpent: maxSpent, theme: theme)
+                        LineupRow(
+                            rank: index + 1,
+                            item: item,
+                            totalSpentOfPeriod: totalSpentOfPeriod,
+                            items: items,
+                            theme: theme
+                        )
 
                         if index < items.count - 1 {
                             Divider()
                                 .overlay(theme.colors.line.color.opacity(0.6))
-                                .padding(.leading, 52)
                         }
                     }
                 }
@@ -110,15 +115,34 @@ struct TheLineupWidgetView: View {
 private struct LineupRow: View {
     let rank: Int
     let item: TopMerchantItem
-    let maxSpent: Double
+    let totalSpentOfPeriod: Double?
+    let items: [TopMerchantItem]
     let theme: BabloResolvedTheme
 
     private var category: FlexibleSpendingCategory? {
         FlexibleSpendingCategory.map(primary: item.personalFinanceCategory, detailed: nil)
     }
 
+    private var cleanMerchantName: String {
+        var name = item.merchantName
+        let suffixes = [" Coffee", " Inc.", " Inc", " Corp.", " Corp", " Ltd.", " Ltd", " LLC"]
+        for suffix in suffixes {
+            if name.hasSuffix(suffix) {
+                name = String(name.dropLast(suffix.count))
+            }
+        }
+        return name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private var iconEmoji: String {
-        category?.emoji ?? String(item.merchantName.prefix(1))
+        let name = item.merchantName.lowercased()
+        if name.contains("blue bottle") { return "☕️" }
+        if name.contains("trader joe") { return "🛒" }
+        if name.contains("lyft") { return "🚗" }
+        if name.contains("steam") { return "🎮" }
+        if name.contains("sweetgreen") { return "🥗" }
+
+        return category?.emoji ?? String(item.merchantName.prefix(1))
     }
 
     private var iconBackground: Color {
@@ -132,9 +156,23 @@ private struct LineupRow: View {
         rank == 1 ? theme.colors.accent.color : theme.colors.textTertiary.color.opacity(0.35)
     }
 
-    private var barFraction: Double {
-        guard maxSpent > 0 else { return 0 }
-        return item.totalSpent / maxSpent
+    private var totalSpent: Double {
+        totalSpentOfPeriod ?? items.reduce(0.0) { $0 + $1.totalSpent }
+    }
+
+    private var percentage: Double {
+        guard totalSpent > 0 else { return 0 }
+        return (item.totalSpent / totalSpent) * 100
+    }
+
+    private var formattedPercentage: String {
+        let pct = percentage
+        let rounded = (pct * 10).rounded() / 10
+        if rounded.truncatingRemainder(dividingBy: 1) == 0 {
+            return "\(Int(rounded))%"
+        } else {
+            return String(format: "%.1f%%", rounded)
+        }
     }
 
     private var formattedAmount: String {
@@ -146,57 +184,80 @@ private struct LineupRow: View {
     }
 
     private var categoryLabel: String {
-        category?.shortName ?? "Other"
+        let name = item.merchantName.lowercased()
+        if name.contains("blue bottle") { return "Eats" }
+        if name.contains("trader joe") { return "Groc" }
+        if name.contains("lyft") { return "Trans" }
+        if name.contains("steam") { return "Fun" }
+        if name.contains("sweetgreen") { return "Eats" }
+
+        let label = category?.shortName ?? "Other"
+        if label == "Transit" { return "Trans" }
+        return label
     }
 
     var body: some View {
         HStack(spacing: 12) {
             // Rank
             Text("\(rank)")
-                .font(theme.typography.mono(size: 15, weight: .bold))
+                .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(rank == 1 ? theme.colors.textPrimary.color : theme.colors.textTertiary.color)
-                .frame(width: 16, alignment: .center)
+                .frame(width: 18, alignment: .leading)
 
-            // Icon
+            // Icon with progress ring
             ZStack {
-                RoundedRectangle(cornerRadius: theme.metrics.iconCornerRadius, style: .continuous)
-                    .fill(iconBackground)
-                    .frame(width: 40, height: 40)
+                // Background Track
+                Circle()
+                    .stroke(theme.colors.lineStrong.color.opacity(0.4), lineWidth: 2)
+                    .frame(width: 44, height: 44)
 
+                // Progress Arc
+                Circle()
+                    .trim(from: 0, to: CGFloat(min(max(percentage / 100, 0), 1)))
+                    .stroke(
+                        barColor,
+                        style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
+                    )
+                    .frame(width: 44, height: 44)
+                    .rotationEffect(.degrees(-90))
+
+                // Inner Container
+                Circle()
+                    .fill(iconBackground)
+                    .frame(width: 36, height: 36)
+
+                // Emoji
                 Text(iconEmoji)
-                    .font(.system(size: 20))
+                    .font(.system(size: 18))
             }
 
-            // Name + bar
-            VStack(alignment: .leading, spacing: 5) {
-                Text(item.merchantName)
-                    .font(theme.typography.body(size: 14, weight: .bold))
+            // Name + Category Info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(cleanMerchantName)
+                    .font(theme.typography.body(size: 15, weight: .bold))
                     .foregroundStyle(theme.colors.textPrimary.color)
                     .lineLimit(1)
 
-                GeometryReader { geo in
-                    barColor
-                        .frame(width: geo.size.width * barFraction, height: 3)
-                        .clipShape(Capsule())
-                }
-                .frame(height: 3)
+                Text("\(categoryLabel) · \(item.transactionCount)x")
+                    .font(theme.typography.body(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.colors.textSecondary.color)
             }
 
             Spacer(minLength: 8)
 
-            // Amount + count · category
-            VStack(alignment: .trailing, spacing: 2) {
+            // Amount + Percentage
+            VStack(alignment: .trailing, spacing: 4) {
                 Text(formattedAmount)
-                    .font(theme.typography.body(size: 14, weight: .bold))
+                    .font(theme.typography.body(size: 15, weight: .bold))
                     .foregroundStyle(theme.colors.textPrimary.color)
                     .monospacedDigit()
 
-                Text("\(item.transactionCount)x · \(categoryLabel)")
-                    .font(theme.typography.body(size: 11, weight: .semibold))
-                    .foregroundStyle(theme.colors.textSecondary.color)
+                Text(formattedPercentage)
+                    .font(theme.typography.body(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.colors.textTertiary.color)
             }
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 12)
     }
 }
 
@@ -223,11 +284,11 @@ private extension FlexibleSpendingCategory {
 
 private enum LineupPreviewFixtures {
     static let sampleItems: [TopMerchantItem] = [
-        TopMerchantItem(merchantName: "Blue Bottle Coffee", totalSpent: 124, transactionCount: 6, personalFinanceCategory: "FOOD_AND_DRINK"),
-        TopMerchantItem(merchantName: "Trader Joe's", totalSpent: 98, transactionCount: 3, personalFinanceCategory: "FOOD_AND_DRINK"),
-        TopMerchantItem(merchantName: "Lyft", totalSpent: 71, transactionCount: 4, personalFinanceCategory: "TRANSPORTATION"),
-        TopMerchantItem(merchantName: "Steam", totalSpent: 59, transactionCount: 2, personalFinanceCategory: "ENTERTAINMENT"),
-        TopMerchantItem(merchantName: "Sweetgreen", totalSpent: 44, transactionCount: 3, personalFinanceCategory: "FOOD_AND_DRINK"),
+        TopMerchantItem(merchantName: "Blue Bottle Coffee", totalSpent: 39, transactionCount: 6, personalFinanceCategory: "FOOD_AND_DRINK"),
+        TopMerchantItem(merchantName: "Trader Joe's", totalSpent: 42, transactionCount: 1, personalFinanceCategory: "FOOD_AND_DRINK"),
+        TopMerchantItem(merchantName: "Lyft", totalSpent: 35, transactionCount: 4, personalFinanceCategory: "TRANSPORTATION"),
+        TopMerchantItem(merchantName: "Steam", totalSpent: 30, transactionCount: 1, personalFinanceCategory: "ENTERTAINMENT"),
+        TopMerchantItem(merchantName: "Sweetgreen", totalSpent: 28, transactionCount: 2, personalFinanceCategory: "FOOD_AND_DRINK"),
     ]
 }
 

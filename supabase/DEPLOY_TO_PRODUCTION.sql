@@ -1484,7 +1484,7 @@ BEGIN
         ORDER BY t.spend_date, t.amount DESC
     )
     SELECT TO_CHAR(d.date_series, 'Dy'), d.date_series::date,
-           COALESCE(dt.t_sum, 0.0)::double precision, (d.date_series::date = peak_date),
+           COALESCE(dt.t_sum, 0.0)::double precision, COALESCE(d.date_series::date = peak_date, FALSE),
            COALESCE(pt.merchant, 'No Spend'), pt.category, COALESCE(pt.amount, 0.0)::double precision
     FROM GENERATE_SERIES(week_start::timestamp, week_end::timestamp, '1 day'::interval) d(date_series)
     LEFT JOIN daily_totals dt ON dt.t_date = d.date_series::date
@@ -1509,7 +1509,7 @@ BEGIN
       AND t.spend_date BETWEEN start_date AND end_date
       AND t.is_spend
     GROUP BY COALESCE(t.merchant_name, t.name)
-    ORDER BY total_spent DESC LIMIT lim;
+    ORDER BY SUM(t.amount) DESC LIMIT lim;
 END;
 $$;
 REVOKE EXECUTE ON FUNCTION public.get_pulse_top_merchants(date, date, integer) FROM PUBLIC;
@@ -1582,18 +1582,6 @@ SELECT
         )
         AND NOT (
           COALESCE(t.personal_finance_subcategory, '') = 'LOAN_PAYMENTS_CREDIT_CARD_PAYMENT'
-          AND EXISTS (
-            SELECT 1
-            FROM public.transactions_table ct
-            JOIN public.accounts ca ON ct.account_id = ca.id
-            WHERE ca.user_id = a.user_id
-              AND COALESCE(ca.type, '') IN ('credit', 'loan')
-              AND ct.amount < 0
-              AND ABS(ct.amount + t.amount) < 0.005
-              AND COALESCE(ct.spend_date, ct.authorized_date, ct.date)
-                  BETWEEN (t.spend_date - INTERVAL '3 days')::date
-                      AND (t.spend_date + INTERVAL '3 days')::date
-          )
         )
         AND NOT (
           t.personal_finance_category = 'TRANSFER_OUT'
@@ -1803,7 +1791,7 @@ BEGIN
     SELECT COALESCE(
       SUM(d.amount) / NULLIF(
         GREATEST(
-          DATE_PART('day', CURRENT_DATE - MIN(d.deposit_date)) / 7.0,
+          (CURRENT_DATE - MIN(d.deposit_date)) / 7.0,
           1
         ), 0
       ),

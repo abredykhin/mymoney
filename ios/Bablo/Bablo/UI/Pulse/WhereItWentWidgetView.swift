@@ -59,16 +59,15 @@ struct WhereItWentWidgetView: View {
     @Environment(\.babloTheme) private var theme
 
     private var sortedItems: [CategoryBreakdownItem] {
-        var nonRest = items.filter { $0.bucket != .rest }
-        let rest    = items.filter { $0.bucket == .rest }
+        var sorted = items
 
         switch sortOrder {
-        case .amount:   nonRest.sort { $0.totalAmount > $1.totalAmount }
-        case .count:    nonRest.sort { $0.transactionCount > $1.transactionCount }
-        case .trending: nonRest.sort { abs($0.trendPercent ?? 0) > abs($1.trendPercent ?? 0) }
+        case .amount:   sorted.sort { $0.totalAmount > $1.totalAmount }
+        case .count:    sorted.sort { $0.transactionCount > $1.transactionCount }
+        case .trending: sorted.sort { abs($0.trendPercent ?? 0) > abs($1.trendPercent ?? 0) }
         }
 
-        return nonRest + rest
+        return sorted
     }
 
     private var totalTransactionCount: Int {
@@ -159,7 +158,7 @@ struct WhereItWentWidgetView: View {
                         if item.id != sortedItems.last?.id {
                             Divider()
                                 .overlay(theme.colors.line.color.opacity(0.6))
-                                .padding(.leading, 52)
+                                .padding(.leading, 56)
                         }
                     }
                 }
@@ -222,14 +221,31 @@ private struct CategoryRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Emoji icon
+            // Icon with progress ring
             ZStack {
-                RoundedRectangle(cornerRadius: theme.metrics.iconCornerRadius, style: .continuous)
-                    .fill(item.bucket.iconBackground(theme: theme))
-                    .frame(width: 40, height: 40)
+                // Background Track
+                Circle()
+                    .stroke(theme.colors.lineStrong.color.opacity(0.4), lineWidth: 2)
+                    .frame(width: 44, height: 44)
 
+                // Progress Arc
+                Circle()
+                    .trim(from: 0, to: CGFloat(min(max(item.percentOfTotal, 0), 1)))
+                    .stroke(
+                        item.bucket.barColor(theme: theme),
+                        style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
+                    )
+                    .frame(width: 44, height: 44)
+                    .rotationEffect(.degrees(-90))
+
+                // Inner Container
+                Circle()
+                    .fill(item.bucket.iconBackground(theme: theme))
+                    .frame(width: 36, height: 36)
+
+                // Emoji
                 Text(item.bucket.emoji)
-                    .font(.system(size: 20))
+                    .font(.system(size: 18))
             }
 
             // Name + subtitle
@@ -239,7 +255,7 @@ private struct CategoryRow: View {
                     .foregroundStyle(theme.colors.textPrimary.color)
                     .lineLimit(1)
 
-                Text("\(Int((item.percentOfTotal * 100).rounded()))% · \(item.transactionCount) txn")
+                Text(item.transactionCount == 1 ? "1 txn" : "\(item.transactionCount) txns")
                     .font(theme.typography.body(size: 11, weight: .semibold))
                     .foregroundStyle(theme.colors.textSecondary.color)
             }

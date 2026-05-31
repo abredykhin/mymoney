@@ -8,9 +8,11 @@ import SwiftUI
 struct BreakdownTransactionListView: View {
     let source: BreakdownTransactionSource
     let period: HeroPeriod
+    let categoryFilter: String?
     private let previewTransactions: [Transaction]?
 
     @EnvironmentObject private var budgetService: BudgetService
+    @EnvironmentObject private var userAccount: UserAccount
     @Environment(\.babloTheme) private var theme
 
     @State private var transactions: [Transaction] = []
@@ -20,10 +22,12 @@ struct BreakdownTransactionListView: View {
     init(
         source: BreakdownTransactionSource,
         period: HeroPeriod,
+        categoryFilter: String? = nil,
         previewTransactions: [Transaction]? = nil
     ) {
         self.source = source
         self.period = period
+        self.categoryFilter = categoryFilter
         self.previewTransactions = previewTransactions
         _transactions = State(initialValue: previewTransactions ?? [])
     }
@@ -33,6 +37,23 @@ struct BreakdownTransactionListView: View {
         budgetService.allRecurringStreams
             .filter { $0.type == "expense" && $0.isActive && !$0.isExcluded }
             .sorted { $0.monthlyAmount > $1.monthlyAmount }
+    }
+
+    private var trackedCategories: Set<FlexibleSpendingCategory> {
+        let rawValues = userAccount.profile?.trackedSpendingCategories ?? []
+        return Set(rawValues.compactMap { FlexibleSpendingCategory(rawValue: $0) })
+    }
+
+    private func displaySpendBucket(primary: String?, detailed: String?) -> String {
+        guard let category = FlexibleSpendingCategory.map(primary: primary, detailed: detailed) else {
+            return "Everything else"
+        }
+
+        if trackedCategories.isEmpty || trackedCategories.contains(category) {
+            return category.displayName
+        }
+
+        return "Everything else"
     }
 
     var body: some View {
@@ -82,7 +103,18 @@ struct BreakdownTransactionListView: View {
             isLoading = true
             switch source {
             case .variableSpend:
-                transactions = await budgetService.fetchVariableTransactionList(for: period)
+                let allTxns = await budgetService.fetchVariableTransactionList(for: period)
+                if let filter = categoryFilter {
+                    transactions = allTxns.filter { txn in
+                        let cat = displaySpendBucket(
+                            primary: txn.personal_finance_category,
+                            detailed: txn.personal_finance_subcategory
+                        )
+                        return cat == filter
+                    }
+                } else {
+                    transactions = allTxns
+                }
             case .income:
                 transactions = await budgetService.fetchIncomeTransactionList()
             case .obligations:
@@ -210,15 +242,21 @@ private struct TransactionListRow: View {
     let theme: BabloResolvedTheme
 
     var body: some View {
-        HStack(spacing: 12) {
+        let presentation = RecentTransactionPresentation(transaction: transaction)
+        return HStack(spacing: 12) {
             // Category icon
             ZStack {
                 RoundedRectangle(cornerRadius: theme.metrics.iconCornerRadius, style: .continuous)
                     .fill(theme.colors.surfaceMuted.color)
                     .frame(width: 40, height: 40)
-                Image(systemName: iconName)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(theme.colors.textSecondary.color)
+                if presentation.usesSystemIcon {
+                    Image(systemName: presentation.iconName)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(theme.colors.textSecondary.color)
+                } else {
+                    Text(presentation.iconName)
+                        .font(.system(size: 18))
+                }
             }
 
             // Name + date

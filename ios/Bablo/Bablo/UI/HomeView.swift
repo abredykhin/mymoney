@@ -104,8 +104,8 @@ struct HomeView: View {
             switch destination {
             case .budgetBreakdown(let period):
                 MoneyLeftBreakdownView(period: period)
-            case .breakdownTransactions(let source, let period):
-                BreakdownTransactionListView(source: source, period: period)
+            case .breakdownTransactions(let source, let period, let categoryName):
+                BreakdownTransactionListView(source: source, period: period, categoryFilter: categoryName)
             case .streakDetail:
                 StreakDetailView()
             case .allTransactions:

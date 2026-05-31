@@ -9,6 +9,8 @@ private struct EnergyBar: Identifiable {
     let isPeak: Bool
     let peakMerchant: String
     let peakAmount: Double
+    let startDate: String
+    let endDate: String
 }
 
 // MARK: - Main Widget
@@ -19,6 +21,7 @@ struct DailyEnergyWidgetView: View {
     var isLoading: Bool = false
     var error: Error? = nil
     var retry: (() -> Void)? = nil
+    var onBarTapped: ((String, String, String) -> Void)? = nil
 
     @Environment(\.babloTheme) private var theme
 
@@ -32,7 +35,9 @@ struct DailyEnergyWidgetView: View {
                     amount: item.totalSpent,
                     isPeak: item.isPeak,
                     peakMerchant: item.peakMerchant,
-                    peakAmount: item.peakAmount
+                    peakAmount: item.peakAmount,
+                    startDate: item.dateLabel,
+                    endDate: item.dateLabel
                 )
             }
         case .week:
@@ -137,7 +142,10 @@ struct DailyEnergyWidgetView: View {
             .frame(maxWidth: .infinity, minHeight: 80)
         } else if !bars.isEmpty {
             VStack(spacing: 8) {
-                EnergyBarChart(bars: bars, theme: theme)
+                EnergyBarChart(bars: bars, theme: theme) { bar in
+                    let title = dateWindowTitle(startDate: bar.startDate, endDate: bar.endDate, period: period)
+                    onBarTapped?(bar.startDate, bar.endDate, title)
+                }
 
                 if let peak = peakBar, peak.peakMerchant != "No Spend", peak.peakAmount > 0 {
                     PeakAnnotation(bar: peak, theme: theme)
@@ -187,6 +195,8 @@ struct DailyEnergyWidgetView: View {
         return sortedKeys.map { key in
             let acc = weekGroups[key]!
             let label = weekFmt.string(from: acc.startOfWeek)
+            let endOfWeek = cal.date(byAdding: .day, value: 6, to: acc.startOfWeek) ?? acc.startOfWeek
+            let endDateStr = fmt.string(from: endOfWeek)
 
             return EnergyBar(
                 id: key,
@@ -194,7 +204,9 @@ struct DailyEnergyWidgetView: View {
                 amount: acc.total,
                 isPeak: key == peakKey,
                 peakMerchant: acc.peakMerchant,
-                peakAmount: acc.peakAmount
+                peakAmount: acc.peakAmount,
+                startDate: key,
+                endDate: endDateStr
             )
         }
     }
@@ -245,6 +257,16 @@ struct DailyEnergyWidgetView: View {
             dc.month = Int(parts[1])
             dc.day = 1
             let label = cal.date(from: dc).map { monthFmt.string(from: $0) } ?? key
+            
+            let startOfMonth = cal.date(from: dc) ?? Date()
+            let startDateStr = fmt.string(from: startOfMonth)
+            
+            let range = cal.range(of: .day, in: .month, for: startOfMonth)
+            let lastDay = range?.count ?? 30
+            var endComponents = dc
+            endComponents.day = lastDay
+            let endOfMonth = cal.date(from: endComponents) ?? startOfMonth
+            let endDateStr = fmt.string(from: endOfMonth)
 
             return EnergyBar(
                 id: key,
@@ -252,7 +274,9 @@ struct DailyEnergyWidgetView: View {
                 amount: acc.total,
                 isPeak: key == peakKey,
                 peakMerchant: acc.peakMerchant,
-                peakAmount: acc.peakAmount
+                peakAmount: acc.peakAmount,
+                startDate: startDateStr,
+                endDate: endDateStr
             )
         }
     }
@@ -263,6 +287,7 @@ struct DailyEnergyWidgetView: View {
 private struct EnergyBarChart: View {
     let bars: [EnergyBar]
     let theme: BabloResolvedTheme
+    let onTap: (EnergyBar) -> Void
 
     private var maxAmount: Double {
         bars.map(\.amount).max() ?? 1
@@ -273,6 +298,10 @@ private struct EnergyBarChart: View {
             HStack(alignment: .bottom, spacing: 4) {
                 ForEach(bars) { bar in
                     EnergyBarColumn(bar: bar, maxAmount: max(maxAmount, 1), theme: theme)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            onTap(bar)
+                        }
                 }
             }
             .frame(height: 110)
@@ -285,6 +314,10 @@ private struct EnergyBarChart: View {
                             bar.isPeak ? theme.colors.textPrimary.color : theme.colors.textTertiary.color
                         )
                         .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            onTap(bar)
+                        }
                 }
             }
         }
@@ -371,6 +404,33 @@ private struct PeakAnnotation: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(theme.colors.lineStrong.color, lineWidth: 1)
             }
+        }
+    }
+}
+
+extension DailyEnergyWidgetView {
+    private func dateWindowTitle(startDate: String, endDate: String, period: HeroPeriod) -> String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.calendar = Calendar.bablo
+        fmt.timeZone = Calendar.bablo.timeZone
+        
+        let displayFmt = DateFormatter()
+        displayFmt.calendar = Calendar.bablo
+        displayFmt.timeZone = Calendar.bablo.timeZone
+        
+        guard let start = fmt.date(from: startDate) else { return startDate }
+        
+        switch period {
+        case .day:
+            displayFmt.dateFormat = "EEEE, MMM d"
+            return displayFmt.string(from: start)
+        case .week:
+            displayFmt.dateFormat = "MMM d"
+            return "Week of \(displayFmt.string(from: start))"
+        case .month:
+            displayFmt.dateFormat = "MMMM yyyy"
+            return displayFmt.string(from: start)
         }
     }
 }

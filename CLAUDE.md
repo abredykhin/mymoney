@@ -31,7 +31,7 @@ The `supabase/` directory contains all the backend infrastructure, managed by th
     -   **`gemini-budget-analysis`**: An AI-powered function that analyzes transaction history to identify recurring income and expenses, which are then used to build the user's budget profile.
     -   **`_shared/`**: A crucial directory for code reuse across all Edge Functions. It contains common logic for authentication, CORS handling (`auth.ts`), and initializing the Plaid client (`plaid.ts`).
 
--   **`migrations/`**: This directory holds the full history of database schema changes as incremental, timestamped SQL files. These migrations are generated and applied locally by the Supabase CLI (e.g., `supabase migration new`, `supabase db reset`), providing a version-controlled history of the database structure.
+-   **`migrations/`**: This directory holds the full history of database schema changes as incremental, timestamped SQL files. These migrations are version-controlled and applied locally by the Supabase CLI (e.g., `supabase db reset`).
 
 -   **`DEPLOY_TO_PRODUCTION.sql`**: This is a non-standard, manually-managed script that aggregates all the SQL from the `migrations/` directory. It serves as a master script to set up a new production database from scratch. It is executed directly in the Supabase Dashboard's SQL editor during initial setup or major deployments.
 
@@ -155,11 +155,7 @@ All `supabase` commands should be executed from the root of the project reposito
     This command will also apply any new database migrations. Your local database connection details will be printed in the console.
 
 2.  **Create New Migrations:**
-    When you need to make a change to the database schema, create a new migration file:
-    ```bash
-    supabase migration new <migration_name>
-    ```
-    Replace `<migration_name>` with a descriptive name for your migration (e.g., `add_user_avatars`). Edit the generated SQL file in `supabase/migrations/` to define your schema changes.
+    To create a new migration, DO NOT run any CLI commands (like `supabase migration new` which usually hangs). Instead, simply create a new blank SQL file directly in the `supabase/migrations/` directory. Prefix it with the current timestamp in UTC format `YYYYMMDDHHMMSS` followed by a descriptive name (e.g., `20260531120000_add_user_avatars.sql`). Add your schema changes to this file.
 
 3.  **Reset Local Database:**
     To wipe your local database and re-apply all migrations from the beginning, run:

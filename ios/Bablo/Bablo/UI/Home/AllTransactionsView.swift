@@ -1,6 +1,25 @@
 import SwiftUI
 
 struct AllTransactionsView: View {
+    let startDate: String?
+    let endDate: String?
+    let customTitle: String?
+
+    init(startDate: String? = nil, endDate: String? = nil, title: String? = nil) {
+        self.startDate = startDate
+        self.endDate = endDate
+        self.customTitle = title
+        
+        // If opened for a specific energy period (startDate & endDate are present),
+        // default the active filter to spending (.out) so that count & totals match
+        // the energy widget's bar total. Otherwise, default to all recent activity (.all).
+        if startDate != nil && endDate != nil {
+            self._selectedFilter = State(initialValue: .out)
+        } else {
+            self._selectedFilter = State(initialValue: .all)
+        }
+    }
+
     @Environment(\.babloTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var userAccount: UserAccount
@@ -10,7 +29,7 @@ struct AllTransactionsView: View {
     
     // Search, Filter & Sort State
     @State private var searchQuery: String = ""
-    @State private var selectedFilter: TransactionFilterValue = .all
+    @State private var selectedFilter: TransactionFilterValue
     @State private var selectedSort: TransactionSortOption = .newestFirst
     @State private var isLoading = false
     @State private var isPaginationLoading = false
@@ -27,7 +46,7 @@ struct AllTransactionsView: View {
 
         BabloListSheet(
             categoryLabel: isPopArt ? "ACTIVITY" : "Activity",
-            title: "All activity",
+            title: customTitle ?? "All activity",
             subtitle: subtitleText,
             searchPlaceholder: "Search transactions",
             searchQuery: $searchQuery,
@@ -61,7 +80,7 @@ struct AllTransactionsView: View {
                     ForEach(groupTransactions(processedTransactions)) { group in
                         VStack(alignment: .leading, spacing: 8) {
                             // Date Group Header
-                            HStack(alignment: .firstTextBaseline) {
+                            HStack(alignment: .lastTextBaseline) {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(group.title)
                                         .font(theme.typography.mono(size: 11, weight: .bold))
@@ -143,7 +162,8 @@ struct AllTransactionsView: View {
                                     guard !sheetTransactionsService.isLoading && !isPaginationLoading else { return }
                                     Task {
                                         isPaginationLoading = true
-                                        try? await sheetTransactionsService.loadMore()
+                                        let filter = TransactionFilter(startDate: startDate, endDate: endDate)
+                                        try? await sheetTransactionsService.loadMore(filter: filter)
                                         isPaginationLoading = false
                                     }
                                 }
@@ -167,7 +187,15 @@ struct AllTransactionsView: View {
         }
         .task {
             isLoading = true
-            try? await sheetTransactionsService.fetchRecentTransactions(forceRefresh: true, limit: 50)
+            if let startDate, let endDate {
+                let options = FetchOptions(
+                    limit: 100,
+                    filter: TransactionFilter(startDate: startDate, endDate: endDate)
+                )
+                try? await sheetTransactionsService.fetchTransactions(options: options)
+            } else {
+                try? await sheetTransactionsService.fetchRecentTransactions(forceRefresh: true, limit: 50)
+            }
             isLoading = false
         }
     }
@@ -286,7 +314,8 @@ struct AllTransactionsView: View {
     }
 
     private var processedTransactions: [Transaction] {
-        var txns = sheetTransactionsService.transactions
+        // Exclude ignored transactions (neither spend nor income)
+        var txns = sheetTransactionsService.transactions.filter { $0.isSpend || $0.isIncome }
         
         // 1. Filter by Search Query
         if !searchQuery.isEmpty {
@@ -336,13 +365,35 @@ struct AllTransactionsView: View {
             txn.spend_date ?? txn.authorized_date ?? txn.date
         }
         
-        let sortedKeys = grouped.keys.sorted(by: >)
+        let sortedKeys: [String]
+        switch selectedSort {
+        case .newestFirst:
+            sortedKeys = grouped.keys.sorted(by: >)
+        case .oldestFirst:
+            sortedKeys = grouped.keys.sorted(by: <)
+        case .highestAmount:
+            sortedKeys = grouped.keys.sorted { date1, date2 in
+                let max1 = grouped[date1]?.map(\.absoluteAmount).max() ?? 0
+                let max2 = grouped[date2]?.map(\.absoluteAmount).max() ?? 0
+                return max1 > max2
+            }
+        }
         
         let todayStr = formatDateString(Date())
         let yesterdayStr = formatDateString(Calendar.current.date(byAdding: .day, value: -1, to: Date())!)
         
         return sortedKeys.map { key in
-            let groupTxns = grouped[key] ?? []
+            var groupTxns = grouped[key] ?? []
+            
+            // Sort individual transactions within each group according to selection
+            switch selectedSort {
+            case .newestFirst:
+                groupTxns.sort { $0.spendDate > $1.spendDate }
+            case .oldestFirst:
+                groupTxns.sort { $0.spendDate < $1.spendDate }
+            case .highestAmount:
+                groupTxns.sort { $0.absoluteAmount > $1.absoluteAmount }
+            }
             
             var title = ""
             var subtitle: String? = nil
@@ -390,7 +441,7 @@ struct AllTransactionsView: View {
 
     private func formatGroupSubtitle(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEE · MMM d"
+        formatter.dateFormat = "MMM d"
         return formatter.string(from: date)
     }
 

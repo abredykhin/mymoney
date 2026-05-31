@@ -668,7 +668,7 @@ class BudgetService: ObservableObject {
         do {
             let transactions: [Transaction] = try await supabase
                 .from("variable_transactions")
-                .select("id, account_id, amount, date, authorized_date, spend_date, name, merchant_name, pending, transaction_id, iso_currency_code, personal_finance_category, personal_finance_subcategory, logo_url, payment_channel, user_id, website, created_at, updated_at, category, pending_transaction_transaction_id")
+                .select("id, account_id, amount, date, authorized_date, spend_date, name, merchant_name, pending, transaction_id, iso_currency_code, personal_finance_category, personal_finance_subcategory, logo_url, payment_channel, user_id, website, created_at, updated_at, pending_transaction_transaction_id")
                 .gte("spend_date", value: window.start)
                 .lte("spend_date", value: window.end)
                 .gt("amount", value: 0)
@@ -690,7 +690,7 @@ class BudgetService: ObservableObject {
         do {
             let transactions: [Transaction] = try await supabase
                 .from("spendable_income_transactions")
-                .select("id, account_id, amount, date, authorized_date, spend_date, name, merchant_name, pending, transaction_id, iso_currency_code, personal_finance_category, personal_finance_subcategory, logo_url, payment_channel, user_id, website, created_at, updated_at, category, pending_transaction_transaction_id")
+                .select("id, account_id, amount, date, authorized_date, spend_date, name, merchant_name, pending, transaction_id, iso_currency_code, personal_finance_category, personal_finance_subcategory, logo_url, payment_channel, user_id, website, created_at, updated_at, pending_transaction_transaction_id")
                 .gte("spend_date", value: window.start)
                 .lte("spend_date", value: window.end)
                 .order("spend_date", ascending: false)
