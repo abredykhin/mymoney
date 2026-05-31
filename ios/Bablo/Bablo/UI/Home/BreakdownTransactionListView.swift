@@ -256,7 +256,7 @@ private struct TransactionListRow: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(transaction.displayName)
+                Text(transaction.truncatedDisplayName)
                     .font(theme.typography.body(size: 14, weight: .bold))
                     .foregroundStyle(theme.colors.textPrimary.color)
                     .lineLimit(1)

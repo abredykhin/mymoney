@@ -606,7 +606,7 @@ struct TransactionSheetRow: View {
             
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .center, spacing: 6) {
-                    Text(transaction.displayName)
+                    Text(transaction.truncatedDisplayName)
                         .font(theme.typography.body(size: 14, weight: .bold))
                         .foregroundStyle(theme.colors.textPrimary.color)
                         .lineLimit(1)

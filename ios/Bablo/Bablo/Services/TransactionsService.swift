@@ -81,6 +81,15 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
         merchant_name ?? name
     }
 
+    var truncatedDisplayName: String {
+        let raw = displayName
+        let limit = 45
+        if raw.count > limit {
+            return String(raw.prefix(limit)).trimmingCharacters(in: .whitespacesAndNewlines) + "..."
+        }
+        return raw
+    }
+
     var primaryCategory: String? {
         category?.first
     }

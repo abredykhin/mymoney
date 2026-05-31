@@ -239,7 +239,7 @@ struct TransactionDetailSheet: View {
                 .font(theme.typography.body(size: 13, weight: .bold))
                 .foregroundStyle(theme.colors.textPrimary.color)
                 .multilineTextAlignment(.trailing)
-                .lineLimit(2)
+                .lineLimit(nil)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)

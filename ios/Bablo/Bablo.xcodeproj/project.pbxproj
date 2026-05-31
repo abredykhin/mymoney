@@ -57,6 +57,7 @@
 		3A68FA302F206EF300D325CC /* BabloSparklineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA182F206EF300D325CC /* BabloSparklineView.swift */; };
 		3A68FA302F206EF300D325DD /* BabloListSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA182F206EF300D325DD /* BabloListSheet.swift */; };
 		3A68FA302F206EF300D325EE /* AllMerchantsSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA182F206EF300D325EE /* AllMerchantsSheetView.swift */; };
+		CC1A2B3C4D5E6F7A8B9C0D2F /* TheSwingSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1A2B3C4D5E6F7A8B9C0D1E /* TheSwingSheetView.swift */; };
 		3A68FA312F206EF300D32561 /* CornerRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA262F206EF300D32561 /* CornerRadius.swift */; };
 		3A68FA322F206EF300D32561 /* Elevation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA272F206EF300D32561 /* Elevation.swift */; };
 		3A68FA342F206EF300D32561 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA282F206EF300D32561 /* Spacing.swift */; };
@@ -297,6 +298,7 @@
 		3A68FA182F206EF300D325CC /* BabloSparklineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloSparklineView.swift; sourceTree = "<group>"; };
 		3A68FA182F206EF300D325DD /* BabloListSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloListSheet.swift; sourceTree = "<group>"; };
 		3A68FA182F206EF300D325EE /* AllMerchantsSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllMerchantsSheetView.swift; sourceTree = "<group>"; };
+		CC1A2B3C4D5E6F7A8B9C0D1E /* TheSwingSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheSwingSheetView.swift; sourceTree = "<group>"; };
 		3A68FA192F206EF300D32561 /* SecondaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryButton.swift; sourceTree = "<group>"; };
 		3A68FA1A2F206EF300D32561 /* TertiaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TertiaryButton.swift; sourceTree = "<group>"; };
 		3A68FA1C2F206EF300D32561 /* CardModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardModifier.swift; sourceTree = "<group>"; };
@@ -1269,6 +1271,7 @@
 				62941461BBDF45BCAC3D7FBD /* WhereItWentWidgetView.swift */,
 				1F7345AE9DF34B33BC92C821 /* TheLineupWidgetView.swift */,
 				3A68FA182F206EF300D325EE /* AllMerchantsSheetView.swift */,
+				CC1A2B3C4D5E6F7A8B9C0D1E /* TheSwingSheetView.swift */,
 			);
 			path = Pulse;
 			sourceTree = "<group>";
@@ -1712,6 +1715,7 @@
 				3A68FA302F206EF300D325CC /* BabloSparklineView.swift in Sources */,
 				3A68FA302F206EF300D325DD /* BabloListSheet.swift in Sources */,
 				3A68FA302F206EF300D325EE /* AllMerchantsSheetView.swift in Sources */,
+				CC1A2B3C4D5E6F7A8B9C0D2F /* TheSwingSheetView.swift in Sources */,
 				3AAA810F2FCCB91E00472401 /* MerchantSpendCardView.swift in Sources */,
 				3AAA81102FCCB91E00472401 /* TransactionDetailHeroView.swift in Sources */,
 				3AAA81112FCCB91E00472401 /* TransactionDateParser.swift in Sources */,

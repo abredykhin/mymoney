@@ -11,7 +11,7 @@ struct TransactionDetailHeroView: View {
                 .padding(.top, 20)
 
             VStack(spacing: 4) {
-                Text(transaction.displayName)
+                Text(transaction.truncatedDisplayName)
                     .font(theme.typography.title(size: 20, weight: .black))
                     .foregroundStyle(theme.colors.textPrimary.color)
                     .lineLimit(nil)

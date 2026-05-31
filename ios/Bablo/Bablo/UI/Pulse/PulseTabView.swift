@@ -5,6 +5,7 @@ struct PulseTabView: View {
     @EnvironmentObject private var pulseService: PulseService
     @State private var selectedPeriod: PulsePeriod = .week
     @State private var isShowingAllMerchants = false
+    @State private var isShowingSwingSheet = false
 
     @Environment(\.babloTheme) private var theme
     @EnvironmentObject private var userAccount: UserAccount
@@ -40,6 +41,9 @@ struct PulseTabView: View {
                         Task {
                             await loadDamageReport()
                         }
+                    },
+                    onDeltaBadgeTapped: {
+                        isShowingSwingSheet = true
                     },
                     onHeroTapped: {
                         let current = selectedPeriod.currentWindow
@@ -189,6 +193,43 @@ struct PulseTabView: View {
             .presentationDetents([PresentationDetent.fraction(0.85), PresentationDetent.large])
             .presentationDragIndicator(Visibility.visible)
         }
+        .sheet(isPresented: $isShowingSwingSheet) {
+            if let report = pulseService.damageReport {
+                TheSwingSheetView(
+                    report: report,
+                    breakdown: pulseService.categoryBreakdown ?? [],
+                    dailyEnergy: pulseService.dailyEnergy,
+                    period: selectedPeriod,
+                    dismissAction: { isShowingSwingSheet = false },
+                    onBreakdownCategoryTapped: { item in
+                        isShowingSwingSheet = false
+                        let current = selectedPeriod.currentWindow
+                        let title = item.bucket.displayName
+                        let filter: TransactionFilterValue
+                        switch item.bucket {
+                        case .category(let cat): filter = .category(cat)
+                        case .rest: filter = .other
+                        }
+                        navigationState.pulseNavPath.append(
+                            PulseDestination.transactions(
+                                startDate: current.startDate,
+                                endDate: current.endDate,
+                                title: title,
+                                initialFilter: filter
+                            )
+                        )
+                    },
+                    onDayTapped: { startDate, endDate, title in
+                        isShowingSwingSheet = false
+                        navigationState.pulseNavPath.append(
+                            PulseDestination.transactions(startDate: startDate, endDate: endDate, title: title)
+                        )
+                    }
+                )
+                .presentationDetents([PresentationDetent.large])
+                .presentationDragIndicator(Visibility.visible)
+            }
+        }
     }
 
     private func loadDamageReport() async {
@@ -274,6 +315,7 @@ private struct DamageReportCard: View {
     let error: Error?
     @Binding var selectedPeriod: PulsePeriod
     let retry: () -> Void
+    var onDeltaBadgeTapped: (() -> Void)? = nil
     let onHeroTapped: () -> Void
     let onInTapped: () -> Void
     let onOutTapped: () -> Void
@@ -328,7 +370,11 @@ private struct DamageReportCard: View {
                 Spacer(minLength: 12)
 
                 if let delta = report?.formattedSpentDelta {
-                    DeltaBadge(text: delta)
+                    Button(action: { onDeltaBadgeTapped?() }) {
+                        DeltaBadge(text: delta)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(onDeltaBadgeTapped == nil)
                 }
             }
 
