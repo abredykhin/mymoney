@@ -2,7 +2,7 @@ import SwiftUI
 
 @MainActor
 struct PulseTabView: View {
-    @StateObject private var pulseService: PulseService
+    @EnvironmentObject private var pulseService: PulseService
     @State private var selectedPeriod: PulsePeriod = .week
     @State private var isShowingAllMerchants = false
 
@@ -13,12 +13,6 @@ struct PulseTabView: View {
     private let loadsData: Bool
 
     init(loadsData: Bool = true) {
-        self._pulseService = StateObject(wrappedValue: PulseService())
-        self.loadsData = loadsData
-    }
-
-    init(pulseService: PulseService, loadsData: Bool = false) {
-        self._pulseService = StateObject(wrappedValue: pulseService)
         self.loadsData = loadsData
     }
 
@@ -46,6 +40,39 @@ struct PulseTabView: View {
                         Task {
                             await loadDamageReport()
                         }
+                    },
+                    onHeroTapped: {
+                        let current = selectedPeriod.currentWindow
+                        navigationState.pulseNavPath.append(
+                            PulseDestination.transactions(
+                                startDate: current.startDate,
+                                endDate: current.endDate,
+                                title: "Damage report",
+                                initialFilter: .all // Show all transactions included
+                            )
+                        )
+                    },
+                    onInTapped: {
+                        let current = selectedPeriod.currentWindow
+                        navigationState.pulseNavPath.append(
+                            PulseDestination.transactions(
+                                startDate: current.startDate,
+                                endDate: current.endDate,
+                                title: "Income (In)",
+                                initialFilter: .income
+                            )
+                        )
+                    },
+                    onOutTapped: {
+                        let current = selectedPeriod.currentWindow
+                        navigationState.pulseNavPath.append(
+                            PulseDestination.transactions(
+                                startDate: current.startDate,
+                                endDate: current.endDate,
+                                title: "Spending (Out)",
+                                initialFilter: .out
+                            )
+                        )
                     }
                 )
                 .padding(.horizontal, theme.metrics.screenPadding)
@@ -124,6 +151,9 @@ struct PulseTabView: View {
             async let energy: () = loadDailyEnergy()
             async let merchants: () = loadTopMerchants()
             _ = await (damageReport, breakdown, energy, merchants)
+        }
+        .onChange(of: selectedPeriod) { _, _ in
+            pulseService.clearData()
         }
         .onChange(of: trackedCategories) { _, _ in
             guard loadsData else { return }
@@ -244,6 +274,9 @@ private struct DamageReportCard: View {
     let error: Error?
     @Binding var selectedPeriod: PulsePeriod
     let retry: () -> Void
+    let onHeroTapped: () -> Void
+    let onInTapped: () -> Void
+    let onOutTapped: () -> Void
 
     @Environment(\.babloTheme) private var theme
 
@@ -259,10 +292,16 @@ private struct DamageReportCard: View {
 
             HStack(spacing: 0) {
                 SummaryCell(label: "In", value: report?.formattedIn ?? placeholderAmount)
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: onInTapped)
                 Divider()
                 SummaryCell(label: "Out", value: report?.formattedOut ?? placeholderAmount)
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: onOutTapped)
                 Divider()
                 SummaryCell(label: "Net", value: report?.formattedNet ?? placeholderAmount, isPositive: (report?.net ?? 0) >= 0)
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: onHeroTapped)
             }
             .frame(height: 70)
         }
@@ -300,11 +339,7 @@ private struct DamageReportCard: View {
                     .textCase(.uppercase)
                     .foregroundStyle(theme.colors.textTertiary.color)
 
-                if isLoading && report == nil {
-                    ProgressView()
-                        .tint(theme.colors.textPrimary.color)
-                        .frame(height: 84)
-                } else if error != nil && report == nil {
+                if error != nil && report == nil {
                     Button(action: retry) {
                         Label("Try again", systemImage: "arrow.clockwise")
                             .font(theme.typography.body(size: 16, weight: .bold))
@@ -312,15 +347,19 @@ private struct DamageReportCard: View {
                     .buttonStyle(.bordered)
                     .frame(height: 84)
                 } else {
-                    Text(report?.formattedSpent ?? "$0.00")
-                        .font(theme.typography.display(size: theme.effects.isPopArt ? 50 : 52, weight: .heavy))
-                        .tracking(theme.effects.isPopArt ? theme.typography.displayTracking : 0)
-                        .monospacedDigit()
-                        .minimumScaleFactor(0.42)
-                        .lineLimit(1)
-                        .foregroundStyle(theme.colors.textPrimary.color)
-                        .modifier(PulseConditionalItalic(isEnabled: theme.effects.isPopArt))
-                        .frame(maxWidth: .infinity, minHeight: 60)
+                    Button(action: onHeroTapped) {
+                        Text(report?.formattedSpent ?? "$0.00")
+                            .font(theme.typography.display(size: theme.effects.isPopArt ? 50 : 52, weight: .heavy))
+                            .tracking(theme.effects.isPopArt ? theme.typography.displayTracking : 0)
+                            .monospacedDigit()
+                            .minimumScaleFactor(0.42)
+                            .lineLimit(1)
+                            .foregroundStyle(theme.colors.textPrimary.color)
+                            .modifier(PulseConditionalItalic(isEnabled: theme.effects.isPopArt))
+                            .frame(maxWidth: .infinity, minHeight: 60)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isLoading && report == nil)
                 }
 
                 Text("spent \(selectedPeriod.subtitleSuffix)")
@@ -614,7 +653,8 @@ private struct PulsePreviewShell: View {
     let service: PulseService
 
     var body: some View {
-        PulseTabView(pulseService: service, loadsData: false)
+        PulseTabView(loadsData: false)
+            .environmentObject(service)
             .environmentObject(PulsePreviewFixtures.user())
             .environmentObject(NavigationState())
             .babloTheme(themeMode)

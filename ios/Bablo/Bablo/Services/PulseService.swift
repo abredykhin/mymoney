@@ -252,6 +252,18 @@ final class PulseService: ObservableObject {
             Logger.e("PulseService: Failed to fetch top merchants: \(error)")
         }
     }
+
+    /// Resets all published data and errors to their default/empty/nil states.
+    func clearData() {
+        damageReport = nil
+        categoryBreakdown = nil
+        dailyEnergy = []
+        topMerchants = []
+        damageReportError = nil
+        categoryBreakdownError = nil
+        dailyEnergyError = nil
+        topMerchantsError = nil
+    }
 }
 
 struct BreakdownTransaction: Codable {

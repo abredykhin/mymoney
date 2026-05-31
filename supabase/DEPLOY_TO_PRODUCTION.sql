@@ -1399,9 +1399,7 @@ BEGIN
         -- 2. Use the greatest of profile expected monthly income or actual paychecks in that month
         day_income_val := GREATEST(profile_income, actual_income);
         
-        -- 3. Calculate nominal daily limit
         nominal_daily_limit := (day_income_val - fixed_exp) / 30.0;
-        IF nominal_daily_limit <= 0 THEN nominal_daily_limit := 50.00; END IF;
 
         -- 4. Calculate total spent in the month of day_date before day_date started
         SELECT COALESCE(SUM(t.amount), 0) INTO spent_before_day
@@ -1425,8 +1423,7 @@ BEGIN
           AND t.spend_date = day_date
           AND t.is_spend;
 
-        -- 8. Evaluate if this day was under budget relative to its effective limit
-        IF spend_on_day <= effective_daily_limit THEN
+        IF effective_daily_limit > 0 AND spend_on_day <= effective_daily_limit THEN
             temp_streak := temp_streak + 1;
             IF day_idx < 10 THEN status_arr := array_append(status_arr, TRUE); END IF;
         ELSE

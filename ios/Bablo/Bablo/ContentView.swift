@@ -16,6 +16,21 @@ class NavigationState: ObservableObject {
     @Published var goalsNavPath = NavigationPath()
     @Published var coachNavPath = NavigationPath()
     @Published var meNavPath = NavigationPath()
+
+    var isSubPageActive: Bool {
+        switch selectedTab {
+        case .home:
+            return !homeNavPath.isEmpty
+        case .pulse:
+            return !pulseNavPath.isEmpty
+        case .goals:
+            return !goalsNavPath.isEmpty
+        case .coach:
+            return !coachNavPath.isEmpty
+        case .me:
+            return !meNavPath.isEmpty
+        }
+    }
 }
 
 enum TabSelection: CaseIterable, Identifiable {
@@ -64,7 +79,13 @@ struct ContentView: View {
             }
             .environmentObject(navigationState)
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                BabloTabBar(selection: $navigationState.selectedTab)
+                Group {
+                    if !navigationState.isSubPageActive {
+                        BabloTabBar(selection: $navigationState.selectedTab)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
+                .animation(.easeInOut(duration: 0.22), value: navigationState.isSubPageActive)
             }
             .onChange(of: navigationState.selectedTab) { oldValue, newValue in
                 if newValue == .home {
@@ -310,6 +331,7 @@ private struct ContentViewPreviewHost: View {
     @StateObject private var transactionsService = TransactionsService()
     @StateObject private var plaidService = PlaidService()
     @StateObject private var coachService = CoachService()
+    @StateObject private var pulseService = PulseService()
 
     var body: some View {
         ContentView()
@@ -320,6 +342,7 @@ private struct ContentViewPreviewHost: View {
             .environmentObject(transactionsService)
             .environmentObject(plaidService)
             .environmentObject(coachService)
+            .environmentObject(pulseService)
             .environment(\.managedObjectContext, CoreDataStack.shared.viewContext)
             .babloTheme(theme)
             .onAppear {

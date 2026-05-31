@@ -88,78 +88,115 @@ struct AllTransactionsView: View {
                 .padding(.top, 40)
             } else {
                 LazyVStack(spacing: 16) {
-                    ForEach(groupTransactions(processedTransactions)) { group in
-                        VStack(alignment: .leading, spacing: 8) {
-                            // Date Group Header
-                            HStack(alignment: .lastTextBaseline) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(group.title)
-                                        .font(theme.typography.mono(size: 11, weight: .bold))
-                                        .tracking(theme.typography.labelTracking)
-                                        .foregroundStyle(theme.colors.textPrimary.color)
-                                    
-                                    if let subtitle = group.subtitle {
-                                        Text(subtitle)
-                                            .font(theme.typography.body(size: 11, weight: .semibold))
-                                            .foregroundStyle(theme.colors.textSecondary.color)
-                                    }
+                    if selectedSort == .highestAmount {
+                        VStack(spacing: 0) {
+                            ForEach(processedTransactions) { txn in
+                                Button {
+                                    selectedTransaction = txn
+                                } label: {
+                                    TransactionSheetRow(transaction: txn, showDate: true)
                                 }
+                                .buttonStyle(.plain)
                                 
-                                Spacer()
-                                
-                                // Daily Net Totals
-                                HStack(spacing: 8) {
-                                    let incomes = group.transactions.filter { $0.isIncome }.reduce(0.0) { $0 + $1.absoluteAmount }
-                                    let spends = group.transactions.filter { $0.isSpend }.reduce(0.0) { $0 + $1.absoluteAmount }
-                                    
-                                    if incomes > 0 {
-                                        Text("+\(formatIntAmount(incomes))")
-                                            .foregroundStyle(theme.colors.success.color)
-                                    }
-                                    if spends > 0 {
-                                        Text("-\(formatIntAmount(spends))")
+                                if txn.id != processedTransactions.last?.id {
+                                    Divider()
+                                        .overlay(theme.colors.line.color.opacity(0.6))
+                                        .padding(.leading, 52)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .background(theme.colors.surface.color)
+                        .clipShape(RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous)
+                                .stroke(
+                                    isPopArt ? theme.colors.lineStrong.color : theme.colors.line.color,
+                                    lineWidth: isPopArt ? theme.metrics.strongBorderWidth : theme.metrics.borderWidth
+                                )
+                        }
+                        .shadow(
+                            color: isPopArt ? theme.effects.shadowColor : Color.black.opacity(0.02),
+                            radius: isPopArt ? 0 : 8,
+                            x: isPopArt ? 3 : 0,
+                            y: isPopArt ? 3 : 3
+                        )
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
+                    } else {
+                        ForEach(groupTransactions(processedTransactions)) { group in
+                            VStack(alignment: .leading, spacing: 8) {
+                                // Date Group Header
+                                HStack(alignment: .lastTextBaseline) {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(group.title)
+                                            .font(theme.typography.mono(size: 11, weight: .bold))
+                                            .tracking(theme.typography.labelTracking)
                                             .foregroundStyle(theme.colors.textPrimary.color)
+                                        
+                                        if let subtitle = group.subtitle {
+                                            Text(subtitle)
+                                                .font(theme.typography.body(size: 11, weight: .semibold))
+                                                .foregroundStyle(theme.colors.textSecondary.color)
+                                        }
                                     }
-                                }
-                                .font(theme.typography.body(size: 13, weight: .bold))
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.top, 12)
-                            
-                            // Transactions list under the header
-                            VStack(spacing: 0) {
-                                ForEach(group.transactions) { txn in
-                                    Button {
-                                        selectedTransaction = txn
-                                    } label: {
-                                        TransactionSheetRow(transaction: txn)
-                                    }
-                                    .buttonStyle(.plain)
                                     
-                                    if txn.id != group.transactions.last?.id {
-                                        Divider()
-                                            .overlay(theme.colors.line.color.opacity(0.6))
-                                            .padding(.leading, 52)
+                                    Spacer()
+                                    
+                                    // Daily Net Totals
+                                    HStack(spacing: 8) {
+                                        let incomes = group.transactions.filter { $0.isIncome }.reduce(0.0) { $0 + $1.absoluteAmount }
+                                        let spends = group.transactions.filter { $0.isSpend }.reduce(0.0) { $0 + $1.absoluteAmount }
+                                        
+                                        if incomes > 0 {
+                                            Text("+\(formatIntAmount(incomes))")
+                                                .foregroundStyle(theme.colors.success.color)
+                                        }
+                                        if spends > 0 {
+                                            Text("-\(formatIntAmount(spends))")
+                                                .foregroundStyle(theme.colors.textPrimary.color)
+                                        }
+                                    }
+                                    .font(theme.typography.body(size: 13, weight: .bold))
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.top, 12)
+                                
+                                // Transactions list under the header
+                                VStack(spacing: 0) {
+                                    ForEach(group.transactions) { txn in
+                                        Button {
+                                            selectedTransaction = txn
+                                        } label: {
+                                            TransactionSheetRow(transaction: txn)
+                                        }
+                                        .buttonStyle(.plain)
+                                        
+                                        if txn.id != group.transactions.last?.id {
+                                            Divider()
+                                                .overlay(theme.colors.line.color.opacity(0.6))
+                                                .padding(.leading, 52)
+                                        }
                                     }
                                 }
+                                .padding(.horizontal, 16)
+                                .background(theme.colors.surface.color)
+                                .clipShape(RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous)
+                                        .stroke(
+                                            isPopArt ? theme.colors.lineStrong.color : theme.colors.line.color,
+                                            lineWidth: isPopArt ? theme.metrics.strongBorderWidth : theme.metrics.borderWidth
+                                        )
+                                }
+                                .shadow(
+                                    color: isPopArt ? theme.effects.shadowColor : Color.black.opacity(0.02),
+                                    radius: isPopArt ? 0 : 8,
+                                    x: isPopArt ? 3 : 0,
+                                    y: isPopArt ? 3 : 3
+                                )
+                                .padding(.horizontal, 20)
                             }
-                            .padding(.horizontal, 16)
-                            .background(theme.colors.surface.color)
-                            .clipShape(RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous)
-                                    .stroke(
-                                        isPopArt ? theme.colors.lineStrong.color : theme.colors.line.color,
-                                        lineWidth: isPopArt ? theme.metrics.strongBorderWidth : theme.metrics.borderWidth
-                                    )
-                            }
-                            .shadow(
-                                color: isPopArt ? theme.effects.shadowColor : Color.black.opacity(0.02),
-                                radius: isPopArt ? 0 : 8,
-                                x: isPopArt ? 3 : 0,
-                                y: isPopArt ? 3 : 3
-                            )
-                            .padding(.horizontal, 20)
                         }
                     }
                     
@@ -173,8 +210,12 @@ struct AllTransactionsView: View {
                                     guard !sheetTransactionsService.isLoading && !isPaginationLoading else { return }
                                     Task {
                                         isPaginationLoading = true
-                                        let filter = TransactionFilter(startDate: startDate, endDate: endDate)
-                                        try? await sheetTransactionsService.loadMore(filter: filter)
+                                        let filter = TransactionFilter(startDate: computedStartDate, endDate: computedEndDate)
+                                        try? await sheetTransactionsService.loadMore(
+                                            filter: filter,
+                                            sortColumn: sortColumn,
+                                            sortAscending: sortAscending
+                                        )
                                         isPaginationLoading = false
                                     }
                                 }
@@ -198,20 +239,69 @@ struct AllTransactionsView: View {
         }
         .task {
             isLoading = true
-            if let startDate, let endDate {
+            let options = FetchOptions(
+                limit: 100,
+                filter: TransactionFilter(startDate: computedStartDate, endDate: computedEndDate),
+                sortColumn: sortColumn,
+                sortAscending: sortAscending
+            )
+            try? await sheetTransactionsService.fetchTransactions(options: options)
+            isLoading = false
+        }
+        .onChange(of: selectedSort) { _, newSort in
+            Task {
+                isLoading = true
+                sheetTransactionsService.clearCache()
                 let options = FetchOptions(
                     limit: 100,
-                    filter: TransactionFilter(startDate: startDate, endDate: endDate)
+                    filter: TransactionFilter(startDate: computedStartDate, endDate: computedEndDate),
+                    sortColumn: sortColumn,
+                    sortAscending: sortAscending
                 )
                 try? await sheetTransactionsService.fetchTransactions(options: options)
-            } else {
-                try? await sheetTransactionsService.fetchRecentTransactions(forceRefresh: true, limit: 50)
+                isLoading = false
             }
-            isLoading = false
         }
     }
 
     // MARK: - Subcomputeds
+
+    private var computedStartDate: String? {
+        if let startDate { return startDate }
+        let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date())!
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.string(from: thirtyDaysAgo)
+    }
+
+    private var computedEndDate: String? {
+        if let endDate { return endDate }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.string(from: Date())
+    }
+
+    private var sortColumn: String? {
+        switch selectedSort {
+        case .newestFirst, .oldestFirst:
+            return "spend_date"
+        case .highestAmount:
+            return "amount"
+        }
+    }
+
+    private var sortAscending: Bool? {
+        switch selectedSort {
+        case .newestFirst:
+            return false
+        case .oldestFirst:
+            return true
+        case .highestAmount:
+            return false
+        }
+    }
 
     private var subtitleText: String {
         let totalCount = processedTransactions.count
@@ -478,6 +568,7 @@ struct TransactionGroup: Identifiable {
 
 struct TransactionSheetRow: View {
     let transaction: Transaction
+    var showDate: Bool = false
     
     @Environment(\.babloTheme) private var theme
     @EnvironmentObject private var accountsService: AccountsService
@@ -586,6 +677,23 @@ struct TransactionSheetRow: View {
         let account = lookupAccount(id: transaction.account_id)
         let bank = lookupBank(accountId: transaction.account_id)
         
+        let dateStr: String
+        if showDate {
+            let rawDate = transaction.spend_date ?? transaction.authorized_date ?? transaction.date
+            let parser = DateFormatter()
+            parser.dateFormat = "yyyy-MM-dd"
+            parser.locale = Locale(identifier: "en_US_POSIX")
+            if let date = parser.date(from: rawDate) {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "MMM d"
+                dateStr = formatter.string(from: date)
+            } else {
+                dateStr = rawDate
+            }
+        } else {
+            dateStr = ""
+        }
+        
         let timeStr = formatTransactionTime(transaction.created_at ?? "")
         
         let accountDetails: String
@@ -597,11 +705,16 @@ struct TransactionSheetRow: View {
             accountDetails = "Account ..\(transaction.account_id)"
         }
         
-        if !timeStr.isEmpty {
-            return "\(timeStr) · \(accountDetails)"
-        } else {
-            return accountDetails
+        var parts: [String] = []
+        if !dateStr.isEmpty {
+            parts.append(dateStr)
         }
+        if !timeStr.isEmpty {
+            parts.append(timeStr)
+        }
+        parts.append(accountDetails)
+        
+        return parts.joined(separator: " · ")
     }
     
     private func lookupAccount(id: Int) -> BankAccount? {

@@ -160,7 +160,7 @@ private struct LineupRow: View {
     }
 
     private var barColor: Color {
-        rank == 1 ? theme.colors.accent.color : theme.colors.textTertiary.color.opacity(0.35)
+        theme.colors.danger.color
     }
 
     private var totalSpent: Double {

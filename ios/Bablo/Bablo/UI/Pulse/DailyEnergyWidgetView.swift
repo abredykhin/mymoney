@@ -28,7 +28,9 @@ struct DailyEnergyWidgetView: View {
     private var bars: [EnergyBar] {
         switch period {
         case .day:
-            return items.map { item in
+            // Extra layout safety cap to prevent visual stretching in case of race conditions during loading/transitions
+            let itemsToMap = items.count > 7 ? Array(items.prefix(7)) : items
+            return itemsToMap.map { item in
                 EnergyBar(
                     id: item.weekday,
                     label: String(item.weekday.prefix(1)),

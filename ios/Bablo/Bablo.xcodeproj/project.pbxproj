@@ -74,6 +74,12 @@
 		3AAA81032FCB683E00472401 /* GoalDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AAA80F72FCB683E00472401 /* GoalDetailSheet.swift */; };
 		3AAA81042FCB683E00472401 /* GoalRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AAA80F82FCB683E00472401 /* GoalRowView.swift */; };
 		3AAA81052FCB683E00472401 /* AddGoalSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AAA80F52FCB683E00472401 /* AddGoalSheet.swift */; };
+		3AAA810F2FCCB91E00472401 /* MerchantSpendCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AAA81062FCCB91E00472401 /* MerchantSpendCardView.swift */; };
+		3AAA81102FCCB91E00472401 /* TransactionDetailHeroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AAA81082FCCB91E00472401 /* TransactionDetailHeroView.swift */; };
+		3AAA81112FCCB91E00472401 /* TransactionDateParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AAA810B2FCCB91E00472401 /* TransactionDateParser.swift */; };
+		3AAA81122FCCB91E00472401 /* MerchantWeeklyDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AAA810A2FCCB91E00472401 /* MerchantWeeklyDataProvider.swift */; };
+		3AAA81132FCCB91E00472401 /* TransactionDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AAA810D2FCCB91E00472401 /* TransactionDetailSheet.swift */; };
+		3AAA81142FCCB91E00472401 /* TransactionCategoryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AAA81072FCCB91E00472401 /* TransactionCategoryPickerView.swift */; };
 		404A97A25E43424CF90CFAF1 /* StreakWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC8129EBE1C455154DCD4B88 /* StreakWidgetView.swift */; };
 		44FC673B7FFDCA94F4061DD3 /* OnboardingNumPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4629BAFB74D6D69F5B6A000E /* OnboardingNumPad.swift */; };
 		4D4D4C002F2A000100BEEF01 /* MoneyLeftBreakdownSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4D4C002F2A000000BEEF01 /* MoneyLeftBreakdownSheetView.swift */; };
@@ -312,6 +318,12 @@
 		3AAA80FA2FCB683E00472401 /* GoalsPreviewFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsPreviewFixtures.swift; sourceTree = "<group>"; };
 		3AAA80FB2FCB683E00472401 /* GoalsTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsTabView.swift; sourceTree = "<group>"; };
 		3AAA80FC2FCB683E00472401 /* VaultCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultCard.swift; sourceTree = "<group>"; };
+		3AAA81062FCCB91E00472401 /* MerchantSpendCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MerchantSpendCardView.swift; sourceTree = "<group>"; };
+		3AAA81072FCCB91E00472401 /* TransactionCategoryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCategoryPickerView.swift; sourceTree = "<group>"; };
+		3AAA81082FCCB91E00472401 /* TransactionDetailHeroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailHeroView.swift; sourceTree = "<group>"; };
+		3AAA810A2FCCB91E00472401 /* MerchantWeeklyDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MerchantWeeklyDataProvider.swift; sourceTree = "<group>"; };
+		3AAA810B2FCCB91E00472401 /* TransactionDateParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDateParser.swift; sourceTree = "<group>"; };
+		3AAA810D2FCCB91E00472401 /* TransactionDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailSheet.swift; sourceTree = "<group>"; };
 		3C3179E3712966174AFA5041 /* OnboardingPreviewFixtures.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingPreviewFixtures.swift; sourceTree = "<group>"; };
 		3D99BD44EBC99D9D40D8EA43 /* AuthManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		3DFC1ED99C207410C0F868C0 /* CoachCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoachCardView.swift; sourceTree = "<group>"; };
@@ -890,6 +902,35 @@
 			path = Goals;
 			sourceTree = "<group>";
 		};
+		3AAA81092FCCB91E00472401 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				3AAA81062FCCB91E00472401 /* MerchantSpendCardView.swift */,
+				3AAA81072FCCB91E00472401 /* TransactionCategoryPickerView.swift */,
+				3AAA81082FCCB91E00472401 /* TransactionDetailHeroView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		3AAA810C2FCCB91E00472401 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				3AAA810A2FCCB91E00472401 /* MerchantWeeklyDataProvider.swift */,
+				3AAA810B2FCCB91E00472401 /* TransactionDateParser.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		3AAA810E2FCCB91E00472401 /* Transaction */ = {
+			isa = PBXGroup;
+			children = (
+				3AAA81092FCCB91E00472401 /* Components */,
+				3AAA810C2FCCB91E00472401 /* Support */,
+				3AAA810D2FCCB91E00472401 /* TransactionDetailSheet.swift */,
+			);
+			path = Transaction;
+			sourceTree = "<group>";
+		};
 		3C3FA47738428571E3DFEEC2 /* Home */ = {
 			isa = PBXGroup;
 			children = (
@@ -1178,6 +1219,7 @@
 		757ABF912C18242900DF8CA8 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				3AAA810E2FCCB91E00472401 /* Transaction */,
 				3A68F9FF2EFB9FDA00D32561 /* Home */,
 				75D39AD12F2178B500866367 /* Pulse */,
 				3AAA80FD2FCB683E00472401 /* Goals */,
@@ -1670,6 +1712,12 @@
 				3A68FA302F206EF300D325CC /* BabloSparklineView.swift in Sources */,
 				3A68FA302F206EF300D325DD /* BabloListSheet.swift in Sources */,
 				3A68FA302F206EF300D325EE /* AllMerchantsSheetView.swift in Sources */,
+				3AAA810F2FCCB91E00472401 /* MerchantSpendCardView.swift in Sources */,
+				3AAA81102FCCB91E00472401 /* TransactionDetailHeroView.swift in Sources */,
+				3AAA81112FCCB91E00472401 /* TransactionDateParser.swift in Sources */,
+				3AAA81122FCCB91E00472401 /* MerchantWeeklyDataProvider.swift in Sources */,
+				3AAA81132FCCB91E00472401 /* TransactionDetailSheet.swift in Sources */,
+				3AAA81142FCCB91E00472401 /* TransactionCategoryPickerView.swift in Sources */,
 				3A68FA302F206EF300D325B8 /* BabloTheme.swift in Sources */,
 				3A68FA302F206EF300D325B9 /* BabloThemeEnvironment.swift in Sources */,
 				3A68FA312F206EF300D32561 /* CornerRadius.swift in Sources */,

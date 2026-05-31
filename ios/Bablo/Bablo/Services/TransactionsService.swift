@@ -177,17 +177,23 @@ struct FetchOptions {
     let offset: Int
     let filter: TransactionFilter
     let forceRefresh: Bool
+    let sortColumn: String?
+    let sortAscending: Bool?
 
     init(
         limit: Int = 50,
         offset: Int = 0,
         filter: TransactionFilter = TransactionFilter(),
-        forceRefresh: Bool = false
+        forceRefresh: Bool = false,
+        sortColumn: String? = nil,
+        sortAscending: Bool? = nil
     ) {
         self.limit = limit
         self.offset = offset
         self.filter = filter
         self.forceRefresh = forceRefresh
+        self.sortColumn = sortColumn
+        self.sortAscending = sortAscending
     }
 }
 
@@ -255,11 +261,20 @@ class TransactionsService: ObservableObject {
             }
 
             // Apply ordering and pagination, then execute
-            let responseWithCount: PostgrestResponse<[Transaction]> = try await query
-                .order("spend_date", ascending: false)
-                .order("id", ascending: false)
-                .range(from: options.offset, to: options.offset + options.limit - 1)
-                .execute()
+            let responseWithCount: PostgrestResponse<[Transaction]>
+            if let sortColumn = options.sortColumn {
+                responseWithCount = try await query
+                    .order(sortColumn, ascending: options.sortAscending ?? false)
+                    .order("id", ascending: options.sortAscending ?? false)
+                    .range(from: options.offset, to: options.offset + options.limit - 1)
+                    .execute()
+            } else {
+                responseWithCount = try await query
+                    .order("spend_date", ascending: false)
+                    .order("id", ascending: false)
+                    .range(from: options.offset, to: options.offset + options.limit - 1)
+                    .execute()
+            }
 
             let response = responseWithCount.value
 
@@ -309,11 +324,17 @@ class TransactionsService: ObservableObject {
     ///   - forceRefresh: Force refresh even if cache is recent
     ///   - loadMore: If true, appends to existing transactions
     ///   - limit: Number of transactions to fetch
-    func fetchRecentTransactions(forceRefresh: Bool = false, loadMore: Bool = false, limit: Int = 50) async throws {
+    func fetchRecentTransactions(forceRefresh: Bool = false, loadMore: Bool = false, limit: Int = 50, sortColumn: String? = nil, sortAscending: Bool? = nil) async throws {
         Logger.d("TransactionsService: Fetching recent transactions (limit: \(limit), loadMore: \(loadMore))")
 
         let offset = loadMore ? transactions.count : 0
-        let options = FetchOptions(limit: limit, offset: offset, forceRefresh: forceRefresh)
+        let options = FetchOptions(
+            limit: limit,
+            offset: offset,
+            forceRefresh: forceRefresh,
+            sortColumn: sortColumn,
+            sortAscending: sortAscending
+        )
 
         try await fetchTransactions(options: options, loadMore: loadMore)
     }
@@ -381,7 +402,7 @@ class TransactionsService: ObservableObject {
     }
 
     /// Load more transactions (pagination)
-    func loadMore(filter: TransactionFilter = TransactionFilter()) async throws {
+    func loadMore(filter: TransactionFilter = TransactionFilter(), sortColumn: String? = nil, sortAscending: Bool? = nil) async throws {
         guard let nextOffset = paginationInfo?.nextOffset else {
             Logger.d("TransactionsService: No more transactions to load")
             return
@@ -392,7 +413,9 @@ class TransactionsService: ObservableObject {
         let options = FetchOptions(
             limit: paginationInfo?.limit ?? 50,
             offset: nextOffset,
-            filter: filter
+            filter: filter,
+            sortColumn: sortColumn,
+            sortAscending: sortAscending
         )
 
         try await fetchTransactions(options: options, loadMore: true)
