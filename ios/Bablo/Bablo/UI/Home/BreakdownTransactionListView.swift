@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 // MARK: - Main View
 
@@ -9,6 +8,7 @@ import UIKit
 struct BreakdownTransactionListView: View {
     let source: BreakdownTransactionSource
     let period: HeroPeriod
+    private let previewTransactions: [Transaction]?
 
     @EnvironmentObject private var budgetService: BudgetService
     @Environment(\.babloTheme) private var theme
@@ -16,6 +16,17 @@ struct BreakdownTransactionListView: View {
     @State private var transactions: [Transaction] = []
     @State private var isLoading = false
     @State private var selectedTransaction: Transaction?
+
+    init(
+        source: BreakdownTransactionSource,
+        period: HeroPeriod,
+        previewTransactions: [Transaction]? = nil
+    ) {
+        self.source = source
+        self.period = period
+        self.previewTransactions = previewTransactions
+        _transactions = State(initialValue: previewTransactions ?? [])
+    }
 
     // For obligations we derive the list from already-loaded recurring streams
     private var obligationStreams: [RecurringStream] {
@@ -67,6 +78,7 @@ struct BreakdownTransactionListView: View {
         }
         .task {
             guard source != .obligations else { return }
+            guard previewTransactions == nil else { return }
             isLoading = true
             switch source {
             case .variableSpend:
@@ -340,10 +352,111 @@ private struct ObligationStreamRow: View {
 
 // MARK: - Transaction detail sheet
 
+struct MerchantSpendPresentation: Equatable {
+    let transactionCountThisWeek: Int
+    let totalSpentThisWeek: Double
+
+    var summaryText: String {
+        guard transactionCountThisWeek > 0 else { return "No spend this week" }
+        return "\(transactionCountThisWeek)x spend this week"
+    }
+
+    var amountText: String {
+        NumberFormatter.currency.string(from: NSNumber(value: totalSpentThisWeek)) ?? "$0"
+    }
+}
+
+struct TransactionDetailDatePresentation: Equatable {
+    struct Row: Equatable, Identifiable {
+        let label: String
+        let value: String
+
+        var id: String { label }
+    }
+
+    let rows: [Row]
+
+    init(transaction: Transaction) {
+        let value = Self.authorizedDateTime(for: transaction) ??
+            Self.formatTransactionDate(transaction.spend_date ?? transaction.authorized_date ?? transaction.date, style: .long)
+        rows = [Row(label: "Authorized", value: value)]
+    }
+
+    private static func authorizedDateTime(for transaction: Transaction) -> String? {
+        guard let raw = transaction.authorized_date, !raw.isEmpty else { return nil }
+        if raw.contains("T"), let date = parsedDateTime(raw) {
+            return formatDateTime(date, dateFormat: "EEE, MMM d · h:mm a")
+        }
+        return formatTransactionDate(raw, style: .long)
+    }
+
+    private static func formatTransactionDate(_ raw: String, style: DateFormatter.Style) -> String {
+        guard let date = parsedDate(raw) else { return raw }
+        let formatter = DateFormatter()
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.dateStyle = style
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
+    }
+
+    private static func formatDateTime(_ date: Date, dateFormat: String) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = dateFormat
+        return formatter.string(from: date)
+    }
+
+    private static func parsedDate(_ raw: String) -> Date? {
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.timeZone = TimeZone(identifier: "UTC")
+
+        if raw.count >= 10 {
+            parser.dateFormat = "yyyy-MM-dd"
+            if let date = parser.date(from: String(raw.prefix(10))) {
+                return date
+            }
+        }
+
+        parser.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        if let date = parser.date(from: raw) { return date }
+
+        parser.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        if let date = parser.date(from: raw) { return date }
+
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = iso.date(from: raw) { return date }
+
+        iso.formatOptions = [.withInternetDateTime]
+        return iso.date(from: raw)
+    }
+
+    private static func parsedDateTime(_ raw: String) -> Date? {
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = iso.date(from: raw) { return date }
+
+        iso.formatOptions = [.withInternetDateTime]
+        if let date = iso.date(from: raw) { return date }
+
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.timeZone = TimeZone(identifier: "UTC")
+        parser.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        if let date = parser.date(from: raw) { return date }
+
+        parser.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        if let date = parser.date(from: raw) { return date }
+
+        parser.dateFormat = "yyyy-MM-dd"
+        return parser.date(from: raw)
+    }
+}
+
 struct TransactionDetailSheet: View {
     @Environment(\.babloTheme) private var theme
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
     @EnvironmentObject private var accountsService: AccountsService
     @EnvironmentObject private var budgetService: BudgetService
     @EnvironmentObject private var transactionsService: TransactionsService
@@ -357,6 +470,8 @@ struct TransactionDetailSheet: View {
     @State private var statusMessage: String?
     @State private var errorMessage: String?
     @State private var showRepeatFrequencyDialog = false
+    @State private var merchantHistoryTransactions: [Transaction] = []
+    @State private var hasLoadedMerchantHistory = false
 
     private let onTransactionChanged: (Transaction) -> Void
 
@@ -371,22 +486,21 @@ struct TransactionDetailSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Capsule()
-                .fill(theme.colors.line.color)
-                .frame(width: 36, height: 4)
-                .padding(.top, 12)
-                .padding(.bottom, 18)
+            sheetChrome
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 22) {
-                    header
-                    categorySummaryCard
-                    merchantSpendCard
-                    actionSection
-                    detailsSection
+                VStack(spacing: 0) {
+                    hero
+
+                    VStack(alignment: .leading, spacing: 20) {
+                        merchantSpendCard
+                        actionSection
+                        detailsSection
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 18)
+                    .padding(.bottom, 34)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 34)
             }
         }
         .background(theme.colors.appBackground.color.ignoresSafeArea())
@@ -424,78 +538,67 @@ struct TransactionDetailSheet: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .task(id: transaction.id) {
+            await loadMerchantHistory()
+        }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            HStack(alignment: .top, spacing: 14) {
-                categoryIcon(size: 62, cornerRadius: 22)
+    private var sheetChrome: some View {
+        HStack {
+            Spacer()
+            closeButton
+        }
+        .padding(.horizontal, 22)
+        .frame(maxWidth: .infinity)
+        .frame(height: 64)
+        .background(theme.colors.surface.color)
+    }
 
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(transaction.displayName)
-                        .font(theme.typography.title(size: 25, weight: .black))
-                        .foregroundStyle(theme.colors.textPrimary.color)
-                        .lineLimit(2)
+    private var hero: some View {
+        VStack(spacing: 10) {
+            categoryIcon(size: 50, cornerRadius: 15)
+                .padding(.top, 20)
 
-                    Text(transactionSubtitle.uppercased())
-                        .font(theme.typography.mono(size: 12, weight: .bold))
-                        .tracking(0.6)
-                        .foregroundStyle(theme.colors.textSecondary.color)
-                        .lineLimit(1)
-                }
+            VStack(spacing: 4) {
+                Text(transaction.displayName)
+                    .font(theme.typography.title(size: 20, weight: .black))
+                    .foregroundStyle(theme.colors.textPrimary.color)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.78)
 
-                Spacer(minLength: 10)
-
-                VStack(alignment: .trailing, spacing: 5) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .black))
-                            .foregroundStyle(theme.colors.textPrimary.color)
-                            .frame(width: 42, height: 42)
-                            .background(theme.colors.surfaceMuted.color)
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-
-                    Text(amountText)
-                        .font(theme.typography.display(size: 34, weight: .black))
-                        .foregroundStyle(amountColor)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.62)
-
-                    Text("\(currencyCode) · \(relativeDateText)")
-                        .font(theme.typography.body(size: 12, weight: .bold))
-                        .foregroundStyle(theme.colors.textSecondary.color)
-                }
+                Text(transactionSubtitle)
+                    .font(theme.typography.mono(size: 11, weight: .bold))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
             }
+
+            Text(amountText)
+                .font(theme.typography.display(size: 32, weight: .black))
+                .foregroundStyle(amountColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.58)
 
             Button {
                 selectedCategory = appCategory
                 isCategoryPickerPresented = true
             } label: {
-                HStack(spacing: 10) {
-                    categoryIcon(size: 34, cornerRadius: 14)
-                    Text(categoryTitle)
-                        .font(theme.typography.body(size: 18, weight: .black))
-                        .foregroundStyle(theme.colors.textPrimary.color)
-                        .lineLimit(1)
-                    if let subtitle = appCategory?.subtitle {
-                        Text("· \(subtitle)")
-                            .font(theme.typography.body(size: 15, weight: .bold))
-                            .foregroundStyle(theme.colors.textSecondary.color)
-                            .lineLimit(1)
-                    }
+                HStack(spacing: 7) {
+                    Text(appCategory?.emoji ?? fallbackEmoji)
+                        .font(.system(size: 16))
+                    categoryLineText(fontSize: 13)
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 11, weight: .black))
-                        .foregroundStyle(theme.colors.textTertiary.color)
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundStyle(theme.colors.textSecondary.color)
                 }
                 .padding(.horizontal, 14)
-                .padding(.vertical, 11)
-                .background(categoryTint.opacity(0.18))
+                .frame(height: 40)
+                .background(Color.white.opacity(0.45))
                 .clipShape(Capsule())
                 .overlay {
                     Capsule()
-                        .stroke(categoryTint.opacity(0.55), lineWidth: 1.4)
+                        .stroke(categoryTint.opacity(0.55), lineWidth: 1.5)
                 }
             }
             .buttonStyle(.plain)
@@ -503,8 +606,9 @@ struct TransactionDetailSheet: View {
             HStack(spacing: 10) {
                 statusPill(
                     title: channelText,
-                    systemImage: transaction.payment_channel?.lowercased() == "online" ? "creditcard" : "person.crop.square"
+                    systemImage: channelIconName
                 )
+
                 statusPill(
                     title: transaction.pending ? "Pending" : "Posted",
                     systemImage: transaction.pending ? "clock" : "checkmark",
@@ -512,79 +616,70 @@ struct TransactionDetailSheet: View {
                     background: transaction.pending ? theme.colors.warning.color.opacity(0.14) : theme.colors.success.color.opacity(0.15)
                 )
             }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 20)
+            .padding(.top, 2)
+            .padding(.bottom, 24)
         }
+        .frame(maxWidth: .infinity)
+        .background(heroBackground)
     }
 
-    private var categorySummaryCard: some View {
-        Button {
-            selectedCategory = appCategory
-            isCategoryPickerPresented = true
-        } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("CATEGORY")
-                        .font(theme.typography.mono(size: 11, weight: .bold))
-                        .tracking(2)
-                        .foregroundStyle(theme.colors.textSecondary.color)
-                    HStack(spacing: 7) {
-                        Text(appCategory?.emoji ?? "*")
-                        Text(categoryTitle)
-                            .font(theme.typography.body(size: 18, weight: .black))
-                            .foregroundStyle(theme.colors.textPrimary.color)
-                        if let subtitle = appCategory?.subtitle {
-                            Text("· \(subtitle)")
-                                .font(theme.typography.body(size: 16, weight: .bold))
-                                .foregroundStyle(theme.colors.textSecondary.color)
-                                .lineLimit(1)
-                        }
-                    }
+    private var closeButton: some View {
+        Button { dismiss() } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(theme.colors.textPrimary.color)
+                .frame(width: 38, height: 38)
+                .background(theme.colors.surfaceMuted.color)
+                .clipShape(Circle())
+                .overlay {
+                    Circle()
+                        .stroke(theme.colors.line.color, lineWidth: theme.metrics.borderWidth)
                 }
-
-                Spacer()
-
-                Text("Change")
-                    .font(theme.typography.body(size: 15, weight: .black))
-                    .foregroundStyle(theme.colors.textPrimary.color)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .black))
-                    .foregroundStyle(theme.colors.textSecondary.color)
-            }
-            .padding(18)
-            .background(theme.colors.surface.color)
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(theme.colors.line.color, lineWidth: theme.metrics.borderWidth)
-            }
         }
         .buttonStyle(.plain)
     }
 
     private var merchantSpendCard: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("YOU & \(merchantShortName.uppercased())")
-                        .font(theme.typography.mono(size: 11, weight: .bold))
+                        .font(theme.typography.mono(size: 10, weight: .bold))
                         .tracking(2)
                         .foregroundStyle(theme.colors.textSecondary.color)
                     Text(merchantSummaryText)
-                        .font(theme.typography.body(size: 16, weight: .bold))
+                        .font(theme.typography.body(size: 14, weight: .bold))
                         .foregroundStyle(theme.colors.textSecondary.color)
                 }
 
                 Spacer()
 
                 Text(merchantThisWeekAmount)
-                    .font(theme.typography.display(size: 28, weight: .black))
+                    .font(theme.typography.body(size: 18, weight: .black))
                     .foregroundStyle(theme.colors.textPrimary.color)
             }
 
-            HStack(alignment: .bottom, spacing: 7) {
-                ForEach(Array(merchantWeeklyBars.enumerated()), id: \.offset) { index, value in
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(index == merchantWeeklyBars.count - 1 ? theme.colors.accent.color : theme.colors.accent.color.opacity(0.35))
-                        .frame(height: 18 + CGFloat(value) * 58)
+            ZStack {
+                HStack(alignment: .bottom, spacing: 7) {
+                    ForEach(Array(merchantWeeklyBars.enumerated()), id: \.offset) { index, value in
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(index == merchantWeeklyBars.count - 1 ? theme.colors.accent.color : theme.colors.accent.color.opacity(0.35))
+                            .opacity(value > 0 ? 1 : 0)
+                            .frame(height: value > 0 ? 14 + CGFloat(value) * 58 : 0)
+                    }
+                }
+
+                if !hasPriorMerchantSpend {
+                    Text("First time in 12 weeks")
+                        .font(theme.typography.body(size: 12, weight: .bold))
+                        .foregroundStyle(theme.colors.textTertiary.color)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(theme.colors.surfaceMuted.color.opacity(0.7))
+                        .clipShape(Capsule())
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .frame(height: 80)
@@ -597,11 +692,11 @@ struct TransactionDetailSheet: View {
             .font(theme.typography.body(size: 12, weight: .semibold))
             .foregroundStyle(theme.colors.textSecondary.color)
         }
-        .padding(18)
+        .padding(16)
         .background(theme.colors.surface.color)
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(theme.colors.line.color, lineWidth: theme.metrics.borderWidth)
         }
         .shadow(color: Color.black.opacity(0.05), radius: 18, x: 0, y: 8)
@@ -611,26 +706,23 @@ struct TransactionDetailSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionLabel("DO SOMETHING")
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
+                actionButton(title: "Split", systemImage: "person.2") {
+                    showStatus("Split coming soon")
+                }
+
                 actionButton(title: isCreatingRepeat ? "Saving" : "Set repeat", systemImage: "arrow.triangle.2.circlepath") {
                     showRepeatFrequencyDialog = true
                 }
                 .disabled(isCreatingRepeat)
 
-                actionButton(title: "Copy", systemImage: "doc.on.doc") {
-                    UIPasteboard.general.string = copyText
-                    showStatus("Copied")
+                actionButton(title: "Add note", systemImage: "doc.text") {
+                    showStatus("Notes coming soon")
                 }
 
-                actionButton(title: "Open site", systemImage: "safari") {
-                    guard let url = websiteURL else {
-                        showStatus("No website")
-                        return
-                    }
-                    openURL(url)
+                actionButton(title: "Hide", systemImage: "eye.slash") {
+                    showStatus("Hide coming soon")
                 }
-                .disabled(websiteURL == nil)
-                .opacity(websiteURL == nil ? 0.45 : 1)
             }
         }
     }
@@ -640,10 +732,8 @@ struct TransactionDetailSheet: View {
             sectionLabel("DETAILS")
 
             VStack(spacing: 0) {
-                detailRow(label: "Date", value: formattedDate)
-                divider
-                if let authorizedDate {
-                    detailRow(label: "Authorized", value: authorizedDate)
+                ForEach(TransactionDetailDatePresentation(transaction: transaction).rows) { row in
+                    detailRow(label: row.label, value: row.value)
                     divider
                 }
                 detailRow(label: "Account", value: accountText)
@@ -670,11 +760,11 @@ struct TransactionDetailSheet: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("CATEGORIZE")
-                        .font(theme.typography.mono(size: 11, weight: .bold))
+                        .font(theme.typography.mono(size: 10, weight: .bold))
                         .tracking(2)
                         .foregroundStyle(theme.colors.textSecondary.color)
                     Text(transaction.displayName)
-                        .font(theme.typography.title(size: 24, weight: .black))
+                        .font(theme.typography.title(size: 21, weight: .black))
                         .foregroundStyle(theme.colors.textPrimary.color)
                         .lineLimit(1)
                 }
@@ -685,7 +775,7 @@ struct TransactionDetailSheet: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 15, weight: .black))
                         .foregroundStyle(theme.colors.textPrimary.color)
-                        .frame(width: 42, height: 42)
+                        .frame(width: 38, height: 38)
                         .background(theme.colors.surfaceMuted.color)
                         .clipShape(Circle())
                 }
@@ -696,7 +786,7 @@ struct TransactionDetailSheet: View {
             .padding(.bottom, 16)
 
             ScrollView(showsIndicators: false) {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2), spacing: 10) {
                     ForEach(availableCategories) { category in
                         categoryPickerCard(category)
                     }
@@ -710,13 +800,14 @@ struct TransactionDetailSheet: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("NEW CATEGORY")
-                            .font(theme.typography.mono(size: 11, weight: .bold))
+                            .font(theme.typography.mono(size: 10, weight: .bold))
                             .tracking(2)
                             .foregroundStyle(theme.colors.textSecondary.color)
                         Text(newCategoryText)
-                            .font(theme.typography.body(size: 18, weight: .black))
+                            .font(theme.typography.body(size: 14, weight: .black))
                             .foregroundStyle(theme.colors.textPrimary.color)
-                            .lineLimit(1)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.85)
                     }
 
                     Spacer()
@@ -733,10 +824,10 @@ struct TransactionDetailSheet: View {
                                 Image(systemName: "checkmark")
                             }
                         }
-                        .font(theme.typography.body(size: 17, weight: .black))
+                        .font(theme.typography.body(size: 16, weight: .black))
                         .foregroundStyle(theme.colors.surface.color)
-                        .padding(.horizontal, 24)
-                        .frame(height: 54)
+                        .padding(.horizontal, 22)
+                        .frame(height: 50)
                         .background(theme.colors.textPrimary.color)
                         .clipShape(Capsule())
                     }
@@ -758,41 +849,44 @@ struct TransactionDetailSheet: View {
         return Button {
             selectedCategory = category
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Text(category.emoji)
-                    .font(.system(size: 23))
-                    .frame(width: 44, height: 44)
+                    .font(.system(size: 20))
+                    .frame(width: 38, height: 38)
                     .background(category.detailTint.opacity(0.2))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(category.displayName)
-                        .font(theme.typography.body(size: 16, weight: .black))
+                        .font(theme.typography.body(size: 14, weight: .black))
                         .foregroundStyle(theme.colors.textPrimary.color)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.78)
                     Text(category.subtitle)
-                        .font(theme.typography.body(size: 13, weight: .semibold))
+                        .font(theme.typography.body(size: 11, weight: .semibold))
                         .foregroundStyle(theme.colors.textSecondary.color)
-                        .lineLimit(1)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.78)
                 }
 
-                Spacer(minLength: 4)
+                Spacer(minLength: 2)
 
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .black))
+                        .font(.system(size: 12, weight: .black))
                         .foregroundStyle(theme.colors.surface.color)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 24, height: 24)
                         .background(theme.colors.accent.color)
                         .clipShape(Circle())
                 }
             }
-            .padding(14)
-            .frame(minHeight: 82)
+            .padding(12)
+            .frame(minHeight: 74)
             .background(isSelected ? theme.colors.accent.color.opacity(0.16) : theme.colors.surface.color)
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(isSelected ? theme.colors.accent.color : theme.colors.line.color, lineWidth: isSelected ? 2 : theme.metrics.borderWidth)
+                    .stroke(isSelected ? theme.colors.accent.color : theme.colors.line.color, lineWidth: isSelected ? 1.7 : theme.metrics.borderWidth)
             }
         }
         .buttonStyle(.plain)
@@ -804,6 +898,29 @@ struct TransactionDetailSheet: View {
             .frame(width: size, height: size)
             .background(categoryTint.opacity(0.18))
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(theme.colors.line.color.opacity(0.8), lineWidth: theme.metrics.borderWidth)
+            }
+    }
+
+    @ViewBuilder
+    private func categoryLineText(fontSize: CGFloat) -> some View {
+        HStack(spacing: 5) {
+            Text(categoryTitle)
+                .font(theme.typography.body(size: fontSize, weight: .black))
+                .foregroundStyle(theme.colors.textPrimary.color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+
+            if let subtitle = categoryDetailTitle {
+                Text("· \(subtitle)")
+                    .font(theme.typography.body(size: fontSize, weight: .bold))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+        }
     }
 
     private func statusPill(
@@ -813,10 +930,10 @@ struct TransactionDetailSheet: View {
         background: Color? = nil
     ) -> some View {
         Label(title, systemImage: systemImage)
-            .font(theme.typography.body(size: 13, weight: .black))
+            .font(theme.typography.body(size: 11, weight: .bold))
             .foregroundStyle(foreground ?? theme.colors.textSecondary.color)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
             .background(background ?? theme.colors.surfaceMuted.color)
             .clipShape(Capsule())
             .overlay {
@@ -827,22 +944,22 @@ struct TransactionDetailSheet: View {
 
     private func actionButton(title: String, systemImage: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(spacing: 9) {
+            VStack(spacing: 7) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 21, weight: .bold))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(theme.colors.textPrimary.color)
-                    .frame(height: 24)
+                    .frame(height: 20)
                 Text(title)
-                    .font(theme.typography.body(size: 13, weight: .black))
+                    .font(theme.typography.body(size: 11, weight: .bold))
                     .foregroundStyle(theme.colors.textSecondary.color)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                    .minimumScaleFactor(0.68)
             }
-            .frame(maxWidth: .infinity, minHeight: 84)
+            .frame(maxWidth: .infinity, minHeight: 70)
             .background(theme.colors.surface.color)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(theme.colors.line.color, lineWidth: theme.metrics.borderWidth)
             }
         }
@@ -851,8 +968,8 @@ struct TransactionDetailSheet: View {
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text)
-            .font(theme.typography.mono(size: 12, weight: .bold))
-            .tracking(2.2)
+            .font(theme.typography.mono(size: 10, weight: .bold))
+            .tracking(2)
             .foregroundStyle(theme.colors.textSecondary.color)
             .padding(.leading, 4)
     }
@@ -860,17 +977,17 @@ struct TransactionDetailSheet: View {
     private func detailRow(label: String, value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 14) {
             Text(label)
-                .font(theme.typography.body(size: 15, weight: .semibold))
+                .font(theme.typography.body(size: 13, weight: .semibold))
                 .foregroundStyle(theme.colors.textSecondary.color)
             Spacer()
             Text(value)
-                .font(theme.typography.body(size: 15, weight: .black))
+                .font(theme.typography.body(size: 13, weight: .bold))
                 .foregroundStyle(theme.colors.textPrimary.color)
                 .multilineTextAlignment(.trailing)
                 .lineLimit(2)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 
     private var divider: some View {
@@ -950,7 +1067,21 @@ struct TransactionDetailSheet: View {
     }
 
     private var categoryTitle: String {
-        appCategory?.displayName ?? "Other"
+        switch appCategory {
+        case .gettingAround:
+            return "Transport"
+        case .some(let category):
+            return category.displayName
+        case .none:
+            return transaction.isIncome ? "Income" : transaction.isActualTransfer ? "Transfer" : "Other"
+        }
+    }
+
+    private var categoryDetailTitle: String? {
+        if let detailed = transaction.personal_finance_subcategory, !detailed.isEmpty {
+            return readableCategoryDetail(detailed)
+        }
+        return appCategory?.subtitle.capitalized
     }
 
     private var newCategoryText: String {
@@ -964,6 +1095,16 @@ struct TransactionDetailSheet: View {
 
     private var amountColor: Color {
         transaction.isIncome ? theme.colors.success.color : theme.colors.textPrimary.color
+    }
+
+    private var heroBackground: Color {
+        if transaction.isIncome {
+            return theme.colors.success.color.opacity(0.10)
+        }
+        if transaction.isActualTransfer {
+            return theme.colors.surfaceMuted.color
+        }
+        return categoryTint.opacity(0.18)
     }
 
     private var amountText: String {
@@ -980,48 +1121,49 @@ struct TransactionDetailSheet: View {
         return "\(prefix)\(formatted)"
     }
 
-    private var currencyCode: String {
-        transaction.isoCurrencyCode ?? "USD"
-    }
-
     private var formattedDate: String {
         formatTransactionDate(transaction.spend_date ?? transaction.authorized_date ?? transaction.date, style: .long)
     }
 
-    private var authorizedDate: String? {
+    private var authorizedDateTime: String? {
         guard let raw = transaction.authorized_date, !raw.isEmpty else { return nil }
-        return formatTransactionDate(raw, style: .medium)
+        if raw.contains("T"), let date = parsedDateTime(raw) {
+            return formatDateTime(date, dateFormat: "EEE, MMM d · h:mm a")
+        }
+        return formatTransactionDate(raw, style: .long)
     }
 
-    private var relativeDateText: String {
+    private var headerDateTimeText: String {
+        if let raw = transaction.created_at, let date = parsedDateTime(raw) {
+            return formatDateTime(date, dateFormat: "EEE, MMM d · h:mm a")
+        }
+        if let raw = transaction.authorized_date, raw.contains("T"), let date = parsedDateTime(raw) {
+            return formatDateTime(date, dateFormat: "EEE, MMM d · h:mm a")
+        }
         guard let date = parsedDate(transaction.spend_date ?? transaction.authorized_date ?? transaction.date) else {
             return formattedDate
         }
-        let calendar = Calendar.current
-        if calendar.isDateInToday(date) { return "Today" }
-        if calendar.isDateInYesterday(date) { return "Yesterday" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return formatter.string(from: date)
+        return formatDateTime(date, dateFormat: "EEE, MMM d")
     }
 
     private var transactionSubtitle: String {
-        var pieces: [String] = []
-        pieces.append(transaction.name)
-        if let date = parsedDate(transaction.spend_date ?? transaction.authorized_date ?? transaction.date) {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "EEE"
-            pieces.append(formatter.string(from: date))
-        }
-        if transaction.pending {
-            pieces.append("Pending")
-        }
-        return pieces.joined(separator: "  ")
+        headerDateTimeText
     }
 
     private var channelText: String {
         guard let channel = transaction.payment_channel, !channel.isEmpty else { return "Unknown" }
         return channel.replacingOccurrences(of: "_", with: " ").capitalized
+    }
+
+    private var channelIconName: String {
+        let channel = transaction.payment_channel?.lowercased() ?? ""
+        if channel.contains("online") {
+            return "creditcard"
+        }
+        if channel.contains("store") || channel.contains("place") {
+            return "storefront"
+        }
+        return "square.grid.2x2"
     }
 
     private var accountText: String {
@@ -1040,13 +1182,18 @@ struct TransactionDetailSheet: View {
     }
 
     private var merchantSummaryText: String {
-        let count = merchantTransactionsThisWeek.count
-        let amount = NumberFormatter.currency.string(from: NSNumber(value: merchantSpendThisWeek)) ?? "$0"
-        return "\(count)x · \(amount) this week"
+        merchantSpendPresentation.summaryText
     }
 
     private var merchantThisWeekAmount: String {
-        NumberFormatter.currency.string(from: NSNumber(value: merchantSpendThisWeek)) ?? "$0"
+        merchantSpendPresentation.amountText
+    }
+
+    private var merchantSpendPresentation: MerchantSpendPresentation {
+        MerchantSpendPresentation(
+            transactionCountThisWeek: merchantTransactionsThisWeek.count,
+            totalSpentThisWeek: merchantSpendThisWeek
+        )
     }
 
     private var merchantSpendThisWeek: Double {
@@ -1054,35 +1201,45 @@ struct TransactionDetailSheet: View {
     }
 
     private var merchantTransactionsThisWeek: [Transaction] {
-        let calendar = Calendar.current
-        return matchingMerchantTransactions.filter { tx in
+        let calendar = Calendar.bablo
+        return merchantTransactionsForBars.filter { tx in
             guard let date = parsedDate(tx.spend_date ?? tx.authorized_date ?? tx.date) else { return false }
             return calendar.isDate(date, equalTo: Date(), toGranularity: .weekOfYear)
         }
     }
 
+    private var merchantTransactionsForBars: [Transaction] {
+        var rows = hasLoadedMerchantHistory ? merchantHistoryTransactions : matchingMerchantTransactions
+        if !rows.contains(where: { $0.id == transaction.id }) {
+            rows.append(transaction)
+        }
+        return rows
+    }
+
     private var matchingMerchantTransactions: [Transaction] {
         let merchant = transaction.merchantName ?? transaction.displayName
-        var matches = transactionsService.transactions.filter { tx in
+        return transactionsService.transactions.filter { tx in
             let candidate = tx.merchantName ?? tx.displayName
             return candidate.localizedCaseInsensitiveContains(merchant) ||
                 merchant.localizedCaseInsensitiveContains(candidate)
         }
-        if !matches.contains(where: { $0.id == transaction.id }) {
-            matches.append(transaction)
-        }
-        return matches
     }
 
     private var merchantWeeklyBars: [Double] {
-        let calendar = Calendar.current
+        let values = merchantWeeklySpendValues
+        let maxValue = max(max(values.max() ?? transaction.absoluteAmount, transaction.absoluteAmount), 1)
+        return values.map { $0 > 0 ? $0 / maxValue : 0 }
+    }
+
+    private var merchantWeeklySpendValues: [Double] {
+        let calendar = Calendar.bablo
         let startOfThisWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
-        let values: [Double] = (0..<12).reversed().map { offset in
+        return (0..<12).reversed().map { offset in
             guard let weekStart = calendar.date(byAdding: .weekOfYear, value: -offset, to: startOfThisWeek),
                   let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) else {
                 return 0
             }
-            return matchingMerchantTransactions.reduce(0) { total, tx in
+            return merchantTransactionsForBars.reduce(0) { total, tx in
                 guard let date = parsedDate(tx.spend_date ?? tx.authorized_date ?? tx.date),
                       date >= weekStart && date < weekEnd else {
                     return total
@@ -1090,23 +1247,33 @@ struct TransactionDetailSheet: View {
                 return total + tx.absoluteAmount
             }
         }
-
-        let maxValue = max(max(values.max() ?? transaction.absoluteAmount, transaction.absoluteAmount), 1)
-        return values.map { max(0.12, $0 / maxValue) }
     }
 
-    private var copyText: String {
-        "\(transaction.displayName) \(amountText) \(formattedDate)"
+    private var hasPriorMerchantSpend: Bool {
+        merchantWeeklySpendValues.dropLast().contains { $0 > 0.005 }
     }
 
-    private var websiteURL: URL? {
-        guard let website = transaction.website?.trimmingCharacters(in: .whitespacesAndNewlines), !website.isEmpty else {
-            return nil
+    private func loadMerchantHistory() async {
+        let startDate = merchantHistoryStartDate
+        do {
+            merchantHistoryTransactions = try await transactionsService.fetchMerchantTransactions(
+                merchantName: transaction.merchantName ?? transaction.displayName,
+                startDate: startDate
+            )
+            hasLoadedMerchantHistory = true
+        } catch {
+            hasLoadedMerchantHistory = false
         }
-        if let url = URL(string: website), url.scheme != nil {
-            return url
-        }
-        return URL(string: "https://\(website)")
+    }
+
+    private var merchantHistoryStartDate: String {
+        let calendar = Calendar.bablo
+        let thisWeekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
+        let startDate = calendar.date(byAdding: .weekOfYear, value: -11, to: thisWeekStart) ?? thisWeekStart
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.string(from: startDate)
     }
 
     private var fallbackEmoji: String {
@@ -1127,15 +1294,44 @@ struct TransactionDetailSheet: View {
     private func formatTransactionDate(_ raw: String, style: DateFormatter.Style) -> String {
         guard let date = parsedDate(raw) else { return raw }
         let formatter = DateFormatter()
+        formatter.timeZone = TimeZone(identifier: "UTC")
         formatter.dateStyle = style
         formatter.timeStyle = .none
         return formatter.string(from: date)
     }
 
+    private func formatDateTime(_ date: Date, dateFormat: String) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = dateFormat
+        return formatter.string(from: date)
+    }
+
+    private func readableCategoryDetail(_ raw: String) -> String {
+        let normalized = raw
+            .replacingOccurrences(of: "TRANSPORTATION_TAXIS_AND_RIDE_SHARES", with: "RIDESHARE")
+            .replacingOccurrences(of: "FOOD_AND_DRINK_", with: "")
+            .replacingOccurrences(of: "GENERAL_MERCHANDISE_", with: "")
+            .replacingOccurrences(of: "TRANSPORTATION_", with: "")
+            .replacingOccurrences(of: "ENTERTAINMENT_", with: "")
+            .replacingOccurrences(of: "PERSONAL_CARE_", with: "")
+            .replacingOccurrences(of: "TRAVEL_", with: "")
+            .replacingOccurrences(of: "INCOME_", with: "")
+            .replacingOccurrences(of: "_", with: " ")
+            .lowercased()
+
+        return normalized
+            .split(separator: " ")
+            .map { word in
+                word.count <= 3 ? word.uppercased() : word.capitalized
+            }
+            .joined(separator: " ")
+    }
+
     private func parsedDate(_ raw: String) -> Date? {
         let parser = DateFormatter()
         parser.locale = Locale(identifier: "en_US_POSIX")
-        parser.timeZone = TimeZone(identifier: "UTC")
+        parser.timeZone = Calendar.bablo.timeZone
 
         if raw.count >= 10 {
             parser.dateFormat = "yyyy-MM-dd"
@@ -1156,6 +1352,27 @@ struct TransactionDetailSheet: View {
 
         iso.formatOptions = [.withInternetDateTime]
         return iso.date(from: raw)
+    }
+
+    private func parsedDateTime(_ raw: String) -> Date? {
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = iso.date(from: raw) { return date }
+
+        iso.formatOptions = [.withInternetDateTime]
+        if let date = iso.date(from: raw) { return date }
+
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.timeZone = TimeZone(identifier: "UTC")
+        parser.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        if let date = parser.date(from: raw) { return date }
+
+        parser.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        if let date = parser.date(from: raw) { return date }
+
+        parser.dateFormat = "yyyy-MM-dd"
+        return parser.date(from: raw)
     }
 }
 
@@ -1185,3 +1402,138 @@ private extension NumberFormatter {
         return f
     }()
 }
+
+#if DEBUG
+#Preview("Breakdown Transactions") {
+    NavigationStack {
+        BreakdownTransactionListView(
+            source: .variableSpend,
+            period: .week,
+            previewTransactions: BreakdownTransactionListPreviewFixtures.transactions
+        )
+    }
+    .environmentObject(BreakdownTransactionListPreviewFixtures.budgetService)
+    .environmentObject(BreakdownTransactionListPreviewFixtures.transactionsService)
+    .environmentObject(BreakdownTransactionListPreviewFixtures.accountsService)
+    .environmentObject(BreakdownTransactionListPreviewFixtures.userAccount)
+    .babloTheme(.normal)
+}
+
+#Preview("Breakdown Transactions · Empty") {
+    NavigationStack {
+        BreakdownTransactionListView(
+            source: .variableSpend,
+            period: .week,
+            previewTransactions: []
+        )
+    }
+    .environmentObject(BreakdownTransactionListPreviewFixtures.budgetService)
+    .environmentObject(BreakdownTransactionListPreviewFixtures.transactionsService)
+    .environmentObject(BreakdownTransactionListPreviewFixtures.accountsService)
+    .environmentObject(BreakdownTransactionListPreviewFixtures.userAccount)
+    .babloTheme(.normal)
+}
+
+private enum BreakdownTransactionListPreviewFixtures {
+    @MainActor static var transactionsService: TransactionsService {
+        let service = TransactionsService()
+        service.transactions = transactions
+        return service
+    }
+
+    @MainActor static var budgetService: BudgetService {
+        BudgetService()
+    }
+
+    @MainActor static var accountsService: AccountsService {
+        AccountsService.onboardingPreviewLinkedBank
+    }
+
+    @MainActor static var userAccount: UserAccount {
+        UserAccount.shared
+    }
+
+    static let transactions: [Transaction] = [
+        Transaction(
+            id: 9001,
+            account_id: 3,
+            amount: 14.30,
+            date: currentDate(offset: 0),
+            authorized_date: currentDate(offset: 0),
+            name: "LYFT *RIDE",
+            merchant_name: "Lyft",
+            pending: false,
+            category: nil,
+            transaction_id: "preview_tx_lyft",
+            pending_transaction_transaction_id: nil,
+            iso_currency_code: "USD",
+            payment_channel: "online",
+            user_id: nil,
+            logo_url: nil,
+            website: "lyft.com",
+            personal_finance_category: "TRANSPORTATION",
+            personal_finance_subcategory: "TRANSPORTATION_TAXIS_AND_RIDE_SHARES",
+            created_at: nil,
+            updated_at: nil,
+            is_spend: true,
+            is_income: false
+        ),
+        Transaction(
+            id: 9002,
+            account_id: 3,
+            amount: 6.50,
+            date: currentDate(offset: -1),
+            authorized_date: currentDate(offset: -1),
+            name: "BLUE BOTTLE COFFEE",
+            merchant_name: "Blue Bottle",
+            pending: false,
+            category: nil,
+            transaction_id: "preview_tx_coffee",
+            pending_transaction_transaction_id: nil,
+            iso_currency_code: "USD",
+            payment_channel: "in store",
+            user_id: nil,
+            logo_url: nil,
+            website: "bluebottlecoffee.com",
+            personal_finance_category: "FOOD_AND_DRINK",
+            personal_finance_subcategory: "FOOD_AND_DRINK_COFFEE",
+            created_at: nil,
+            updated_at: nil,
+            is_spend: true,
+            is_income: false
+        ),
+        Transaction(
+            id: 9003,
+            account_id: 1,
+            amount: -128.00,
+            date: currentDate(offset: -2),
+            authorized_date: currentDate(offset: -2),
+            name: "ACME PAYROLL",
+            merchant_name: "Acme Payroll",
+            pending: false,
+            category: nil,
+            transaction_id: "preview_tx_income",
+            pending_transaction_transaction_id: nil,
+            iso_currency_code: "USD",
+            payment_channel: "other",
+            user_id: nil,
+            logo_url: nil,
+            website: nil,
+            personal_finance_category: "INCOME",
+            personal_finance_subcategory: "INCOME_WAGES",
+            created_at: nil,
+            updated_at: nil,
+            is_spend: false,
+            is_income: true
+        )
+    ]
+
+    private static func currentDate(offset: Int) -> String {
+        let date = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter.string(from: date)
+    }
+}
+#endif

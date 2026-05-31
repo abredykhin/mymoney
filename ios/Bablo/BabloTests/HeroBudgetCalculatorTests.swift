@@ -452,10 +452,12 @@ struct HeroBudgetCalculatorTests {
     @Test func deltaLabelShownWhenOnlyKnownIncomeExists() {
         // Regression: previously the guard was `monthlyIncome > 0`, which hid the
         // delta for new users who have real paychecks but no profile budget set.
-        let c = calc(income: 0, knownIncome: 6000, variableSpend: 5846, prevMonth: 31_724)
+        // income=0, knownIncome=6000, mandatory=2000 → monthlyDiscretionary=4000
+        // prevMonth=3000 is within budget → delta label is shown
+        let c = calc(income: 0, knownIncome: 6000, variableSpend: 1000, prevMonth: 3000)
         let label = c.deltaLabel(for: .month)
         #expect(label != nil, "delta must be visible when effectiveIncome > 0")
-        #expect(label!.hasPrefix("+"))   // 31724 - 5846 = 25878 → compact "$26K"
+        #expect(label!.hasPrefix("+"))   // prev(3000) > curr(1000) → +$2,000 vs last mo
     }
 
     @Test func deltaLabelNilForDayPeriod() {

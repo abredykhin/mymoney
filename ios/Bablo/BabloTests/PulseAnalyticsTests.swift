@@ -9,8 +9,9 @@ import Supabase
 @testable import Bablo
 
 struct PulseAnalyticsTests {
-    
+
     @Test @MainActor func testLivePulseWeeklyEnergy() async throws {
+        guard await TestSupabaseClient.isAvailable() else { return }
         // 1. Initialize client using the persistent local Supabase stack
         let client = TestSupabaseClient.shared
         
@@ -34,6 +35,7 @@ struct PulseAnalyticsTests {
     }
     
     @Test @MainActor func testLivePulseTopMerchants() async throws {
+        guard await TestSupabaseClient.isAvailable() else { return }
         // 1. Initialize client using the persistent local Supabase stack
         let client = TestSupabaseClient.shared
         
@@ -47,8 +49,8 @@ struct PulseAnalyticsTests {
         try await service.fetchTopMerchants(startDate: "2026-01-01", endDate: "2026-01-27", limit: 5)
         
         // 5. Assert live database response matches the contract
+        let top = try #require(service.topMerchants.first, "Expected at least one merchant from DB")
         #expect(service.topMerchants.count == 5)
-        let top = service.topMerchants[0]
         #expect(top.merchantName == "Romanov Law")
         #expect(top.totalSpent == 5000)
         #expect(top.transactionCount == 1)

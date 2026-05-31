@@ -32,10 +32,14 @@ struct BabloApp: App {
         BabloTheme(rawValue: babloThemeVariant) ?? .normal
     }
     
+    private var skipAuthForUITests: Bool {
+        ProcessInfo.processInfo.arguments.contains("--uitesting-skip-auth")
+    }
+
     var body: some Scene {
         WindowGroup {
             ZStack {
-                if userAccount.isSignedIn {
+                if skipAuthForUITests || userAccount.isSignedIn {
                     if userAccount.profile == nil {
                         BabloScreenBackground {
                             ProgressView()

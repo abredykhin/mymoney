@@ -65,6 +65,7 @@ struct GoalsServiceTests {
     // MARK: - Live Local DB Integration Tests (Mutating & Teardown Cleanse)
 
     @Test @MainActor func testLiveMutatingGoalsAndDeposits() async throws {
+        guard await TestSupabaseClient.isAvailable() else { return }
         let client = TestSupabaseClient.shared
 
         // 1. Authenticate as the seeded user

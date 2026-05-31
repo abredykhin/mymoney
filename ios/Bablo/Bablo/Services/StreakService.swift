@@ -136,8 +136,13 @@ class StreakService: ObservableObject {
         defer { isLoading = false }
         
         do {
+            let todayStr = PreviousPeriodDateRange.compute(calendar: .bablo).todayDate
+            struct Params: Encodable {
+                let p_today: String
+            }
+            
             let streak: [UserStreak] = try await supabase
-                .rpc("get_user_spending_streak")
+                .rpc("get_user_spending_streak", params: Params(p_today: todayStr))
                 .execute()
                 .value
             

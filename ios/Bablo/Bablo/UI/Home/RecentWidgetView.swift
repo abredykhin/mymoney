@@ -124,9 +124,14 @@ private struct RecentTransactionRow: View {
                     .fill(theme.colors.surfaceMuted.color)
                     .frame(width: 32, height: 32)
 
-                Image(systemName: presentation.iconName)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(theme.colors.textPrimary.color)
+                if presentation.usesSystemIcon {
+                    Image(systemName: presentation.iconName)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(theme.colors.textPrimary.color)
+                } else {
+                    Text(presentation.iconName)
+                        .font(.system(size: 17))
+                }
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -157,11 +162,13 @@ struct RecentTransactionPresentation {
     let amountText: String
     let categoryText: String
     let iconName: String
+    let usesSystemIcon: Bool
 
     init(transaction: Transaction) {
         amountText = Self.amountText(for: transaction)
         categoryText = Self.categoryText(for: transaction)
         iconName = Self.iconName(for: transaction)
+        usesSystemIcon = Self.usesSystemIcon(for: transaction)
     }
 
     private static func amountText(for transaction: Transaction) -> String {
@@ -186,6 +193,12 @@ struct RecentTransactionPresentation {
         if transaction.isActualTransfer {
             return "Transfer"
         }
+        if let category = FlexibleSpendingCategory.map(
+            primary: transaction.personalFinanceCategory,
+            detailed: transaction.personalFinanceSubcategory
+        ) {
+            return category.displayName
+        }
         let category = transaction.personalFinanceCategory ?? transaction.primaryCategory ?? "Transaction"
         return category
             .replacingOccurrences(of: "_", with: " ")
@@ -196,6 +209,12 @@ struct RecentTransactionPresentation {
     private static func iconName(for transaction: Transaction) -> String {
         if transaction.isActualTransfer {
             return "arrow.left.arrow.right"
+        }
+        if let category = FlexibleSpendingCategory.map(
+            primary: transaction.personalFinanceCategory,
+            detailed: transaction.personalFinanceSubcategory
+        ) {
+            return category.emoji
         }
         let category = (transaction.personalFinanceCategory ?? transaction.primaryCategory ?? "").lowercased()
         if category.contains("food") || category.contains("restaurant") {
@@ -211,5 +230,15 @@ struct RecentTransactionPresentation {
         }
 
         return "creditcard.fill"
+    }
+
+    private static func usesSystemIcon(for transaction: Transaction) -> Bool {
+        if transaction.isActualTransfer {
+            return true
+        }
+        return FlexibleSpendingCategory.map(
+            primary: transaction.personalFinanceCategory,
+            detailed: transaction.personalFinanceSubcategory
+        ) == nil
     }
 }

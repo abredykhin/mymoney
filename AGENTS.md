@@ -160,6 +160,11 @@ All `supabase` commands should be executed from the root of the project reposito
     supabase migration new <migration_name>
     ```
     Replace `<migration_name>` with a descriptive name for your migration (e.g., `add_user_avatars`). Edit the generated SQL file in `supabase/migrations/` to define your schema changes.
+    
+    > [!WARNING]
+    > **Stuck Migration CLI Commands:** Sometimes the `supabase migration new` or other Supabase CLI commands can get stuck in the background after creating the file, waiting on a system handle. If this occurs:
+    > 1. Use the `manage_task` tool with action `list` to identify the stuck task.
+    > 2. Call `manage_task` with action `kill` and the corresponding `TaskId` to cancel it cleanly.
 
 3.  **Reset Local Database:**
     To wipe your local database and re-apply all migrations from the beginning, run:
@@ -169,18 +174,12 @@ All `supabase` commands should be executed from the root of the project reposito
 
 ### Production Deployment
 
-To deploy database migrations to production, use the Supabase CLI:
+To deploy database migrations to production, follow the consolidated manual deployment process rather than `supabase db push` for maximum safety:
 
-```bash
-supabase db push
-```
-
-This command will:
-1. Compare your local migrations with the remote production database
-2. Show you which migrations will be applied
-3. Push any new migrations to the production database
-
-**Important:** Review the migrations that will be applied before confirming the push.
+1.  **Consolidate Migrations:** Before completing your work, make sure all schema changes from `supabase/migrations` are copied and consolidated into the main production script: `supabase/DEPLOY_TO_PRODUCTION.sql`.
+2.  **Claiming Victory / Manual Execution:** 
+    > [!IMPORTANT]
+    > **CRITICAL RULE FOR AGENTS:** An agent **MUST** explicitly run the updated consolidated SQL in the Supabase Dashboard's SQL editor (or instruct the user to do so if permissions are restricted) to deploy the migration to production **BEFORE** declaring the task complete or claiming victory. Do not rely solely on local database verification.
 
 ## iOS Application
 
@@ -248,6 +247,66 @@ Read this section before making product, UI, or data-model changes. The project 
 -   `BudgetService.variableBudget` already subtracts `variableSpend`, while `VariableSpendingView` treats it like a monthly free budget and subtracts variable spend again through `monthlyRemaining`. Recheck the math before building the new Home/Pulse hero.
 -   New SQL RPCs use `SECURITY DEFINER` in the public schema. They filter by `auth.uid()`, but future edits should keep the Supabase security checklist in mind and avoid widening access accidentally.
 -   Tests now mix fast URL-protocol mocked unit tests with live local Supabase integration tests. The live tests require the local stack, seeded `test@example.com` user, and sometimes Edge Functions running.
+
+## Running iOS Tests
+
+### Quick command (unit tests only, no Supabase required)
+Run from `ios/Bablo/`:
+```bash
+xcodebuild test \
+  -scheme Bablo \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -testPlan Bablo \
+  -skip-testing:BabloUITests
+```
+
+All 24 unit-test suites must pass. Exit code 0 = success.
+
+**Do not add `-derivedDataPath`.** SourceKit indexes from Xcode's default DerivedData location; a custom path breaks module resolution for `import Testing` and `import XCTest`, causing false "No such module" errors in the IDE that persist until the project is rebuilt from Xcode.
+
+### Critical: BabloTests must never be parallelised
+
+`BabloTests` uses `MockURLProtocol`, which stores its handler in a **shared global static** (`MockURLProtocol.mockHandler`). Running suites in parallel clobbers that handler across tests, causing:
+- Wrong-URL assertions (one suite captures another's request)
+- `fatalError("MockURLProtocol.mockHandler is not set.")` → the whole test process crashes
+- All remaining tests report "signal trap" or 0-second failures
+
+The test plan (`Bablo.xctestplan`) sets `"parallelizable": false` for `BabloTests`. **Never change this to `true`.**  
+`BabloUITests` can stay parallelised — it does not share the mock layer.
+
+### Updating tests after service refactors
+
+When a service method is changed to use a different Supabase endpoint (view → RPC, or one RPC → another), update the corresponding unit tests:
+1. Change the URL path assertion to match the new endpoint (e.g. `/rest/v1/rpc/get_net_cash_balance`).
+2. Update the mock response body format (e.g. RPC returns a scalar `Double`, not an array of rows).
+3. If the new method uses POST-body params instead of URL query params, verify via the URL path, not the query string.
+
+### Live integration tests (auto-skip when Supabase is not running)
+
+Some tests connect to the local Supabase stack at `http://127.0.0.1:54321`. Each such test begins with:
+
+```swift
+guard await TestSupabaseClient.isAvailable() else { return }
+```
+
+This hits `http://127.0.0.1:54321/health` at runtime. When the server isn't up the test returns immediately (passes vacuously) instead of failing. To actually exercise these tests, run `supabase start` first.
+
+| Suite/Test | File |
+|---|---|
+| `NetCashBalanceRPCTests` | `BudgetRPCTests.swift` |
+| `SpendingBreakdownRPCTests` | `BudgetRPCTests.swift` |
+| `VariableSpendRPCTests` | `BudgetRPCTests.swift` |
+| `PeriodSpendComparisonRPCTests` | `BudgetRPCTests.swift` |
+| `MonthlyIncomeSummaryRPCTests` | `BudgetRPCTests.swift` |
+| `PulseAnalyticsTests` | `PulseAnalyticsTests.swift` |
+| `CoachServiceTests/testLiveCoachInsightsIntegration` | `CoachServiceTests.swift` |
+| `GoalsServiceTests/testLiveMutatingGoalsAndDeposits` | `GoalsServiceTests.swift` |
+
+### Simulator / bundle troubleshooting
+
+- If `xcodebuild` reports "device not found": `xcrun simctl list devices available | grep 'iPhone 17 Pro'`
+- If the test bundle can't be found (`BabloTests.xctest`): the app was likely installed on a different simulator UUID. Boot a specific device by UUID (`xcrun simctl boot <UUID>`) or delete derived data and let Xcode reinstall.
+- "No such module 'Testing'/'XCTest'" in SourceKit: do a normal Xcode build (Cmd+B) to repopulate the index. Never add `-derivedDataPath` to CLI test commands — it redirects build artifacts away from SourceKit's index location and makes the warnings permanent.
 
 ### Recommended Next Steps
 

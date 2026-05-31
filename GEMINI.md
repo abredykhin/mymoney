@@ -160,6 +160,11 @@ All `supabase` commands should be executed from the root of the project reposito
     supabase migration new <migration_name>
     ```
     Replace `<migration_name>` with a descriptive name for your migration (e.g., `add_user_avatars`). Edit the generated SQL file in `supabase/migrations/` to define your schema changes.
+    
+    > [!WARNING]
+    > **Stuck Migration CLI Commands:** Sometimes the `supabase migration new` or other Supabase CLI commands can get stuck in the background after creating the file, waiting on a system handle. If this occurs:
+    > 1. Use the `manage_task` tool with action `list` to identify the stuck task.
+    > 2. Call `manage_task` with action `kill` and the corresponding `TaskId` to cancel it cleanly.
 
 3.  **Reset Local Database:**
     To wipe your local database and re-apply all migrations from the beginning, run:
@@ -176,7 +181,9 @@ The project uses a consolidated script, `supabase/DEPLOY_TO_PRODUCTION.sql`, to 
 **Deployment Steps:**
 
 1.  **Consolidate Migrations:** Before a deployment, ensure that all necessary schema changes from the `supabase/migrations` directory are reflected in the `supabase/DEPLOY_TO_PRODUCTION.sql` script. This may require manually copying and pasting the SQL from your new migration files into the main deployment script.
-2.  **Run in Supabase Dashboard:**
+2.  **Run in Supabase Dashboard / Claiming Victory:**
+    > [!IMPORTANT]
+    > **CRITICAL RULE FOR AGENTS:** An agent **MUST** explicitly run the updated consolidated SQL in the Supabase Dashboard's SQL editor to deploy the migration to production **BEFORE** declaring the task complete or claiming victory. Do not rely solely on local database verification.
     *   Navigate to the Supabase SQL Editor for the production project:
         [https://supabase.com/dashboard/project/teuyzmreoyganejfvquk/sql/new](https://supabase.com/dashboard/project/teuyzmreoyganejfvquk/sql/new)
     *   Copy the entire content of `supabase/DEPLOY_TO_PRODUCTION.sql`.

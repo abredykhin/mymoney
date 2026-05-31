@@ -34,8 +34,8 @@ struct NetCashBalanceRPCTests {
         }
     }
 
-    /// The RPC must return the same net value as summing account rows client-side.
     @Test @MainActor func matchesClientSideCalculation() async throws {
+        guard await TestSupabaseClient.isAvailable() else { return }
         let client = try await authenticatedClient()
 
         // Old client-side path: fetch all rows, reduce in Swift
@@ -68,8 +68,8 @@ struct NetCashBalanceRPCTests {
         #expect(results.first?.iso_currency_code == "USD")
     }
 
-    /// The service convenience method must decode the RPC result into TotalBalance.
     @Test @MainActor func serviceMethodDecodesTotalBalance() async throws {
+        guard await TestSupabaseClient.isAvailable() else { return }
         let client = try await authenticatedClient()
         let service = BudgetService(supabaseClient: client)
 
@@ -109,8 +109,8 @@ struct SpendingBreakdownRPCTests {
         }
     }
 
-    /// The RPC must return the same category totals as the old client-side GROUP BY.
     @Test @MainActor func matchesClientSideGroupBy() async throws {
+        guard await TestSupabaseClient.isAvailable() else { return }
         let client = try await authenticatedClient()
         let startDate = "2026-01-01"
         let endDate   = "2026-01-31"
@@ -155,8 +155,8 @@ struct SpendingBreakdownRPCTests {
         }
     }
 
-    /// The service method must populate spendBreakdownResponse correctly.
     @Test @MainActor func serviceMethodPopulatesBreakdown() async throws {
+        guard await TestSupabaseClient.isAvailable() else { return }
         let client = try await authenticatedClient()
         let service = BudgetService(supabaseClient: client)
 
@@ -183,8 +183,8 @@ struct VariableSpendRPCTests {
         let amount: Double
     }
 
-    /// The scalar RPC must return the same sum as reducing variable_transactions client-side.
     @Test @MainActor func matchesClientSideSum() async throws {
+        guard await TestSupabaseClient.isAvailable() else { return }
         let client = try await authenticatedClient()
         let startDate = "2026-01-01"
         let endDate   = "2026-01-31"
@@ -231,6 +231,7 @@ struct PeriodSpendComparisonRPCTests {
     /// The comparison RPC must return all four windows in one row and match
     /// four individual get_variable_spend calls for the same windows.
     @Test @MainActor func matchesFourIndividualCalls() async throws {
+        guard await TestSupabaseClient.isAvailable() else { return }
         let client = try await authenticatedClient()
 
         // Use a fixed reference date so the test is deterministic against seed data.
@@ -307,8 +308,8 @@ struct MonthlyIncomeSummaryRPCTests {
         }
     }
 
-    /// The RPC must return the same known/extra split as aggregating rows client-side.
     @Test @MainActor func matchesClientSideAggregation() async throws {
+        guard await TestSupabaseClient.isAvailable() else { return }
         let client = try await authenticatedClient()
         let startDate = "2026-01-01"
         let endDate   = "2026-01-31"
@@ -349,8 +350,8 @@ struct MonthlyIncomeSummaryRPCTests {
         #expect(s.extraIncome >= 0)
     }
 
-    /// The service method must populate the income properties correctly.
     @Test @MainActor func serviceMethodPopulatesIncomeProperties() async throws {
+        guard await TestSupabaseClient.isAvailable() else { return }
         let client = try await authenticatedClient()
         let service = BudgetService(supabaseClient: client)
 

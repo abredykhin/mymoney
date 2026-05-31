@@ -104,6 +104,7 @@ struct CoachServiceTests {
     // MARK: - Live Local DB Integration Tests
 
     @Test @MainActor func testLiveCoachInsightsIntegration() async throws {
+        guard await TestSupabaseClient.isAvailable() else { return }
         let client = TestSupabaseClient.shared
 
         // 1. Authenticate as the seeded user

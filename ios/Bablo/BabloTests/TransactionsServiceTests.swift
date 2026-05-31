@@ -207,7 +207,7 @@ struct TransactionsServiceTests {
         #expect(expensePresentation.amountText == "-$6.50")
         #expect(incomePresentation.amountText == "+$154")
         #expect(transferPresentation.amountText == "+$4,817.01")
-        #expect(expensePresentation.categoryText == "Food And Drink")
+        #expect(expensePresentation.categoryText == "Eats out")
         #expect(transferPresentation.categoryText == "Transfer")
         #expect(incomePresentation.iconName == "arrow.down.circle.fill")
         #expect(transferPresentation.iconName == "arrow.left.arrow.right")
@@ -219,6 +219,46 @@ struct TransactionsServiceTests {
         #expect(transfer.isSpend == false)
         #expect(transfer.isIncome == false)
         #expect(transfer.isActualTransfer == true)
+    }
+
+    @Test func testRecentTransactionPresentationUsesFlexibleCategoryGlyphs() {
+        let grocery = Transaction(
+            id: 4, account_id: 10, amount: 23.91, date: "2026-05-28", authorized_date: "2026-05-28",
+            name: "Amazon", merchant_name: "Safeway", pending: true, category: nil,
+            transaction_id: "tx_4", pending_transaction_transaction_id: nil, iso_currency_code: "USD",
+            payment_channel: "in store", user_id: nil, logo_url: nil, website: nil,
+            personal_finance_category: "FOOD_AND_DRINK", personal_finance_subcategory: "FOOD_AND_DRINK_GROCERIES",
+            created_at: nil, updated_at: nil
+        )
+
+        let presentation = RecentTransactionPresentation(transaction: grocery)
+
+        #expect(presentation.iconName == "🥑")
+        #expect(presentation.categoryText == "Groceries")
+    }
+
+    @Test func testMerchantSpendSummaryOmitsDuplicateAmountFromSubtitle() {
+        let presentation = MerchantSpendPresentation(transactionCountThisWeek: 4, totalSpentThisWeek: 48.91)
+
+        #expect(presentation.summaryText == "4x spend this week")
+        #expect(presentation.amountText == "$48.91")
+    }
+
+    @Test func testTransactionDetailDateRowsShowOnlyAuthorizedDate() {
+        let transaction = Transaction(
+            id: 5, account_id: 10, amount: 23.91, date: "2026-05-29", authorized_date: "2026-05-28",
+            name: "Amazon", merchant_name: "Safeway", pending: true, category: nil,
+            transaction_id: "tx_5", pending_transaction_transaction_id: nil, iso_currency_code: "USD",
+            payment_channel: "in store", user_id: nil, logo_url: nil, website: nil,
+            personal_finance_category: "FOOD_AND_DRINK", personal_finance_subcategory: "FOOD_AND_DRINK_GROCERIES",
+            created_at: nil, updated_at: nil
+        )
+
+        let presentation = TransactionDetailDatePresentation(transaction: transaction)
+
+        #expect(presentation.rows == [
+            TransactionDetailDatePresentation.Row(label: "Authorized", value: "May 28, 2026")
+        ])
     }
 
     @Test func testFlexibleSpendingCategoriesProvideWritableTransactionCategoryPairs() {

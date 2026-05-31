@@ -467,6 +467,38 @@ class TransactionsService: ObservableObject {
         transactions[index] = updated
     }
 
+    func fetchMerchantTransactions(
+        merchantName: String,
+        startDate: String,
+        limit: Int = 200
+    ) async throws -> [Transaction] {
+        let trimmedMerchant = merchantName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedMerchant.isEmpty else { return [] }
+
+        Logger.d("TransactionsService: Fetching merchant history for \(trimmedMerchant)")
+
+        do {
+            let escapedMerchant = trimmedMerchant
+                .replacingOccurrences(of: ",", with: " ")
+                .replacingOccurrences(of: "%", with: "")
+
+            let rows: [Transaction] = try await supabase
+                .from("transactions")
+                .select()
+                .gte("spend_date", value: startDate)
+                .or("merchant_name.ilike.%\(escapedMerchant)%,name.ilike.%\(escapedMerchant)%")
+                .order("spend_date", ascending: false)
+                .limit(limit)
+                .execute()
+                .value
+
+            return rows
+        } catch {
+            Logger.e("TransactionsService: Failed to fetch merchant history: \(error)")
+            throw error
+        }
+    }
+
     /// Clear cached transactions
     func clearCache() {
         transactions = []

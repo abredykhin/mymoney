@@ -112,13 +112,15 @@ struct PulseServiceTests {
         let transactionJSON = """
         [{
           "id": 1, "account_id": 1, "amount": 55.0, "date": "2026-05-13",
-          "authorized_date": null, "name": "Chipotle", "merchant_name": "Chipotle",
+          "authorized_date": null, "spend_date": "2026-05-13",
+          "name": "Chipotle", "merchant_name": "Chipotle",
           "pending": false, "category": null, "transaction_id": "tx_1",
           "pending_transaction_transaction_id": null, "iso_currency_code": "USD",
           "payment_channel": null, "user_id": null, "logo_url": null, "website": null,
           "personal_finance_category": "FOOD_AND_DRINK",
           "personal_finance_subcategory": "FOOD_AND_DRINK_RESTAURANT",
-          "created_at": null, "updated_at": null
+          "created_at": null, "updated_at": null,
+          "is_spend": true, "is_income": false
         }]
         """.data(using: .utf8)!
 
@@ -146,23 +148,27 @@ struct PulseServiceTests {
         [
           {
             "id": 1, "account_id": 1, "amount": 55.0, "date": "2026-05-13",
-            "authorized_date": null, "name": "Chipotle", "merchant_name": "Chipotle",
+            "authorized_date": null, "spend_date": "2026-05-13",
+            "name": "Chipotle", "merchant_name": "Chipotle",
             "pending": false, "category": null, "transaction_id": "tx_1",
             "pending_transaction_transaction_id": null, "iso_currency_code": "USD",
             "payment_channel": null, "user_id": null, "logo_url": null, "website": null,
             "personal_finance_category": "FOOD_AND_DRINK",
             "personal_finance_subcategory": "FOOD_AND_DRINK_RESTAURANT",
-            "created_at": null, "updated_at": null
+            "created_at": null, "updated_at": null,
+            "is_spend": true, "is_income": false
           },
           {
             "id": 2, "account_id": 1, "amount": 25.0, "date": "2026-05-14",
-            "authorized_date": null, "name": "Uber", "merchant_name": "Uber",
+            "authorized_date": null, "spend_date": "2026-05-14",
+            "name": "Uber", "merchant_name": "Uber",
             "pending": false, "category": null, "transaction_id": "tx_2",
             "pending_transaction_transaction_id": null, "iso_currency_code": "USD",
             "payment_channel": null, "user_id": null, "logo_url": null, "website": null,
             "personal_finance_category": "TRANSPORTATION",
             "personal_finance_subcategory": "TRANSPORTATION_TAXIS_AND_RIDE_SHARES",
-            "created_at": null, "updated_at": null
+            "created_at": null, "updated_at": null,
+            "is_spend": true, "is_income": false
           }
         ]
         """.data(using: .utf8)!
@@ -198,23 +204,27 @@ struct PulseServiceTests {
         [
           {
             "id": 1, "account_id": 1, "amount": 50.0, "date": "2026-05-13",
-            "authorized_date": null, "name": "Chipotle", "merchant_name": "Chipotle",
+            "authorized_date": null, "spend_date": "2026-05-13",
+            "name": "Chipotle", "merchant_name": "Chipotle",
             "pending": false, "category": null, "transaction_id": "tx_1",
             "pending_transaction_transaction_id": null, "iso_currency_code": "USD",
             "payment_channel": null, "user_id": null, "logo_url": null, "website": null,
             "personal_finance_category": "FOOD_AND_DRINK",
             "personal_finance_subcategory": "FOOD_AND_DRINK_RESTAURANT",
-            "created_at": null, "updated_at": null
+            "created_at": null, "updated_at": null,
+            "is_spend": true, "is_income": false
           },
           {
             "id": 2, "account_id": 1, "amount": 20.0, "date": "2026-05-14",
-            "authorized_date": null, "name": "Uber", "merchant_name": "Uber",
+            "authorized_date": null, "spend_date": "2026-05-14",
+            "name": "Uber", "merchant_name": "Uber",
             "pending": false, "category": null, "transaction_id": "tx_2",
             "pending_transaction_transaction_id": null, "iso_currency_code": "USD",
             "payment_channel": null, "user_id": null, "logo_url": null, "website": null,
             "personal_finance_category": "TRANSPORTATION",
             "personal_finance_subcategory": null,
-            "created_at": null, "updated_at": null
+            "created_at": null, "updated_at": null,
+            "is_spend": true, "is_income": false
           }
         ]
         """.data(using: .utf8)!

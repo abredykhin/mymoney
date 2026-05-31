@@ -109,7 +109,10 @@ struct SubscriptionsServiceTests {
     }
 
     @Test @MainActor func fetchSubscriptionsDoesNotDuplicateSubscriptionFilteringWhenViewIsMissing() async throws {
-        var didRequestFallback = false
+        // The service now legitimately queries recurring_streams_table for income streams.
+        // This test only flags it as a problem if the query lacks the income-type filter,
+        // which would indicate the service is falling back to subscription filtering there.
+        var didQueryRecurringForSubscriptions = false
 
         MockURLProtocol.mockHandler = { request in
             let url = request.url!
@@ -126,15 +129,19 @@ struct SubscriptionsServiceTests {
             }
 
             if url.path.contains("/rest/v1/recurring_streams_table") {
-                didRequestFallback = true
+                // Income stream query is legitimate; subscription fallback is not.
+                let isIncomeQuery = url.query?.contains("type=eq.income") == true
+                if !isIncomeQuery {
+                    didQueryRecurringForSubscriptions = true
+                    Issue.record("client should not query raw recurring streams for subscription filtering")
+                }
                 let response = HTTPURLResponse(
                     url: url,
-                    statusCode: 500,
+                    statusCode: isIncomeQuery ? 200 : 500,
                     httpVersion: nil,
                     headerFields: ["Content-Type": "application/json"]
                 )!
-                let errorJSON = #"{"message":"client should not query raw recurring streams for subscription filtering"}"#
-                return (response, Data(errorJSON.utf8))
+                return (response, Data("[]".utf8))
             }
 
             let response = HTTPURLResponse(
@@ -172,7 +179,7 @@ struct SubscriptionsServiceTests {
             // subscription candidate logic against raw recurring streams.
         }
 
-        #expect(!didRequestFallback)
+        #expect(!didQueryRecurringForSubscriptions)
         #expect(service.subscriptions.isEmpty)
     }
 
