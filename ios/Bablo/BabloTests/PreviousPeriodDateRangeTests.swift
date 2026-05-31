@@ -93,6 +93,7 @@ import Foundation
         // May 24 2026 is Sunday.
         let r = PreviousPeriodDateRange.compute(relativeTo: date(year: 2026, month: 5, day: 24, calendar: cal), calendar: cal)
         #expect(r.currentWeekStart == "2026-05-24", "Sunday must be the first day of the week, not the last")
+        #expect(r.yesterdayDate    == "2026-05-23")
         #expect(r.todayDate        == "2026-05-24")
     }
 

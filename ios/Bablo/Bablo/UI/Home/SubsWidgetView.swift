@@ -326,19 +326,21 @@ struct SubsDetailSheetView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("SUBSCRIPTIONS")
-                        .font(theme.typography.mono(size: 12, weight: .bold))
+                        .font(theme.typography.mono(size: 11, weight: .bold))
                         .tracking(theme.typography.labelTracking)
                         .foregroundStyle(theme.colors.textTertiary.color)
 
-                    Text("Your recurring drip")
-                        .font(theme.typography.title(size: 30, weight: theme.effects.isPopArt ? .black : .bold))
+                    Text(theme.effects.isPopArt ? "THE RECURRING DRIP" : "Your recurring drip")
+                        .font(theme.effects.isPopArt
+                              ? theme.typography.display(size: 26, weight: .black)
+                              : theme.typography.title(size: 24, weight: .bold))
                         .foregroundStyle(theme.colors.textPrimary.color)
                         .lineLimit(2)
                         .minimumScaleFactor(0.82)
 
                     Text("\(summary.streams.count) subs · auto-charged each month")
-                        .font(theme.typography.body(size: 17, weight: .medium))
-                        .foregroundStyle(theme.colors.textTertiary.color)
+                        .font(theme.typography.body(size: 13, weight: .regular))
+                        .foregroundStyle(theme.colors.textSecondary.color)
                         .padding(.top, 2)
                 }
 
@@ -364,21 +366,21 @@ struct SubsDetailSheetView: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(formatCurrency(summary.totalMonthlyCost))
-                    .font(theme.typography.display(size: 58, weight: .black))
+                    .font(theme.typography.display(size: 44, weight: .heavy))
                     .foregroundStyle(theme.colors.textPrimary.color)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.62)
+                    .minimumScaleFactor(0.7)
 
                 Text("/mo")
-                    .font(theme.typography.body(size: 25, weight: .black))
+                    .font(theme.typography.body(size: 20, weight: .black))
                     .foregroundStyle(theme.colors.textSecondary.color)
             }
 
             Text("\(formatCurrency(summary.annualCost, maximumFractionDigits: 0)) a year")
-                .font(theme.typography.body(size: 15, weight: .semibold))
+                .font(theme.typography.body(size: 13, weight: .semibold))
                 .foregroundStyle(theme.colors.textTertiary.color)
-                .offset(y: -12)
-                .padding(.bottom, -8)
+                .offset(y: -8)
+                .padding(.bottom, -4)
         }
     }
 
@@ -454,13 +456,13 @@ struct SubsDetailSheetView: View {
     }
 
     private func statCell(label: String, value: String, valueColor: Color) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(label)
-                .font(theme.typography.mono(size: 12, weight: .bold))
+                .font(theme.typography.mono(size: 11, weight: .bold))
                 .tracking(theme.typography.labelTracking)
                 .foregroundStyle(theme.colors.textTertiary.color)
             Text(value)
-                .font(theme.typography.display(size: 28, weight: .black))
+                .font(theme.typography.display(size: 22, weight: .black))
                 .foregroundStyle(valueColor)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -522,24 +524,24 @@ struct SubsDetailSheetView: View {
 
             Spacer()
 
-            Button {
-                // Placeholder for the future cancellation/review workflow.
-            } label: {
-                HStack(spacing: 7) {
-                    Text("Review idle")
-                    Image(systemName: "arrow.up.forward")
-                        .font(.system(size: 12, weight: .black))
+            if summary.idleCount > 0 {
+                Button {
+                    // Placeholder for the future cancellation/review workflow.
+                } label: {
+                    HStack(spacing: 7) {
+                        Text("Review idle")
+                        Image(systemName: "arrow.up.forward")
+                            .font(.system(size: 12, weight: .black))
+                    }
+                    .font(theme.typography.body(size: 15, weight: .black))
+                    .foregroundStyle(theme.colors.surface.color)
+                    .padding(.horizontal, 22)
+                    .frame(height: 48)
+                    .background(theme.colors.textPrimary.color)
+                    .clipShape(Capsule())
                 }
-                .font(theme.typography.body(size: 15, weight: .black))
-                .foregroundStyle(theme.colors.surface.color)
-                .padding(.horizontal, 22)
-                .frame(height: 48)
-                .background(theme.colors.textPrimary.color)
-                .clipShape(Capsule())
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
-            .disabled(summary.idleCount == 0)
-            .opacity(summary.idleCount == 0 ? 0.45 : 1)
         }
         .padding(.horizontal, 20)
         .padding(.top, 10)
@@ -630,23 +632,23 @@ private struct SubsDetailRow: View {
         HStack(spacing: 14) {
             SubsMerchantIcon(name: displayName, logoUrl: logoUrl)
 
-            VStack(alignment: .leading, spacing: 7) {
-                Text(displayName)
-                    .font(theme.typography.body(size: 18, weight: .black))
-                    .foregroundStyle(theme.colors.textPrimary.color)
-                    .lineLimit(1)
-
+            VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
+                    Text(displayName)
+                        .font(theme.typography.body(size: 15, weight: .bold))
+                        .foregroundStyle(theme.colors.textPrimary.color)
+                        .lineLimit(1)
+
                     BabloBadge(
                         title: statusText,
                         tone: isIdle ? .custom(theme.colors.danger.color.opacity(0.14), theme.colors.danger.color) : .accent
                     )
-
-                    Text(renewalText)
-                        .font(theme.typography.body(size: 14, weight: .medium))
-                        .foregroundStyle(theme.colors.textTertiary.color)
-                        .lineLimit(1)
                 }
+
+                Text(renewalText)
+                    .font(theme.typography.body(size: 13, weight: .medium))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+                    .lineLimit(1)
             }
 
             Spacer(minLength: 8)
@@ -717,7 +719,7 @@ private struct SubsMerchantIcon: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(brandColor(for: name))
+                .fill(CircleAvatarBrandColor.color(for: name))
 
             if let logoUrl, let url = URL(string: logoUrl) {
                 AsyncImage(url: url) { image in
@@ -741,16 +743,7 @@ private struct SubsMerchantIcon: View {
             .foregroundStyle(.white)
     }
 
-    private func brandColor(for name: String) -> Color {
-        let nameLower = name.lowercased()
-        if nameLower.contains("spotify") { return Color(hex: "#1DB954") ?? .green }
-        if nameLower.contains("netflix") { return theme.colors.danger.color }
-        if nameLower.contains("cursor") { return Color(hex: "#8A7A65") ?? .brown }
-        if nameLower.contains("icloud") || nameLower.contains("apple") { return theme.colors.info.color }
-        if nameLower.contains("notion") { return Color(hex: "#4D463D") ?? .gray }
-        if nameLower.contains("figma") { return Color(hex: "#E15196") ?? theme.colors.avatarPink.color }
-        return CircleAvatarBrandColor.color(for: name)
-    }
+
 }
 
 private enum SubscriptionLogoResolver {
@@ -886,47 +879,16 @@ struct CircleAvatarView: View {
     private var initialsPlaceholder: some View {
         let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let initial = cleanName.first.map { String($0).uppercased() } ?? "S"
-        let brandInfo = resolveBrandInfo(for: cleanName)
         
         return Text(initial)
             .font(.system(size: 9, weight: .bold))
             .foregroundStyle(.white)
             .frame(width: 24, height: 24)
-            .background(brandInfo.color)
+            .background(CircleAvatarBrandColor.color(for: cleanName))
             .clipShape(Circle())
     }
     
-    private struct BrandInfo {
-        let color: Color
-    }
-    
-    /// Map curated brand-specific background colors or generate adaptive color via hash
-    private func resolveBrandInfo(for name: String) -> BrandInfo {
-        let nameLower = name.lowercased()
-        if nameLower.contains("spotify") {
-            return BrandInfo(color: Color(hex: "#1DB954") ?? .green)
-        } else if nameLower.contains("netflix") {
-            return BrandInfo(color: Color(hex: "#221F1F") ?? .black)
-        } else if nameLower.contains("canva") {
-            return BrandInfo(color: Color(hex: "#7D2AE8") ?? .purple)
-        } else if nameLower.contains("figma") {
-            return BrandInfo(color: Color(hex: "#F24E1E") ?? .pink)
-        } else if nameLower.contains("apple") {
-            return BrandInfo(color: Color(hex: "#A2AAAD") ?? .gray)
-        } else if nameLower.contains("verizon") {
-            return BrandInfo(color: Color(hex: "#CD040B") ?? .red)
-        } else if nameLower.contains("rent") {
-            return BrandInfo(color: Color(hex: "#2A82E6") ?? .blue)
-        }
-        
-        // Dynamic hash-based color palette to keep fallback circles vibrant
-        let colors: [Color] = [
-            .pink, .purple, .indigo, .blue, .cyan, .teal, .orange, .red, .gray
-        ]
-        let hash = abs(name.hashValue)
-        let color = colors[hash % colors.count]
-        return BrandInfo(color: color)
-    }
+
 }
 
 // MARK: - Previews

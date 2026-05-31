@@ -18,9 +18,11 @@ struct HomeView: View {
     @EnvironmentObject private var coachService: CoachService
     @EnvironmentObject private var streakService: StreakService
     @EnvironmentObject private var subService: SubscriptionsService
+    @EnvironmentObject private var pulseService: PulseService
     @State private var isOffline = false
     @State private var isRefreshing = false
     @State private var showingOnboarding = false
+    @State private var showingCushionSheet = false
     @State private var networkMonitor: NWPathMonitor?
     @State private var heroPeriod: HeroPeriod = .month
     
@@ -56,6 +58,9 @@ struct HomeView: View {
                         navigationState.homeNavPath.append(
                             HomeDestination.budgetBreakdown(heroPeriod)
                         )
+                    }, onDeltaTap: {
+                        showingCushionSheet = true
+                        Task { await loadCushionSheetData() }
                     })
                     .environmentObject(budgetService)
                     .padding(.horizontal, Spacing.screenEdge)
@@ -115,6 +120,24 @@ struct HomeView: View {
         .sheet(isPresented: $showingOnboarding) {
             OnboardingWizard()
         }
+        .sheet(isPresented: $showingCushionSheet) {
+            if let snapshot = cushionSnapshot {
+                TheCushionSheetView(
+                    snapshot: snapshot,
+                    period: heroPeriod.pulsePeriod,
+                    breakdown: pulseService.categoryBreakdown ?? [],
+                    dailyEnergy: pulseService.dailyEnergy,
+                    isLoading: pulseService.isLoadingBreakdown || pulseService.isLoadingDailyEnergy,
+                    dismissAction: { showingCushionSheet = false },
+                    primaryAction: {
+                        showingCushionSheet = false
+                        navigationState.selectedTab = snapshot.hasMoreRoom ? .goals : .pulse
+                    }
+                )
+                .presentationDetents([PresentationDetent.large])
+                .presentationDragIndicator(Visibility.visible)
+            }
+        }
         .refreshable {
             checkConnectivityAndRefresh()
         }
@@ -134,6 +157,40 @@ struct HomeView: View {
     
     private var homeTopBarLabel: String {
         heroPeriod.topBarLabel
+    }
+
+    private var cushionSnapshot: HeroCushionSnapshot? {
+        HeroCushionSnapshot(calculator: heroCalculator, period: heroPeriod)
+    }
+
+    private var heroCalculator: HeroBudgetCalculator {
+        let cal = Calendar.bablo
+        let now = Date()
+        let currentWeekStartDate = cal.dateInterval(of: .weekOfYear, for: now)?.start ?? now
+        let daysElapsedInWeek = (cal.dateComponents([.day], from: currentWeekStartDate, to: now).day ?? 0) + 1
+        return HeroBudgetCalculator(
+            monthlyIncome: budgetService.monthlyIncome,
+            monthlyMandatoryExpenses: budgetService.monthlyMandatoryExpenses,
+            knownIncomeThisMonth: budgetService.knownIncomeThisMonth,
+            extraIncomeThisMonth: budgetService.extraIncomeThisMonth,
+            variableSpend: budgetService.variableSpend,
+            currentWeekVariableSpend: budgetService.currentWeekVariableSpend,
+            todayVariableSpend: budgetService.todayVariableSpend,
+            liquidCashAvailable: budgetService.totalBalance?.balance,
+            spendingPlanMode: userAccount.spendingPlanMode,
+            upcomingUnpaidExpenses: budgetService.upcomingUnpaidBills,
+            previousDayVariableSpend: budgetService.previousDayVariableSpend,
+            previousWeekVariableSpend: budgetService.previousWeekVariableSpend,
+            previousMonthVariableSpend: budgetService.previousMonthVariableSpend,
+            dayOfMonth: cal.component(.day, from: now),
+            daysInMonth: cal.range(of: .day, in: .month, for: now)?.count ?? 30,
+            daysElapsedInWeek: daysElapsedInWeek
+        )
+    }
+
+    private var trackedCategories: Set<FlexibleSpendingCategory> {
+        let rawValues = userAccount.profile?.trackedSpendingCategories ?? []
+        return Set(rawValues.compactMap { FlexibleSpendingCategory(rawValue: $0) })
     }
 
     private func checkNetworkStatus() {
@@ -173,6 +230,66 @@ struct HomeView: View {
         }
     }
 
+    private func loadCushionSheetData() async {
+        let period = heroPeriod.pulsePeriod
+        let current = period.currentWindow
+        let comparison = period.comparisonWindow
+        let tracked = trackedCategories
+        let energyWindow: PulseDateWindow
+        switch period {
+        case .month:
+            energyWindow = monthlyEnergyWindow
+        case .week:
+            energyWindow = weeklyEnergyWindow
+        case .day:
+            energyWindow = current
+        }
+
+        async let breakdown: Void = {
+            do {
+                try await pulseService.fetchCategoryBreakdown(
+                    startDate: current.startDate,
+                    endDate: current.endDate,
+                    comparisonStartDate: comparison?.startDate,
+                    comparisonEndDate: comparison?.endDate,
+                    trackedCategories: tracked
+                )
+            } catch {
+                // PulseService owns the published error state.
+            }
+        }()
+
+        async let energy: Void = {
+            await pulseService.fetchDailyEnergy(startDate: energyWindow.startDate, endDate: energyWindow.endDate)
+        }()
+
+        _ = await (breakdown, energy)
+    }
+
+    private var weeklyEnergyWindow: PulseDateWindow {
+        let cal = Calendar.bablo
+        let now = Date()
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.calendar = cal
+        fmt.timeZone = cal.timeZone
+        let thisWeekStart = cal.dateInterval(of: .weekOfYear, for: now)?.start ?? now
+        let start = cal.date(byAdding: .weekOfYear, value: -1, to: thisWeekStart) ?? now
+        return PulseDateWindow(startDate: fmt.string(from: start), endDate: fmt.string(from: now))
+    }
+
+    private var monthlyEnergyWindow: PulseDateWindow {
+        let cal = Calendar.bablo
+        let now = Date()
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.calendar = cal
+        fmt.timeZone = cal.timeZone
+        let thisMonthStart = cal.dateInterval(of: .month, for: now)?.start ?? now
+        let start = cal.date(byAdding: .month, value: -1, to: thisMonthStart) ?? now
+        return PulseDateWindow(startDate: fmt.string(from: start), endDate: fmt.string(from: now))
+    }
+
     private func refreshHomeForCurrentUser() async {
         isRefreshing = true
         defer { isRefreshing = false }
@@ -208,5 +325,15 @@ struct HomeView: View {
         }
 
         try? await streakService.fetchUserStreak()
+    }
+}
+
+private extension HeroPeriod {
+    var pulsePeriod: PulsePeriod {
+        switch self {
+        case .day:   return .day
+        case .week:  return .week
+        case .month: return .month
+        }
     }
 }

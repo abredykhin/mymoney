@@ -16,6 +16,7 @@ struct HeroBudgetCalculator {
     let liquidCashAvailable: Double?
     let spendingPlanMode: SpendingPlanMode
     let upcomingUnpaidExpenses: Double
+    let previousDayVariableSpend: Double
     let previousWeekVariableSpend: Double
     let previousMonthVariableSpend: Double
 
@@ -23,6 +24,43 @@ struct HeroBudgetCalculator {
 
     let dayOfMonth: Int          // 1-31: how far into the month are we?
     let daysInMonth: Int         // 28-31
+    let daysElapsedInWeek: Int   // 1-7: how many days of the current calendar week have elapsed?
+
+    init(
+        monthlyIncome: Double,
+        monthlyMandatoryExpenses: Double,
+        knownIncomeThisMonth: Double,
+        extraIncomeThisMonth: Double,
+        variableSpend: Double,
+        currentWeekVariableSpend: Double,
+        todayVariableSpend: Double,
+        liquidCashAvailable: Double?,
+        spendingPlanMode: SpendingPlanMode,
+        upcomingUnpaidExpenses: Double,
+        previousDayVariableSpend: Double,
+        previousWeekVariableSpend: Double,
+        previousMonthVariableSpend: Double,
+        dayOfMonth: Int,
+        daysInMonth: Int,
+        daysElapsedInWeek: Int = 1
+    ) {
+        self.monthlyIncome = monthlyIncome
+        self.monthlyMandatoryExpenses = monthlyMandatoryExpenses
+        self.knownIncomeThisMonth = knownIncomeThisMonth
+        self.extraIncomeThisMonth = extraIncomeThisMonth
+        self.variableSpend = variableSpend
+        self.currentWeekVariableSpend = currentWeekVariableSpend
+        self.todayVariableSpend = todayVariableSpend
+        self.liquidCashAvailable = liquidCashAvailable
+        self.spendingPlanMode = spendingPlanMode
+        self.upcomingUnpaidExpenses = upcomingUnpaidExpenses
+        self.previousDayVariableSpend = previousDayVariableSpend
+        self.previousWeekVariableSpend = previousWeekVariableSpend
+        self.previousMonthVariableSpend = previousMonthVariableSpend
+        self.dayOfMonth = dayOfMonth
+        self.daysInMonth = daysInMonth
+        self.daysElapsedInWeek = daysElapsedInWeek
+    }
 
     // MARK: - Derived: discretionary budget for the selected period
 
@@ -104,9 +142,32 @@ struct HeroBudgetCalculator {
             return max(0, min(monthlyDiscretionary, safeCash + variableSpend))
             
         case .week:
+            // How many days of this week are in the current month?
+            // Today is `dayOfMonth`. The week started `daysElapsedInWeek` days ago.
+            // So the week covers from `dayOfMonth - (daysElapsedInWeek - 1)` to `dayOfMonth + (7 - daysElapsedInWeek)`.
+            // Count how many of these 7 days fall within [1, daysInMonth].
+            let weekStartDay = dayOfMonth - (daysElapsedInWeek - 1)
+            let weekEndDay = dayOfMonth + (7 - daysElapsedInWeek)
+            
+            var daysInCurrentMonthThisWeek = 0
+            for day in weekStartDay...weekEndDay {
+                if day >= 1 && day <= daysInMonth {
+                    daysInCurrentMonthThisWeek += 1
+                }
+            }
+            let daysInNextMonthThisWeek = 7 - daysInCurrentMonthThisWeek
+            
             // Capped weekly budget baseline before this week's spending started.
             let monthlyRemainingBeforeThisWeek = monthlyDiscretionary - (variableSpend - currentWeekVariableSpend)
-            return max(0, min(weeklyDiscretionary, monthlyRemainingBeforeThisWeek))
+            
+            // Budget for current month's days of the week: capped by what's left in the month.
+            let currentMonthDiscretionaryPart = Double(daysInCurrentMonthThisWeek) * dailyDiscretionary
+            let currentMonthBudgetCapped = max(0, min(currentMonthDiscretionaryPart, monthlyRemainingBeforeThisWeek))
+            
+            // Budget for next month's days of the week: fresh and uncapped discretionary room.
+            let nextMonthBudget = Double(daysInNextMonthThisWeek) * dailyDiscretionary
+            
+            return currentMonthBudgetCapped + nextMonthBudget
             
         case .day:
             // Daily budget = weekly budget / 7.
@@ -183,11 +244,16 @@ struct HeroBudgetCalculator {
     /// Since both spendables share the same budget denominator the arithmetic reduces to
     /// previousSpend − currentSpend, which is what the implementation computes.
     func deltaLabel(for period: HeroPeriod) -> String? {
+        guard budget(for: period) > 0 else { return nil }
+
         let prev: Double
         let curr: Double
         let suffix: String
         switch period {
-        case .day:   return nil
+        case .day:
+            prev = previousDayVariableSpend
+            curr = todayVariableSpend
+            suffix = "vs yesterday"
         case .week:
             prev = previousWeekVariableSpend
             curr = currentWeekVariableSpend   // actual this-week spend, not MTD proration
@@ -197,23 +263,15 @@ struct HeroBudgetCalculator {
             curr = variableSpend
             suffix = "vs last mo"
         }
-        // Show delta only when there is effective income to provide context,
-        // and when the current period has real spending to compare.
-        guard effectiveIncome > 0 else { return nil }
-        guard curr > 0 else { return nil }
-        // Only compare against a previous period that was within budget.
-        // If last period's spending exceeded the discretionary budget, it contained
-        // extraordinary expenses (e.g. one-time legal fees) that sit outside the
-        // discretionary framework — projecting them in would produce a fictional
-        // "remaining" figure for last period and a misleading delta.
-        let periodBudget: Double
-        switch period {
-        case .week:  periodBudget = weeklyDiscretionary
-        case .month: periodBudget = monthlyDiscretionary
-        case .day:   periodBudget = dailyDiscretionary
-        }
-        guard prev <= periodBudget else { return nil }
+        // Show the chip when either side has real spending to compare.
+        // Budget/income availability should not suppress a period-over-period spend delta.
+        guard prev > 0 || curr > 0 else { return nil }
         let delta = Int((prev - curr).rounded())
+        guard abs(delta) >= 1 else { return nil }
+        if spendable(for: period) < 0 {
+            let amount = "$\(compactDollar(abs(delta)))"
+            return delta >= 0 ? "\(amount) less in the red \(suffix)" : "\(amount) deeper in the red \(suffix)"
+        }
         let sign = delta >= 0 ? "+" : "-"
         return "\(sign)$\(compactDollar(abs(delta))) \(suffix)"
     }
@@ -482,5 +540,81 @@ struct HeroBudgetAccountAuditRow: Identifiable, Equatable {
             return "-$\(abs(rounded).formatted())"
         }
         return "$\(rounded.formatted())"
+    }
+}
+
+struct HeroCushionSnapshot: Equatable {
+    let period: HeroPeriod
+    let currentRoom: Double
+    let previousRoom: Double
+    let roomDelta: Double
+
+    init?(calculator: HeroBudgetCalculator, period: HeroPeriod) {
+        guard calculator.budget(for: period) > 0 else { return nil }
+
+        let previousSpend: Double
+        let currentSpend: Double
+
+        switch period {
+        case .day:
+            previousSpend = calculator.previousDayVariableSpend
+            currentSpend = calculator.todayVariableSpend
+        case .week:
+            previousSpend = calculator.previousWeekVariableSpend
+            currentSpend = calculator.currentWeekVariableSpend
+        case .month:
+            previousSpend = calculator.previousMonthVariableSpend
+            currentSpend = calculator.variableSpend
+        }
+
+        guard previousSpend > 0 || currentSpend > 0 else { return nil }
+
+        let delta = (previousSpend - currentSpend).rounded()
+        guard abs(delta) >= 1 else { return nil }
+
+        self.period = period
+        self.currentRoom = calculator.spendable(for: period)
+        self.roomDelta = delta
+        self.previousRoom = self.currentRoom - delta
+    }
+
+    var hasMoreRoom: Bool {
+        roomDelta >= 0
+    }
+}
+
+struct HeroCushionDriver: Equatable, Identifiable {
+    enum Kind: Equatable {
+        case grew
+        case shrank
+    }
+
+    var id: String { bucket.id }
+    let bucket: SpendingBucket
+    let currentAmount: Double
+    let previousAmount: Double
+    let transactionCount: Int
+    let roomDelta: Double
+
+    var kind: Kind {
+        roomDelta >= 0 ? .grew : .shrank
+    }
+
+    static func drivers(from items: [CategoryBreakdownItem], limit: Int = 5) -> [HeroCushionDriver] {
+        items.compactMap { item in
+            guard let previousAmount = item.previousAmount else { return nil }
+            let delta = (previousAmount - item.totalAmount).rounded()
+            guard abs(delta) >= 1 else { return nil }
+            return HeroCushionDriver(
+                bucket: item.bucket,
+                currentAmount: item.totalAmount,
+                previousAmount: previousAmount,
+                transactionCount: item.transactionCount,
+                roomDelta: delta
+            )
+        }
+        .sorted { abs($0.roomDelta) > abs($1.roomDelta) }
+        .prefix(limit)
+        .map { $0 }
     }
 }

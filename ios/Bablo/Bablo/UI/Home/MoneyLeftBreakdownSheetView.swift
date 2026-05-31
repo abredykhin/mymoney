@@ -16,6 +16,8 @@ struct MoneyLeftBreakdownView: View {
     private var calculator: HeroBudgetCalculator {
         let cal = Calendar.bablo
         let now = Date()
+        let currentWeekStartDate = cal.dateInterval(of: .weekOfYear, for: now)?.start ?? now
+        let daysElapsedInWeek = (cal.dateComponents([.day], from: currentWeekStartDate, to: now).day ?? 0) + 1
         return HeroBudgetCalculator(
             monthlyIncome: budgetService.monthlyIncome,
             monthlyMandatoryExpenses: budgetService.monthlyMandatoryExpenses,
@@ -27,10 +29,12 @@ struct MoneyLeftBreakdownView: View {
             liquidCashAvailable: budgetService.totalBalance?.balance,
             spendingPlanMode: userAccount.spendingPlanMode,
             upcomingUnpaidExpenses: budgetService.upcomingUnpaidBills,
+            previousDayVariableSpend: budgetService.previousDayVariableSpend,
             previousWeekVariableSpend: budgetService.previousWeekVariableSpend,
             previousMonthVariableSpend: budgetService.previousMonthVariableSpend,
             dayOfMonth: cal.component(.day, from: now),
-            daysInMonth: cal.range(of: .day, in: .month, for: now)?.count ?? 30
+            daysInMonth: cal.range(of: .day, in: .month, for: now)?.count ?? 30,
+            daysElapsedInWeek: daysElapsedInWeek
         )
     }
 

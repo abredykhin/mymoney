@@ -24,6 +24,7 @@ struct PreviousPeriodDateRange {
     /// Previous month end clamped to the same day-of-month as today (capped at the last day of that month).
     let prevMonthSameDayEnd: String
     let currentWeekStart: String
+    let yesterdayDate: String
     let todayDate: String
 
     static func compute(relativeTo now: Date = Date(), calendar: Calendar = .current) -> PreviousPeriodDateRange {
@@ -45,6 +46,7 @@ struct PreviousPeriodDateRange {
         // On Sunday (day 1 of week) → prev week's Sunday only. On Saturday (day 7) → full prev week.
         let daysElapsedInWeek = (cal.dateComponents([.day], from: currentWeekStartDate, to: now).day ?? 0) + 1
         let prevWeekSameDayEndDate = cal.date(byAdding: .day, value: daysElapsedInWeek - 1, to: prevWeekStartDate) ?? prevWeekStartDate
+        let yesterdayDate = cal.date(byAdding: .day, value: -1, to: now) ?? now
 
         // Previous calendar month
         let thisMonthStart     = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
@@ -66,6 +68,7 @@ struct PreviousPeriodDateRange {
             prevMonthEnd:         fmt.string(from: prevMonthEndDate),
             prevMonthSameDayEnd:  fmt.string(from: prevMonthSameDayEndDate),
             currentWeekStart:     fmt.string(from: currentWeekStartDate),
+            yesterdayDate:         fmt.string(from: yesterdayDate),
             todayDate:            fmt.string(from: now)
         )
     }

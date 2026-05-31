@@ -30,10 +30,16 @@ struct LiquidHeroView: View {
     /// Called when the user taps the hero card body (not the period control).
     /// The parent is responsible for performing navigation.
     var onTap: () -> Void = {}
+    var onDeltaTap: (() -> Void)?
 
-    init(period: Binding<HeroPeriod> = .constant(.month), onTap: @escaping () -> Void = {}) {
+    init(
+        period: Binding<HeroPeriod> = .constant(.month),
+        onTap: @escaping () -> Void = {},
+        onDeltaTap: (() -> Void)? = nil
+    ) {
         self._period = period
         self.onTap = onTap
+        self.onDeltaTap = onDeltaTap
     }
 
     // MARK: - Budget calculator (pure, testable)
@@ -41,6 +47,8 @@ struct LiquidHeroView: View {
     private var calculator: HeroBudgetCalculator {
         let cal = Calendar.bablo
         let now = Date()
+        let currentWeekStartDate = cal.dateInterval(of: .weekOfYear, for: now)?.start ?? now
+        let daysElapsedInWeek = (cal.dateComponents([.day], from: currentWeekStartDate, to: now).day ?? 0) + 1
         return HeroBudgetCalculator(
             monthlyIncome: budgetService.monthlyIncome,
             monthlyMandatoryExpenses: budgetService.monthlyMandatoryExpenses,
@@ -52,10 +60,12 @@ struct LiquidHeroView: View {
             liquidCashAvailable: budgetService.totalBalance?.balance,
             spendingPlanMode: userAccount.spendingPlanMode,
             upcomingUnpaidExpenses: budgetService.upcomingUnpaidBills,
+            previousDayVariableSpend: budgetService.previousDayVariableSpend,
             previousWeekVariableSpend: budgetService.previousWeekVariableSpend,
             previousMonthVariableSpend: budgetService.previousMonthVariableSpend,
             dayOfMonth: cal.component(.day, from: now),
-            daysInMonth: cal.range(of: .day, in: .month, for: now)?.count ?? 30
+            daysInMonth: cal.range(of: .day, in: .month, for: now)?.count ?? 30,
+            daysElapsedInWeek: daysElapsedInWeek
         )
     }
 
@@ -150,29 +160,40 @@ struct LiquidHeroView: View {
     private var deltaChip: some View {
         if let label = deltaLabel {
             let isPopArt = theme.effects.isPopArt
-            HStack(spacing: 4) {
-                Image(systemName: "bolt.fill")
-                    .font(.system(size: 9, weight: .bold))
-                Text(label)
-                    .font(.system(
-                        size: isPopArt ? 12 : 11,
-                        weight: .semibold,
-                        design: theme.typography.bodyDesign
-                    ))
-                    .tracking(isPopArt ? 0.6 : 0)
-                    .textCase(isPopArt ? .uppercase : nil)
-                    .lineLimit(1)
+            Button {
+                onDeltaTap?()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 9, weight: .bold))
+                    Text(label)
+                        .font(.system(
+                            size: isPopArt ? 12 : 11,
+                            weight: .semibold,
+                            design: theme.typography.bodyDesign
+                        ))
+                        .tracking(isPopArt ? 0.6 : 0)
+                        .textCase(isPopArt ? .uppercase : nil)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.82)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .foregroundStyle(isPopArt ? theme.colors.surface.color : theme.colors.textSecondary.color)
+                .frame(maxWidth: 168, alignment: .leading)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
+                .background(isPopArt ? theme.colors.textPrimary.color : theme.colors.surface.color.opacity(0.7))
+                .clipShape(RoundedRectangle(cornerRadius: isPopArt ? 0 : 999))
+                .overlay {
+                    RoundedRectangle(cornerRadius: isPopArt ? 0 : 999)
+                        .stroke(theme.colors.line.color, lineWidth: theme.metrics.borderWidth)
+                }
+                .shadow(color: isPopArt ? theme.effects.shadowColor : .clear, radius: 0, x: 3, y: 3)
             }
-            .foregroundStyle(isPopArt ? theme.colors.surface.color : theme.colors.textSecondary.color)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
-            .background(isPopArt ? theme.colors.textPrimary.color : theme.colors.surface.color.opacity(0.7))
-            .clipShape(RoundedRectangle(cornerRadius: isPopArt ? 0 : 999))
-            .overlay {
-                RoundedRectangle(cornerRadius: isPopArt ? 0 : 999)
-                    .stroke(theme.colors.line.color, lineWidth: theme.metrics.borderWidth)
-            }
-            .shadow(color: isPopArt ? theme.effects.shadowColor : .clear, radius: 0, x: 3, y: 3)
+            .buttonStyle(.plain)
+            .disabled(onDeltaTap == nil)
+            .accessibilityLabel("Show cushion comparison")
         }
     }
 

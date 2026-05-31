@@ -6,19 +6,25 @@ struct AllTransactionsView: View {
     let customTitle: String?
     let initialFilter: TransactionFilterValue?
     let initialMerchantName: String?
+    let initialTotalAmount: Double?
+    let initialTransactionCount: Int?
 
     init(
         startDate: String? = nil,
         endDate: String? = nil,
         title: String? = nil,
         initialFilter: TransactionFilterValue? = nil,
-        initialMerchantName: String? = nil
+        initialMerchantName: String? = nil,
+        initialTotalAmount: Double? = nil,
+        initialTransactionCount: Int? = nil
     ) {
         self.startDate = startDate
         self.endDate = endDate
         self.customTitle = title
         self.initialFilter = initialFilter
         self.initialMerchantName = initialMerchantName
+        self.initialTotalAmount = initialTotalAmount
+        self.initialTransactionCount = initialTransactionCount
         
         self._searchQuery = State(initialValue: initialMerchantName ?? "")
         
@@ -65,7 +71,7 @@ struct AllTransactionsView: View {
             selectedFilter: $selectedFilter,
             sortOptions: TransactionSortOption.allCases.map { BabloSortOption(id: $0, title: $0.title) },
             selectedSort: $selectedSort,
-            resultsCountLabel: "\(processedTransactions.count) RESULTS",
+            resultsCountLabel: isUsingInitialValues ? "\(initialTransactionCount ?? processedTransactions.count) RESULTS" : "\(processedTransactions.count) RESULTS",
             dismissAction: { dismiss() },
             showDragHandle: false,
             showCloseButton: false,
@@ -303,15 +309,31 @@ struct AllTransactionsView: View {
         }
     }
 
+    private var isUsingInitialValues: Bool {
+        searchQuery.isEmpty &&
+        selectedFilter == (initialFilter ?? (startDate != nil && endDate != nil ? .out : .all)) &&
+        initialTotalAmount != nil
+    }
+
     private var subtitleText: String {
-        let totalCount = processedTransactions.count
+        let totalCount = isUsingInitialValues ? (initialTransactionCount ?? processedTransactions.count) : processedTransactions.count
         guard totalCount > 0 else { return "0 txns" }
         
         return "\(totalCount) txns · net \(netAmountText) · last \(dateRangeText)"
     }
 
     private var netAmountText: String {
-        let sum = processedTransactions.reduce(0.0) { $0 + $1.amount }
+        let sum: Double
+        if isUsingInitialValues, let initialTotalAmount {
+            if selectedFilter == .income {
+                sum = -abs(initialTotalAmount)
+            } else {
+                sum = abs(initialTotalAmount)
+            }
+        } else {
+            sum = processedTransactions.reduce(0.0) { $0 + $1.amount }
+        }
+        
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.currencyCode = "USD"

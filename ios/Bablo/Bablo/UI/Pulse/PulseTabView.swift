@@ -52,7 +52,8 @@ struct PulseTabView: View {
                                 startDate: current.startDate,
                                 endDate: current.endDate,
                                 title: "Damage report",
-                                initialFilter: .all // Show all transactions included
+                                initialFilter: .all, // Show all transactions included
+                                initialTotalAmount: pulseService.damageReport?.totalOut
                             )
                         )
                     },
@@ -63,7 +64,8 @@ struct PulseTabView: View {
                                 startDate: current.startDate,
                                 endDate: current.endDate,
                                 title: "Income (In)",
-                                initialFilter: .income
+                                initialFilter: .income,
+                                initialTotalAmount: pulseService.damageReport?.totalIn
                             )
                         )
                     },
@@ -74,7 +76,8 @@ struct PulseTabView: View {
                                 startDate: current.startDate,
                                 endDate: current.endDate,
                                 title: "Spending (Out)",
-                                initialFilter: .out
+                                initialFilter: .out,
+                                initialTotalAmount: pulseService.damageReport?.totalOut
                             )
                         )
                     }
@@ -102,7 +105,9 @@ struct PulseTabView: View {
                                 endDate: current.endDate,
                                 title: title,
                                 initialFilter: initialFilter,
-                                initialMerchantName: nil
+                                initialMerchantName: nil,
+                                initialTotalAmount: item.totalAmount,
+                                initialTransactionCount: item.transactionCount
                             )
                         )
                     }
@@ -138,7 +143,9 @@ struct PulseTabView: View {
                                 endDate: current.endDate,
                                 title: item.merchantName,
                                 initialFilter: .all,
-                                initialMerchantName: item.merchantName
+                                initialMerchantName: item.merchantName,
+                                initialTotalAmount: item.totalSpent,
+                                initialTransactionCount: item.transactionCount
                             )
                         )
                     }
@@ -174,13 +181,15 @@ struct PulseTabView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: PulseDestination.self) { destination in
             switch destination {
-            case .transactions(let startDate, let endDate, let title, let initialFilter, let initialMerchantName):
+            case .transactions(let startDate, let endDate, let title, let initialFilter, let initialMerchantName, let initialTotalAmount, let initialTransactionCount):
                 AllTransactionsView(
                     startDate: startDate,
                     endDate: endDate,
                     title: title,
                     initialFilter: initialFilter,
-                    initialMerchantName: initialMerchantName
+                    initialMerchantName: initialMerchantName,
+                    initialTotalAmount: initialTotalAmount,
+                    initialTransactionCount: initialTransactionCount
                 )
             }
         }
@@ -215,7 +224,10 @@ struct PulseTabView: View {
                                 startDate: current.startDate,
                                 endDate: current.endDate,
                                 title: title,
-                                initialFilter: filter
+                                initialFilter: filter,
+                                initialMerchantName: nil,
+                                initialTotalAmount: item.totalAmount,
+                                initialTransactionCount: item.transactionCount
                             )
                         )
                     },
@@ -544,7 +556,9 @@ enum PulseDestination: Hashable {
         endDate: String,
         title: String,
         initialFilter: TransactionFilterValue? = nil,
-        initialMerchantName: String? = nil
+        initialMerchantName: String? = nil,
+        initialTotalAmount: Double? = nil,
+        initialTransactionCount: Int? = nil
     )
 }
 

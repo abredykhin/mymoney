@@ -369,6 +369,7 @@ class BudgetService: ObservableObject {
     @Published var extraIncomeThisMonth: Double = 0
     @Published var variableSpend: Double = 0
     // Previous-period spend for delta comparison in LiquidHeroView
+    @Published var previousDayVariableSpend: Double = 0
     @Published var previousWeekVariableSpend: Double = 0
     @Published var previousMonthVariableSpend: Double = 0
     // Current-period actuals (actual calendar-week and today spend, not MTD prorations)
@@ -711,6 +712,11 @@ class BudgetService: ObservableObject {
         monthlyMandatoryExpenses = 0
         variableBudget = 0
         variableSpend = 0
+        previousDayVariableSpend = 0
+        previousWeekVariableSpend = 0
+        previousMonthVariableSpend = 0
+        currentWeekVariableSpend = 0
+        todayVariableSpend = 0
         Logger.d("BudgetService: Cleared cache")
     }
 
@@ -905,9 +911,10 @@ class BudgetService: ObservableObject {
         }
     }
 
-    /// Fetch all four comparison windows in a single DB round trip.
+    /// Fetch comparison windows used by the hero delta pill.
     private func fetchAllPeriodSpend() async {
         let ranges = PreviousPeriodDateRange.compute()
+        let previousDaySpend = await fetchVariableSpendRaw(start: ranges.yesterdayDate, end: ranges.yesterdayDate)
 
         struct Params: Encodable {
             let p_prev_week_start: String
@@ -944,11 +951,12 @@ class BudgetService: ObservableObject {
                 .execute()
                 .value
             if let row = rows.first {
+                previousDayVariableSpend   = previousDaySpend
                 previousWeekVariableSpend  = row.prevWeek
                 previousMonthVariableSpend = row.prevMonth
                 currentWeekVariableSpend   = row.currentWeek
                 todayVariableSpend         = row.today
-                Logger.d("BudgetService: Period spend — prevWk: \(row.prevWeek), prevMo: \(row.prevMonth), curWk: \(row.currentWeek), today: \(row.today)")
+                Logger.d("BudgetService: Period spend — prevDay: \(previousDaySpend), prevWk: \(row.prevWeek), prevMo: \(row.prevMonth), curWk: \(row.currentWeek), today: \(row.today)")
             }
         } catch {
             Logger.e("BudgetService: Failed to fetch period spend comparison: \(error)")
@@ -1219,4 +1227,3 @@ private struct HeroCardPaymentMatch: Codable {
         case personalFinanceSubcategory = "personal_finance_subcategory"
     }
 }
-

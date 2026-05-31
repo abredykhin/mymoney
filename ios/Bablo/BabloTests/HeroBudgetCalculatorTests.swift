@@ -17,10 +17,12 @@ struct HeroBudgetCalculatorTests {
         liquidCashAvailable: Double? = nil,
         spendingPlanMode: SpendingPlanMode = .monthlyPlan,
         upcomingUnpaid: Double = 0,
+        prevDay: Double = 0,
         prevWeek: Double = 300,
         prevMonth: Double = 1200,
         dayOfMonth: Int = 15,
-        daysInMonth: Int = 31
+        daysInMonth: Int = 31,
+        daysElapsedInWeek: Int = 1
     ) -> HeroBudgetCalculator {
         HeroBudgetCalculator(
             monthlyIncome: income,
@@ -33,10 +35,12 @@ struct HeroBudgetCalculatorTests {
             liquidCashAvailable: liquidCashAvailable,
             spendingPlanMode: spendingPlanMode,
             upcomingUnpaidExpenses: upcomingUnpaid,
+            previousDayVariableSpend: prevDay,
             previousWeekVariableSpend: prevWeek,
             previousMonthVariableSpend: prevMonth,
             dayOfMonth: dayOfMonth,
-            daysInMonth: daysInMonth
+            daysInMonth: daysInMonth,
+            daysElapsedInWeek: daysElapsedInWeek
         )
     }
 
@@ -54,6 +58,77 @@ struct HeroBudgetCalculatorTests {
         #expect(breakdown.finalAmount == c.spendable(for: .month))
         #expect(breakdown.reconciledAmount == c.spendable(for: .month))
         #expect(breakdown.steps.map(\.amount).reduce(0, +) == c.spendable(for: .month))
+    }
+
+    @Test func cushionSnapshotComparesSpendableRoomAgainstPreviousPeriod() {
+        let c = calc(
+            income: 5_000,
+            mandatory: 2_000,
+            variableSpend: 700,
+            currentWeekVariableSpend: 188,
+            prevWeek: 230,
+            daysInMonth: 30
+        )
+
+        let snapshot = HeroCushionSnapshot(calculator: c, period: .week)
+
+        #expect(snapshot?.currentRoom == c.spendable(for: .week))
+        #expect(snapshot?.roomDelta == 42)
+        #expect(snapshot?.previousRoom == c.spendable(for: .week) - 42)
+        #expect(snapshot?.hasMoreRoom == true)
+    }
+
+    @Test func cushionSnapshotNilWhenIncomeBudgetIsUnavailable() {
+        let c = calc(
+            income: 0,
+            mandatory: 0,
+            variableSpend: 200,
+            prevMonth: 300
+        )
+
+        let snapshot = HeroCushionSnapshot(calculator: c, period: .month)
+
+        #expect(snapshot == nil)
+    }
+
+    @Test func cushionSnapshotSupportsDayComparison() {
+        let c = calc(todayVariableSpend: 0, prevDay: 32)
+
+        let snapshot = HeroCushionSnapshot(calculator: c, period: .day)
+
+        #expect(snapshot != nil)
+        #expect(snapshot?.roomDelta == 32)
+        #expect(snapshot?.hasMoreRoom == true)
+    }
+
+    @Test func cushionVerdictHeadlineShowsStillOverWhenCurrentRoomIsNegativeButImproved() throws {
+        let c = calc(
+            income: 5_000,
+            mandatory: 2_000,
+            variableSpend: 3_000,
+            currentWeekVariableSpend: 2_628,
+            prevWeek: 22_676,
+            daysInMonth: 31
+        )
+        let snapshot = try #require(HeroCushionSnapshot(calculator: c, period: .week))
+
+        #expect(snapshot.currentRoom < 0)
+        #expect(snapshot.roomDelta > 0)
+        #expect(CushionVerdictCopy.headline(for: snapshot, comparisonName: "last week") == "Still over, but better than last week.")
+    }
+
+    @Test func cushionDriversInvertSpendDeltaIntoRoomDelta() {
+        let items = [
+            CategoryBreakdownItem(bucket: .category(.eatsOut), totalAmount: 49, transactionCount: 3, percentOfTotal: 0.4, previousAmount: 80),
+            CategoryBreakdownItem(bucket: .category(.shopping), totalAmount: 48, transactionCount: 2, percentOfTotal: 0.3, previousAmount: 30),
+            CategoryBreakdownItem(bucket: .category(.gettingAround), totalAmount: 28, transactionCount: 2, percentOfTotal: 0.2, previousAmount: 40),
+        ]
+
+        let drivers = HeroCushionDriver.drivers(from: items)
+
+        #expect(drivers.map(\.roomDelta) == [31, -18, 12])
+        #expect(drivers[0].kind == .grew)
+        #expect(drivers[1].kind == .shrank)
     }
 
     @Test func breakdownReconcilesWeekToHeroSpendable() {
@@ -442,9 +517,9 @@ struct HeroBudgetCalculatorTests {
         #expect(label!.hasPrefix("-"))
     }
 
-    @Test func deltaLabelNilWhenOnlyPreviousImportedHistoryExists() {
+    @Test func deltaLabelShownWhenOnlyPreviousPeriodHasSpend() {
         let c = calc(variableSpend: 0, prevMonth: 25_878)
-        #expect(c.deltaLabel(for: .month) == nil)
+        #expect(c.deltaLabel(for: .month) == "+$26K vs last mo")
     }
 
     /// Delta label must appear when actual income is received (knownIncome > 0),
@@ -460,20 +535,39 @@ struct HeroBudgetCalculatorTests {
         #expect(label!.hasPrefix("+"))   // prev(3000) > curr(1000) → +$2,000 vs last mo
     }
 
-    @Test func deltaLabelNilForDayPeriod() {
-        // Day delta is intentionally unsupported
-        let c = calc()
-        #expect(c.deltaLabel(for: .day) == nil)
+    @Test func deltaLabelNilWhenIncomeBudgetIsUnavailable() {
+        let c = calc(
+            income: 0,
+            mandatory: 0,
+            variableSpend: 200,
+            prevMonth: 300
+        )
+        let label = c.deltaLabel(for: .month)
+        #expect(label == nil)
     }
 
-    /// Previous month had extraordinary spending beyond the discretionary budget
-    /// (e.g. large legal fees). Comparing remaining budget against a fictional negative
-    /// baseline is meaningless — the label must be hidden.
-    @Test func deltaLabelMonthHiddenWhenPreviousMonthExceededBudget() {
+    @Test func deltaLabelDayPositiveWhenSpentLessThanYesterday() {
+        let c = calc(todayVariableSpend: 0, prevDay: 42)
+        #expect(c.deltaLabel(for: .day) == "+$42 vs yesterday")
+    }
+
+    @Test func deltaLabelDayNegativeWhenSpentMoreThanYesterday() {
+        let c = calc(todayVariableSpend: 64, prevDay: 12)
+        #expect(c.deltaLabel(for: .day) == "-$52 vs yesterday")
+    }
+
+    @Test func deltaLabelWeekShownWhenCurrentWeekIsZeroButPreviousWeekHasSpend() {
+        let c = calc(variableSpend: 0, currentWeekVariableSpend: 0, prevWeek: 88)
+        #expect(c.deltaLabel(for: .week) == "+$88 vs last wk")
+    }
+
+    /// The pill compares spend period over period, so it should still appear when
+    /// last period exceeded the current budget model.
+    @Test func deltaLabelMonthShownWhenPreviousMonthExceededBudget() {
         // income=10990, mandatory=4366 → discretionary=6624
-        // prevMonthSpend=30900 > 6624 → nil
+        // prevMonthSpend=30900 > 6624, but spend comparison is still meaningful.
         let c = calc(income: 10_990, mandatory: 4_366, variableSpend: 5_990, prevMonth: 30_900)
-        #expect(c.deltaLabel(for: .month) == nil)
+        #expect(c.deltaLabel(for: .month) == "+$25K vs last mo")
     }
 
     /// Previous month within budget — delta is a valid remaining-budget comparison and must show.
@@ -484,11 +578,24 @@ struct HeroBudgetCalculatorTests {
         #expect(c.deltaLabel(for: .month) != nil)
     }
 
-    /// Same guard for weeks: if the previous week blew its budget, hide the label.
-    @Test func deltaLabelWeekHiddenWhenPreviousWeekExceededBudget() {
-        // discretionary=3000/31*7≈677, prevWeek=1500 > 677 → nil
+    /// Same behavior for weeks: the chip remains a real week-over-week comparison.
+    @Test func deltaLabelWeekShownWhenPreviousWeekExceededBudget() {
+        // discretionary=3000/31*7≈677, prevWeek=1500 > 677, still shown.
         let c = calc(income: 5_000, mandatory: 2_000, currentWeekVariableSpend: 200, prevWeek: 1_500)
-        #expect(c.deltaLabel(for: .week) == nil)
+        #expect(c.deltaLabel(for: .week) == "+$1.3K vs last wk")
+    }
+
+    @Test func deltaLabelWeekCurrentInRedImprovedUsesInTheRedCopy() {
+        // Weekly room is about -$1,951, but last week was much deeper in the red.
+        let c = calc(
+            income: 5_000,
+            mandatory: 2_000,
+            currentWeekVariableSpend: 2_628,
+            prevWeek: 22_676,
+            daysInMonth: 31
+        )
+        #expect(c.spendable(for: .week) < 0)
+        #expect(c.deltaLabel(for: .week) == "$20K less in the red vs last wk")
     }
 
     // MARK: - Monthly cap: week/day cannot exceed what's left for the month
@@ -777,5 +884,47 @@ struct HeroBudgetCalculatorTests {
         // weekly remaining without capping would be 2165 - 7511 = -5346 (wait, if monthlyRemainingBeforeThisWeek was 9000 - (15568 - 7511) = 9000 - 8057 = 943. So rawWeek budget is 943. So raw weekly remaining is 943 - 7511 = -6568).
         // Let's check that the weekly overspending matches monthly overspending and does not exceed it.
         #expect(abs(c.spendable(for: .week) - c.spendable(for: .month)) < 0.01)
+    }
+
+    @Test func weekSpanningMonthBoundaryDoesNotStarveWhenMonthOverspent() {
+        let c = calc(
+            income: 10_000,
+            mandatory: 0,
+            knownIncome: 10_000, // payroll lands, preventing paycheck illusion decay
+            variableSpend: 15_000,
+            currentWeekVariableSpend: 0,
+            liquidCashAvailable: 5_000,
+            spendingPlanMode: .safeToSpend,
+            dayOfMonth: 30,
+            daysInMonth: 30,
+            daysElapsedInWeek: 1 // Sunday May 30th (last day of 30-day month)
+        )
+        // dailyDiscretionary = 10000 / 30 = 333.33
+        // 1 day in current month (May), 6 days in next month (June)
+        // May budget part capped at 0 because month is overspent.
+        // June budget part uncapped: 6 * 333.333 = 2000.
+        // So week budget should be exactly 2000.
+        #expect(abs(c.budget(for: .week) - 2000.0) < 1.0)
+        #expect(c.spendable(for: .week) == 0.0) // unspent week in overspent month resets to 0 remaining room
+    }
+
+    @Test func weekNegativeSpendableCappedByOverspentMonth() {
+        let c = calc(
+            income: 10_000,
+            mandatory: 0,
+            variableSpend: 15_000,
+            currentWeekVariableSpend: 0,
+            liquidCashAvailable: 2_000, // safe cash = 2000
+            spendingPlanMode: .safeToSpend,
+            dayOfMonth: 15,
+            daysInMonth: 30,
+            daysElapsedInWeek: 1
+        )
+        // monthly discretionary = 10000
+        // safeCash = 2000
+        // monthly budget = min(10000, 2000 + 15000) = 10000
+        // monthly remaining = 10000 - 15000 = -5000
+        // safeMonthlyRemaining < 0, but rawSpendable is 0, so max(0, -5000) = 0
+        #expect(c.spendable(for: .week) == 0)
     }
 }
