@@ -36,7 +36,10 @@ struct AllTransactionsView: View {
             sortOptions: TransactionSortOption.allCases.map { BabloSortOption(id: $0, title: $0.title) },
             selectedSort: $selectedSort,
             resultsCountLabel: "\(processedTransactions.count) RESULTS",
-            dismissAction: { dismiss() }
+            dismissAction: { dismiss() },
+            showDragHandle: false,
+            showCloseButton: false,
+            showBackButton: true
         ) {
             if isLoading {
                 ProgressView()
@@ -438,9 +441,14 @@ struct TransactionSheetRow: View {
                     .fill(theme.colors.surfaceMuted.color)
                     .frame(width: 36, height: 36)
                 
-                Image(systemName: presentation.iconName)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(theme.colors.textPrimary.color)
+                if presentation.usesSystemIcon {
+                    Image(systemName: presentation.iconName)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(theme.colors.textPrimary.color)
+                } else {
+                    Text(presentation.iconName)
+                        .font(.system(size: 17))
+                }
             }
             
             VStack(alignment: .leading, spacing: 2) {

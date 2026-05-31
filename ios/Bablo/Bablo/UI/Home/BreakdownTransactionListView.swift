@@ -472,6 +472,7 @@ struct TransactionDetailSheet: View {
     @State private var showRepeatFrequencyDialog = false
     @State private var merchantHistoryTransactions: [Transaction] = []
     @State private var hasLoadedMerchantHistory = false
+    @State private var selectedBarIndex: Int = 11
 
     private let onTransactionChanged: (Transaction) -> Void
 
@@ -563,9 +564,9 @@ struct TransactionDetailSheet: View {
                 Text(transaction.displayName)
                     .font(theme.typography.title(size: 20, weight: .black))
                     .foregroundStyle(theme.colors.textPrimary.color)
-                    .lineLimit(2)
+                    .lineLimit(nil)
                     .multilineTextAlignment(.center)
-                    .minimumScaleFactor(0.78)
+                    .padding(.horizontal, 24)
 
                 Text(transactionSubtitle)
                     .font(theme.typography.mono(size: 11, weight: .bold))
@@ -662,13 +663,37 @@ struct TransactionDetailSheet: View {
             }
 
             ZStack {
-                HStack(alignment: .bottom, spacing: 7) {
-                    ForEach(Array(merchantWeeklyBars.enumerated()), id: \.offset) { index, value in
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(index == merchantWeeklyBars.count - 1 ? theme.colors.accent.color : theme.colors.accent.color.opacity(0.35))
-                            .opacity(value > 0 ? 1 : 0)
-                            .frame(height: value > 0 ? 14 + CGFloat(value) * 58 : 0)
+                GeometryReader { geometry in
+                    HStack(alignment: .bottom, spacing: 7) {
+                        ForEach(Array(merchantWeeklyBars.enumerated()), id: \.offset) { index, value in
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(index == selectedBarIndex ? theme.colors.accent.color : theme.colors.accent.color.opacity(0.35))
+                                .opacity(value > 0 ? 1 : 0)
+                                .frame(height: value > 0 ? 14 + CGFloat(value) * 58 : 0)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    if value > 0 {
+                                        selectedBarIndex = index
+                                    }
+                                }
+                        }
                     }
+                    .frame(height: 80, alignment: .bottom)
+                    .contentShape(Rectangle())
+                    .highPriorityGesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                let width = geometry.size.width
+                                guard width > 0 else { return }
+                                let x = value.location.x
+                                let percentage = x / width
+                                let index = Int(percentage * CGFloat(merchantWeeklyBars.count))
+                                let clampedIndex = max(0, min(merchantWeeklyBars.count - 1, index))
+                                if merchantWeeklySpendValues[clampedIndex] > 0 {
+                                    selectedBarIndex = clampedIndex
+                                }
+                            }
+                    )
                 }
 
                 if !hasPriorMerchantSpend {
@@ -1182,11 +1207,25 @@ struct TransactionDetailSheet: View {
     }
 
     private var merchantSummaryText: String {
-        merchantSpendPresentation.summaryText
+        let data = merchantWeeklySpendData
+        guard selectedBarIndex >= 0 && selectedBarIndex < data.count else {
+            return "No spend"
+        }
+        let weekData = data[selectedBarIndex]
+        let label = formatWeekLabel(forWeekStart: weekData.weekStart, isThisWeek: weekData.isThisWeek)
+        guard weekData.transactionCount > 0 else {
+            return "No spend \(label)"
+        }
+        return "\(weekData.transactionCount)x spend \(label)"
     }
 
     private var merchantThisWeekAmount: String {
-        merchantSpendPresentation.amountText
+        let data = merchantWeeklySpendData
+        guard selectedBarIndex >= 0 && selectedBarIndex < data.count else {
+            return "$0"
+        }
+        let weekData = data[selectedBarIndex]
+        return NumberFormatter.currency.string(from: NSNumber(value: weekData.totalSpent)) ?? "$\(Int(weekData.totalSpent.rounded()))"
     }
 
     private var merchantSpendPresentation: MerchantSpendPresentation {
@@ -1231,22 +1270,64 @@ struct TransactionDetailSheet: View {
         return values.map { $0 > 0 ? $0 / maxValue : 0 }
     }
 
-    private var merchantWeeklySpendValues: [Double] {
+    private struct MerchantWeeklySpendData {
+        let weekStart: Date
+        let weekEnd: Date
+        let totalSpent: Double
+        let transactionCount: Int
+        let isThisWeek: Bool
+    }
+
+    private var merchantWeeklySpendData: [MerchantWeeklySpendData] {
         let calendar = Calendar.bablo
         let startOfThisWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
         return (0..<12).reversed().map { offset in
             guard let weekStart = calendar.date(byAdding: .weekOfYear, value: -offset, to: startOfThisWeek),
                   let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) else {
-                return 0
+                return MerchantWeeklySpendData(weekStart: Date(), weekEnd: Date(), totalSpent: 0, transactionCount: 0, isThisWeek: offset == 0)
             }
-            return merchantTransactionsForBars.reduce(0) { total, tx in
-                guard let date = parsedDate(tx.spend_date ?? tx.authorized_date ?? tx.date),
-                      date >= weekStart && date < weekEnd else {
-                    return total
-                }
-                return total + tx.absoluteAmount
+            let txs = merchantTransactionsForBars.filter { tx in
+                guard let date = parsedDate(tx.spend_date ?? tx.authorized_date ?? tx.date) else { return false }
+                return date >= weekStart && date < weekEnd
             }
+            let total = txs.reduce(0) { $0 + $1.absoluteAmount }
+            return MerchantWeeklySpendData(
+                weekStart: weekStart,
+                weekEnd: weekEnd,
+                totalSpent: total,
+                transactionCount: txs.count,
+                isThisWeek: offset == 0
+            )
         }
+    }
+
+    private var merchantWeeklySpendValues: [Double] {
+        merchantWeeklySpendData.map { $0.totalSpent }
+    }
+
+    private func ordinalSuffix(for day: Int) -> String {
+        if (11...13).contains(day) {
+            return "th"
+        }
+        switch day % 10 {
+        case 1:  return "st"
+        case 2:  return "nd"
+        case 3:  return "rd"
+        default: return "th"
+        }
+    }
+
+    private func formatWeekLabel(forWeekStart weekStart: Date, isThisWeek: Bool) -> String {
+        if isThisWeek {
+            return "this week"
+        }
+        let calendar = Calendar.bablo
+        let monthFormatter = DateFormatter()
+        monthFormatter.dateFormat = "MMMM"
+        monthFormatter.locale = Locale(identifier: "en_US_POSIX")
+        let monthStr = monthFormatter.string(from: weekStart)
+        let day = calendar.component(.day, from: weekStart)
+        return "Week of \(monthStr) \(day)\(ordinalSuffix(for: day))"
     }
 
     private var hasPriorMerchantSpend: Bool {
@@ -1277,9 +1358,9 @@ struct TransactionDetailSheet: View {
     }
 
     private var fallbackEmoji: String {
-        if transaction.isIncome { return "$" }
-        if transaction.isActualTransfer { return "<>" }
-        return "*"
+        if transaction.isIncome { return "💰" }
+        if transaction.isActualTransfer || transaction.isTransfer { return "↔️" }
+        return "💳"
     }
 
     private func lookupAccount(id: Int) -> BankAccount? {

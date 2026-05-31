@@ -23,9 +23,6 @@ struct StreakWidgetView: View {
     }
 
     private var streakMessage: String {
-        guard streakService.userStreak != nil else {
-            return "No bank accounts linked yet."
-        }
         if currentStreak == 0 {
             return "over budget today. Start fresh!"
         } else if currentStreak >= maxStreak && maxStreak > 0 {

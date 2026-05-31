@@ -37,34 +37,101 @@ struct BabloListSheet<FilterValue: Hashable, SortValue: Hashable, Content: View>
     let dismissAction: () -> Void
     var periodSelector: AnyView? = nil
     
+    // Custom configurations
+    let showDragHandle: Bool
+    let showCloseButton: Bool
+    let showBackButton: Bool
+    
     @ViewBuilder let content: () -> Content
     
     @Environment(\.babloTheme) private var theme
+    
+    init(
+        categoryLabel: String,
+        title: String,
+        subtitle: String,
+        searchPlaceholder: String,
+        searchQuery: Binding<String>,
+        filterChips: [BabloFilterChip<FilterValue>],
+        selectedFilter: Binding<FilterValue>,
+        sortOptions: [BabloSortOption<SortValue>],
+        selectedSort: Binding<SortValue>,
+        resultsCountLabel: String,
+        dismissAction: @escaping () -> Void,
+        periodSelector: AnyView? = nil,
+        showDragHandle: Bool = true,
+        showCloseButton: Bool = true,
+        showBackButton: Bool = false,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.categoryLabel = categoryLabel
+        self.title = title
+        self.subtitle = subtitle
+        self.searchPlaceholder = searchPlaceholder
+        self._searchQuery = searchQuery
+        self.filterChips = filterChips
+        self._selectedFilter = selectedFilter
+        self.sortOptions = sortOptions
+        self._selectedSort = selectedSort
+        self.resultsCountLabel = resultsCountLabel
+        self.dismissAction = dismissAction
+        self.periodSelector = periodSelector
+        self.showDragHandle = showDragHandle
+        self.showCloseButton = showCloseButton
+        self.showBackButton = showBackButton
+        self.content = content
+    }
     
     var body: some View {
         let isPopArt = theme.effects.isPopArt
         
         VStack(spacing: 0) {
-            // Drag Indicator Handle
-            Capsule()
-                .fill(theme.colors.textSecondary.color.opacity(0.2))
-                .frame(width: 36, height: 5)
-                .padding(.top, 10)
-                .padding(.bottom, 16)
+            if showDragHandle {
+                // Drag Indicator Handle
+                Capsule()
+                    .fill(theme.colors.textSecondary.color.opacity(0.2))
+                    .frame(width: 36, height: 5)
+                    .padding(.top, 10)
+                    .padding(.bottom, 16)
+            } else {
+                Spacer()
+                    .frame(height: 16)
+            }
             
             // Header: Category, Title, Subtitle, Close Button & Optional Period Control
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(categoryLabel)
-                            .font(theme.typography.mono(size: 11, weight: .bold))
-                            .tracking(theme.typography.labelTracking)
-                            .textCase(.uppercase)
-                            .foregroundStyle(theme.colors.textTertiary.color)
+                    HStack(alignment: .center, spacing: 12) {
+                        if showBackButton {
+                            Button(action: dismissAction) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundStyle(theme.colors.textPrimary.color)
+                                    .frame(width: 32, height: 32)
+                                    .background(theme.colors.surfaceMuted.color)
+                                    .clipShape(Circle())
+                                    .overlay {
+                                        if isPopArt {
+                                            Circle()
+                                                .stroke(theme.colors.lineStrong.color, lineWidth: 1.5)
+                                        }
+                                    }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Back")
+                        }
                         
-                        Text(title)
-                            .font(theme.typography.title(size: 26, weight: isPopArt ? .black : .bold))
-                            .foregroundStyle(theme.colors.textPrimary.color)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(categoryLabel)
+                                .font(theme.typography.mono(size: 11, weight: .bold))
+                                .tracking(theme.typography.labelTracking)
+                                .textCase(.uppercase)
+                                .foregroundStyle(theme.colors.textTertiary.color)
+                            
+                            Text(title)
+                                .font(theme.typography.title(size: 26, weight: isPopArt ? .black : .bold))
+                                .foregroundStyle(theme.colors.textPrimary.color)
+                        }
                     }
                     
                     Spacer()
@@ -74,22 +141,24 @@ struct BabloListSheet<FilterValue: Hashable, SortValue: Hashable, Content: View>
                             periodSelector
                         }
                         
-                        Button(action: dismissAction) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(theme.colors.textPrimary.color)
-                                .frame(width: 32, height: 32)
-                                .background(theme.colors.surfaceMuted.color)
-                                .clipShape(Circle())
-                                .overlay {
-                                    if isPopArt {
-                                        Circle()
-                                            .stroke(theme.colors.lineStrong.color, lineWidth: 1.5)
+                        if showCloseButton {
+                            Button(action: dismissAction) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundStyle(theme.colors.textPrimary.color)
+                                    .frame(width: 32, height: 32)
+                                    .background(theme.colors.surfaceMuted.color)
+                                    .clipShape(Circle())
+                                    .overlay {
+                                        if isPopArt {
+                                            Circle()
+                                                .stroke(theme.colors.lineStrong.color, lineWidth: 1.5)
+                                        }
                                     }
-                                }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Close")
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Close")
                     }
                 }
                 

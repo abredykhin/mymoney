@@ -265,7 +265,7 @@ struct HeroBudgetBreakdownCalculator {
     }
 
     /// Step number that contains the variable-spending rows (always the last step).
-    var spendStepNumber: Int { 2 }
+    var spendStepNumber: Int { mandatoryStepNumber != nil ? 3 : 2 }
 
     /// Step number for the monthly obligations rows, or nil when there is no such step.
     var mandatoryStepNumber: Int? {

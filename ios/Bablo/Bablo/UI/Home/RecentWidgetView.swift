@@ -30,10 +30,14 @@ struct RecentWidgetView: View {
                 Button {
                     navigationState.homeNavPath.append(HomeDestination.allTransactions)
                 } label: {
-                    Text("All >")
-                        .font(theme.typography.body(size: 13, weight: .bold))
-                        .foregroundStyle(theme.colors.textTertiary.color)
-                        .padding(.top, 3)
+                    HStack(spacing: 4) {
+                        Text("All")
+                            .font(theme.typography.body(size: 13, weight: .bold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundStyle(theme.colors.textTertiary.color)
+                    .padding(.top, 3)
                 }
                 .buttonStyle(.plain)
             }

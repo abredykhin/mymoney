@@ -446,7 +446,6 @@ private struct BreakdownStepCard: View {
                 .font(theme.typography.title(size: 18, weight: .black))
                 .foregroundStyle(theme.colors.textPrimary.color)
                 .lineLimit(2)
-                .minimumScaleFactor(0.82)
                 .fixedSize(horizontal: false, vertical: true)
 
             Spacer(minLength: 8)
