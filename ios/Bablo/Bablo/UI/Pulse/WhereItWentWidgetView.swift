@@ -17,7 +17,7 @@ private extension FlexibleSpendingCategory {
     }
 }
 
-private extension SpendingBucket {
+extension SpendingBucket {
     var displayName: String {
         switch self {
         case .category(let cat): return cat.shortName
@@ -54,6 +54,7 @@ struct WhereItWentWidgetView: View {
     var isLoading: Bool = false
     var error: Error? = nil
     var retry: (() -> Void)? = nil
+    var onItemTapped: ((CategoryBreakdownItem) -> Void)? = nil
 
     @State private var sortOrder: CategorySortOrder = .amount
     @Environment(\.babloTheme) private var theme
@@ -153,7 +154,13 @@ struct WhereItWentWidgetView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(sortedItems) { item in
-                        CategoryRow(item: item, theme: theme)
+                        Button {
+                            onItemTapped?(item)
+                        } label: {
+                            CategoryRow(item: item, theme: theme)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
 
                         if item.id != sortedItems.last?.id {
                             Divider()

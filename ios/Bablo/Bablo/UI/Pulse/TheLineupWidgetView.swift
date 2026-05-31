@@ -9,6 +9,7 @@ struct TheLineupWidgetView: View {
     var error: Error? = nil
     var retry: (() -> Void)? = nil
     var onAllTapped: (() -> Void)? = nil
+    var onItemTapped: ((TopMerchantItem) -> Void)? = nil
 
     @Environment(\.babloTheme) private var theme
 
@@ -73,13 +74,19 @@ struct TheLineupWidgetView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        LineupRow(
-                            rank: index + 1,
-                            item: item,
-                            totalSpentOfPeriod: totalSpentOfPeriod,
-                            items: items,
-                            theme: theme
-                        )
+                        Button {
+                            onItemTapped?(item)
+                        } label: {
+                            LineupRow(
+                                rank: index + 1,
+                                item: item,
+                                totalSpentOfPeriod: totalSpentOfPeriod,
+                                items: items,
+                                theme: theme
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
 
                         if index < items.count - 1 {
                             Divider()

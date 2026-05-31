@@ -4,16 +4,27 @@ struct AllTransactionsView: View {
     let startDate: String?
     let endDate: String?
     let customTitle: String?
+    let initialFilter: TransactionFilterValue?
+    let initialMerchantName: String?
 
-    init(startDate: String? = nil, endDate: String? = nil, title: String? = nil) {
+    init(
+        startDate: String? = nil,
+        endDate: String? = nil,
+        title: String? = nil,
+        initialFilter: TransactionFilterValue? = nil,
+        initialMerchantName: String? = nil
+    ) {
         self.startDate = startDate
         self.endDate = endDate
         self.customTitle = title
+        self.initialFilter = initialFilter
+        self.initialMerchantName = initialMerchantName
         
-        // If opened for a specific energy period (startDate & endDate are present),
-        // default the active filter to spending (.out) so that count & totals match
-        // the energy widget's bar total. Otherwise, default to all recent activity (.all).
-        if startDate != nil && endDate != nil {
+        self._searchQuery = State(initialValue: initialMerchantName ?? "")
+        
+        if let initialFilter {
+            self._selectedFilter = State(initialValue: initialFilter)
+        } else if startDate != nil && endDate != nil {
             self._selectedFilter = State(initialValue: .out)
         } else {
             self._selectedFilter = State(initialValue: .all)
@@ -28,7 +39,7 @@ struct AllTransactionsView: View {
     @StateObject private var sheetTransactionsService = TransactionsService()
     
     // Search, Filter & Sort State
-    @State private var searchQuery: String = ""
+    @State private var searchQuery: String
     @State private var selectedFilter: TransactionFilterValue
     @State private var selectedSort: TransactionSortOption = .newestFirst
     @State private var isLoading = false

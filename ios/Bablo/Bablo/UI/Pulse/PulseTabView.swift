@@ -54,7 +54,27 @@ struct PulseTabView: View {
                     items: pulseService.categoryBreakdown ?? [],
                     isLoading: pulseService.isLoadingBreakdown,
                     error: pulseService.categoryBreakdownError,
-                    retry: { Task { await loadBreakdown() } }
+                    retry: { Task { await loadBreakdown() } },
+                    onItemTapped: { item in
+                        let current = selectedPeriod.currentWindow
+                        let title = item.bucket.displayName
+                        let initialFilter: TransactionFilterValue
+                        switch item.bucket {
+                        case .category(let cat):
+                            initialFilter = .category(cat)
+                        case .rest:
+                            initialFilter = .other
+                        }
+                        navigationState.pulseNavPath.append(
+                            PulseDestination.transactions(
+                                startDate: current.startDate,
+                                endDate: current.endDate,
+                                title: title,
+                                initialFilter: initialFilter,
+                                initialMerchantName: nil
+                            )
+                        )
+                    }
                 )
                 .padding(.horizontal, theme.metrics.screenPadding)
 
@@ -78,7 +98,19 @@ struct PulseTabView: View {
                     isLoading: pulseService.isLoadingTopMerchants,
                     error: pulseService.topMerchantsError,
                     retry: { Task { await loadTopMerchants() } },
-                    onAllTapped: { isShowingAllMerchants = true }
+                    onAllTapped: { isShowingAllMerchants = true },
+                    onItemTapped: { item in
+                        let current = selectedPeriod.currentWindow
+                        navigationState.pulseNavPath.append(
+                            PulseDestination.transactions(
+                                startDate: current.startDate,
+                                endDate: current.endDate,
+                                title: item.merchantName,
+                                initialFilter: .all,
+                                initialMerchantName: item.merchantName
+                            )
+                        )
+                    }
                 )
                 .padding(.horizontal, theme.metrics.screenPadding)
             }
@@ -108,8 +140,14 @@ struct PulseTabView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: PulseDestination.self) { destination in
             switch destination {
-            case .transactions(let startDate, let endDate, let title):
-                AllTransactionsView(startDate: startDate, endDate: endDate, title: title)
+            case .transactions(let startDate, let endDate, let title, let initialFilter, let initialMerchantName):
+                AllTransactionsView(
+                    startDate: startDate,
+                    endDate: endDate,
+                    title: title,
+                    initialFilter: initialFilter,
+                    initialMerchantName: initialMerchantName
+                )
             }
         }
         .sheet(isPresented: $isShowingAllMerchants) {
@@ -416,7 +454,13 @@ enum PulsePeriod: String, CaseIterable, Hashable {
 }
 
 enum PulseDestination: Hashable {
-    case transactions(startDate: String, endDate: String, title: String)
+    case transactions(
+        startDate: String,
+        endDate: String,
+        title: String,
+        initialFilter: TransactionFilterValue? = nil,
+        initialMerchantName: String? = nil
+    )
 }
 
 struct PulseDateWindow {
