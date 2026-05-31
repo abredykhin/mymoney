@@ -154,7 +154,11 @@ struct AllTransactionsView: View {
         .babloScreenBackground()
         .navigationBarBackButtonHidden(true)
         .sheet(item: $selectedTransaction) { txn in
-            TransactionDetailSheet(transaction: txn)
+            TransactionDetailSheet(transaction: txn) { updated in
+                selectedTransaction = updated
+                sheetTransactionsService.replaceTransaction(updated)
+            }
+                .environmentObject(sheetTransactionsService)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }

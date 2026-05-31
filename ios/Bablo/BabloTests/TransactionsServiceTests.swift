@@ -221,6 +221,18 @@ struct TransactionsServiceTests {
         #expect(transfer.isActualTransfer == true)
     }
 
+    @Test func testFlexibleSpendingCategoriesProvideWritableTransactionCategoryPairs() {
+        for category in FlexibleSpendingCategory.allCases {
+            let write = category.transactionCategoryWrite
+
+            #expect(FlexibleSpendingCategory.map(primary: write.primary, detailed: write.detailed) == category)
+        }
+
+        let transport = FlexibleSpendingCategory.gettingAround.transactionCategoryWrite
+        #expect(transport.primary == "TRANSPORTATION")
+        #expect(transport.detailed == "TRANSPORTATION_TAXIS_AND_RIDE_SHARES")
+    }
+
     
     @Test func testTransactionDateEdgeCases() {
         func makeTx(date: String) -> Transaction {

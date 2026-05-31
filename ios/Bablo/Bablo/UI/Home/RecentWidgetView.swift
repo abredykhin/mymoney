@@ -4,6 +4,7 @@ struct RecentWidgetView: View {
     @EnvironmentObject private var transactionsService: TransactionsService
     @EnvironmentObject private var navigationState: NavigationState
     @Environment(\.babloTheme) private var theme
+    @State private var selectedTransaction: Transaction?
 
     private var recentTransactions: [Transaction] {
         Array(transactionsService.transactions.prefix(8))
@@ -54,7 +55,12 @@ struct RecentWidgetView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(recentTransactions) { transaction in
-                        RecentTransactionRow(transaction: transaction)
+                        Button {
+                            selectedTransaction = transaction
+                        } label: {
+                            RecentTransactionRow(transaction: transaction)
+                        }
+                        .buttonStyle(.plain)
 
                         if transaction.id != recentTransactions.last?.id {
                             Divider()
@@ -81,6 +87,14 @@ struct RecentWidgetView: View {
             x: isPopArt ? 3 : 0,
             y: isPopArt ? 3 : 6
         )
+        .sheet(item: $selectedTransaction) { txn in
+            TransactionDetailSheet(transaction: txn) { updated in
+                selectedTransaction = updated
+                transactionsService.replaceTransaction(updated)
+            }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
     }
 }
 

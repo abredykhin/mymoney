@@ -432,6 +432,41 @@ class TransactionsService: ObservableObject {
         }
     }
 
+    /// Recategorize exactly one transaction using the app's onboarding category set.
+    /// This intentionally updates the transaction row only, not matching merchants or streams.
+    func updateTransactionCategory(transactionId: Int, category: FlexibleSpendingCategory) async throws -> Transaction {
+        Logger.d("TransactionsService: Updating transaction \(transactionId) category to \(category.rawValue)")
+
+        do {
+            try await supabase
+                .from("transactions_table")
+                .update(category.transactionCategoryWrite)
+                .eq("id", value: transactionId)
+                .execute()
+
+            let updated: Transaction = try await supabase
+                .from("transactions")
+                .select()
+                .eq("id", value: transactionId)
+                .single()
+                .execute()
+                .value
+
+            replaceTransaction(updated)
+            Logger.i("TransactionsService: Updated transaction \(transactionId) category")
+            return updated
+        } catch {
+            Logger.e("TransactionsService: Failed to update transaction category: \(error)")
+            self.error = error
+            throw error
+        }
+    }
+
+    func replaceTransaction(_ updated: Transaction) {
+        guard let index = transactions.firstIndex(where: { $0.id == updated.id }) else { return }
+        transactions[index] = updated
+    }
+
     /// Clear cached transactions
     func clearCache() {
         transactions = []

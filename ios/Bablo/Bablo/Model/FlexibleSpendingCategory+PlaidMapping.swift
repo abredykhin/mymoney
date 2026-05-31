@@ -1,5 +1,15 @@
 import Foundation
 
+struct TransactionCategoryWrite: Encodable, Equatable {
+    let primary: String
+    let detailed: String
+
+    enum CodingKeys: String, CodingKey {
+        case primary = "personal_finance_category"
+        case detailed = "personal_finance_subcategory"
+    }
+}
+
 extension FlexibleSpendingCategory {
     /// Maps Plaid's `personal_finance_category` (primary) and optional
     /// `personal_finance_subcategory` (detailed) to a `FlexibleSpendingCategory`.
@@ -27,5 +37,50 @@ extension FlexibleSpendingCategory {
 
         // Income, transfers, loan payments, rent/utilities, bank fees, government → untracked
         return nil
+    }
+
+    var transactionCategoryWrite: TransactionCategoryWrite {
+        switch self {
+        case .eatsOut:
+            return TransactionCategoryWrite(
+                primary: "FOOD_AND_DRINK",
+                detailed: "FOOD_AND_DRINK_RESTAURANT"
+            )
+        case .coffeeRuns:
+            return TransactionCategoryWrite(
+                primary: "FOOD_AND_DRINK",
+                detailed: "FOOD_AND_DRINK_COFFEE"
+            )
+        case .groceries:
+            return TransactionCategoryWrite(
+                primary: "FOOD_AND_DRINK",
+                detailed: "FOOD_AND_DRINK_GROCERIES"
+            )
+        case .fun:
+            return TransactionCategoryWrite(
+                primary: "ENTERTAINMENT",
+                detailed: "ENTERTAINMENT_OTHER_ENTERTAINMENT"
+            )
+        case .shopping:
+            return TransactionCategoryWrite(
+                primary: "GENERAL_MERCHANDISE",
+                detailed: "GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE"
+            )
+        case .gettingAround:
+            return TransactionCategoryWrite(
+                primary: "TRANSPORTATION",
+                detailed: "TRANSPORTATION_TAXIS_AND_RIDE_SHARES"
+            )
+        case .selfCare:
+            return TransactionCategoryWrite(
+                primary: "PERSONAL_CARE",
+                detailed: "PERSONAL_CARE_OTHER_PERSONAL_CARE"
+            )
+        case .travel:
+            return TransactionCategoryWrite(
+                primary: "TRAVEL",
+                detailed: "TRAVEL_OTHER_TRAVEL"
+            )
+        }
     }
 }
