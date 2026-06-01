@@ -548,6 +548,8 @@ struct HeroCushionSnapshot: Equatable {
     let currentRoom: Double
     let previousRoom: Double
     let roomDelta: Double
+    let currentSpend: Double
+    let previousSpend: Double
 
     init?(calculator: HeroBudgetCalculator, period: HeroPeriod) {
         guard calculator.budget(for: period) > 0 else { return nil }
@@ -573,6 +575,8 @@ struct HeroCushionSnapshot: Equatable {
         guard abs(delta) >= 1 else { return nil }
 
         self.period = period
+        self.currentSpend = currentSpend
+        self.previousSpend = previousSpend
         self.currentRoom = calculator.spendable(for: period)
         self.roomDelta = delta
         self.previousRoom = self.currentRoom - delta

@@ -1085,15 +1085,10 @@ private struct CushionHeroComparisonCard: View {
     }
 
     private func calculateFillFraction(amount: Double, current: Double, previous: Double) -> Double {
-        if current >= 0 && previous >= 0 {
-            let maxVal = max(current, previous)
-            return maxVal > 0 ? amount / maxVal : 0.0
-        }
-        if current < 0 && previous < 0 {
-            let minAbs = min(abs(current), abs(previous))
-            return abs(amount) > 0 ? minAbs / abs(amount) : 0.0
-        }
-        return amount >= 0 ? 1.0 : 0.0
+        // amount, current, previous are spend values (always >= 0).
+        // Higher spend = bigger bar; the period with the most spend gets fraction 1.0.
+        let maxVal = max(current, previous)
+        return maxVal > 0 ? amount / maxVal : 0.0
     }
 
     var body: some View {
@@ -1134,14 +1129,14 @@ private struct CushionHeroComparisonCard: View {
                 roomRow(
                     title: period.previousPeriodLabel,
                     dateRange: period.previousWindowLabel,
-                    amount: snapshot.previousRoom,
+                    amount: snapshot.previousSpend,
                     isCurrent: false
                 )
 
                 roomRow(
                     title: period.currentPeriodLabel,
                     dateRange: period.currentWindowLabel,
-                    amount: snapshot.currentRoom,
+                    amount: snapshot.currentSpend,
                     isCurrent: true
                 )
             }
@@ -1161,7 +1156,7 @@ private struct CushionHeroComparisonCard: View {
 
     private func roomRow(title: String, dateRange: String, amount: Double, isCurrent: Bool) -> some View {
         let isPopArt = theme.effects.isPopArt
-        let rawFill = calculateFillFraction(amount: amount, current: snapshot.currentRoom, previous: snapshot.previousRoom)
+        let rawFill = calculateFillFraction(amount: amount, current: snapshot.currentSpend, previous: snapshot.previousSpend)
         let fillFraction = max(0.08, min(rawFill, 1.0))
 
         return VStack(alignment: .leading, spacing: 6) {
@@ -1320,7 +1315,7 @@ private struct CushionDriverRow: View {
             HStack(spacing: 0) {
                 ZStack(alignment: .trailing) {
                     Color.clear
-                    if driver.kind == .grew {
+                    if driver.kind == .shrank {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
                             .fill(color)
                             .frame(width: max(40 * CGFloat(barFraction), 4), height: 12)
@@ -1334,7 +1329,7 @@ private struct CushionDriverRow: View {
 
                 ZStack(alignment: .leading) {
                     Color.clear
-                    if driver.kind == .shrank {
+                    if driver.kind == .grew {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
                             .fill(color)
                             .frame(width: max(40 * CGFloat(barFraction), 4), height: 12)
