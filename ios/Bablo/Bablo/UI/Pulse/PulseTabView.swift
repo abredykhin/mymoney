@@ -120,9 +120,14 @@ struct PulseTabView: View {
                     isLoading: pulseService.isLoadingDailyEnergy,
                     error: pulseService.dailyEnergyError,
                     retry: { Task { await loadDailyEnergy() } },
-                    onBarTapped: { startDate, endDate, title in
+                    onBarTapped: { startDate, endDate, title, totalAmount in
                         navigationState.pulseNavPath.append(
-                            PulseDestination.transactions(startDate: startDate, endDate: endDate, title: title)
+                            PulseDestination.transactions(
+                                startDate: startDate,
+                                endDate: endDate,
+                                title: title,
+                                initialTotalAmount: totalAmount > 0 ? totalAmount : nil
+                            )
                         )
                     }
                 )
@@ -231,10 +236,15 @@ struct PulseTabView: View {
                             )
                         )
                     },
-                    onDayTapped: { startDate, endDate, title in
+                    onDayTapped: { startDate, endDate, title, totalAmount in
                         isShowingSwingSheet = false
                         navigationState.pulseNavPath.append(
-                            PulseDestination.transactions(startDate: startDate, endDate: endDate, title: title)
+                            PulseDestination.transactions(
+                                startDate: startDate,
+                                endDate: endDate,
+                                title: title,
+                                initialTotalAmount: totalAmount > 0 ? totalAmount : nil
+                            )
                         )
                     }
                 )

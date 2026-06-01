@@ -71,7 +71,7 @@ struct AllTransactionsView: View {
             selectedFilter: $selectedFilter,
             sortOptions: TransactionSortOption.allCases.map { BabloSortOption(id: $0, title: $0.title) },
             selectedSort: $selectedSort,
-            resultsCountLabel: isUsingInitialValues ? "\(initialTransactionCount ?? processedTransactions.count) RESULTS" : "\(processedTransactions.count) RESULTS",
+            resultsCountLabel: isUsingInitialValues ? "\(initialTransactionCount ?? displayTotalCount) RESULTS" : "\(displayTotalCount) RESULTS",
             dismissAction: { dismiss() },
             showDragHandle: false,
             showCloseButton: false,
@@ -315,8 +315,17 @@ struct AllTransactionsView: View {
         initialTotalAmount != nil
     }
 
+    /// Best known total count: use server pagination count when available,
+    /// falling back to the currently loaded transaction count.
+    private var displayTotalCount: Int {
+        if let initialTransactionCount, isUsingInitialValues {
+            return initialTransactionCount
+        }
+        return sheetTransactionsService.paginationInfo?.totalCount ?? processedTransactions.count
+    }
+
     private var subtitleText: String {
-        let totalCount = isUsingInitialValues ? (initialTransactionCount ?? processedTransactions.count) : processedTransactions.count
+        let totalCount = isUsingInitialValues ? (initialTransactionCount ?? displayTotalCount) : displayTotalCount
         guard totalCount > 0 else { return "0 txns" }
         
         return "\(totalCount) txns · net \(netAmountText) · last \(dateRangeText)"

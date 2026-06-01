@@ -21,7 +21,7 @@ struct DailyEnergyWidgetView: View {
     var isLoading: Bool = false
     var error: Error? = nil
     var retry: (() -> Void)? = nil
-    var onBarTapped: ((String, String, String) -> Void)? = nil
+    var onBarTapped: ((String, String, String, Double) -> Void)? = nil
 
     @Environment(\.babloTheme) private var theme
 
@@ -146,7 +146,7 @@ struct DailyEnergyWidgetView: View {
             VStack(spacing: 8) {
                 EnergyBarChart(bars: bars, theme: theme) { bar in
                     let title = dateWindowTitle(startDate: bar.startDate, endDate: bar.endDate, period: period)
-                    onBarTapped?(bar.startDate, bar.endDate, title)
+                    onBarTapped?(bar.startDate, bar.endDate, title, bar.amount)
                 }
 
                 if let peak = peakBar, peak.peakMerchant != "No Spend", peak.peakAmount > 0 {

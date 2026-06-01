@@ -9,7 +9,7 @@ struct TheSwingSheetView: View {
     let period: PulsePeriod
     let dismissAction: () -> Void
     var onBreakdownCategoryTapped: ((CategoryBreakdownItem) -> Void)? = nil
-    var onDayTapped: ((String, String, String) -> Void)? = nil
+    var onDayTapped: ((String, String, String, Double) -> Void)? = nil
 
     @Environment(\.babloTheme) private var theme
 
@@ -57,8 +57,8 @@ struct TheSwingSheetView: View {
                         WeekByWeekSwingCard(
                             bars: pairedWeekBars,
                             theme: theme,
-                            onWeekTapped: { weekStart, weekEnd, title in
-                                onDayTapped?(weekStart, weekEnd, title)
+                            onWeekTapped: { weekStart, weekEnd, title, totalAmount in
+                                onDayTapped?(weekStart, weekEnd, title, totalAmount)
                             }
                         )
                     }
@@ -671,7 +671,7 @@ private struct DayByDaySwingCard: View {
     let bars: [SwingDayBar]
     let period: PulsePeriod
     let theme: BabloResolvedTheme
-    var onDayTapped: ((String, String, String) -> Void)? = nil
+    var onDayTapped: ((String, String, String, Double) -> Void)? = nil
 
     private var maxAmount: Double {
         bars.flatMap { [$0.currentAmount, $0.previousAmount] }.max() ?? 1
@@ -708,7 +708,7 @@ private struct DayByDaySwingCard: View {
                         )
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            onDayTapped?(bar.dateLabel, bar.dateLabel, bar.dateLabel)
+                            onDayTapped?(bar.dateLabel, bar.dateLabel, bar.dateLabel, bar.currentAmount)
                         }
                     }
                 }
@@ -2088,7 +2088,7 @@ private struct SwingWeekBar: Identifiable {
 private struct WeekByWeekSwingCard: View {
     let bars: [SwingWeekBar]
     let theme: BabloResolvedTheme
-    var onWeekTapped: ((String, String, String) -> Void)? = nil
+    var onWeekTapped: ((String, String, String, Double) -> Void)? = nil
 
     private var maxAmount: Double {
         bars.flatMap { [$0.currentAmount, $0.previousAmount] }.max() ?? 1
@@ -2120,7 +2120,7 @@ private struct WeekByWeekSwingCard: View {
                         )
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            onWeekTapped?(bar.weekStart, bar.weekEnd, bar.title)
+                            onWeekTapped?(bar.weekStart, bar.weekEnd, bar.title, bar.currentAmount)
                         }
                     }
                 }
