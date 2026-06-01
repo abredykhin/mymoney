@@ -1377,7 +1377,14 @@ private struct CushionPaceCard: View {
 
     var body: some View {
         let isPopArt = theme.effects.isPopArt
-        let isMonth = snapshot.period == .month
+        let currentLabel: String
+        let previousLabel: String
+        switch snapshot.period {
+        case .month: currentLabel = "This mo"; previousLabel = "Last mo"
+        case .week:  currentLabel = "This wk"; previousLabel = "Last wk"
+        case .day:   currentLabel = "Today";   previousLabel = "Yesterday"
+        }
+        let currentLineColor = snapshot.hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color
         return VStack(alignment: .leading, spacing: 18) {
             HStack {
                 Text(snapshot.hasMoreRoom ? "You're spending slower" : "You're spending faster")
@@ -1395,8 +1402,8 @@ private struct CushionPaceCard: View {
                 .frame(height: 166)
 
             HStack(spacing: 18) {
-                legend(color: theme.colors.success.color, label: isMonth ? "This mo" : "This wk", dashed: false)
-                legend(color: theme.colors.textTertiary.color, label: isMonth ? "Last mo" : "Last wk", dashed: true)
+                legend(color: currentLineColor, label: currentLabel, dashed: false)
+                legend(color: theme.colors.textTertiary.color, label: previousLabel, dashed: true)
                 Spacer()
                 Text(CushionVerdictCopy.paceSummary(for: snapshot))
                     .font(theme.typography.body(size: 13, weight: .bold))
@@ -1500,7 +1507,7 @@ private struct CushionLineChart: View {
                 )
                 ctx.stroke(
                     currentPath,
-                    with: .color(theme.colors.success.color),
+                    with: .color(hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color),
                     style: StrokeStyle(lineWidth: 3.4, lineCap: .round, lineJoin: .round)
                 )
             }
@@ -1517,7 +1524,7 @@ private struct CushionLineChart: View {
                             .position(previous)
 
                         Circle()
-                            .fill(theme.colors.success.color)
+                            .fill(hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color)
                             .frame(width: 10, height: 10)
                             .position(current)
                     }
