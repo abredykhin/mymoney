@@ -1220,7 +1220,7 @@ private struct CushionDriversCard: View {
         let isPopArt = theme.effects.isPopArt
         return VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text(snapshot.hasMoreRoom ? "How the room grew" : "Where room shrank")
+                Text(snapshot.hasMoreRoom ? "How the room grew" : "How the room shrank")
                     .font(theme.typography.title(size: 16, weight: isPopArt ? .black : .bold))
                     .foregroundStyle(theme.colors.textPrimary.color)
 

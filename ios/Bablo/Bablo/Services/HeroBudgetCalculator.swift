@@ -602,7 +602,7 @@ struct HeroCushionDriver: Equatable, Identifiable {
 
     static func drivers(from items: [CategoryBreakdownItem], limit: Int = 5) -> [HeroCushionDriver] {
         items.compactMap { item in
-            guard let previousAmount = item.previousAmount else { return nil }
+            let previousAmount = item.previousAmount ?? 0.0
             let delta = (previousAmount - item.totalAmount).rounded()
             guard abs(delta) >= 1 else { return nil }
             return HeroCushionDriver(
