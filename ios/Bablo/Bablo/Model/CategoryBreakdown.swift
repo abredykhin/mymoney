@@ -80,6 +80,7 @@ enum CategoryBreakdownBuilder {
         currentTransactions: [BreakdownTransaction],
         previousTransactions: [BreakdownTransaction] = [],
         trackedCategories: Set<FlexibleSpendingCategory>,
+        includePreviousOnly: Bool = false,
         startDate: String? = nil,
         endDate: String? = nil
     ) -> [CategoryBreakdownItem] {
@@ -123,6 +124,20 @@ enum CategoryBreakdownBuilder {
                 percentOfTotal: total > 0 ? acc.amount / total : 0,
                 previousAmount: previousMap[bkt]
             )
+        }
+
+        if includePreviousOnly {
+            for (bkt, previousAmount) in previousMap where currentMap[bkt] == nil {
+                items.append(
+                    CategoryBreakdownItem(
+                        bucket: bkt,
+                        totalAmount: 0,
+                        transactionCount: 0,
+                        percentOfTotal: 0,
+                        previousAmount: previousAmount
+                    )
+                )
+            }
         }
 
         // Sort non-rest items by amount descending; rest always goes last

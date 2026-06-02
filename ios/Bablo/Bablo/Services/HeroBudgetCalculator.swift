@@ -266,7 +266,7 @@ struct HeroBudgetCalculator {
         // Show the chip when either side has real spending to compare.
         // Budget/income availability should not suppress a period-over-period spend delta.
         guard prev > 0 || curr > 0 else { return nil }
-        let delta = Int((prev - curr).rounded())
+        let delta = Int(prev.rounded() - curr.rounded())
         guard abs(delta) >= 1 else { return nil }
         if spendable(for: period) < 0 {
             let amount = "$\(compactDollar(abs(delta)))"
@@ -571,7 +571,9 @@ struct HeroCushionSnapshot: Equatable {
 
         guard previousSpend > 0 || currentSpend > 0 else { return nil }
 
-        let delta = (previousSpend - currentSpend).rounded()
+        let displayedPreviousSpend = previousSpend.rounded()
+        let displayedCurrentSpend = currentSpend.rounded()
+        let delta = displayedPreviousSpend - displayedCurrentSpend
         guard abs(delta) >= 1 else { return nil }
 
         self.period = period
@@ -593,6 +595,11 @@ struct HeroCushionDriver: Equatable, Identifiable {
         case shrank
     }
 
+    enum BarSide: Equatable {
+        case left
+        case right
+    }
+
     var id: String { bucket.id }
     let bucket: SpendingBucket
     let currentAmount: Double
@@ -602,6 +609,10 @@ struct HeroCushionDriver: Equatable, Identifiable {
 
     var kind: Kind {
         roomDelta >= 0 ? .grew : .shrank
+    }
+
+    var barSide: BarSide {
+        kind == .grew ? .left : .right
     }
 
     static func drivers(from items: [CategoryBreakdownItem], limit: Int = 5) -> [HeroCushionDriver] {

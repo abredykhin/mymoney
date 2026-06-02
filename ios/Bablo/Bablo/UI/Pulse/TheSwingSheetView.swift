@@ -1063,7 +1063,21 @@ struct TheCushionSheetView: View {
     }
 
     private var cumulativePoints: [CushionCumulativePoint] {
-        CushionCumulativePoint.build(from: dailyEnergy, period: period)
+        let pts = CushionCumulativePoint.build(from: dailyEnergy, period: period)
+        guard !pts.isEmpty, let last = pts.last else { return pts }
+        // Scale chart so final cumulative values match snapshot's actual spend totals.
+        // dailyEnergy and BudgetService can disagree (different scopes/timing),
+        // so this keeps the chart shape while ensuring correct relative direction.
+        let currentScale = last.current > 0.01 ? snapshot.currentSpend / last.current : 1.0
+        let previousScale = last.previous > 0.01 ? snapshot.previousSpend / last.previous : 1.0
+        guard currentScale != 1.0 || previousScale != 1.0 else { return pts }
+        return pts.map {
+            CushionCumulativePoint(
+                id: $0.id, label: $0.label,
+                current: $0.current * currentScale,
+                previous: $0.previous * previousScale
+            )
+        }
     }
 }
 
@@ -1315,7 +1329,7 @@ private struct CushionDriverRow: View {
             HStack(spacing: 0) {
                 ZStack(alignment: .trailing) {
                     Color.clear
-                    if driver.kind == .shrank {
+                    if driver.barSide == .left {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
                             .fill(color)
                             .frame(width: max(40 * CGFloat(barFraction), 4), height: 12)
@@ -1329,7 +1343,7 @@ private struct CushionDriverRow: View {
 
                 ZStack(alignment: .leading) {
                     Color.clear
-                    if driver.kind == .grew {
+                    if driver.barSide == .right {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
                             .fill(color)
                             .frame(width: max(40 * CGFloat(barFraction), 4), height: 12)
@@ -1350,7 +1364,7 @@ private struct CushionDriverRow: View {
     }
 
     private var detailText: String {
-        return "\(driver.transactionCount)x · \(formattedMoney(driver.currentAmount))"
+        return "\(formattedMoney(driver.previousAmount)) → \(formattedMoney(driver.currentAmount))"
     }
 }
 

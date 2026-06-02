@@ -161,7 +161,8 @@ final class PulseService: ObservableObject {
         endDate: String,
         comparisonStartDate: String? = nil,
         comparisonEndDate: String? = nil,
-        trackedCategories: Set<FlexibleSpendingCategory>
+        trackedCategories: Set<FlexibleSpendingCategory>,
+        includePreviousOnly: Bool = false
     ) async throws {
         isLoadingBreakdown = true
         categoryBreakdownError = nil
@@ -180,7 +181,8 @@ final class PulseService: ObservableObject {
             categoryBreakdown = CategoryBreakdownBuilder.build(
                 currentTransactions: current,
                 previousTransactions: previous,
-                trackedCategories: trackedCategories
+                trackedCategories: trackedCategories,
+                includePreviousOnly: includePreviousOnly
             )
 
             Logger.i("PulseService: Loaded category breakdown (\(categoryBreakdown?.count ?? 0) buckets)")

@@ -101,6 +101,16 @@ struct HeroBudgetCalculatorTests {
         #expect(snapshot?.hasMoreRoom == true)
     }
 
+    @Test func cushionSnapshotDeltaMatchesDisplayedRoundedSpendRows() throws {
+        let c = calc(todayVariableSpend: 73.72, prevDay: 60.25)
+
+        let snapshot = try #require(HeroCushionSnapshot(calculator: c, period: .day))
+
+        #expect(snapshot.roomDelta == -14)
+        #expect(snapshot.previousRoom == snapshot.currentRoom + 14)
+        #expect(snapshot.hasMoreRoom == false)
+    }
+
     @Test func cushionVerdictHeadlineShowsStillOverWhenCurrentRoomIsNegativeButImproved() throws {
         let c = calc(
             income: 5_000,
@@ -129,6 +139,20 @@ struct HeroBudgetCalculatorTests {
         #expect(drivers.map(\.roomDelta) == [31, -18, 12])
         #expect(drivers[0].kind == .grew)
         #expect(drivers[1].kind == .shrank)
+    }
+
+    @Test func cushionDriverBarSideFollowsSpendDirection() throws {
+        let items = [
+            CategoryBreakdownItem(bucket: .category(.eatsOut), totalAmount: 49, transactionCount: 3, percentOfTotal: 0.4, previousAmount: 80),
+            CategoryBreakdownItem(bucket: .category(.shopping), totalAmount: 48, transactionCount: 2, percentOfTotal: 0.3, previousAmount: 30),
+        ]
+
+        let drivers = HeroCushionDriver.drivers(from: items)
+        let eats = try #require(drivers.first { $0.bucket == SpendingBucket.category(.eatsOut) })
+        let shopping = try #require(drivers.first { $0.bucket == SpendingBucket.category(.shopping) })
+
+        #expect(eats.barSide == .left)
+        #expect(shopping.barSide == .right)
     }
 
     @Test func breakdownReconcilesWeekToHeroSpendable() {
@@ -554,6 +578,17 @@ struct HeroBudgetCalculatorTests {
     @Test func deltaLabelDayNegativeWhenSpentMoreThanYesterday() {
         let c = calc(todayVariableSpend: 64, prevDay: 12)
         #expect(c.deltaLabel(for: .day) == "-$52 vs yesterday")
+    }
+
+    @Test func deltaLabelInRedMatchesDisplayedRoundedSpendRows() {
+        let c = calc(
+            income: 2_000,
+            mandatory: 0,
+            todayVariableSpend: 73.72,
+            prevDay: 60.25
+        )
+
+        #expect(c.deltaLabel(for: .day) == "$14 deeper in the red vs yesterday")
     }
 
     @Test func deltaLabelWeekShownWhenCurrentWeekIsZeroButPreviousWeekHasSpend() {

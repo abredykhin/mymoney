@@ -469,6 +469,37 @@ struct CategoryBreakdownTests {
         #expect(rest.previousAmount == 60)
     }
 
+    @Test func previousOnlyBucketsAreIncludedForCushionDrivers() {
+        let current = [
+            makeTxn(amount: 50.52, primary: "TRANSPORTATION", detailed: "TRANSPORTATION_GAS"),
+            makeTxn(amount: 23.20, primary: "FOOD_AND_DRINK", detailed: "FOOD_AND_DRINK_GROCERIES"),
+        ]
+        let previous = [
+            makeTxn(amount: 55.26, primary: "RENT_AND_UTILITIES", detailed: "RENT_AND_UTILITIES_TELEPHONE"),
+            makeTxn(amount: 4.99, primary: "ENTERTAINMENT", detailed: "ENTERTAINMENT_TV_AND_MOVIES"),
+        ]
+
+        let result = CategoryBreakdownBuilder.build(
+            currentTransactions: current,
+            previousTransactions: previous,
+            trackedCategories: [],
+            includePreviousOnly: true
+        )
+
+        let rest = result.first(where: { $0.bucket == .rest })
+        let fun = result.first(where: { $0.bucket == .category(.fun) })
+        let transit = result.first(where: { $0.bucket == .category(.gettingAround) })
+        let groceries = result.first(where: { $0.bucket == .category(.groceries) })
+
+        #expect(rest?.totalAmount == 0)
+        #expect(rest?.previousAmount == 55.26)
+        #expect(fun?.totalAmount == 0)
+        #expect(fun?.previousAmount == 4.99)
+        #expect(transit?.previousAmount == nil)
+        #expect(groceries?.previousAmount == nil)
+        #expect(result.count == 4)
+    }
+
     // MARK: - SpendingBucket identity
 
     @Test func spendingBucketCategoryIdMatchesRawValue() {

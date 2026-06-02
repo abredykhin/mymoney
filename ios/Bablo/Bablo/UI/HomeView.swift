@@ -252,7 +252,8 @@ struct HomeView: View {
                     endDate: current.endDate,
                     comparisonStartDate: comparison?.startDate,
                     comparisonEndDate: comparison?.endDate,
-                    trackedCategories: tracked
+                    trackedCategories: tracked,
+                    includePreviousOnly: true
                 )
             } catch {
                 // PulseService owns the published error state.
