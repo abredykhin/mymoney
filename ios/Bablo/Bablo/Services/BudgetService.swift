@@ -178,6 +178,9 @@ struct HeroIncomeBreakdownRow: Identifiable, Equatable {
     let name: String
     let amount: Double
     let isRecurring: Bool
+    /// True for an expected-but-not-yet-received paycheck (projected income that
+    /// the "Income this month" total leans on before the deposit actually lands).
+    var isProjected: Bool = false
 }
 
 struct HeroExcludedTransactionRow: Identifiable, Equatable {

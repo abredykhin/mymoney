@@ -62,6 +62,10 @@ func topBarDateLabel(for period: TopBarPeriodKind, calendar: Calendar = .bablo, 
         var comps = calendar.dateComponents([.year, .month], from: now)
         comps.day = 1
         let firstOfMonth = calendar.date(from: comps) ?? now
+        if calendar.isDate(now, inSameDayAs: firstOfMonth) {
+            // First day of the month — show the month name so "JUN 1 → JUN 1" is avoided
+            return monthNameFormatter.string(from: now).uppercased()
+        }
         return monthDayFormatter.string(from: firstOfMonth).uppercased()
              + " → "
              + monthDayFormatter.string(from: now).uppercased()
@@ -83,6 +87,12 @@ private let fullDayFormatter: DateFormatter = {
 private let monthDayFormatter: DateFormatter = {
     let f = DateFormatter()
     f.dateFormat = "MMM d" // "May 23"
+    return f
+}()
+
+private let monthNameFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.dateFormat = "MMMM" // "June"
     return f
 }()
 

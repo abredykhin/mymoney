@@ -270,7 +270,22 @@ struct MoneyLeftBreakdownView: View {
         async let excluded = budgetService.fetchHeroExcludedTransactionRows(for: period)
         let (loadedSpend, loadedIncome, loadedExcluded) = await (spend, income, excluded)
         spendRows = loadedSpend
-        incomeRows = loadedIncome
+        // The "Income this month" total is effectiveIncome, which leans on an expected
+        // paycheck before it lands. Surface that projected portion as its own row so the
+        // total isn't unexplained when no income has been received yet this month.
+        let projected = calculator.expectedIncomeStillToCome
+        if period == .month, projected >= 1 {
+            incomeRows = loadedIncome + [
+                HeroIncomeBreakdownRow(
+                    name: "Expected paycheck",
+                    amount: projected,
+                    isRecurring: true,
+                    isProjected: true
+                )
+            ]
+        } else {
+            incomeRows = loadedIncome
+        }
         excludedTransactionRows = loadedExcluded
         isLoadingDetails = false
     }
@@ -335,9 +350,9 @@ private struct BreakdownStepCard: View {
                 VStack(spacing: 6) {
                     ForEach(incomeRows) { row in
                         SheetInfoRow(
-                            symbol: row.isRecurring ? "briefcase.fill" : "arrow.turn.down.left",
+                            symbol: incomeRowSymbol(for: row),
                             title: row.name,
-                            detail: row.isRecurring ? "recurring" : "extra",
+                            detail: incomeRowDetail(for: row),
                             amount: row.amount,
                             isNegative: false
                         )
@@ -530,6 +545,16 @@ private struct BreakdownStepCard: View {
             if lower.contains("shop")          { return "bag.fill" }
             return "creditcard.fill"
         }
+    }
+
+    private func incomeRowSymbol(for row: HeroIncomeBreakdownRow) -> String {
+        if row.isProjected { return "hourglass" }
+        return row.isRecurring ? "briefcase.fill" : "arrow.turn.down.left"
+    }
+
+    private func incomeRowDetail(for row: HeroIncomeBreakdownRow) -> String {
+        if row.isProjected { return "expected · not yet received" }
+        return row.isRecurring ? "recurring" : "extra"
     }
 
     private func mandatoryDetail(for row: HeroBudgetMandatoryRow) -> String {

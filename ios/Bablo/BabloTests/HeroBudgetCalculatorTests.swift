@@ -353,9 +353,12 @@ struct HeroBudgetCalculatorTests {
     }
 
     @Test func safeToSpendCapsMonthByLiquidCash() {
+        // knownIncome == income: the paycheck has already landed, so there is no pending income
+        // to soften the cap — this isolates the pure liquid-cash ceiling.
         let c = calc(
             income: 10_000,
             mandatory: 2_000,
+            knownIncome: 10_000,
             variableSpend: 1_000,
             liquidCashAvailable: 3_500,
             spendingPlanMode: .safeToSpend
@@ -374,6 +377,7 @@ struct HeroBudgetCalculatorTests {
         let c = calc(
             income: 10_000,
             mandatory: 1_000,
+            knownIncome: 10_000,
             variableSpend: 0,
             currentWeekVariableSpend: 0,
             liquidCashAvailable: 500,
@@ -393,6 +397,7 @@ struct HeroBudgetCalculatorTests {
         let c = calc(
             income: 10_000,
             mandatory: 1_000,
+            knownIncome: 10_000,
             todayVariableSpend: 0,
             liquidCashAvailable: 100,
             spendingPlanMode: .safeToSpend,
@@ -420,6 +425,7 @@ struct HeroBudgetCalculatorTests {
         let c = calc(
             income: 10_000,
             mandatory: 2_000,
+            knownIncome: 10_000,
             variableSpend: 0,
             liquidCashAvailable: 500,
             spendingPlanMode: .safeToSpend
@@ -435,6 +441,7 @@ struct HeroBudgetCalculatorTests {
         let c = calc(
             income: 10_000,
             mandatory: 2_000,
+            knownIncome: 10_000,
             variableSpend: 500,
             liquidCashAvailable: 3_500,
             spendingPlanMode: .safeToSpend
@@ -451,11 +458,73 @@ struct HeroBudgetCalculatorTests {
         let c = calc(
             income: 5_000,
             mandatory: 1_000,
+            knownIncome: 5_000,          // paycheck already in; no pending income to soften the floor
             variableSpend: 0,
             liquidCashAvailable: -200,   // net negative: credit > depository
             spendingPlanMode: .safeToSpend
         )
         #expect(c.spendable(for: .month) == 0)
+    }
+
+    /// Month-start (day 1, pre-payday): current cash is low and the whole month's bills sit in the
+    /// lookahead, but a full paycheck is still expected. The cushion must credit that pending income
+    /// so the budget reflects the discretionary plan instead of cratering to $0.
+    @Test func safeToSpendCreditsPendingPaycheckAtMonthStart() {
+        let c = calc(
+            income: 10_000,
+            mandatory: 4_000,
+            knownIncome: 0,              // payday has not landed yet
+            variableSpend: 0,
+            liquidCashAvailable: 2_000,  // low pre-payday cash
+            spendingPlanMode: .safeToSpend,
+            upcomingUnpaid: 3_700,       // rent + bills due in the next 14 days
+            dayOfMonth: 1,
+            daysInMonth: 30
+        )
+        // fractionRemaining = 30/30 = 1.0 → projected income = 10_000
+        // cushion = max(0, 2_000 + 10_000 − 3_700) = 8_300
+        // budget = min(discretionary 6_000, 8_300) = 6_000 → spendable = 6_000 (not $0)
+        #expect(c.monthlyDiscretionary == 6_000)
+        #expect(abs(c.spendable(for: .month) - 6_000) < 0.01)
+    }
+
+    /// The pending-paycheck credit is discounted by how much of the month remains, so the cushion
+    /// tightens as the month runs on without the income arriving.
+    @Test func pendingPaycheckCreditShrinksLaterInMonth() {
+        func cushion(onDay day: Int) -> Double {
+            calc(
+                income: 9_000,
+                mandatory: 0,
+                knownIncome: 0,
+                variableSpend: 0,
+                liquidCashAvailable: 0,
+                spendingPlanMode: .safeToSpend,
+                dayOfMonth: day,
+                daysInMonth: 30
+            ).spendable(for: .month)
+        }
+        // Both days are <= 15 so the Edge-Case-D decay does not apply; only the remaining-month
+        // proration differs. Day 5: 26/30 * 9_000 = 7_800. Day 15: 16/30 * 9_000 = 4_800.
+        #expect(abs(cushion(onDay: 5) - 7_800) < 0.01)
+        #expect(abs(cushion(onDay: 15) - 4_800) < 0.01)
+        #expect(cushion(onDay: 5) > cushion(onDay: 15))
+    }
+
+    /// Once the paycheck has landed (knownIncome high), there is no pending income to credit and
+    /// the cushion reverts to the pure liquid-cash ceiling.
+    @Test func safeToSpendRevertsToCashCapAfterPaycheckLands() {
+        let c = calc(
+            income: 9_000,
+            mandatory: 1_000,
+            knownIncome: 9_000,          // fully received → no pending income
+            variableSpend: 0,
+            liquidCashAvailable: 400,
+            spendingPlanMode: .safeToSpend,
+            dayOfMonth: 20,
+            daysInMonth: 30
+        )
+        // cushion = max(0, 400 + 0 − 0) = 400 → capped well below discretionary (8_000)
+        #expect(abs(c.spendable(for: .month) - 400) < 0.01)
     }
 
     // MARK: - Fill target

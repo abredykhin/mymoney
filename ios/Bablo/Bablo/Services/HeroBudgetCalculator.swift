@@ -69,24 +69,61 @@ struct HeroBudgetCalculator {
         max(0, effectiveIncome - monthlyMandatoryExpenses)
     }
 
-    var effectiveIncome: Double {
-        // Edge Case D: The Paycheck Illusion
-        // If no paycheck has landed yet (knownIncomeThisMonth < 30% of expected) and the user has linked
-        // bank accounts (liquidCashAvailable != nil), expected monthlyIncome is decayed linearly
-        // from Day 15 down to 0 at month-end to prevent overspending on unreceived salary.
-        // Once any actual paycheck lands (knownIncomeThisMonth >= 30%), no decay applies.
-        let expected: Double
+    /// Expected gross income for the month after the late-month decay guard (Edge Case D).
+    ///
+    /// Edge Case D: The Paycheck Illusion
+    /// If no paycheck has landed yet (knownIncomeThisMonth < 30% of expected) and the user has linked
+    /// bank accounts (liquidCashAvailable != nil), expected monthlyIncome is decayed linearly
+    /// from Day 15 down to 0 at month-end to prevent overspending on unreceived salary.
+    /// Once any actual paycheck lands (knownIncomeThisMonth >= 30%), no decay applies.
+    var expectedMonthlyIncome: Double {
         let salaryThreshold = monthlyIncome * 0.30
-        if knownIncomeThisMonth < salaryThreshold, liquidCashAvailable != nil, dayOfMonth > 15 {
-            let totalDays = Double(daysInMonth)
-            let currentDay = Double(dayOfMonth)
-            let gracePeriod = 15.0
-            let decayFactor = max(0.0, 1.0 - (currentDay - gracePeriod) / (totalDays - gracePeriod))
-            expected = monthlyIncome * decayFactor
-        } else {
-            expected = monthlyIncome
+        guard knownIncomeThisMonth < salaryThreshold, liquidCashAvailable != nil, dayOfMonth > 15 else {
+            return monthlyIncome
         }
-        return max(expected, knownIncomeThisMonth) + extraIncomeThisMonth
+        let totalDays = Double(daysInMonth)
+        let currentDay = Double(dayOfMonth)
+        let gracePeriod = 15.0
+        let decayFactor = max(0.0, 1.0 - (currentDay - gracePeriod) / (totalDays - gracePeriod))
+        return monthlyIncome * decayFactor
+    }
+
+    var effectiveIncome: Double {
+        max(expectedMonthlyIncome, knownIncomeThisMonth) + extraIncomeThisMonth
+    }
+
+    // MARK: - Derived: safe-to-spend cushion (cash on hand + pending paycheck − bills due)
+
+    /// Fraction of the month still ahead of us, including today (1.0 on the 1st → ~0 on the last day).
+    /// Used to discount a not-yet-received paycheck: we lean on it heavily early in the month and
+    /// trust it less as the month runs out without it arriving.
+    private var fractionOfMonthRemaining: Double {
+        guard daysInMonth > 0 else { return 0 }
+        let remaining = Double(daysInMonth - dayOfMonth + 1)
+        return max(0, min(1, remaining / Double(daysInMonth)))
+    }
+
+    /// Income we still expect to receive this month that has not yet hit the bank.
+    /// `knownIncomeThisMonth` is already sitting in `liquidCashAvailable`, so it is netted out
+    /// to avoid double-counting cash that has already landed.
+    var expectedIncomeStillToCome: Double {
+        max(0, expectedMonthlyIncome - knownIncomeThisMonth)
+    }
+
+    /// The slice of a pending paycheck we credit toward the safe-to-spend cushion, discounted by
+    /// how much of the month remains. This keeps the month-start (pre-payday) period from cratering
+    /// to $0 just because current cash is low while a salary is imminent.
+    var projectedIncomeForCushion: Double {
+        expectedIncomeStillToCome * fractionOfMonthRemaining
+    }
+
+    /// Safe-to-spend ceiling on monthly discretionary before MTD spending: cash on hand plus the
+    /// discounted pending paycheck, minus mandatory bills coming due. Floored at 0.
+    /// Falls back to the full monthly discretionary when no balance is available (no linked accounts).
+    var safeCashCushion: Double {
+        guard let liquidCashAvailable else { return monthlyDiscretionary }
+        let projectedCash = liquidCashAvailable + projectedIncomeForCushion
+        return max(0, projectedCash - upcomingUnpaidExpenses)
     }
 
     /// Weekly discretionary = monthly prorated over 7 days.
@@ -133,13 +170,13 @@ struct HeroBudgetCalculator {
     func budget(for period: HeroPeriod) -> Double {
         switch period {
         case .month:
-            guard spendingPlanMode == .safeToSpend, let liquidCashAvailable else {
+            guard spendingPlanMode == .safeToSpend, liquidCashAvailable != nil else {
                 return monthlyDiscretionary
             }
-            // For monthly, the baseline budget is capped by the safe cash available before MTD spending.
-            // safeCash is net liquid cash minus upcoming unpaid mandatory bills in this month.
-            let safeCash = max(0, liquidCashAvailable - upcomingUnpaidExpenses)
-            return max(0, min(monthlyDiscretionary, safeCash + variableSpend))
+            // For monthly, the baseline budget is capped by the safe cash cushion before MTD spending.
+            // The cushion is net liquid cash plus a discounted pending paycheck, minus upcoming
+            // unpaid mandatory bills (see `safeCashCushion`).
+            return max(0, min(monthlyDiscretionary, safeCashCushion + variableSpend))
             
         case .week:
             // How many days of this week are in the current month?
@@ -317,9 +354,8 @@ struct HeroBudgetBreakdownCalculator {
     /// True when the liquid-cash safety cap is tighter than the income-based discretionary budget.
     var isCashCapped: Bool {
         guard calculator.spendingPlanMode == .safeToSpend,
-              let liquid = calculator.liquidCashAvailable else { return false }
-        let safeCash = max(0, liquid - calculator.upcomingUnpaidExpenses)
-        return (safeCash + calculator.monthlySpentSoFar) < calculator.monthlyDiscretionary
+              calculator.liquidCashAvailable != nil else { return false }
+        return (calculator.safeCashCushion + calculator.monthlySpentSoFar) < calculator.monthlyDiscretionary
     }
 
     /// Step number that contains the variable-spending rows (always the last step).
