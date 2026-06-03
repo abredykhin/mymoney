@@ -19,6 +19,8 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
     let amount: Double
     let date: String
     let authorized_date: String? // Authorized date
+    var authorized_datetime: String? = nil
+    var datetime: String? = nil
     var spend_date: String? = nil // Canonical date for user-facing spend rollups
     let name: String
     let merchant_name: String? // Keep snake_case for compatibility
@@ -45,6 +47,8 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
         case amount
         case date
         case authorized_date
+        case authorized_datetime
+        case datetime
         case spend_date
         case name
         case merchant_name
@@ -69,13 +73,37 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
     var accountId: Int { account_id }
     var merchantName: String? { merchant_name }
     var transactionId: String { transaction_id }
-    var spendDate: String { spend_date ?? authorized_date ?? date }
+    var spendDate: String {
+        spend_date
+            ?? Self.localDateString(from: authorized_datetime)
+            ?? authorized_date
+            ?? date
+    }
     var isoCurrencyCode: String? { iso_currency_code }
     var paymentChannel: String? { payment_channel }
     var userId: String? { user_id }
     var logoUrl: String? { logo_url }
     var personalFinanceCategory: String? { personal_finance_category }
     var personalFinanceSubcategory: String? { personal_finance_subcategory }
+
+    private static func localDateString(from raw: String?) -> String? {
+        guard let raw, !raw.isEmpty else { return nil }
+
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let parsed = iso.date(from: raw) ?? {
+            iso.formatOptions = [.withInternetDateTime]
+            return iso.date(from: raw)
+        }()
+        guard let parsed else { return nil }
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar.bablo
+        formatter.timeZone = Calendar.bablo.timeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: parsed)
+    }
 
     var displayName: String {
         merchant_name ?? name

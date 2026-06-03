@@ -115,6 +115,14 @@ struct HomeView: View {
                 StreakDetailView()
             case .allTransactions:
                 AllTransactionsView()
+            case .periodSpendList(let period):
+                let range = periodSpendDateRange(for: period)
+                AllTransactionsView(
+                    startDate: range.start,
+                    endDate: range.end,
+                    title: periodSpendListTitle(for: period),
+                    initialFilter: .out
+                )
             }
         }
         .sheet(isPresented: $showingOnboarding) {
@@ -125,9 +133,9 @@ struct HomeView: View {
                 TheCushionSheetView(
                     snapshot: snapshot,
                     period: heroPeriod.pulsePeriod,
-                    breakdown: pulseService.categoryBreakdown ?? [],
-                    dailyEnergy: pulseService.dailyEnergy,
-                    isLoading: pulseService.isLoadingBreakdown || pulseService.isLoadingDailyEnergy,
+                    breakdown: pulseService.cushionBreakdown ?? [],
+                    dailySeries: pulseService.cushionDailySeries,
+                    isLoading: pulseService.isLoadingCushion,
                     dismissAction: { showingCushionSheet = false },
                     primaryAction: {
                         showingCushionSheet = false
@@ -193,6 +201,37 @@ struct HomeView: View {
         return Set(rawValues.compactMap { FlexibleSpendingCategory(rawValue: $0) })
     }
 
+    /// Date window (yyyy-MM-dd) for the Recent-style spend list opened from a
+    /// breakdown step — matches the period the hero step summarizes (month-to-date,
+    /// week-to-date, or just today).
+    private func periodSpendDateRange(for period: HeroPeriod) -> (start: String, end: String) {
+        let cal = Calendar.bablo
+        let now = Date()
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = cal.timeZone
+
+        let startDate: Date
+        switch period {
+        case .day:
+            startDate = cal.startOfDay(for: now)
+        case .week:
+            startDate = cal.dateInterval(of: .weekOfYear, for: now)?.start ?? cal.startOfDay(for: now)
+        case .month:
+            startDate = cal.dateInterval(of: .month, for: now)?.start ?? cal.startOfDay(for: now)
+        }
+        return (fmt.string(from: startDate), fmt.string(from: now))
+    }
+
+    private func periodSpendListTitle(for period: HeroPeriod) -> String {
+        switch period {
+        case .day:   return "Spent today"
+        case .week:  return "Spent this week"
+        case .month: return "Spent this month"
+        }
+    }
+
     private func checkNetworkStatus() {
         networkMonitor?.cancel()
         let monitor = NWPathMonitor()
@@ -232,63 +271,39 @@ struct HomeView: View {
 
     private func loadCushionSheetData() async {
         let period = heroPeriod.pulsePeriod
-        let current = period.currentWindow
-        let comparison = period.comparisonWindow
         let tracked = trackedCategories
-        let energyWindow: PulseDateWindow
+        let windows = cushionWindows(for: period)
+
+        await pulseService.fetchCushionData(
+            currentStart: windows.currentStart,
+            currentEnd: windows.currentEnd,
+            previousStart: windows.previousStart,
+            previousEnd: windows.previousEnd,
+            trackedCategories: tracked
+        )
+    }
+
+    /// Current + aligned-previous windows for the Cushion sheet. The previous window is clamped to
+    /// the same elapsed length as the current one (June 1 vs May 1), so drivers and pace compare
+    /// like-for-like rather than partial-current vs full-prior-period.
+    private func cushionWindows(for period: PulsePeriod) -> (currentStart: String, currentEnd: String, previousStart: String, previousEnd: String) {
+        let cal = Calendar.bablo
+        let now = Date()
+        let ranges = PreviousPeriodDateRange.compute(calendar: cal)
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.calendar = cal
+        fmt.timeZone = cal.timeZone
+        let currentMonthStart = cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
+
         switch period {
         case .month:
-            energyWindow = monthlyEnergyWindow
+            return (fmt.string(from: currentMonthStart), ranges.todayDate, ranges.prevMonthStart, ranges.prevMonthSameDayEnd)
         case .week:
-            energyWindow = weeklyEnergyWindow
+            return (ranges.currentWeekStart, ranges.todayDate, ranges.prevWeekStart, ranges.prevWeekSameDayEnd)
         case .day:
-            energyWindow = current
+            return (ranges.todayDate, ranges.todayDate, ranges.yesterdayDate, ranges.yesterdayDate)
         }
-
-        async let breakdown: Void = {
-            do {
-                try await pulseService.fetchCategoryBreakdown(
-                    startDate: current.startDate,
-                    endDate: current.endDate,
-                    comparisonStartDate: comparison?.startDate,
-                    comparisonEndDate: comparison?.endDate,
-                    trackedCategories: tracked,
-                    includePreviousOnly: true
-                )
-            } catch {
-                // PulseService owns the published error state.
-            }
-        }()
-
-        async let energy: Void = {
-            await pulseService.fetchDailyEnergy(startDate: energyWindow.startDate, endDate: energyWindow.endDate)
-        }()
-
-        _ = await (breakdown, energy)
-    }
-
-    private var weeklyEnergyWindow: PulseDateWindow {
-        let cal = Calendar.bablo
-        let now = Date()
-        let fmt = DateFormatter()
-        fmt.dateFormat = "yyyy-MM-dd"
-        fmt.calendar = cal
-        fmt.timeZone = cal.timeZone
-        let thisWeekStart = cal.dateInterval(of: .weekOfYear, for: now)?.start ?? now
-        let start = cal.date(byAdding: .weekOfYear, value: -1, to: thisWeekStart) ?? now
-        return PulseDateWindow(startDate: fmt.string(from: start), endDate: fmt.string(from: now))
-    }
-
-    private var monthlyEnergyWindow: PulseDateWindow {
-        let cal = Calendar.bablo
-        let now = Date()
-        let fmt = DateFormatter()
-        fmt.dateFormat = "yyyy-MM-dd"
-        fmt.calendar = cal
-        fmt.timeZone = cal.timeZone
-        let thisMonthStart = cal.dateInterval(of: .month, for: now)?.start ?? now
-        let start = cal.date(byAdding: .month, value: -1, to: thisMonthStart) ?? now
-        return PulseDateWindow(startDate: fmt.string(from: start), endDate: fmt.string(from: now))
     }
 
     private func refreshHomeForCurrentUser() async {

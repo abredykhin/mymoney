@@ -103,6 +103,27 @@ The `ios/Bablo/Bablo/Services/BudgetService.swift` class drives the budget calcu
 -   **`accounts` table/view**: Provides current balance information for all user accounts.
 -   **`transactions` table/view**: Contains detailed transaction records, essential for spending breakdown and income analysis.
 
+### Spend Classification Layers (read before touching any spend/budget widget)
+
+"Spend" is not one number. There are **three distinct layers**, each with different filtering, and bugs happen when a widget mixes them. Always know which layer your widget needs.
+
+1.  **`is_spend = true` — "money that actually left the account."** Defined on the `transactions` view (see `20260531053522_always_exclude_credit_card_payments.sql`).
+    -   **Includes** real outflows even when Plaid tags them as transfers: spousal-support wires (`TRANSFER_OUT_OTHER_TRANSFER_OUT`), ATM withdrawals, Venmo/Zelle, therapy, etc.
+    -   **Excludes** credit-card payments (`LOAN_PAYMENTS_CREDIT_CARD_PAYMENT`) — the purchase already counted on the card account, so counting the payoff would double-count. Also excludes income.
+    -   This is the **total real-spend** layer. Used by `PulseService.categoryBreakdown` ([PulseService.swift](ios/Bablo/Bablo/Services/PulseService.swift), `is_spend=true` query).
+
+2.  **`variable_transactions` view — the DISCRETIONARY subset of `is_spend`.** (current def: `20260603013224_variable_transactions_mandatory_match_and_count_wires.sql`.)
+    -   Starts from `is_spend`, then **additionally excludes** `is_recurring = true` (rent/lease/subscriptions are already in `monthly_mandatory_expenses`) **and** any txn whose merchant matches an **active mandatory expense stream** (`active_mandatory_expense_streams`). The merchant match is a safety net for *pending* recurring bills that Plaid has not yet linked to their stream (so `is_recurring` is still `false`) — without it, this month's rent leaks into variable spend and gets double-counted against the obligations bucket.
+    -   **External wires (`TRANSFER_OUT_OTHER_TRANSFER_OUT`, e.g. the monthly spousal-support wire) ARE counted here** as of 2026-06-02. They are real money out and the user wants them in spend; being in no recurring stream, excluding them left them counted nowhere (the Money-Left "Not counted" bucket).
+    -   This is the **safe-to-spend / cushion** layer. Used by the Liquid Hero, `HeroBudgetCalculator`, and `get_period_spend_comparison` (which is **MTD-aligned**: previous-period window runs to the *same day of month*, e.g. June 1 compares against May 1).
+
+3.  **`get_daily_transaction_stats` (Pulse "Damage report").** Yet another filter set: drops categories containing `TRANSFER`, `LOAN_PAYMENTS`, null-category rows whose name contains "Payment"/"Transfer", and brokerage/wire-like `INCOME`. Numerically close to but not identical to the other two.
+
+**Rules going forward:**
+-   A discretionary/cushion widget (anything about "safe to spend") must use **`variable_transactions`** for *every* card on the screen — headline, drivers, and pace alike. Do not feed one card from `variable_transactions` and another from raw `is_spend`; they differ by orders of magnitude (a single month's wires can be ~$96k) and will visibly contradict each other.
+-   Spousal-support wires (external `TRANSFER_OUT_OTHER_TRANSFER_OUT`) **count as variable spend** — they flow through `variable_transactions` like any other outflow. (Reversed 2026-06-02; they used to be excluded, which left them in no bucket at all.) If Plaid or the user later marks them recurring, the mandatory-stream merchant match will move them into the obligations bucket instead. Internal `TRANSFER_OUT_ACCOUNT_TRANSFER` / `TRANSFER_OUT_WITHDRAWAL` were always counted.
+-   When comparing periods, keep windows **MTD-aligned** (same-day-of-month / same-day-of-week), never full-prior-period vs partial-current-period.
+
 ## Plaid Integration
 
 Plaid is the core technology used to securely connect to a user's bank accounts and retrieve financial data. The integration is designed to be secure and robust, with all sensitive communication happening between the Supabase backend and Plaid's servers.

@@ -35,10 +35,11 @@ struct TransactionDetailDatePresentation: Equatable {
     }
 
     private static func authorizedDateTime(for transaction: Transaction) -> String? {
-        guard let raw = transaction.authorized_date, !raw.isEmpty else { return nil }
-        if raw.contains("T"), let date = TransactionDateParser.parsedDateTime(raw) {
+        if let raw = transaction.authorized_datetime,
+           let date = TransactionDateParser.parsedDateTime(raw) {
             return TransactionDateParser.formatDateTime(date, format: "EEE, MMM d · h:mm a")
         }
+        guard let raw = transaction.authorized_date, !raw.isEmpty else { return nil }
         return TransactionDateParser.formatDate(raw, style: .long)
     }
 }

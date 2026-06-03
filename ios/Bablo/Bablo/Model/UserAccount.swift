@@ -39,6 +39,7 @@ struct Profile: Codable, Equatable {
     let monthlyMandatoryExpenses: Double
     let spendingPlanMode: SpendingPlanMode
     let trackedSpendingCategories: [String]
+    let timeZone: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -48,6 +49,7 @@ struct Profile: Codable, Equatable {
         case monthlyMandatoryExpenses = "monthly_mandatory_expenses"
         case spendingPlanMode = "spending_plan_mode"
         case trackedSpendingCategories = "tracked_spending_categories"
+        case timeZone = "time_zone"
     }
 
     init(from decoder: Decoder) throws {
@@ -60,6 +62,7 @@ struct Profile: Codable, Equatable {
         let rawSpendingPlanMode = try c.decodeIfPresent(String.self, forKey: .spendingPlanMode)
         spendingPlanMode = rawSpendingPlanMode.flatMap(SpendingPlanMode.init(rawValue:)) ?? .safeToSpend
         trackedSpendingCategories = (try? c.decodeIfPresent([String].self, forKey: .trackedSpendingCategories)) ?? []
+        timeZone = try c.decodeIfPresent(String.self, forKey: .timeZone)
     }
 }
 
@@ -191,6 +194,8 @@ class UserAccount: ObservableObject {
                 .single()
                 .execute()
                 .value
+
+            await updateProfileTimeZoneIfNeeded(fetchedProfile, userId: user.id)
             
             await MainActor.run {
                 self.profile = fetchedProfile
@@ -203,6 +208,26 @@ class UserAccount: ObservableObject {
             signOut()
         } catch {
             Logger.e("UserAccount: Failed to fetch profile: \(error)")
+        }
+    }
+
+    private func updateProfileTimeZoneIfNeeded(_ profile: Profile, userId: String) async {
+        let currentTimeZone = Calendar.bablo.timeZone.identifier
+        guard profile.timeZone != currentTimeZone else { return }
+
+        struct TimeZoneUpdate: Encodable {
+            let time_zone: String
+        }
+
+        do {
+            try await supabase
+                .from("profiles")
+                .update(TimeZoneUpdate(time_zone: currentTimeZone))
+                .eq("id", value: userId)
+                .execute()
+            Logger.i("UserAccount: Updated profile timezone to \(currentTimeZone)")
+        } catch {
+            Logger.e("UserAccount: Failed to update profile timezone: \(error)")
         }
     }
 

@@ -12,13 +12,15 @@ struct ComingUpWidgetView: View {
     @Environment(\.babloTheme) private var theme
     
     @State private var showingDetailsSheet = false
-    
+    @State private var recentPaymentDates: [String: String] = [:]
+
     private var calculator: ComingUpCalculator {
         // Use device's local timezone so that days remaining calculations align with the user's calendar day
         ComingUpCalculator(
             subscriptions: subService.allRecurringStreams,
             currentDate: Date(),
-            timeZone: .current
+            timeZone: .current,
+            recentPaymentDates: recentPaymentDates
         )
     }
     
@@ -106,6 +108,9 @@ struct ComingUpWidgetView: View {
         .contentShape(RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous))
         .onTapGesture {
             showingDetailsSheet = true
+        }
+        .task {
+            recentPaymentDates = await budgetService.fetchRecentExpenseMerchantDates()
         }
         .sheet(isPresented: $showingDetailsSheet) {
             ComingUpDetailsSheetView()

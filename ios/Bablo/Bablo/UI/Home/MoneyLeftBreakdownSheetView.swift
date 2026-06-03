@@ -11,7 +11,12 @@ struct MoneyLeftBreakdownView: View {
     @State private var spendRows: [HeroSpendBreakdownRow] = []
     @State private var incomeRows: [HeroIncomeBreakdownRow] = []
     @State private var excludedTransactionRows: [HeroExcludedTransactionRow] = []
+    @State private var recentPaymentDates: [String: String] = [:]
     @State private var isLoadingDetails = false
+    /// The period whose details are currently loaded. Guards against a redundant
+    /// reload (and its loading flicker) when this view reappears after a pushed
+    /// transaction list is popped — `.task(id:)` restarts on reappear.
+    @State private var loadedPeriod: HeroPeriod?
 
     private var calculator: HeroBudgetCalculator {
         let cal = Calendar.bablo
@@ -58,12 +63,21 @@ struct MoneyLeftBreakdownView: View {
         let todayStr = fmt.string(from: now)
         let lookaheadStr = fmt.string(from: lookahead)
 
+        let comingUp = ComingUpCalculator(
+            subscriptions: budgetService.allRecurringStreams,
+            currentDate: now,
+            timeZone: cal.timeZone,
+            recentPaymentDates: recentPaymentDates
+        )
+
         return budgetService.allRecurringStreams
             .sorted { $0.monthlyAmount > $1.monthlyAmount }
             .prefix(6)
             .map { stream in
                 let isUpcoming: Bool = {
                     guard let d = stream.predictedNextDate else { return false }
+                    // Don't badge a bill "due soon" if its current occurrence already posted.
+                    guard !comingUp.isPaidThisCycle(stream) else { return false }
                     return d >= todayStr && d <= lookaheadStr
                 }()
                 return HeroBudgetMandatoryRow(
@@ -98,6 +112,30 @@ struct MoneyLeftBreakdownView: View {
         case .week: return "safe to spend this week"
         case .month: return "safe to spend this month"
         }
+    }
+
+    /// Subtitle for the projected "Expected paycheck" row, including the soonest
+    /// upcoming income stream's predicted date (e.g. "expected Fri, Jun 5 · not yet received").
+    /// Falls back to nil when no income stream has a usable future date, in which case
+    /// the row shows its default "expected · not yet received" copy.
+    private var nextPaycheckDetail: String? {
+        let parser = DateFormatter()
+        parser.dateFormat = "yyyy-MM-dd"
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.timeZone = Calendar.bablo.timeZone
+        let todayStr = parser.string(from: Date())
+
+        let next = budgetService.allRecurringStreams
+            .filter { $0.type == "income" && $0.isActive && !$0.isExcluded }
+            .compactMap { $0.predictedNextDate }
+            .filter { $0 >= todayStr }
+            .min()
+
+        guard let next, let date = parser.date(from: next) else { return nil }
+        let display = DateFormatter()
+        display.dateFormat = "EEE, MMM d"
+        display.locale = Locale(identifier: "en_US_POSIX")
+        return "expected \(display.string(from: date)) · not yet received"
     }
 
     var body: some View {
@@ -156,8 +194,13 @@ struct MoneyLeftBreakdownView: View {
             ForEach(Array(breakdown.steps.enumerated()), id: \.element.id) { idx, step in
                 // Map the step's transaction source to a navigation destination.
                 // Steps with nil source (calculated values) are non-tappable.
-                let navDest: HomeDestination? = step.transactionSource.map {
-                    .breakdownTransactions($0, period, nil)
+                // The variable-spend step opens the same Recent-style list as the
+                // "Recent" widget (scoped to this period) instead of a bespoke list.
+                let navDest: HomeDestination? = step.transactionSource.map { source in
+                    switch source {
+                    case .variableSpend: return .periodSpendList(period)
+                    case .income, .obligations: return .breakdownTransactions(source, period, nil)
+                    }
                 }
 
                 BreakdownStepCard(
@@ -264,11 +307,16 @@ struct MoneyLeftBreakdownView: View {
     }
 
     private func loadDetails() async {
+        // Already loaded for this period — skip the refetch (and its flicker) that
+        // would otherwise fire when the view reappears after a pushed list is popped.
+        guard loadedPeriod != period else { return }
         isLoadingDetails = true
         async let spend = budgetService.fetchHeroSpendBreakdownRows(for: period, trackedCategories: trackedCategories)
         async let income = period == .month ? budgetService.fetchHeroIncomeRowsForCurrentMonth() : []
         async let excluded = budgetService.fetchHeroExcludedTransactionRows(for: period)
-        let (loadedSpend, loadedIncome, loadedExcluded) = await (spend, income, excluded)
+        async let paid = period == .month ? budgetService.fetchRecentExpenseMerchantDates() : [:]
+        let (loadedSpend, loadedIncome, loadedExcluded, loadedPaid) = await (spend, income, excluded, paid)
+        recentPaymentDates = loadedPaid
         spendRows = loadedSpend
         // The "Income this month" total is effectiveIncome, which leans on an expected
         // paycheck before it lands. Surface that projected portion as its own row so the
@@ -280,13 +328,15 @@ struct MoneyLeftBreakdownView: View {
                     name: "Expected paycheck",
                     amount: projected,
                     isRecurring: true,
-                    isProjected: true
+                    isProjected: true,
+                    detailOverride: nextPaycheckDetail
                 )
             ]
         } else {
             incomeRows = loadedIncome
         }
         excludedTransactionRows = loadedExcluded
+        loadedPeriod = period
         isLoadingDetails = false
     }
 
@@ -553,6 +603,7 @@ private struct BreakdownStepCard: View {
     }
 
     private func incomeRowDetail(for row: HeroIncomeBreakdownRow) -> String {
+        if let detailOverride = row.detailOverride { return detailOverride }
         if row.isProjected { return "expected · not yet received" }
         return row.isRecurring ? "recurring" : "extra"
     }

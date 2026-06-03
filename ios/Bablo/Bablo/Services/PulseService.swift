@@ -78,6 +78,15 @@ final class PulseService: ObservableObject {
     @Published var isLoadingBreakdown = false
     @Published var categoryBreakdownError: Error?
 
+    /// Cushion sheet data, sourced from the DISCRETIONARY layer (`variable_transactions`)
+    /// over MTD/WTD-aligned windows — kept separate from `categoryBreakdown` (raw `is_spend`,
+    /// full-period) so the whole Cushion screen reconciles with the Liquid Hero. See AGENTS.md
+    /// "Spend Classification Layers".
+    @Published var cushionBreakdown: [CategoryBreakdownItem]?
+    @Published var cushionDailySeries: CushionDailySeries?
+    @Published var isLoadingCushion = false
+    @Published var cushionError: Error?
+
     @Published var dailyEnergy: [DailyEnergyItem] = []
     @Published var isLoadingDailyEnergy = false
     @Published var dailyEnergyError: Error?
@@ -193,15 +202,70 @@ final class PulseService: ObservableObject {
         }
     }
 
-    private func fetchTransactionsForBreakdown(startDate: String, endDate: String) async throws -> [BreakdownTransaction] {
+    private func fetchTransactionsForBreakdown(from table: String = "transactions", startDate: String, endDate: String) async throws -> [BreakdownTransaction] {
         return try await supabase
-            .from("transactions")
+            .from(table)
             .select("amount, name, date, authorized_date, spend_date, type, personal_finance_category, personal_finance_subcategory, is_spend, is_income")
             .gte("spend_date", value: startDate)
             .lte("spend_date", value: endDate)
             .eq("is_spend", value: true)
             .execute()
             .value
+    }
+
+    // MARK: - Cushion (discretionary, aligned)
+
+    /// Loads the Cushion sheet's drivers + pace from `variable_transactions` (discretionary spend)
+    /// over MTD/WTD-aligned windows. Both windows share one definition of spend so the drivers
+    /// reconcile to the Liquid Hero's cushion delta. `previousStart/End` MUST be aligned to the
+    /// same elapsed length as the current window (e.g. June 1 vs May 1), never a full prior period.
+    func fetchCushionData(
+        currentStart: String,
+        currentEnd: String,
+        previousStart: String,
+        previousEnd: String,
+        trackedCategories: Set<FlexibleSpendingCategory>
+    ) async {
+        isLoadingCushion = true
+        cushionError = nil
+        defer { isLoadingCushion = false }
+
+        do {
+            async let currentRowsTask = fetchTransactionsForBreakdown(from: "variable_transactions", startDate: currentStart, endDate: currentEnd)
+            async let previousRowsTask = fetchTransactionsForBreakdown(from: "variable_transactions", startDate: previousStart, endDate: previousEnd)
+            let (current, previous) = try await (currentRowsTask, previousRowsTask)
+
+            cushionBreakdown = CategoryBreakdownBuilder.build(
+                currentTransactions: current,
+                previousTransactions: previous,
+                trackedCategories: trackedCategories,
+                includePreviousOnly: true
+            )
+            cushionDailySeries = CushionDailySeries(
+                current: Self.dailyTotals(current),
+                previous: Self.dailyTotals(previous),
+                currentStart: currentStart,
+                currentEnd: currentEnd,
+                previousStart: previousStart,
+                previousEnd: previousEnd
+            )
+            Logger.i("PulseService: Loaded cushion data (\(cushionBreakdown?.count ?? 0) buckets)")
+        } catch {
+            cushionError = error
+            Logger.e("PulseService: Failed to fetch cushion data: \(error)")
+        }
+    }
+
+    /// Sum of (signed) spend per effective day, sorted ascending. Drives the pace chart.
+    private static func dailyTotals(_ rows: [BreakdownTransaction]) -> [CushionDailyPoint] {
+        var byDate: [String: Double] = [:]
+        for row in rows {
+            guard let date = row.spendDate ?? row.authorizedDate ?? row.date else { continue }
+            byDate[date, default: 0] += row.amount
+        }
+        return byDate
+            .map { CushionDailyPoint(date: $0.key, amount: $0.value) }
+            .sorted { $0.date < $1.date }
     }
 
     // MARK: - Daily Energy
@@ -259,13 +323,33 @@ final class PulseService: ObservableObject {
     func clearData() {
         damageReport = nil
         categoryBreakdown = nil
+        cushionBreakdown = nil
+        cushionDailySeries = nil
         dailyEnergy = []
         topMerchants = []
         damageReportError = nil
         categoryBreakdownError = nil
+        cushionError = nil
         dailyEnergyError = nil
         topMerchantsError = nil
     }
+}
+
+/// One day of (signed) discretionary spend, used to build the Cushion pace chart.
+struct CushionDailyPoint: Equatable {
+    let date: String   // "yyyy-MM-dd"
+    let amount: Double
+}
+
+/// Per-day discretionary spend for the current and aligned-previous windows, plus the window
+/// bounds so the pace chart can render a gap-free line (days with no spend count as $0).
+struct CushionDailySeries: Equatable {
+    let current: [CushionDailyPoint]
+    let previous: [CushionDailyPoint]
+    let currentStart: String
+    let currentEnd: String
+    let previousStart: String
+    let previousEnd: String
 }
 
 struct BreakdownTransaction: Codable {

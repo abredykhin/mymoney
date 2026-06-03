@@ -177,6 +177,8 @@ export async function batchUpsertTransactions(
         iso_currency_code: tx.iso_currency_code || null,
         date: tx.date,
         authorized_date: tx.authorized_date || null,
+        authorized_datetime: tx.authorized_datetime || null,
+        datetime: tx.datetime || null,
         name: tx.name,
         merchant_name: tx.merchant_name || null,
         logo_url: tx.logo_url || null,

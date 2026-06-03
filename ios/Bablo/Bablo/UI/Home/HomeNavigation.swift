@@ -22,6 +22,11 @@ enum HomeDestination: Hashable {
 
     /// The full paginated list of all transactions.
     case allTransactions
+
+    /// The Recent-style transaction list scoped to a budget period's variable spend
+    /// (opened from the "What you've spent this period" breakdown step). Uses the same
+    /// AllTransactionsView the "Recent" widget opens, rather than a bespoke list.
+    case periodSpendList(HeroPeriod)
 }
 
 // MARK: - Transaction source

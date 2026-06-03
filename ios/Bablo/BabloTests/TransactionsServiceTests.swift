@@ -138,6 +138,31 @@ struct TransactionsServiceTests {
         #expect(!query.contains("?date=gte.") && !query.contains("&date=gte."),
                 "Raw Plaid date can be future-dated for pending transactions")
     }
+
+    @Test @MainActor func testFetchTransactionsDecodesPlaidDatetimeFields() async throws {
+        MockURLProtocol.mockHandler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: [
+                    "Content-Type": "application/json",
+                    "Content-Range": "items 0-0/1"
+                ]
+            )!
+
+            return (response, Self.datetimeTransactionJSON.data(using: .utf8)!)
+        }
+
+        let service = TransactionsService(supabaseClient: Self.makeMockClient())
+
+        try await service.fetchRecentTransactions(forceRefresh: true, limit: 1)
+
+        let transaction = try #require(service.transactions.first)
+        #expect(transaction.authorized_datetime == "2026-06-02T04:43:52Z")
+        #expect(transaction.datetime == nil)
+        #expect(transaction.spendDate == "2026-06-01")
+    }
     
     @Test func testTransactionAmountSignFormatting() {
         let expense = Transaction(
@@ -361,6 +386,36 @@ struct TransactionsServiceTests {
         "website": null,
         "personal_finance_category": "INFLOW",
         "personal_finance_subcategory": "INFLOW_TRANSFER",
+        "created_at": null,
+        "updated_at": null
+      }
+    ]
+    """
+
+    private static let datetimeTransactionJSON = """
+    [
+      {
+        "id": 3,
+        "account_id": 10,
+        "amount": 77.00,
+        "date": "2026-06-02",
+        "authorized_date": "2026-06-02",
+        "authorized_datetime": "2026-06-02T04:43:52Z",
+        "datetime": null,
+        "spend_date": "2026-06-01",
+        "name": "TalkingParents",
+        "merchant_name": "Talking Parents",
+        "pending": true,
+        "category": null,
+        "transaction_id": "tx_talking_parents",
+        "pending_transaction_transaction_id": null,
+        "iso_currency_code": "USD",
+        "payment_channel": "in store",
+        "user_id": "5f6bb5c6-faf0-484f-aee1-23316a77ea90",
+        "logo_url": null,
+        "website": null,
+        "personal_finance_category": "GENERAL_SERVICES",
+        "personal_finance_subcategory": "GENERAL_SERVICES_CHILDCARE",
         "created_at": null,
         "updated_at": null
       }

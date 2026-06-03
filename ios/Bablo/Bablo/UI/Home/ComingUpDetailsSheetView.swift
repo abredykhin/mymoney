@@ -22,19 +22,23 @@ struct ComingUpDetailsSheetView: View {
     
     // Track whether reminders have been set on-device
     @State private var remindersEnabled: Bool = UserDefaults.standard.bool(forKey: "bill_reminders_enabled")
-    
+
+    // Latest payment date per merchant, used to drop bills already paid this cycle.
+    @State private var recentPaymentDates: [String: String] = [:]
+
     private var currentDate: Date {
         Date()
     }
-    
+
     private var calculator: ComingUpCalculator {
         ComingUpCalculator(
             subscriptions: subService.allRecurringStreams,
             currentDate: currentDate,
-            timeZone: .current
+            timeZone: .current,
+            recentPaymentDates: recentPaymentDates
         )
     }
-    
+
     // Sorted bills due in the next 30 days
     private var allUpcomingBills: [RecurringStream] {
         subService.allRecurringStreams.filter { stream in
@@ -42,6 +46,9 @@ struct ComingUpDetailsSheetView: View {
                 return false
             }
             guard let days = calculator.daysRemaining(for: stream) else {
+                return false
+            }
+            guard !calculator.isPaidThisCycle(stream) else {
                 return false
             }
             return days >= 0 && days <= 30
@@ -236,6 +243,9 @@ struct ComingUpDetailsSheetView: View {
             Button("Done", role: .cancel) { }
         } message: {
             Text("We'll send you notifications 2 days before each bill is due so you're always prepared.")
+        }
+        .task {
+            recentPaymentDates = await budgetService.fetchRecentExpenseMerchantDates()
         }
     }
     

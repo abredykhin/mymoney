@@ -181,6 +181,9 @@ struct HeroIncomeBreakdownRow: Identifiable, Equatable {
     /// True for an expected-but-not-yet-received paycheck (projected income that
     /// the "Income this month" total leans on before the deposit actually lands).
     var isProjected: Bool = false
+    /// When set, replaces the default subtitle for the row. Used to surface the
+    /// expected paycheck's predicted date (e.g. "expected Fri, Jun 5 · not yet received").
+    var detailOverride: String? = nil
 }
 
 struct HeroExcludedTransactionRow: Identifiable, Equatable {
@@ -672,7 +675,7 @@ class BudgetService: ObservableObject {
         do {
             let transactions: [Transaction] = try await supabase
                 .from("variable_transactions")
-                .select("id, account_id, amount, date, authorized_date, spend_date, name, merchant_name, pending, transaction_id, iso_currency_code, personal_finance_category, personal_finance_subcategory, logo_url, payment_channel, user_id, website, created_at, updated_at, pending_transaction_transaction_id")
+                .select("id, account_id, amount, date, authorized_date, authorized_datetime, datetime, spend_date, name, merchant_name, pending, transaction_id, iso_currency_code, personal_finance_category, personal_finance_subcategory, logo_url, payment_channel, user_id, website, created_at, updated_at, pending_transaction_transaction_id")
                 .gte("spend_date", value: window.start)
                 .lte("spend_date", value: window.end)
                 .gt("amount", value: 0)
@@ -694,7 +697,7 @@ class BudgetService: ObservableObject {
         do {
             let transactions: [Transaction] = try await supabase
                 .from("spendable_income_transactions")
-                .select("id, account_id, amount, date, authorized_date, spend_date, name, merchant_name, pending, transaction_id, iso_currency_code, personal_finance_category, personal_finance_subcategory, logo_url, payment_channel, user_id, website, created_at, updated_at, pending_transaction_transaction_id")
+                .select("id, account_id, amount, date, authorized_date, authorized_datetime, datetime, spend_date, name, merchant_name, pending, transaction_id, iso_currency_code, personal_finance_category, personal_finance_subcategory, logo_url, payment_channel, user_id, website, created_at, updated_at, pending_transaction_transaction_id")
                 .gte("spend_date", value: window.start)
                 .lte("spend_date", value: window.end)
                 .order("spend_date", ascending: false)
@@ -704,6 +707,50 @@ class BudgetService: ObservableObject {
         } catch {
             Logger.e("BudgetService: Failed to fetch income transaction list: \(error)")
             return []
+        }
+    }
+
+    /// Most-recent spend date (yyyy-MM-dd) per merchant over the last `lookbackDays`.
+    /// Used to detect recurring bills already paid this cycle so they drop off the
+    /// "Coming up" widget and lose the "due soon" badge. Keyed by lowercased,
+    /// whitespace-trimmed merchant name. Includes mandatory bills (rent etc.), which
+    /// `variable_transactions` deliberately excludes — so this queries the raw
+    /// `transactions` view, not the variable subset.
+    func fetchRecentExpenseMerchantDates(lookbackDays: Int = 45) async -> [String: String] {
+        let cal = Calendar.bablo
+        guard let start = cal.date(byAdding: .day, value: -lookbackDays, to: Date()) else { return [:] }
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = cal.timeZone
+
+        do {
+            let rows: [MerchantDateRow] = try await supabase
+                .from("transactions")
+                .select("merchant_name, spend_date")
+                .gte("spend_date", value: fmt.string(from: start))
+                .gt("amount", value: 0)
+                .eq("is_spend", value: true)
+                .order("spend_date", ascending: false)
+                .limit(500)
+                .execute()
+                .value
+
+            var latestByMerchant: [String: String] = [:]
+            for row in rows {
+                guard let rawMerchant = row.merchantName,
+                      let spendDate = row.spendDate else { continue }
+                let key = rawMerchant.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                guard !key.isEmpty else { continue }
+                // Rows arrive newest-first, so the first hit per merchant is the latest.
+                if latestByMerchant[key] == nil {
+                    latestByMerchant[key] = spendDate
+                }
+            }
+            return latestByMerchant
+        } catch {
+            Logger.e("BudgetService: Failed to fetch recent expense merchant dates: \(error)")
+            return [:]
         }
     }
 
@@ -848,8 +895,11 @@ class BudgetService: ObservableObject {
 
     private func isExcludedFromHeroSpend(_ transaction: TransactionForBreakdown) -> Bool {
         guard transaction.amount > 0 else { return false }
-        if transaction.isSpend != true { return true }
-        return transaction.personalFinanceSubcategory == "TRANSFER_OUT_OTHER_TRANSFER_OUT"
+        // "Not counted" = real outflows that are NOT variable spend. External wires
+        // (TRANSFER_OUT_OTHER_TRANSFER_OUT, e.g. spousal support) now count as variable
+        // spend, so they must not appear here — only non-spend outflows (credit-card
+        // payments, internal transfers) belong in the not-counted bucket.
+        return transaction.isSpend != true
     }
 
     private func cleanIncomeName(_ raw: String) -> String {
@@ -1218,6 +1268,16 @@ private struct TransactionForBreakdown: Codable {
         case isRecurring = "is_recurring"
         case isSpend = "is_spend"
         case isIncome = "is_income"
+    }
+}
+
+private struct MerchantDateRow: Codable {
+    let merchantName: String?
+    let spendDate: String?
+
+    enum CodingKeys: String, CodingKey {
+        case merchantName = "merchant_name"
+        case spendDate = "spend_date"
     }
 }
 

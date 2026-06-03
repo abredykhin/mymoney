@@ -900,11 +900,18 @@ struct HeroBudgetCalculatorTests {
             upcomingUnpaid: 300,
             daysInMonth: 30
         )
-        // monthlyDiscretionary = 8000
-        // safeCash = 1000 - 300 = 700
-        // monthly budget = min(8000, 700 + 0) = 700
-        // spendable = 700 - 0 = 700
-        #expect(c.spendable(for: .month) == 700)
+        // Cash-capped safe-to-spend cushion = liquid cash + a discounted pending
+        // paycheck, minus upcoming unpaid bills:
+        //   monthlyDiscretionary      = 10000 - 2000 = 8000
+        //   expectedIncomeStillToCome = 10000 (no paycheck received yet)
+        //   fractionOfMonthRemaining  = (30 - 15 + 1) / 30 = 16/30
+        //   projectedIncomeForCushion = 10000 * 16/30 ≈ 5333.33
+        //   safeCashCushion           = 1000 + 5333.33 - 300 ≈ 6033.33
+        //   monthly budget            = min(8000, 6033.33 + 0) = 6033.33
+        //   spendable                 = 6033.33 - 0
+        // The upcoming $300 of unpaid bills is deducted from the cushion.
+        let expected = 1_000 + 10_000 * (16.0 / 30.0) - 300
+        #expect(abs(c.spendable(for: .month) - expected) < 0.01)
     }
 
     @Test func effectiveIncomeDecaysWhenKnownIncomeIsBelow30Percent() {

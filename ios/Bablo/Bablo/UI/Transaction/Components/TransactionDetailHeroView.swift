@@ -154,8 +154,7 @@ struct TransactionDetailHeroView: View {
            let date = TransactionDateParser.parsedDateTime(raw) {
             return TransactionDateParser.formatDateTime(date, format: "EEE, MMM d · h:mm a")
         }
-        if let raw = transaction.authorized_date,
-           raw.contains("T"),
+        if let raw = transaction.authorized_datetime,
            let date = TransactionDateParser.parsedDateTime(raw) {
             return TransactionDateParser.formatDateTime(date, format: "EEE, MMM d · h:mm a")
         }

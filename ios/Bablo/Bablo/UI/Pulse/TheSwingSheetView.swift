@@ -941,7 +941,7 @@ struct TheCushionSheetView: View {
     let snapshot: HeroCushionSnapshot
     let period: PulsePeriod
     let breakdown: [CategoryBreakdownItem]
-    let dailyEnergy: [DailyEnergyItem]
+    let dailySeries: CushionDailySeries?
     let isLoading: Bool
     let dismissAction: () -> Void
     let primaryAction: () -> Void
@@ -1063,21 +1063,11 @@ struct TheCushionSheetView: View {
     }
 
     private var cumulativePoints: [CushionCumulativePoint] {
-        let pts = CushionCumulativePoint.build(from: dailyEnergy, period: period)
-        guard !pts.isEmpty, let last = pts.last else { return pts }
-        // Scale chart so final cumulative values match snapshot's actual spend totals.
-        // dailyEnergy and BudgetService can disagree (different scopes/timing),
-        // so this keeps the chart shape while ensuring correct relative direction.
-        let currentScale = last.current > 0.01 ? snapshot.currentSpend / last.current : 1.0
-        let previousScale = last.previous > 0.01 ? snapshot.previousSpend / last.previous : 1.0
-        guard currentScale != 1.0 || previousScale != 1.0 else { return pts }
-        return pts.map {
-            CushionCumulativePoint(
-                id: $0.id, label: $0.label,
-                current: $0.current * currentScale,
-                previous: $0.previous * previousScale
-            )
-        }
+        // Built from the same discretionary series the hero/drivers use (variable_transactions,
+        // aligned windows), so no rescaling hack is needed — the endpoint already equals the
+        // hero's spend totals.
+        guard let dailySeries else { return [] }
+        return CushionCumulativePoint.build(series: dailySeries, period: period)
     }
 }
 
@@ -1099,10 +1089,11 @@ private struct CushionHeroComparisonCard: View {
     }
 
     private func calculateFillFraction(amount: Double, current: Double, previous: Double) -> Double {
-        // amount, current, previous are spend values (always >= 0).
-        // Higher spend = bigger bar; the period with the most spend gets fraction 1.0.
-        let maxVal = max(current, previous)
-        return maxVal > 0 ? amount / maxVal : 0.0
+        // amount/current/previous are cushion ("left to spend") values and may be negative when
+        // over budget. Scale bars by magnitude so the larger cushion fills the bar; clamp at 0.
+        let maxVal = max(abs(current), abs(previous))
+        guard maxVal > 0 else { return 0.0 }
+        return max(0.0, amount / maxVal)
     }
 
     var body: some View {
@@ -1139,18 +1130,20 @@ private struct CushionHeroComparisonCard: View {
                 }
             }
 
+            // Bars show the CUSHION (safe-to-spend left), not raw spend, so the headline delta
+            // is literally the difference between the two bars — no mental math required.
             VStack(spacing: 10) {
                 roomRow(
-                    title: period.previousPeriodLabel,
+                    title: period.previousPeriodLabel + " LEFT",
                     dateRange: period.previousWindowLabel,
-                    amount: snapshot.previousSpend,
+                    amount: snapshot.previousRoom,
                     isCurrent: false
                 )
 
                 roomRow(
-                    title: period.currentPeriodLabel,
+                    title: period.currentPeriodLabel + " LEFT",
                     dateRange: period.currentWindowLabel,
-                    amount: snapshot.currentSpend,
+                    amount: snapshot.currentRoom,
                     isCurrent: true
                 )
             }
@@ -1170,7 +1163,7 @@ private struct CushionHeroComparisonCard: View {
 
     private func roomRow(title: String, dateRange: String, amount: Double, isCurrent: Bool) -> some View {
         let isPopArt = theme.effects.isPopArt
-        let rawFill = calculateFillFraction(amount: amount, current: snapshot.currentSpend, previous: snapshot.previousSpend)
+        let rawFill = calculateFillFraction(amount: amount, current: snapshot.currentRoom, previous: snapshot.previousRoom)
         let fillFraction = max(0.08, min(rawFill, 1.0))
 
         return VStack(alignment: .leading, spacing: 6) {
@@ -1739,10 +1732,20 @@ enum CushionVerdictCopy {
 
     static func paceSummary(for snapshot: HeroCushionSnapshot) -> String {
         let amount = formattedMoney(abs(snapshot.roomDelta))
+        let horizon = paceHorizon(for: snapshot.period)
         if snapshot.currentRoom < 0 {
-            return snapshot.roomDelta >= 0 ? "\(amount) better by Sunday" : "\(amount) deeper by Sunday"
+            return snapshot.roomDelta >= 0 ? "\(amount) better \(horizon)" : "\(amount) deeper \(horizon)"
         }
-        return "\(amount) \(snapshot.hasMoreRoom ? "under" : "over") by Sunday"
+        return "\(amount) \(snapshot.hasMoreRoom ? "under" : "over") \(horizon)"
+    }
+
+    /// The end-of-period the pace projects toward, matched to the selected period.
+    private static func paceHorizon(for period: HeroPeriod) -> String {
+        switch period {
+        case .day:   return "by day's end"
+        case .week:  return "by week's end"
+        case .month: return "by month-end"
+        }
     }
 
     static func eyebrow(for snapshot: HeroCushionSnapshot) -> String {
@@ -1806,101 +1809,89 @@ private struct CushionCumulativePoint: Identifiable, Equatable {
     let current: Double
     let previous: Double
 
-    static func build(from dailyEnergy: [DailyEnergyItem], period: PulsePeriod) -> [CushionCumulativePoint] {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "yyyy-MM-dd"
-        fmt.calendar = .bablo
-        fmt.timeZone = .bablo
+    /// Build the cumulative pace line from the discretionary daily series. Both windows are
+    /// gap-filled (a day with no spend counts as $0) and aligned by elapsed position, so the
+    /// current and previous lines compare like-for-like.
+    static func build(series: CushionDailySeries, period: PulsePeriod) -> [CushionCumulativePoint] {
+        let currentDays = filledDays(points: series.current, start: series.currentStart, end: series.currentEnd)
+        let previousDays = filledDays(points: series.previous, start: series.previousStart, end: series.previousEnd)
+        guard !currentDays.isEmpty || !previousDays.isEmpty else { return [] }
 
-        let current = period.currentWindow
-        guard
-            let currentStart = fmt.date(from: current.startDate),
-            let currentEnd = fmt.date(from: current.endDate),
-            let previous = period.comparisonWindow,
-            let previousStart = fmt.date(from: previous.startDate),
-            let previousEnd = fmt.date(from: previous.endDate)
-        else { return [] }
-
-        let currentItems = dailyEnergy
-            .filter { item in
-                guard let date = fmt.date(from: item.dateLabel) else { return false }
-                return date >= currentStart && date <= currentEnd
-            }
-            .sorted { $0.dateLabel < $1.dateLabel }
-
-        let previousItems = dailyEnergy
-            .filter { item in
-                guard let date = fmt.date(from: item.dateLabel) else { return false }
-                return date >= previousStart && date <= previousEnd
-            }
-            .sorted { $0.dateLabel < $1.dateLabel }
-
-        guard !currentItems.isEmpty, !previousItems.isEmpty else { return [] }
-
-        if period == .month {
-            let cal = Calendar.bablo
-            func weekIndex(for date: Date, relativeTo start: Date) -> Int {
-                let diff = cal.dateComponents([.day], from: start, to: date).day ?? 0
-                return (diff / 7) + 1
-            }
-
-            var currentByWeek: [Int: Double] = [:]
-            for item in currentItems {
-                if let d = fmt.date(from: item.dateLabel) {
-                    let w = weekIndex(for: d, relativeTo: currentStart)
-                    currentByWeek[w, default: 0] += item.totalSpent
-                }
-            }
-
-            var previousByWeek: [Int: Double] = [:]
-            for item in previousItems {
-                if let d = fmt.date(from: item.dateLabel) {
-                    let w = weekIndex(for: d, relativeTo: previousStart)
-                    previousByWeek[w, default: 0] += item.totalSpent
-                }
-            }
-
-            let maxWeek = max(currentByWeek.keys.max() ?? 1, previousByWeek.keys.max() ?? 1)
-            var currentSum = 0.0
-            var previousSum = 0.0
-
-            return (1...maxWeek).map { w in
-                currentSum += currentByWeek[w, default: 0]
-                previousSum += previousByWeek[w, default: 0]
-                return CushionCumulativePoint(
-                    id: "W\(w)",
-                    label: "W\(w)",
-                    current: currentSum,
-                    previous: previousSum
-                )
-            }
-        } else if period == .day {
+        switch period {
+        case .day:
             return [
                 CushionCumulativePoint(
                     id: "today",
                     label: "Day",
-                    current: currentItems.reduce(0) { $0 + $1.totalSpent },
-                    previous: previousItems.reduce(0) { $0 + $1.totalSpent }
+                    current: currentDays.reduce(0) { $0 + $1.amount },
+                    previous: previousDays.reduce(0) { $0 + $1.amount }
                 )
             ]
-        } else {
-            let labels = ["M", "T", "W", "T", "F", "S", "S"]
+
+        case .month:
+            func weekIndex(_ dateLabel: String) -> Int {
+                let day = Int(dateLabel.split(separator: "-").last.map(String.init) ?? "1") ?? 1
+                return ((day - 1) / 7) + 1
+            }
+            var currentByWeek: [Int: Double] = [:]
+            for p in currentDays { currentByWeek[weekIndex(p.date), default: 0] += p.amount }
+            var previousByWeek: [Int: Double] = [:]
+            for p in previousDays { previousByWeek[weekIndex(p.date), default: 0] += p.amount }
+
+            let maxWeek = max(currentByWeek.keys.max() ?? 1, previousByWeek.keys.max() ?? 1, 1)
             var currentSum = 0.0
             var previousSum = 0.0
+            return (1...maxWeek).map { w in
+                currentSum += currentByWeek[w, default: 0]
+                previousSum += previousByWeek[w, default: 0]
+                return CushionCumulativePoint(id: "W\(w)", label: "W\(w)", current: currentSum, previous: previousSum)
+            }
 
-            return currentItems.enumerated().map { index, item in
-                currentSum += item.totalSpent
-                if index < previousItems.count {
-                    previousSum += previousItems[index].totalSpent
+        case .week:
+            let cal = Calendar.bablo
+            let fmt = DateFormatter()
+            fmt.dateFormat = "yyyy-MM-dd"
+            fmt.calendar = cal
+            fmt.timeZone = cal.timeZone
+            let letters = ["S", "M", "T", "W", "T", "F", "S"]
+            let count = max(currentDays.count, previousDays.count)
+            var currentSum = 0.0
+            var previousSum = 0.0
+            return (0..<count).map { i in
+                if i < currentDays.count { currentSum += currentDays[i].amount }
+                if i < previousDays.count { previousSum += previousDays[i].amount }
+                let label: String
+                if i < currentDays.count, let d = fmt.date(from: currentDays[i].date) {
+                    label = letters[(cal.component(.weekday, from: d) - 1) % 7]
+                } else {
+                    label = ""
                 }
-                return CushionCumulativePoint(
-                    id: item.dateLabel,
-                    label: index < labels.count ? labels[index] : String(item.weekday.prefix(1)),
-                    current: currentSum,
-                    previous: previousSum
-                )
+                let id = i < currentDays.count ? currentDays[i].date : "d\(i)"
+                return CushionCumulativePoint(id: id, label: label, current: currentSum, previous: previousSum)
             }
         }
+    }
+
+    /// Expand a sparse spend series into one entry per calendar day in [start, end], $0 for gaps.
+    private static func filledDays(points: [CushionDailyPoint], start: String, end: String) -> [CushionDailyPoint] {
+        let cal = Calendar.bablo
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.calendar = cal
+        fmt.timeZone = cal.timeZone
+        guard let startDate = fmt.date(from: start), let endDate = fmt.date(from: end), startDate <= endDate else {
+            return points.sorted { $0.date < $1.date }
+        }
+        let byDate = Dictionary(points.map { ($0.date, $0.amount) }, uniquingKeysWith: +)
+        var out: [CushionDailyPoint] = []
+        var d = startDate
+        while d <= endDate {
+            let label = fmt.string(from: d)
+            out.append(CushionDailyPoint(date: label, amount: byDate[label] ?? 0))
+            guard let next = cal.date(byAdding: .day, value: 1, to: d) else { break }
+            d = next
+        }
+        return out
     }
 }
 

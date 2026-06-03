@@ -15,7 +15,8 @@ struct ProfileDecodingTests {
           "monthly_income": 5500.00,
           "monthly_mandatory_expenses": 1282.00,
           "spending_plan_mode": "monthly_plan",
-          "tracked_spending_categories": ["eats_out", "coffee_runs", "fun"]
+          "tracked_spending_categories": ["eats_out", "coffee_runs", "fun"],
+          "time_zone": "America/Los_Angeles"
         }
         """.data(using: .utf8)!
 
@@ -28,6 +29,7 @@ struct ProfileDecodingTests {
         #expect(profile.monthlyMandatoryExpenses == 1282.0)
         #expect(profile.spendingPlanMode == .monthlyPlan)
         #expect(profile.trackedSpendingCategories == ["eats_out", "coffee_runs", "fun"])
+        #expect(profile.timeZone == "America/Los_Angeles")
     }
 
     @Test func profileDecodesWithMissingTrackedCategoriesAsEmptyArray() throws {
@@ -46,6 +48,7 @@ struct ProfileDecodingTests {
         #expect(profile.firstName == nil)
         #expect(profile.spendingPlanMode == .safeToSpend)
         #expect(profile.trackedSpendingCategories == [])
+        #expect(profile.timeZone == nil)
     }
 
     @Test func profileDecodesUnknownSpendingPlanModeAsSafeToSpend() throws {

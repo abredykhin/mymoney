@@ -225,22 +225,29 @@ struct HeroBudgetCalculator {
 
     func spendable(for period: HeroPeriod) -> Double {
         let rawSpendable = effectiveBudget(for: period) - spentSoFar(for: period)
-        
+
         switch period {
         case .month:
             return rawSpendable
-            
-        case .week, .day:
+
+        case .week:
             guard spendingPlanMode == .safeToSpend, liquidCashAvailable != nil else {
                 return rawSpendable
             }
-            
+            // A week can't be deeper in the red than the month that contains it.
             let safeMonthlyRemaining = spendable(for: .month)
-            if safeMonthlyRemaining < 0 {
-                return max(rawSpendable, safeMonthlyRemaining)
-            } else {
+            return safeMonthlyRemaining < 0 ? max(rawSpendable, safeMonthlyRemaining) : rawSpendable
+
+        case .day:
+            guard spendingPlanMode == .safeToSpend, liquidCashAvailable != nil else {
                 return rawSpendable
             }
+            // A single day can't be deeper in the red than the week that contains it
+            // (the week is itself already floored at the month above). This prevents a
+            // large one-off charge — e.g. a rent or spousal-support payment that lands
+            // today — from making the daily number look worse than the whole week.
+            let safeWeekRemaining = spendable(for: .week)
+            return safeWeekRemaining < 0 ? max(rawSpendable, safeWeekRemaining) : rawSpendable
         }
     }
 
@@ -444,8 +451,9 @@ struct HeroBudgetBreakdownCalculator {
     private var periodSteps: [HeroBudgetBreakdownStep] {
         let budget = calculator.effectiveBudget(for: period)
         let spent = calculator.spentSoFar(for: period)
-        
-        return [
+        let rawAfter = budget - spent
+
+        var steps: [HeroBudgetBreakdownStep] = [
             HeroBudgetBreakdownStep(
                 number: 1,
                 title: startingStepTitle,
@@ -458,11 +466,37 @@ struct HeroBudgetBreakdownCalculator {
                 number: 2,
                 title: burnedStepTitle,
                 amount: -spent,
-                afterAmount: budget - spent,
+                afterAmount: rawAfter,
                 tone: .negative,
                 transactionSource: .variableSpend
             )
         ]
+
+        // A day is floored at its week (and a week at its month): you can't be deeper in
+        // the red for today than for the whole week. When that floor bites, `finalAmount`
+        // is higher than `budget − spent`, so show the cap as an explicit step — otherwise
+        // the steps wouldn't reconcile to the headline ("the math doesn't math out").
+        let clampAdjustment = finalAmount - rawAfter
+        if abs(clampAdjustment.rounded()) >= 1 {
+            steps.append(HeroBudgetBreakdownStep(
+                number: 3,
+                title: clampStepTitle,
+                amount: clampAdjustment,
+                afterAmount: finalAmount,
+                tone: clampAdjustment >= 0 ? .positive : .negative,
+                transactionSource: nil     // calculated cap, no transactions
+            ))
+        }
+        return steps
+    }
+
+    /// Title for the floor-reconciliation step (see `periodSteps`).
+    private var clampStepTitle: String {
+        switch period {
+        case .day:   return "Capped at this week's room"
+        case .week:  return "Capped at this month's room"
+        case .month: return "Capped at safe cash"
+        }
     }
 
     // Context rows are only used for week/day to show the monthly cap.
