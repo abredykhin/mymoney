@@ -232,7 +232,10 @@ struct MoneyLeftBreakdownView: View {
                 // "Recent" widget (scoped to this period) instead of a bespoke list.
                 let navDest: HomeDestination? = step.transactionSource.map { source in
                     switch source {
-                    case .variableSpend: return .periodSpendList(period)
+                    // The spend step is always month-scoped: in the month breakdown it's the
+                    // month's spend, and in the week/day breakdown the spend step is also the
+                    // month's spend (the period number is derived from what's left this month).
+                    case .variableSpend: return .periodSpendList(.month)
                     case .income, .obligations: return .breakdownTransactions(source, period, nil)
                     }
                 }

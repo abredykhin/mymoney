@@ -157,18 +157,20 @@ struct HeroBudgetGoldenTests {
         #expect(abs(c.spendable(for: .day) - 294.11) < 0.05)
         #expect(abs(c.effectiveBudget(for: .day) - 258.06) < 0.05)
 
-        // Day/week breakdown is a true budget − spent = left chain (budget = spent + pace),
-        // so it reconciles to the hero pace by construction and shows the period's spend.
+        // Day/week breakdown is month-derived: month budget → spent this month → left this
+        // month → set aside for the rest of the month → this period's slice. Reconciles to pace.
         let bdWeek = HeroBudgetBreakdownCalculator(calculator: c, period: .week)
-        #expect(bdWeek.steps.count == 2)
-        #expect(bdWeek.steps[0].title == "This week's budget")
-        #expect(bdWeek.steps[1].title == "What you've spent this week")
+        #expect(bdWeek.steps.count == 3)
+        #expect(bdWeek.steps[0].title == "This month's budget")
+        #expect(bdWeek.steps[1].title == "What you've spent this month")
+        #expect(bdWeek.steps[2].title == "Set aside for the rest of the month")
         #expect(abs(bdWeek.steps.map { $0.amount }.reduce(0, +) - bdWeek.finalAmount) < 0.01)
 
         let bdDay = HeroBudgetBreakdownCalculator(calculator: c, period: .day)
-        #expect(bdDay.steps.count == 2)
-        #expect(bdDay.steps[0].title == "Today's budget")
-        #expect(bdDay.steps[1].title == "What you've spent today")
+        #expect(bdDay.steps.count == 3)
+        #expect(bdDay.steps[0].title == "This month's budget")
+        #expect(bdDay.steps[1].title == "What you've spent this month")
+        #expect(bdDay.steps[2].title == "Set aside for the rest of the month")
         #expect(abs(bdDay.steps.map { $0.amount }.reduce(0, +) - bdDay.finalAmount) < 0.01)
     }
 
@@ -203,10 +205,12 @@ struct HeroBudgetGoldenTests {
         #expect(bdMonth.steps[1].title == "Upcoming bills")
         #expect(bdMonth.steps[2].title == "Goals set aside")
 
+        // Cash mode: the month pool is cash-on-hand and doesn't net spend, so there's no
+        // "spent this month" step — just month budget → set aside → today's slice.
         let bdDay = HeroBudgetBreakdownCalculator(calculator: c, period: .day)
         #expect(bdDay.steps.count == 2)
-        #expect(bdDay.steps[0].title == "Today's budget")
-        #expect(bdDay.steps[1].title == "What you've spent today")
+        #expect(bdDay.steps[0].title == "This month's budget")
+        #expect(bdDay.steps[1].title == "Set aside for the rest of the month")
         #expect(abs(bdDay.steps.map { $0.amount }.reduce(0, +) - bdDay.finalAmount) < 0.01)
     }
 
@@ -230,7 +234,10 @@ struct HeroBudgetGoldenTests {
         #expect(abs(c.spendable(for: .week) - 1441.17) < 0.05)
         #expect(c.spendable(for: .week) > 0, "week pace is positive because remaining pool is high")
         #expect(c.spendable(for: .month) > 0, "month must be healthy")
-        #expect(c.fillTarget(for: .week) == 1.0)
+        // Week fill is now period-local: of this week's budget (spent $1,400 + $1,441 still safe
+        // = $2,841), $1,441 remains ≈ 51%. (Previously this read 100% against the flat weekly
+        // share; the period-local view reflects that ~half the week's budget is already spent.)
+        #expect(abs(c.fillTarget(for: .week) - 0.5072) < 0.005)
 
         let bdMonth = HeroBudgetBreakdownCalculator(calculator: c, period: .month)
         #expect(bdMonth.steps.count == 4)

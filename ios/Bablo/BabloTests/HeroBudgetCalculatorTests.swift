@@ -190,10 +190,10 @@ struct HeroBudgetCalculatorTests {
         #expect(abs(breakdown.reconciledAmount - c.spendable(for: .week)) < 0.001)
     }
 
-    /// Week/day breakdown is a budget − spent = left chain: step 1 is the period's budget
-    /// (= what's left + what's already spent), step 2 subtracts the period's spend, and the
-    /// chain lands on the hero pace. Step 2 carries the category sub-rows (spendStepNumber).
-    @Test func breakdownWeekIsBudgetMinusSpentChain() {
+    /// Week/day breakdown is month-derived so the period number is explicable: step 1 is the
+    /// month budget, step 2 subtracts what's been spent this month (landing on what's left this
+    /// month), step 3 sets aside the rest of the month — leaving this period's slice (the pace).
+    @Test func breakdownWeekIsMonthDerivedChain() {
         let c = calc(
             income: 5_000,
             mandatory: 2_000,
@@ -202,24 +202,28 @@ struct HeroBudgetCalculatorTests {
             daysInMonth: 30
         )
         let bd = HeroBudgetBreakdownCalculator(calculator: c, period: .week)
+        let monthBudget = c.effectiveBudget(for: .month)
+        let monthSpent = c.spentSoFar(for: .month)
+        let monthLeft = c.spendable(for: .month)
         let pace = c.spendable(for: .week)
-        let spent = c.spentSoFar(for: .week)
 
-        #expect(bd.steps.count == 2)
-        #expect(bd.steps[0].title == "This week's budget")
-        #expect(abs(bd.steps[0].amount - (pace + spent)) < 0.01)
-        #expect(bd.steps[1].title == "What you've spent this week")
-        #expect(abs(bd.steps[1].amount - (-spent)) < 0.01)
-        #expect(abs(bd.steps[1].afterAmount - pace) < 0.01)
-        #expect(bd.spendStepNumber == 2)
+        #expect(bd.steps.count == 3)
+        #expect(bd.steps[0].title == "This month's budget")
+        #expect(abs(bd.steps[0].amount - monthBudget) < 0.01)
+        #expect(bd.steps[1].title == "What you've spent this month")
+        #expect(abs(bd.steps[1].amount - (-monthSpent)) < 0.01)
+        #expect(abs(bd.steps[1].afterAmount - monthLeft) < 0.01)
         #expect(bd.steps[1].transactionSource == .variableSpend)
+        #expect(bd.steps[2].title == "Set aside for the rest of the month")
+        #expect(abs(bd.steps[2].afterAmount - pace) < 0.01)
+        #expect(bd.spendStepNumber == 0)
         #expect(bd.contextRows.isEmpty)
+        #expect(abs(bd.steps.map(\.amount).reduce(0, +) - pace) < 0.01)
     }
 
-    /// When spending barely moved versus the prior period (room delta rounds to $0) the chip
-    /// is shown in a "flat" state instead of vanishing, so an empty pill never leaves the user
-    /// guessing whether it means "the same" or "no data".
-    @Test func deltaChipDayIsFlatWhenRoomBarelyMoves() {
+    /// When spending barely moved versus the prior period (room delta rounds to $0) the pill is
+    /// hidden entirely rather than showing a noisy "about the same" chip.
+    @Test func deltaChipDayHiddenWhenRoomBarelyMoves() {
         let c = calc(
             income: 5_000,
             mandatory: 2_000,
@@ -228,9 +232,7 @@ struct HeroBudgetCalculatorTests {
             prevDay: 10,
             daysInMonth: 31
         )
-        let chip = c.deltaChip(for: .day)
-        #expect(chip?.isFlat == true)
-        #expect(chip?.label == "about the same vs yesterday")
+        #expect(c.deltaChip(for: .day) == nil)
     }
 
     @Test func breakdownUsesSafeToSpendCashCapLanguageWhenCashBinds() {
@@ -719,8 +721,12 @@ struct HeroBudgetCalculatorTests {
         let roomDelta = Int(snapshot!.roomDelta.rounded())
         // Chip equals the snapshot's room delta (the cushion sheet headline)…
         #expect(c.deltaLabel(for: .day) == "$\(roomDelta) more vs yesterday")
-        // …and is on the daily-pace scale, nowhere near the raw spend delta (~$4,984).
-        #expect(roomDelta < 200)
+        // …and is on the daily-pace scale: the raw $4,984 day-over-day spend gap spread across
+        // the 28 days left this month ≈ $178, far below the raw spend delta (which would have
+        // rendered as a nonsensical "+$5K" beside the day's pace).
+        let rawSpendGap = 4_987 - 3
+        #expect(roomDelta == rawSpendGap / 28)            // pace-scaled, == 178
+        #expect(roomDelta < rawSpendGap / 10)             // nowhere near the raw spend delta
     }
 
     /// A received one-off inflow (e.g. a brokerage credit counted as extra income) must not
@@ -956,11 +962,11 @@ struct HeroBudgetCalculatorTests {
         )
         let breakdown = HeroBudgetBreakdownCalculator(calculator: c, period: .day)
 
-        // Period breakdown is a budget − spent = left chain (2 steps), reconciling to the
-        // daily pace by construction (budget = spent + pace).
+        // Cash mode (safeToSpend): the month pool is cash-on-hand and doesn't net spend, so the
+        // month-derived chain is 2 steps — month budget → set aside — reconciling to the pace.
         #expect(breakdown.steps.count == 2)
-        #expect(breakdown.steps[0].title == "Today's budget")
-        #expect(breakdown.steps[1].title == "What you've spent today")
+        #expect(breakdown.steps[0].title == "This month's budget")
+        #expect(breakdown.steps[1].title == "Set aside for the rest of the month")
 
         // Sum of all steps MUST exactly match finalAmount
         let sum = breakdown.steps.map(\.amount).reduce(0, +)

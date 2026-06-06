@@ -78,14 +78,11 @@ struct LiquidHeroView: View {
     private var deltaChipValue: HeroDeltaChip? { calculator.deltaChip(for: period) }
 
     private var denominatorText: String {
-        switch period {
-        case .month:
-            let income = calculator.effectiveIncome
-            guard income > 0 else { return "of \(moneyStr(effectiveBudget)) budget" }
-            return "of \(moneyStr(income)) budget"
-        case .week, .day:
-            return "of \(moneyStr(effectiveBudget)) budget"
-        }
+        // The "budget" is the discretionary pool (income − bills) for every period, so this text
+        // reconciles with the badge %, the liquid fill, and the breakdown's "This month's budget"
+        // step. (Previously the month case showed gross income here, which contradicted the badge
+        // — e.g. "of $17,455 budget" beside a 53% badge that was really $6,784 ÷ the ~$12,842 pool.)
+        "of \(moneyStr(effectiveBudget)) budget"
     }
 
     private var overBudgetPeriodLabel: String {
@@ -143,12 +140,9 @@ struct LiquidHeroView: View {
     private var topRow: some View {
         HStack(alignment: .center) {
             periodSwitch
-            Spacer(minLength: 8)
+            Spacer(minLength: 16)
             deltaChip
         }
-        // Reserve a stable height that fits a two-line chip so the canvas below doesn't
-        // jump up/down when switching periods (week's chip is one line, month's is two).
-        .frame(height: 40)
         .padding(.horizontal, 16)
         .padding(.top, 16)
     }
@@ -165,16 +159,12 @@ struct LiquidHeroView: View {
     private var deltaChip: some View {
         if let chip = deltaChipValue {
             let isPopArt = theme.effects.isPopArt
-            let accent = chip.isFlat
-                ? theme.colors.textTertiary.color
-                : (chip.hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color)
+            let accent = chip.hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color
             Button {
                 onDeltaTap?()
             } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: chip.isFlat
-                          ? "equal"
-                          : (chip.hasMoreRoom ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill"))
+                    Image(systemName: chip.hasMoreRoom ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill")
                         .font(.system(size: 9, weight: .bold))
                     Text(chip.label)
                         .font(.system(
@@ -184,16 +174,14 @@ struct LiquidHeroView: View {
                         ))
                         .tracking(isPopArt ? 0.6 : 0)
                         .textCase(isPopArt ? .uppercase : nil)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.82)
-                        .multilineTextAlignment(.trailing)
-                        .fixedSize(horizontal: false, vertical: true)
-                        // Cap the wrap width (so a long "vs last mo" label breaks to two lines)
-                        // while letting the pill hug its content and sit flush right.
-                        .frame(maxWidth: 150, alignment: .trailing)
+                        // One line that hugs its content (no fixed width, no two-line wrap), so
+                        // the pill stays compact for both the short week label and the long month
+                        // one and never balloons to a reserved width.
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
                 .foregroundStyle(isPopArt ? theme.colors.surface.color : accent)
-                .padding(.horizontal, 9)
+                .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(isPopArt ? theme.colors.textPrimary.color : accent.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: isPopArt ? 0 : 999))
@@ -204,6 +192,7 @@ struct LiquidHeroView: View {
                 .shadow(color: isPopArt ? theme.effects.shadowColor : .clear, radius: 0, x: 3, y: 3)
             }
             .buttonStyle(.plain)
+            .layoutPriority(1)
             .disabled(onDeltaTap == nil)
             .accessibilityLabel("Show cushion comparison")
         }
@@ -327,10 +316,11 @@ struct LiquidHeroView: View {
 
     private var statusStrip: some View {
         let isOver = spendable < 0
-        // The badge shows how much of THIS period's own budget is still left — i.e. the same
-        // ratio as the liquid fill level, so the number agrees with the tank. (Day = today's
-        // budget, week = the original week budget, month = the month's budget.)
-        let denominator = effectiveBudget
+        // The badge shows how much of THIS period's own budget is still left — the same ratio
+        // as the liquid fill level, so the number agrees with the tank. The period budget is
+        // "already spent + still safe", so it resets each period: a fresh day with nothing
+        // spent reads as 100%, not a fraction carried over from earlier in the month.
+        let denominator = calculator.periodBudget(for: period)
         let realRatio = denominator > 0 ? spendable / denominator : 0
         let pct = Int((min(1, max(0, realRatio)) * 100).rounded())
         let badgeBg  = theme.effects.isPopArt ? theme.colors.accent.color : fillGradientColors(for: animatedFill).bottom

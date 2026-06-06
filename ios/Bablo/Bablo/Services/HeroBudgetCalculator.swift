@@ -285,8 +285,21 @@ struct HeroBudgetCalculator {
 
     // MARK: - Derived: liquid fill ratio (clamped to [0.10, 1.0])
 
+    /// The period's own budget for badge/fill.
+    /// - Month: the month pool (`effectiveBudget`) — unchanged, and correct in both income and
+    ///   cash modes (cash mode's remaining isn't net of spend, so spent+remaining would overstate).
+    /// - Day/week: what you've already spent this period plus what's still safe to spend, so it
+    ///   resets per period — a fresh day with nothing spent reads as 100% full rather than
+    ///   carrying a fraction over from earlier in the month.
+    func periodBudget(for period: HeroPeriod) -> Double {
+        switch period {
+        case .month:       return effectiveBudget(for: .month)
+        case .day, .week:  return spentSoFar(for: period) + spendable(for: period)
+        }
+    }
+
     func fillTarget(for period: HeroPeriod) -> Double {
-        let budget = effectiveBudget(for: period)
+        let budget = periodBudget(for: period)
         guard budget > 0 else { return 0.10 }
         let ratio = spendable(for: period) / budget
         return ratio <= 0 ? 0.10 : min(1.0, ratio)
@@ -297,19 +310,15 @@ struct HeroBudgetCalculator {
     func deltaChip(for period: HeroPeriod) -> HeroDeltaChip? {
         guard let snapshot = HeroCushionSnapshot(calculator: self, period: period) else { return nil }
         let delta = Int(snapshot.roomDelta.rounded())
+        // Spending essentially matched the prior period — hide the pill entirely rather than
+        // surface a noisy "about the same" chip.
+        guard abs(delta) >= 1 else { return nil }
 
         let suffix: String
         switch period {
         case .day:   suffix = "vs yesterday"
         case .week:  suffix = "vs last wk"
         case .month: suffix = "vs last mo"
-        }
-
-        // There IS a comparable prior period (snapshot exists), but the room barely moved.
-        // Show an explicit "flat" chip instead of an empty pill — an empty pill left users
-        // wondering whether it meant "exactly the same" or "no data".
-        guard abs(delta) >= 1 else {
-            return HeroDeltaChip(label: "about the same \(suffix)", hasMoreRoom: true, isFlat: true)
         }
 
         let amount = "$\(compactDollar(abs(delta)))"
@@ -385,9 +394,9 @@ struct HeroBudgetBreakdownCalculator {
                 return 3
             }
         case .week, .day:
-            // The period breakdown is a true budget − spent chain (see periodSteps);
-            // step 2 is "What you've spent this week/day" and carries the category sub-rows.
-            return 2
+            // The period breakdown is month-derived (see periodSteps); the spend step is the
+            // month's spend (step 2), tappable to the month list but with no inline sub-rows.
+            return 0
         }
     }
 
@@ -507,54 +516,60 @@ struct HeroBudgetBreakdownCalculator {
         return result
     }
 
-    /// Day/week read as a true "budget − spent = left" chain, mirroring the month. The period's
-    /// budget is what it actually affords = what you've already spent this period + what's still
-    /// safe to spend (the hero's pace). Defining the budget this way keeps the chain reconciling
-    /// to the hero headline by construction: budget − spent = pace = finalAmount. (This replaces
-    /// the old "Safe to spend this month → held for the rest of the month" framing, where the
-    /// spent figure floated in a context row between two identical numbers and read as broken
-    /// math.)
+    /// Day/week are derived from the month so the period number is unambiguous: start from the
+    /// month's budget, subtract what's been spent this month to land on what's left this month
+    /// (the hero's "left this month"), then set aside the part reserved for the rest of the
+    /// month — what remains is this period's slice (the hero number). Every line is a distinct,
+    /// real number and the chain reconciles to the headline pace by construction.
     private var periodSteps: [HeroBudgetBreakdownStep] {
-        let pace = calculator.spendable(for: period)        // what's left this period (the hero number)
-        let spent = calculator.spentSoFar(for: period)
-        let budget = pace + spent                            // what this period affords in total
+        let monthBudget = calculator.effectiveBudget(for: .month)   // month pool (income or cash)
+        let monthLeft = calculator.spendable(for: .month)           // what's left this month
+        let pace = calculator.spendable(for: period)                // = final (left this period)
+        let setAside = pace - monthLeft                             // ≤ 0: held for the other days
 
-        let budgetTitle: String
-        let spentTitle: String
-        switch period {
-        case .day:
-            budgetTitle = "Today's budget"
-            spentTitle = "What you've spent today"
-        case .week:
-            budgetTitle = "This week's budget"
-            spentTitle = "What you've spent this week"
-        case .month:
-            budgetTitle = "This month's budget"
-            spentTitle = "What you've spent this month"
-        }
-
-        return [
+        var steps: [HeroBudgetBreakdownStep] = [
             HeroBudgetBreakdownStep(
                 number: 1,
-                title: budgetTitle,
-                amount: budget,
-                afterAmount: budget,
+                title: "This month's budget",
+                amount: monthBudget,
+                afterAmount: monthBudget,
                 tone: .positive,
                 transactionSource: nil
-            ),
-            HeroBudgetBreakdownStep(
-                number: 2,
-                title: spentTitle,
-                amount: -spent,
-                afterAmount: pace,
-                tone: .negative,
-                transactionSource: .variableSpend
             )
         ]
+
+        // Income/projected mode subtracts month-to-date spend to reach "left this month"; cash
+        // mode's pool is cash-on-hand and does not net spend, so it skips this step (matching
+        // the month breakdown, which has no spend step in cash mode).
+        if calculator.incomeBasis != .cashOnly {
+            let monthSpent = calculator.spentSoFar(for: .month)
+            steps.append(
+                HeroBudgetBreakdownStep(
+                    number: 2,
+                    title: "What you've spent this month",
+                    amount: -monthSpent,
+                    afterAmount: monthLeft,
+                    tone: .negative,
+                    transactionSource: .variableSpend
+                )
+            )
+        }
+
+        steps.append(
+            HeroBudgetBreakdownStep(
+                number: steps.count + 1,
+                title: "Set aside for the rest of the month",
+                amount: setAside,
+                afterAmount: pace,
+                tone: .neutral,
+                transactionSource: nil
+            )
+        )
+        return steps
     }
 
-    /// No longer used by day/week (spend is a first-class step now), kept empty so the
-    /// breakdown view's context-row slot renders nothing.
+    /// No longer used by day/week (the month-derived steps tell the whole story), kept empty so
+    /// the breakdown view's context-row slot renders nothing.
     var contextRows: [HeroBudgetContextRow] {
         []
     }
@@ -644,9 +659,6 @@ struct HeroBudgetAccountAuditRow: Identifiable, Equatable {
 struct HeroDeltaChip: Equatable {
     let label: String
     let hasMoreRoom: Bool
-    /// Spending essentially matched the prior period (room delta rounded to $0). Rendered in a
-    /// neutral style with no up/down arrow so it reads as "flat", not as a gain or a loss.
-    var isFlat: Bool = false
 }
 
 struct HeroCushionSnapshot: Equatable {
