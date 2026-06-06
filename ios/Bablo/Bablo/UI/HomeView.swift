@@ -541,7 +541,7 @@ private enum HomeViewPreviewFixtures {
         service.userStreak = UserStreak(
             currentStreak: 7,
             maxStreak: 12,
-            last10DaysStatus: [true, true, false, true, true, true, true, false, true, true]
+            last28DaysStatus: [true, true, false, true, true, true, true, false, true, true] + Array(repeating: false, count: 18)
         )
         return service
     }

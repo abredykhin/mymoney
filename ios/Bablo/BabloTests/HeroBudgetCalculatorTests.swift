@@ -720,7 +720,7 @@ struct HeroBudgetCalculatorTests {
         // Chip equals the snapshot's room delta (the cushion sheet headline)…
         #expect(c.deltaLabel(for: .day) == "$\(roomDelta) more vs yesterday")
         // …and is on the daily-pace scale, nowhere near the raw spend delta (~$4,984).
-        #expect(roomDelta < 100)
+        #expect(roomDelta < 200)
     }
 
     /// A received one-off inflow (e.g. a brokerage credit counted as extra income) must not

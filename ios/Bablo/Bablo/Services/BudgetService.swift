@@ -272,12 +272,12 @@ struct TopMerchantItem: Codable, Identifiable, Equatable {
 struct UserStreak: Codable, Equatable {
     let currentStreak: Int
     let maxStreak: Int
-    let last10DaysStatus: [Bool]
+    let last28DaysStatus: [Bool]
 
     enum CodingKeys: String, CodingKey {
         case currentStreak = "current_streak"
         case maxStreak = "max_streak"
-        case last10DaysStatus = "last_10_days_status"
+        case last28DaysStatus = "last_28_days_status"
     }
 }
 

@@ -74,7 +74,7 @@ struct StreakServiceTests {
             {
                 "current_streak": 91,
                 "max_streak": 91,
-                "last_10_days_status": [true, true, true, true, true, true, true, true, true, true]
+                "last_28_days_status": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]
             }
         ]
         """.utf8)
@@ -90,7 +90,7 @@ struct StreakServiceTests {
         let streak = UserStreak(
             currentStreak: 7,
             maxStreak: 12,
-            last10DaysStatus: [true, true, false, true, true, true, true, false, true, true]
+            last28DaysStatus: [true, true, false, true, true, true, true, false, true, true] + Array(repeating: false, count: 18)
         )
 
         #expect(streak.nextMilestoneDay == 14)
@@ -102,7 +102,7 @@ struct StreakServiceTests {
         let streak = UserStreak(
             currentStreak: 30,
             maxStreak: 30,
-            last10DaysStatus: Array(repeating: true, count: 10)
+            last28DaysStatus: Array(repeating: true, count: 28)
         )
 
         let milestones = streak.detailMilestones
@@ -114,17 +114,17 @@ struct StreakServiceTests {
         #expect(milestones.first(where: { $0.day == 60 })?.isReached == false)
     }
 
-    @Test func streakDetailCalendarPadsKnownStatusesIntoFiveWeekGrid() {
+    @Test func streakDetailCalendarPadsKnownStatusesIntoFourWeekGrid() {
         let streak = UserStreak(
             currentStreak: 5,
             maxStreak: 5,
-            last10DaysStatus: [true, false, true, true, true, false, true, true, true, true]
+            last28DaysStatus: [true, false, true, true, true, false, true, true, true, true] + Array(repeating: false, count: 18)
         )
 
         let cells = streak.detailCalendarCells
 
-        #expect(cells.count == 35)
-        #expect(cells.prefix(25).allSatisfy { $0.status == .unknown })
+        #expect(cells.count == 28)
+        #expect(cells.prefix(18).allSatisfy { $0.status == .overBudget })
         #expect(cells.suffix(10).map(\.status) == [
             .underBudget,
             .underBudget,
@@ -150,7 +150,7 @@ struct StreakServiceTests {
         let streak = UserStreak(
             currentStreak: 3,
             maxStreak: 6,
-            last10DaysStatus: Array(repeating: true, count: 10)
+            last28DaysStatus: Array(repeating: true, count: 28)
         )
 
         #expect(streak.freezeMarkerSummary == "Earned every 3 under-budget days. They are streak checkpoints, not extra spending money.")

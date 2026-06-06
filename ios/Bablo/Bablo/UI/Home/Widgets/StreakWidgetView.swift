@@ -33,7 +33,7 @@ struct StreakWidgetView: View {
     }
 
     private var statusPills: [Bool] {
-        var status = streakService.userStreak?.last10DaysStatus ?? []
+        var status = streakService.userStreak?.last28DaysStatus ?? []
         if status.count < 10 {
             status.append(contentsOf: Array(repeating: false, count: 10 - status.count))
         }
@@ -105,7 +105,7 @@ struct StreakDetailView: View {
         streakService.userStreak ?? UserStreak(
             currentStreak: 0,
             maxStreak: 0,
-            last10DaysStatus: Array(repeating: false, count: 10)
+            last28DaysStatus: Array(repeating: false, count: 28)
         )
     }
 
@@ -630,7 +630,7 @@ struct StreakWidgetPreviewWrapper: View {
             self.streakService.userStreak = UserStreak(
                 currentStreak: 7,
                 maxStreak: 12,
-                last10DaysStatus: [true, true, true, true, true, false, false, false, false, false]
+                last28DaysStatus: [true, true, true, true, true, false, false, false, false, false] + Array(repeating: false, count: 18)
             )
         }
     }

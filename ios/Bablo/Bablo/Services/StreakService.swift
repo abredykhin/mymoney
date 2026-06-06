@@ -75,7 +75,7 @@ extension UserStreak {
     }
 
     var detailCalendarCells: [StreakCalendarCell] {
-        let chronologicalStatuses = Array(last10DaysStatus.prefix(10)).reversed()
+        let chronologicalStatuses = Array(last28DaysStatus.prefix(28)).reversed()
         let knownCells = chronologicalStatuses.enumerated().map { index, isUnderBudget in
             let isToday = index == chronologicalStatuses.count - 1
             let status: StreakCalendarDayStatus
@@ -86,10 +86,10 @@ extension UserStreak {
                 status = isUnderBudget ? .underBudget : .overBudget
             }
 
-            return StreakCalendarCell(id: 35 - chronologicalStatuses.count + index, status: status)
+            return StreakCalendarCell(id: 28 - chronologicalStatuses.count + index, status: status)
         }
 
-        let unknownCount = max(35 - knownCells.count, 0)
+        let unknownCount = max(28 - knownCells.count, 0)
         let unknownCells = (0..<unknownCount).map { StreakCalendarCell(id: $0, status: .unknown) }
 
         return unknownCells + knownCells
@@ -166,7 +166,7 @@ private extension UserStreak {
         UserStreak(
             currentStreak: min(max(currentStreak, 0), 90),
             maxStreak: min(max(maxStreak, 0), 90),
-            last10DaysStatus: Array(last10DaysStatus.prefix(10))
+            last28DaysStatus: Array(last28DaysStatus.prefix(28))
         )
     }
 }
