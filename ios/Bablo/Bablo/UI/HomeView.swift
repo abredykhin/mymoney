@@ -132,6 +132,13 @@ struct HomeView: View {
                     title: periodSpendListTitle(for: period),
                     initialFilter: .out
                 )
+            case .dayTransactions(let dateStr):
+                AllTransactionsView(
+                    startDate: dateStr,
+                    endDate: dateStr,
+                    title: formatDisplayDate(dateStr),
+                    initialFilter: .all
+                )
             }
         }
         .sheet(isPresented: $showingOnboarding) {
@@ -250,6 +257,19 @@ struct HomeView: View {
             startDate = cal.dateInterval(of: .month, for: now)?.start ?? cal.startOfDay(for: now)
         }
         return (fmt.string(from: startDate), fmt.string(from: now))
+    }
+
+    private func formatDisplayDate(_ dateStr: String) -> String {
+        let parser = DateFormatter()
+        parser.dateFormat = "yyyy-MM-dd"
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.timeZone = Calendar.bablo.timeZone
+        guard let date = parser.date(from: dateStr) else { return dateStr }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        formatter.timeZone = Calendar.bablo.timeZone
+        return formatter.string(from: date)
     }
 
     private func periodSpendListTitle(for period: HeroPeriod) -> String {

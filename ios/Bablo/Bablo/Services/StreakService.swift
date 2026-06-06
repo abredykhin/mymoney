@@ -29,6 +29,7 @@ enum StreakCalendarDayStatus: Equatable {
 struct StreakCalendarCell: Identifiable, Equatable {
     let id: Int
     let status: StreakCalendarDayStatus
+    let date: Date
 }
 
 struct StreakDetailMilestone: Identifiable, Equatable {
@@ -75,6 +76,9 @@ extension UserStreak {
     }
 
     var detailCalendarCells: [StreakCalendarCell] {
+        let cal = Calendar.bablo
+        let today = Date()
+        
         let chronologicalStatuses = Array(last28DaysStatus.prefix(28)).reversed()
         let knownCells = chronologicalStatuses.enumerated().map { index, isUnderBudget in
             let isToday = index == chronologicalStatuses.count - 1
@@ -86,11 +90,18 @@ extension UserStreak {
                 status = isUnderBudget ? .underBudget : .overBudget
             }
 
-            return StreakCalendarCell(id: 28 - chronologicalStatuses.count + index, status: status)
+            let daysAgo = chronologicalStatuses.count - 1 - index
+            let cellDate = cal.date(byAdding: .day, value: -daysAgo, to: today) ?? today
+
+            return StreakCalendarCell(id: 28 - chronologicalStatuses.count + index, status: status, date: cellDate)
         }
 
         let unknownCount = max(28 - knownCells.count, 0)
-        let unknownCells = (0..<unknownCount).map { StreakCalendarCell(id: $0, status: .unknown) }
+        let unknownCells = (0..<unknownCount).map { index in
+            let daysAgo = 28 - 1 - index
+            let cellDate = cal.date(byAdding: .day, value: -daysAgo, to: today) ?? today
+            return StreakCalendarCell(id: index, status: .unknown, date: cellDate)
+        }
 
         return unknownCells + knownCells
     }

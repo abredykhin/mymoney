@@ -139,6 +139,35 @@ struct StreakServiceTests {
         ])
     }
 
+    @Test func streakDetailCalendarCellDatesAreCorrectlyCalculated() {
+        let streak = UserStreak(
+            currentStreak: 5,
+            maxStreak: 5,
+            last10DaysStatus: [true, false, true, true, true, false, true, true, true, true]
+        )
+
+        let cells = streak.detailCalendarCells
+        #expect(cells.count == 35)
+
+        let cal = Calendar.bablo
+        let today = Date()
+
+        // The last cell (index 34) should be today
+        if let lastCellDate = cells.last?.date {
+            #expect(cal.isDate(lastCellDate, inSameDayAs: today))
+        } else {
+            Issue.record("Last cell is missing")
+        }
+
+        // Check that the cell dates are sequential (exactly 1 day apart)
+        for i in 0..<34 {
+            let currentCellDate = cells[i].date
+            let nextCellDate = cells[i+1].date
+            let diff = cal.dateComponents([.day], from: currentCellDate, to: nextCellDate).day
+            #expect(diff == 1)
+        }
+    }
+
     @Test func streakDetailCalendarStatusesHaveClearDisplayLabels() {
         #expect(StreakCalendarDayStatus.unknown.displayLabel == "No data")
         #expect(StreakCalendarDayStatus.underBudget.displayLabel == "Under budget")
