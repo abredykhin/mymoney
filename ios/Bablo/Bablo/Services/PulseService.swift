@@ -180,14 +180,16 @@ final class PulseService: ObservableObject {
         Logger.d("PulseService: Fetching category breakdown (\(startDate) to \(endDate))")
 
         do {
-            // Discretionary layer (variable_transactions), so the Swing's category swing sums to
-            // the same "spent" the damage headline, hero, Money-Left, and Cushion show. Total
-            // spend (is_spend incl. mandatory bills) is already subtracted as obligations elsewhere.
-            let current = try await fetchTransactionsForBreakdown(from: "variable_transactions", startDate: startDate, endDate: endDate)
+            // TOTAL spend (transactions WHERE is_spend), so the Swing's categories sum to the
+            // Damage Report headline. Mandatory bills are not hidden here — the builder routes
+            // them into their own `.bills` bucket (via is_mandatory) so they're visible and the
+            // total reconciles, while the discretionary hero/Money-Left/Cushion stay on
+            // variable_transactions.
+            let current = try await fetchTransactionsForBreakdown(from: "transactions", startDate: startDate, endDate: endDate)
 
             var previous: [BreakdownTransaction] = []
             if let compStart = comparisonStartDate, let compEnd = comparisonEndDate {
-                previous = try await fetchTransactionsForBreakdown(from: "variable_transactions", startDate: compStart, endDate: compEnd)
+                previous = try await fetchTransactionsForBreakdown(from: "transactions", startDate: compStart, endDate: compEnd)
             }
 
             categoryBreakdown = CategoryBreakdownBuilder.build(
@@ -208,7 +210,7 @@ final class PulseService: ObservableObject {
     private func fetchTransactionsForBreakdown(from table: String = "transactions", startDate: String, endDate: String) async throws -> [BreakdownTransaction] {
         return try await supabase
             .from(table)
-            .select("amount, name, date, authorized_date, spend_date, type, personal_finance_category, personal_finance_subcategory, is_spend, is_income")
+            .select("amount, name, date, authorized_date, spend_date, type, personal_finance_category, personal_finance_subcategory, is_spend, is_income, is_mandatory")
             .gte("spend_date", value: startDate)
             .lte("spend_date", value: endDate)
             .eq("is_spend", value: true)
@@ -366,6 +368,12 @@ struct BreakdownTransaction: Codable {
     let personal_finance_subcategory: String?
     let isSpend: Bool
     let isIncome: Bool
+    /// True when the row is a recurring/mandatory bill (already counted in monthly
+    /// obligations). Only meaningful in the total-spend Where-it-went fetch; the
+    /// discretionary `variable_transactions` rows the Cushion uses are all false.
+    /// Optional so a missing `is_mandatory` column decodes to nil (→ not a bill)
+    /// instead of throwing keyNotFound.
+    var isMandatory: Bool? = nil
 
     func isInEffectiveDateWindow(startDate: String, endDate: String) -> Bool {
         guard let effectiveDate = spendDate ?? authorizedDate ?? date else { return true }
@@ -383,6 +391,7 @@ struct BreakdownTransaction: Codable {
         case personal_finance_subcategory
         case isSpend = "is_spend"
         case isIncome = "is_income"
+        case isMandatory = "is_mandatory"
     }
 }
 

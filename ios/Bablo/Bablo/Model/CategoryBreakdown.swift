@@ -7,11 +7,16 @@ import Foundation
 enum SpendingBucket: Equatable, Hashable {
     case category(FlexibleSpendingCategory)
     case rest
+    /// Recurring / mandatory bills (rent, matched mandatory streams). Only produced by
+    /// the total-spend Where-it-went breakdown; never appears in the discretionary
+    /// Cushion breakdown (which is sourced from variable_transactions).
+    case bills
 
     var id: String {
         switch self {
         case .category(let cat): return cat.rawValue
         case .rest: return "rest"
+        case .bills: return "bills"
         }
     }
 }
@@ -140,11 +145,13 @@ enum CategoryBreakdownBuilder {
             }
         }
 
-        // Sort non-rest items by amount descending; rest always goes last
+        // Sort discretionary categories by amount descending; the two catch-all buckets
+        // are pinned at the end — Bills (obligations) then Rest (leftover discretionary).
+        let bills   = items.filter { $0.bucket == .bills }
         let rest    = items.filter { $0.bucket == .rest }
-        var nonRest = items.filter { $0.bucket != .rest }
-        nonRest.sort { $0.totalAmount > $1.totalAmount }
-        items = nonRest + rest
+        var regular = items.filter { $0.bucket != .rest && $0.bucket != .bills }
+        regular.sort { $0.totalAmount > $1.totalAmount }
+        items = regular + bills + rest
 
         return items
     }
@@ -168,6 +175,12 @@ enum CategoryBreakdownBuilder {
         for txn: BreakdownTransaction,
         showIndividually: (FlexibleSpendingCategory) -> Bool
     ) -> SpendingBucket {
+        // Recurring / mandatory bills get their own bucket regardless of category, so the
+        // total-spend breakdown keeps obligations visible and separate from discretionary
+        // spend. (Only populated by the total fetch; discretionary rows are never mandatory.)
+        if txn.isMandatory == true {
+            return .bills
+        }
         if let cat = FlexibleSpendingCategory.map(
             primary: txn.personal_finance_category,
             detailed: txn.personal_finance_subcategory

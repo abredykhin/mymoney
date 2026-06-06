@@ -53,7 +53,9 @@ struct PulseTabView: View {
                                 endDate: current.endDate,
                                 title: "Damage report",
                                 initialFilter: .all, // Show all transactions included
-                                initialTotalAmount: pulseService.damageReport?.totalOut
+                                // Signed net (out − in) so the subtitle reads "net -$X", matching
+                                // the card's NET tile (this view shows both inflow and outflow).
+                                initialTotalAmount: pulseService.damageReport.map { $0.totalOut - $0.totalIn }
                             )
                         )
                     },
@@ -98,6 +100,8 @@ struct PulseTabView: View {
                             initialFilter = .category(cat)
                         case .rest:
                             initialFilter = .other
+                        case .bills:
+                            initialFilter = .bills
                         }
                         navigationState.pulseNavPath.append(
                             PulseDestination.transactions(
@@ -194,7 +198,8 @@ struct PulseTabView: View {
                     initialFilter: initialFilter,
                     initialMerchantName: initialMerchantName,
                     initialTotalAmount: initialTotalAmount,
-                    initialTransactionCount: initialTransactionCount
+                    initialTransactionCount: initialTransactionCount,
+                    showBillsBucket: true
                 )
             }
         }
@@ -223,6 +228,7 @@ struct PulseTabView: View {
                         switch item.bucket {
                         case .category(let cat): filter = .category(cat)
                         case .rest: filter = .other
+                        case .bills: filter = .bills
                         }
                         navigationState.pulseNavPath.append(
                             PulseDestination.transactions(

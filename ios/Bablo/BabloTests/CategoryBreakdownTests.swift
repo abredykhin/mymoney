@@ -18,7 +18,8 @@ struct CategoryBreakdownTests {
         authorizedDate: String? = nil,
         accountType: String? = nil,
         isSpend: Bool? = nil,
-        isIncome: Bool = false
+        isIncome: Bool = false,
+        isMandatory: Bool = false
     ) -> BreakdownTransaction {
         BreakdownTransaction(
             amount: amount,
@@ -29,8 +30,57 @@ struct CategoryBreakdownTests {
             personal_finance_category: primary,
             personal_finance_subcategory: detailed,
             isSpend: isSpend ?? (amount > 0),
-            isIncome: isIncome
+            isIncome: isIncome,
+            isMandatory: isMandatory
         )
+    }
+
+    // MARK: - Bills bucket (mandatory rows)
+
+    @Test func mandatoryRowGoesToBillsBucketRegardlessOfCategory() {
+        // A recurring rent charge maps to RENT_AND_UTILITIES (unmapped → would be .rest),
+        // but is_mandatory pulls it into its own .bills bucket.
+        let txns = [
+            makeTxn(amount: 2650, primary: "RENT_AND_UTILITIES", name: "Rent", isMandatory: true),
+            makeTxn(amount: 50, primary: "FOOD_AND_DRINK", detailed: "FOOD_AND_DRINK_RESTAURANT"),
+        ]
+
+        let result = CategoryBreakdownBuilder.build(currentTransactions: txns, trackedCategories: [])
+
+        let bills = result.first(where: { $0.bucket == .bills })
+        #expect(bills?.totalAmount == 2650)
+        #expect(bills?.transactionCount == 1)
+        // Eats stays its own bucket; the bill did not leak into Rest.
+        #expect(result.contains { $0.bucket == .category(.eatsOut) })
+        #expect(!result.contains { $0.bucket == .rest })
+    }
+
+    @Test func mandatoryRowInTrackedCategoryStillGoesToBills() {
+        // Even a mandatory charge that maps to a TRACKED category is bucketed as Bills,
+        // so the obligations stay separate from discretionary category spend.
+        let tracked: Set<FlexibleSpendingCategory> = [.gettingAround]
+        let txns = [
+            makeTxn(amount: 400, primary: "TRANSPORTATION", name: "Car lease", isMandatory: true),
+            makeTxn(amount: 20, primary: "TRANSPORTATION", detailed: "TRANSPORTATION_TAXIS_AND_RIDE_SHARES"),
+        ]
+
+        let result = CategoryBreakdownBuilder.build(currentTransactions: txns, trackedCategories: tracked)
+
+        #expect(result.first(where: { $0.bucket == .bills })?.totalAmount == 400)
+        #expect(result.first(where: { $0.bucket == .category(.gettingAround) })?.totalAmount == 20)
+    }
+
+    @Test func billsBucketIsPinnedAfterCategoriesAndBeforeRest() {
+        let txns = [
+            makeTxn(amount: 2650, primary: "RENT_AND_UTILITIES", name: "Rent", isMandatory: true),
+            makeTxn(amount: 500, primary: "FOOD_AND_DRINK", detailed: "FOOD_AND_DRINK_RESTAURANT"),
+            makeTxn(amount: 75, primary: "BANK_FEES", name: "Wire fee"),
+        ]
+
+        let result = CategoryBreakdownBuilder.build(currentTransactions: txns, trackedCategories: [])
+
+        // Order: discretionary category (Eats) → Bills → Rest (bank fee).
+        #expect(result.map { $0.bucket } == [.category(.eatsOut), .bills, .rest])
     }
 
     // MARK: - is_spend filter (mirrors DB view logic)

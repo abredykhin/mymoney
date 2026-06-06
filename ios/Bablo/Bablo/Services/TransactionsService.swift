@@ -39,6 +39,9 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
     let updated_at: String? // Updated timestamp
     var is_spend: Bool? = nil
     var is_income: Bool? = nil
+    /// True for recurring/mandatory bills (already counted in monthly obligations).
+    /// Optional so rows fetched before the column existed decode to nil (→ not a bill).
+    var is_mandatory: Bool? = nil
 
 
     enum CodingKeys: String, CodingKey {
@@ -67,6 +70,7 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
         case updated_at
         case is_spend
         case is_income
+        case is_mandatory
     }
 
     // Computed properties for camelCase access (if needed)
@@ -133,6 +137,9 @@ struct Transaction: Codable, Identifiable, Equatable, Hashable {
         return amount > 0 && !isTransfer
     }
 
+    /// True for recurring/mandatory bills (rent, matched mandatory streams). nil → false.
+    var isMandatory: Bool { is_mandatory ?? false }
+
     var isIncome: Bool {
         if let isIncomeFlag = is_income {
             return isIncomeFlag
@@ -194,17 +201,23 @@ struct TransactionFilter: Equatable {
     var startDate: String?
     var endDate: String?
     var search: String?
+    /// Restrict the fetch to rows that are spend OR income — i.e. only the rows an
+    /// activity list actually displays. Excludes "ignored" transactions (credit-card
+    /// payments, internal transfers, brokerage credits) so the server count matches the
+    /// rendered list instead of over-counting hidden rows.
+    var onlySpendOrIncome: Bool
 
     var isEmpty: Bool {
-        category == nil && personalFinanceCategory == nil && startDate == nil && endDate == nil && search == nil
+        category == nil && personalFinanceCategory == nil && startDate == nil && endDate == nil && search == nil && !onlySpendOrIncome
     }
 
-    init(category: String? = nil, personalFinanceCategory: String? = nil, startDate: String? = nil, endDate: String? = nil, search: String? = nil) {
+    init(category: String? = nil, personalFinanceCategory: String? = nil, startDate: String? = nil, endDate: String? = nil, search: String? = nil, onlySpendOrIncome: Bool = false) {
         self.category = category
         self.personalFinanceCategory = personalFinanceCategory
         self.startDate = startDate
         self.endDate = endDate
         self.search = search
+        self.onlySpendOrIncome = onlySpendOrIncome
     }
 }
 
@@ -295,6 +308,12 @@ class TransactionsService: ObservableObject {
 
             if let search = options.filter.search, !search.isEmpty {
                 query = query.or("name.ilike.%\(search)%,merchant_name.ilike.%\(search)%")
+            }
+
+            // Only spend-or-income rows reach the activity list, so optionally exclude the
+            // "ignored" rows server-side — keeps the count honest (no phantom hidden rows).
+            if options.filter.onlySpendOrIncome {
+                query = query.or("is_spend.eq.true,is_income.eq.true")
             }
 
             // Apply ordering and pagination, then execute

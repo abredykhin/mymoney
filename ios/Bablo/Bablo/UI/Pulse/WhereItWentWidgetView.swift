@@ -22,6 +22,7 @@ extension SpendingBucket {
         switch self {
         case .category(let cat): return cat.shortName
         case .rest: return "Rest"
+        case .bills: return "Bills"
         }
     }
 
@@ -29,6 +30,7 @@ extension SpendingBucket {
         switch self {
         case .category(let cat): return cat.emoji
         case .rest: return "📦"
+        case .bills: return "🧾"
         }
     }
 
@@ -36,6 +38,7 @@ extension SpendingBucket {
         switch self {
         case .category(let cat): return cat.barColor
         case .rest: return theme.colors.textTertiary.color
+        case .bills: return theme.colors.textSecondary.color
         }
     }
 
@@ -43,6 +46,7 @@ extension SpendingBucket {
         switch self {
         case .category(let cat): return cat.barColor.opacity(0.15)
         case .rest: return theme.colors.surfaceMuted.color
+        case .bills: return theme.colors.surfaceMuted.color
         }
     }
 }

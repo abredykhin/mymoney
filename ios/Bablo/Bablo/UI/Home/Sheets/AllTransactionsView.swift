@@ -8,6 +8,11 @@ struct AllTransactionsView: View {
     let initialMerchantName: String?
     let initialTotalAmount: Double?
     let initialTransactionCount: Int?
+    /// When true (Pulse Where-it-went drill-down), bills get their own chip and the
+    /// Out/Other/category filters exclude mandatory bills so each bucket reconciles to
+    /// its breakdown row. Default false keeps the Home activity sheet byte-for-byte
+    /// unchanged.
+    let showBillsBucket: Bool
 
     init(
         startDate: String? = nil,
@@ -16,7 +21,8 @@ struct AllTransactionsView: View {
         initialFilter: TransactionFilterValue? = nil,
         initialMerchantName: String? = nil,
         initialTotalAmount: Double? = nil,
-        initialTransactionCount: Int? = nil
+        initialTransactionCount: Int? = nil,
+        showBillsBucket: Bool = false
     ) {
         self.startDate = startDate
         self.endDate = endDate
@@ -25,6 +31,7 @@ struct AllTransactionsView: View {
         self.initialMerchantName = initialMerchantName
         self.initialTotalAmount = initialTotalAmount
         self.initialTransactionCount = initialTransactionCount
+        self.showBillsBucket = showBillsBucket
         
         self._searchQuery = State(initialValue: initialMerchantName ?? "")
         
@@ -247,7 +254,7 @@ struct AllTransactionsView: View {
             isLoading = true
             let options = FetchOptions(
                 limit: 100,
-                filter: TransactionFilter(startDate: computedStartDate, endDate: computedEndDate),
+                filter: TransactionFilter(startDate: computedStartDate, endDate: computedEndDate, onlySpendOrIncome: showBillsBucket),
                 sortColumn: sortColumn,
                 sortAscending: sortAscending
             )
@@ -260,7 +267,7 @@ struct AllTransactionsView: View {
                 sheetTransactionsService.clearCache()
                 let options = FetchOptions(
                     limit: 100,
-                    filter: TransactionFilter(startDate: computedStartDate, endDate: computedEndDate),
+                    filter: TransactionFilter(startDate: computedStartDate, endDate: computedEndDate, onlySpendOrIncome: showBillsBucket),
                     sortColumn: sortColumn,
                     sortAscending: sortAscending
                 )
@@ -327,14 +334,33 @@ struct AllTransactionsView: View {
     private var subtitleText: String {
         let totalCount = isUsingInitialValues ? (initialTransactionCount ?? displayTotalCount) : displayTotalCount
         guard totalCount > 0 else { return "0 txns" }
-        
-        return "\(totalCount) txns · net \(netAmountText) · last \(dateRangeText)"
+
+        return "\(totalCount) txns · \(metricLabel) \(netAmountText) · last \(dateRangeText)"
+    }
+
+    /// The Damage-report hero drill-down: the whole period (`.all`, no single merchant),
+    /// which shows both inflow and outflow — so its figure is a true net, and the hero
+    /// passes `initialTotalAmount` as the signed net (out − in).
+    private var isPeriodNetView: Bool {
+        selectedFilter == .all && initialMerchantName == nil && startDate != nil
+    }
+
+    /// Label the subtitle figure honestly: "net" for the whole-period view (and the
+    /// computed-from-rows fallback), "in" for income, "spent" for one-sided spend totals
+    /// (Out / a category / Bills / a merchant).
+    private var metricLabel: String {
+        if isPeriodNetView { return "net" }
+        guard isUsingInitialValues, initialTotalAmount != nil else { return "net" }
+        return selectedFilter == .income ? "in" : "spent"
     }
 
     private var netAmountText: String {
         let sum: Double
         if isUsingInitialValues, let initialTotalAmount {
-            if selectedFilter == .income {
+            if isPeriodNetView {
+                // Signed net (out − in) straight from the damage report; positive = net outflow.
+                sum = initialTotalAmount
+            } else if selectedFilter == .income {
                 sum = -abs(initialTotalAmount)
             } else {
                 sum = abs(initialTotalAmount)
@@ -410,14 +436,20 @@ struct AllTransactionsView: View {
             count: inCount
         ))
         
+        // When showing the Bills bucket (Pulse drill-down), bills are pulled out of the
+        // category/Other chips so each chip reconciles to its Where-it-went row. Off by
+        // default → Home chips are unchanged.
+        let excludeMandatory = showBillsBucket
+
         // 4. Onboarding tracked categories (Eats, Transit, etc.)
         for category in FlexibleSpendingCategory.allCases {
             guard trackedCategories.contains(category) else { continue }
-            
+
             let count = allTxns.filter { txn in
-                FlexibleSpendingCategory.map(primary: txn.personal_finance_category, detailed: txn.personal_finance_subcategory) == category
+                if excludeMandatory && txn.isMandatory { return false }
+                return FlexibleSpendingCategory.map(primary: txn.personal_finance_category, detailed: txn.personal_finance_subcategory) == category
             }.count
-            
+
             if count > 0 {
                 chips.append(BabloFilterChip(
                     id: .category(category),
@@ -426,14 +458,15 @@ struct AllTransactionsView: View {
                 ))
             }
         }
-        
+
         // 5. Other chip for non-tracked discretionary spending
         let otherCount = allTxns.filter { txn in
             guard txn.isSpend else { return false }
+            if excludeMandatory && txn.isMandatory { return false }
             let mapped = FlexibleSpendingCategory.map(primary: txn.personal_finance_category, detailed: txn.personal_finance_subcategory)
             return mapped == nil || !trackedCategories.contains(mapped!)
         }.count
-        
+
         if otherCount > 0 {
             chips.append(BabloFilterChip(
                 id: .other,
@@ -441,7 +474,19 @@ struct AllTransactionsView: View {
                 count: otherCount
             ))
         }
-        
+
+        // 6. Bills chip (Pulse drill-down only) — recurring/mandatory obligations.
+        if showBillsBucket {
+            let billsCount = allTxns.filter { $0.isSpend && $0.isMandatory }.count
+            if billsCount > 0 {
+                chips.append(BabloFilterChip(
+                    id: .bills,
+                    title: "Bills",
+                    count: billsCount
+                ))
+            }
+        }
+
         return chips
     }
 
@@ -458,6 +503,10 @@ struct AllTransactionsView: View {
         }
         
         // 2. Filter by Category Chip
+        // When showBillsBucket (Pulse drill-down), category/Other exclude mandatory bills
+        // so each drill-down reconciles to its Where-it-went row. Off by default → Home
+        // filtering is unchanged.
+        let excludeMandatory = showBillsBucket
         switch selectedFilter {
         case .all:
             break
@@ -467,14 +516,18 @@ struct AllTransactionsView: View {
             txns = txns.filter { $0.isIncome }
         case .category(let targetCat):
             txns = txns.filter { txn in
-                FlexibleSpendingCategory.map(primary: txn.personal_finance_category, detailed: txn.personal_finance_subcategory) == targetCat
+                if excludeMandatory && txn.isMandatory { return false }
+                return FlexibleSpendingCategory.map(primary: txn.personal_finance_category, detailed: txn.personal_finance_subcategory) == targetCat
             }
         case .other:
             txns = txns.filter { txn in
                 guard txn.isSpend else { return false }
+                if excludeMandatory && txn.isMandatory { return false }
                 let mapped = FlexibleSpendingCategory.map(primary: txn.personal_finance_category, detailed: txn.personal_finance_subcategory)
                 return mapped == nil || !trackedCategories.contains(mapped!)
             }
+        case .bills:
+            txns = txns.filter { $0.isSpend && $0.isMandatory }
         }
         
         // 3. Sort Order
@@ -847,4 +900,7 @@ enum TransactionFilterValue: Hashable {
     case income
     case category(FlexibleSpendingCategory)
     case other
+    /// Recurring / mandatory bills. Only surfaced when the sheet is opened with
+    /// `showBillsBucket` (the Pulse Where-it-went drill-down).
+    case bills
 }
