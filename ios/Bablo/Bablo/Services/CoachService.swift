@@ -43,18 +43,22 @@ class CoachService: ObservableObject {
     }
 
     /// Fetch tailored financial recommendations and manga nudge insights
-    func fetchCoachInsights() async throws -> CoachInsight {
+    func fetchCoachInsights(force: Bool = false) async throws -> CoachInsight {
         isLoading = true
         error = nil
         defer { isLoading = false }
 
-        Logger.d("CoachService: Invoking gemini-coach-insights function")
+        Logger.d("CoachService: Invoking gemini-coach-insights function (force: \(force))")
+
+        let body: [String: Any] = ["force": force]
+        let bodyData = try JSONSerialization.data(withJSONObject: body)
 
         do {
             let insight: CoachInsight = try await supabase.functions.invoke(
                 "gemini-coach-insights",
                 options: FunctionInvokeOptions(
-                    method: .post
+                    method: .post,
+                    body: bodyData
                 )
             )
             self.currentInsight = insight

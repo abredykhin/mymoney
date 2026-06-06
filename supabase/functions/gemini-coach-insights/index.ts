@@ -23,6 +23,76 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createServiceRoleClient();
 
+    // 1. Parse optional force refresh flag from JSON body
+    let force = false;
+    const contentType = req.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      try {
+        const body = await req.json();
+        if (body && typeof body.force === 'boolean') {
+          force = body.force;
+        }
+      } catch (_) {
+        // Safe to ignore: empty or invalid request body
+      }
+    }
+
+    // 2. Check coach_insights table for existing cache
+    const { data: cachedInsight } = await supabase
+      .from('coach_insights')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (cachedInsight && !force) {
+      // Check for transactions and profile updates since last cache generation
+      const { data: latestTx } = await supabase
+        .from('transactions_table')
+        .select('created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const { data: profileData } = await supabase
+        .from('profiles_table')
+        .select('updated_at')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      const cachedTime = new Date(cachedInsight.updated_at).getTime();
+      const latestTxTime = latestTx?.created_at ? new Date(latestTx.created_at).getTime() : 0;
+      const profileUpdateTime = profileData?.updated_at ? new Date(profileData.updated_at).getTime() : 0;
+
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      const isFresh = (Date.now() - cachedTime) < oneDayMs;
+      
+      const hasNewTx = latestTxTime > cachedTime;
+      const hasProfileUpdate = profileUpdateTime > cachedTime;
+
+      // Early exit if the cache is fresh and no updates occurred, or if no new data was added at all
+      if (isFresh && !hasNewTx && !hasProfileUpdate) {
+        console.log(`[Cache Hit] Using cached Coach insight for user ${user.id} (insight is fresh, no new transactions or profile updates).`);
+        return jsonResponse(cachedInsight);
+      }
+
+      if (isFresh) {
+        console.log(`[Cache Hit] Using cached Coach insight for user ${user.id} (within 24h cooldown period).`);
+        return jsonResponse(cachedInsight);
+      }
+
+      if (!hasNewTx && !hasProfileUpdate) {
+        console.log(`[Cache Hit] Using cached Coach insight for user ${user.id} (older than 24h, but no new transactions or profile updates detected).`);
+        return jsonResponse(cachedInsight);
+      }
+      
+      console.log(`[Cache Stale] Cache is stale (>24h) and updates detected for user ${user.id}. Regenerating.`);
+    } else if (cachedInsight && force) {
+      console.log(`[Cache Bypass] Force refresh requested for user ${user.id}. Regenerating.`);
+    } else {
+      console.log(`[Cache Miss] No cached insight found for user ${user.id}. Generating.`);
+    }
+
     // Fetch user profile guidelines
     const { data: profile } = await supabase
       .from('profiles_table')
@@ -82,7 +152,27 @@ Deno.serve(async (req: Request) => {
     const apiKey = Deno.env.get('GEMINI_API_KEY');
 
     if (!apiKey || apiKey === 'test-gemini-key' || Deno.env.get('TEST_MODE') === 'true') {
-      console.log('Using mock AI response (offline or test mode)');
+      console.warn(`[Fallback] Using mock AI response (missing GEMINI_API_KEY, test mode, or test key). API Key status: ${apiKey ? 'Present' : 'Missing'}`);
+      
+      // Cache the fallback response to allow integration testing of caching
+      const { error: cacheError } = await supabase
+        .from('coach_insights')
+        .upsert({
+          user_id: user.id,
+          badge: fallbackResponse.badge,
+          headline: fallbackResponse.headline,
+          nudge_text: fallbackResponse.nudge_text,
+          action_label: fallbackResponse.action_label,
+          alternative_tip: fallbackResponse.alternative_tip,
+          updated_at: new Date().toISOString()
+        });
+
+      if (cacheError) {
+        console.error(`Failed to cache fallback insight for user ${user.id}:`, cacheError);
+      } else {
+        console.log(`Successfully cached fallback insight for user ${user.id}.`);
+      }
+
       return jsonResponse(fallbackResponse);
     }
 
@@ -132,6 +222,26 @@ Deno.serve(async (req: Request) => {
       const text = result.response.text();
       try {
         const json = JSON.parse(text);
+
+        // Cache the successfully generated insight
+        const { error: cacheError } = await supabase
+          .from('coach_insights')
+          .upsert({
+            user_id: user.id,
+            badge: json.badge,
+            headline: json.headline,
+            nudge_text: json.nudge_text,
+            action_label: json.action_label,
+            alternative_tip: json.alternative_tip,
+            updated_at: new Date().toISOString()
+          });
+
+        if (cacheError) {
+          console.error(`Failed to cache generated insight for user ${user.id}:`, cacheError);
+        } else {
+          console.log(`Successfully cached generated insight for user ${user.id}.`);
+        }
+
         return jsonResponse(json);
       } catch (parseError) {
         console.error('Failed to parse Gemini response as JSON. Raw response:', text);

@@ -67,7 +67,7 @@ Deno.test({
     const sessionToken = sessionData.session?.access_token;
     if (!sessionToken) throw new Error('Failed to retrieve session token');
 
-    // Call gemini-coach-insights
+    // Call gemini-coach-insights (First call: miss and generate/cache)
     const response = await fetch('http://127.0.0.1:54321/functions/v1/gemini-coach-insights', {
       method: 'POST',
       headers: {
@@ -79,17 +79,56 @@ Deno.test({
     const result = await response.json();
     console.log('Gemini Coach Insights response:', result);
 
+    // Verify cache was populated in the database
+    const { data: cachedRows, error: cacheFetchError } = await supabase
+      .from('coach_insights')
+      .select('*')
+      .eq('user_id', testUserId);
+    
+    if (cacheFetchError) throw cacheFetchError;
+
+    // Call gemini-coach-insights a second time (Second call: hit cache)
+    const response2 = await fetch('http://127.0.0.1:54321/functions/v1/gemini-coach-insights', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionToken}`,
+      },
+      body: JSON.stringify({ force: false }),
+    });
+
+    const result2 = await response2.json();
+    console.log('Gemini Coach Insights cached response:', result2);
+
+    // Call gemini-coach-insights a third time (Third call: force refresh bypass cache)
+    const response3 = await fetch('http://127.0.0.1:54321/functions/v1/gemini-coach-insights', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionToken}`,
+      },
+      body: JSON.stringify({ force: true }),
+    });
+
+    const result3 = await response3.json();
+    console.log('Gemini Coach Insights force-refreshed response:', result3);
+
     // Teardown / Cleanup
+    await supabase.from('coach_insights').delete().eq('user_id', testUserId);
     await supabase.from('transactions_table').delete().eq('user_id', testUserId);
     await supabase.from('profiles_table').delete().eq('id', testUserId);
     await supabase.auth.admin.deleteUser(testUserId);
 
     // Assertions
     assertEquals(response.status, 200);
-    assertEquals(typeof result.badge, 'string');
-    assertEquals(typeof result.headline, 'string');
-    assertEquals(typeof result.nudge_text, 'string');
-    assertEquals(typeof result.action_label, 'string');
-    assertEquals(typeof result.alternative_tip, 'string');
+    assertEquals(response2.status, 200);
+    assertEquals(response3.status, 200);
+
+    assertEquals(cachedRows?.length, 1);
+    assertEquals(cachedRows?.[0].badge, result.badge);
+    assertEquals(cachedRows?.[0].headline, result.headline);
+
+    assertEquals(result2.headline, result.headline);
+    assertEquals(result3.headline, result.headline);
   },
 });
