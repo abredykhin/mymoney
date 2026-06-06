@@ -74,6 +74,9 @@ struct MoneyLeftBreakdownView: View {
         )
 
         return subService.allRecurringStreams
+            // Obligations are expenses only — income streams (e.g. the paycheck) live in
+            // the "Income this month" step, not here. allRecurringStreams bundles both.
+            .filter { $0.type != "income" }
             .sorted { $0.monthlyAmount > $1.monthlyAmount }
             .prefix(6)
             .map { stream in
@@ -122,23 +125,51 @@ struct MoneyLeftBreakdownView: View {
     /// Falls back to nil when no income stream has a usable future date, in which case
     /// the row shows its default "expected · not yet received" copy.
     private var nextPaycheckDetail: String? {
+        let cal = Calendar.bablo
         let parser = DateFormatter()
         parser.dateFormat = "yyyy-MM-dd"
         parser.locale = Locale(identifier: "en_US_POSIX")
-        parser.timeZone = Calendar.bablo.timeZone
-        let todayStr = parser.string(from: Date())
+        parser.timeZone = cal.timeZone
+        let today = cal.startOfDay(for: Date())
 
+        // The soonest FUTURE pay date across income streams. A stream's predicted_next_date
+        // can be stale (today or earlier) when its current-cycle paycheck has already landed
+        // but Plaid hasn't advanced it — so roll it forward one cadence at a time until it's
+        // past today. That way "Expected paycheck" shows the *next* unreceived check (e.g. the
+        // Jun 19 biweekly one) instead of the cycle that already arrived today.
         let next = subService.allRecurringStreams
             .filter { $0.type == "income" && $0.isActive && !$0.isExcluded }
-            .compactMap { $0.predictedNextDate }
-            .filter { $0 >= todayStr }
+            .compactMap { stream -> Date? in
+                guard let raw = stream.predictedNextDate,
+                      var date = parser.date(from: raw).map({ cal.startOfDay(for: $0) }) else { return nil }
+                var guardCount = 0
+                while date <= today, guardCount < 60 {
+                    guard let advanced = advancePayDate(date, frequency: stream.frequency, calendar: cal) else { break }
+                    date = advanced
+                    guardCount += 1
+                }
+                return date > today ? date : nil
+            }
             .min()
 
-        guard let next, let date = parser.date(from: next) else { return nil }
+        guard let next else { return nil }
         let display = DateFormatter()
         display.dateFormat = "EEE, MMM d"
         display.locale = Locale(identifier: "en_US_POSIX")
-        return "expected \(display.string(from: date)) · not yet received"
+        return "expected \(display.string(from: next)) · not yet received"
+    }
+
+    /// Advance a predicted pay date by one cadence. Returns nil for unknown cadences so the
+    /// caller stops rolling forward (keeps the original date rather than looping forever).
+    private func advancePayDate(_ date: Date, frequency: String, calendar: Calendar) -> Date? {
+        switch frequency.uppercased() {
+        case "WEEKLY":       return calendar.date(byAdding: .day, value: 7, to: date)
+        case "BIWEEKLY":     return calendar.date(byAdding: .day, value: 14, to: date)
+        case "SEMI_MONTHLY": return calendar.date(byAdding: .day, value: 15, to: date)
+        case "MONTHLY":      return calendar.date(byAdding: .month, value: 1, to: date)
+        case "ANNUALLY":     return calendar.date(byAdding: .year, value: 1, to: date)
+        default:             return nil
+        }
     }
 
     var body: some View {
@@ -321,12 +352,17 @@ struct MoneyLeftBreakdownView: View {
         let (loadedSpend, loadedIncome, loadedExcluded, loadedPaid) = await (spend, income, excluded, paid)
         recentPaymentDates = loadedPaid
         spendRows = loadedSpend
-        // The "Income this month" total is effectiveIncome, which leans on an expected
-        // paycheck before it lands. Surface that projected portion as its own row so the
-        // total isn't unexplained when no income has been received yet this month.
+        // Paychecks first, extra income afterwards. Received recurring income (paychecks)
+        // leads, then the projected "Expected paycheck" (also a paycheck), then one-off
+        // "extra" inflows. The "Income this month" total is effectiveIncome, which leans on
+        // an expected paycheck before it lands — surface that projected portion as its own
+        // row so the total isn't unexplained when no income has been received yet this month.
+        let receivedPaychecks = loadedIncome.filter { $0.isRecurring }
+        let extraIncome = loadedIncome.filter { !$0.isRecurring }
+        var rows = receivedPaychecks
         let projected = calculator.expectedIncomeStillToCome
         if period == .month, projected >= 1 {
-            incomeRows = loadedIncome + [
+            rows.append(
                 HeroIncomeBreakdownRow(
                     name: "Expected paycheck",
                     amount: projected,
@@ -334,10 +370,10 @@ struct MoneyLeftBreakdownView: View {
                     isProjected: true,
                     detailOverride: nextPaycheckDetail
                 )
-            ]
-        } else {
-            incomeRows = loadedIncome
+            )
         }
+        rows.append(contentsOf: extraIncome)
+        incomeRows = rows
         excludedTransactionRows = loadedExcluded
         loadedPeriod = period
         isLoadingDetails = false

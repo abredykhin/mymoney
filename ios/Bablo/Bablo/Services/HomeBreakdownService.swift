@@ -71,7 +71,7 @@ class HomeBreakdownService: ObservableObject {
         do {
             let transactions: [TransactionForBreakdown] = try await supabase
                 .from("spendable_income_transactions")
-                .select("amount, name, type, is_recurring")
+                .select("amount, name, type, is_recurring, is_paycheck")
                 .gte("spend_date", value: window.start)
                 .lte("spend_date", value: window.end)
                 .execute()
@@ -83,7 +83,9 @@ class HomeBreakdownService: ObservableObject {
                 var g = groups[key] ?? (amount: 0, count: 0, isRecurring: false)
                 g.amount += abs(tx.amount)
                 g.count += 1
-                g.isRecurring = g.isRecurring || (tx.isRecurring == true)
+                // A received paycheck reads as recurring even before Plaid links it to its
+                // stream (is_paycheck), matching how the budget RPC counts it as known income.
+                g.isRecurring = g.isRecurring || (tx.isRecurring == true) || (tx.isPaycheck == true)
                 groups[key] = g
             }
             return groups
@@ -306,6 +308,7 @@ private struct TransactionForBreakdown: Codable {
     let isRecurring: Bool?
     let isSpend: Bool?
     let isIncome: Bool?
+    let isPaycheck: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -317,6 +320,7 @@ private struct TransactionForBreakdown: Codable {
         case isRecurring = "is_recurring"
         case isSpend = "is_spend"
         case isIncome = "is_income"
+        case isPaycheck = "is_paycheck"
     }
 }
 
