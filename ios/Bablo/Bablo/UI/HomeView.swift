@@ -133,11 +133,14 @@ struct HomeView: View {
                     initialFilter: .out
                 )
             case .dayTransactions(let dateStr):
+                // Streak day drill-down: show only discretionary spend (the
+                // `variable_transactions` that drive the day's budget/streak calc).
                 AllTransactionsView(
                     startDate: dateStr,
                     endDate: dateStr,
                     title: formatDisplayDate(dateStr),
-                    initialFilter: .all
+                    initialFilter: .all,
+                    discretionaryOnly: true
                 )
             }
         }
@@ -304,7 +307,9 @@ struct HomeView: View {
                     try await accountsService.refreshAccounts(forceRefresh: forceRefresh)
                     try? await budgetService.fetchTotalBalance()
                     try? await transactionsService.fetchRecentTransactions(forceRefresh: forceRefresh, limit: 20)
-                    _ = try? await coachService.fetchCoachInsights()
+                    // Coach is a slow Gemini round-trip — fire it off without blocking the
+                    // streak / Coming-up widgets. The card appears on its own once it loads.
+                    Task { _ = try? await coachService.fetchCoachInsights() }
                     await refreshStreakIfBankLinked()
                     try? await subService.fetchSubscriptions()
                     await subService.scanIdleSubscriptions()
@@ -377,7 +382,9 @@ struct HomeView: View {
                 try await accountsService.refreshAccounts(forceRefresh: true)
                 try? await budgetService.fetchTotalBalance()
                 try? await transactionsService.fetchRecentTransactions(forceRefresh: true, limit: 20)
-                _ = try? await coachService.fetchCoachInsights()
+                // Coach is a slow Gemini round-trip — fire it off without blocking the
+                // streak / Coming-up widgets. The card appears on its own once it loads.
+                Task { _ = try? await coachService.fetchCoachInsights() }
                 await refreshStreakIfBankLinked()
                 try? await subService.fetchSubscriptions()
                 await subService.scanIdleSubscriptions()

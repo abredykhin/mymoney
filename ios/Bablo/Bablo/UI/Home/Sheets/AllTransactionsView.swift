@@ -13,6 +13,11 @@ struct AllTransactionsView: View {
     /// its breakdown row. Default false keeps the Home activity sheet byte-for-byte
     /// unchanged.
     let showBillsBucket: Bool
+    /// When true (streak day drill-down), the sheet shows only DISCRETIONARY spend —
+    /// `isSpend && !isMandatory`, the exact membership of `variable_transactions` that
+    /// drives the day's budget/streak calc. Income, transfers, and recurring/mandatory
+    /// bills are excluded so the list reconciles to what counted against the day's limit.
+    let discretionaryOnly: Bool
 
     init(
         startDate: String? = nil,
@@ -22,7 +27,8 @@ struct AllTransactionsView: View {
         initialMerchantName: String? = nil,
         initialTotalAmount: Double? = nil,
         initialTransactionCount: Int? = nil,
-        showBillsBucket: Bool = false
+        showBillsBucket: Bool = false,
+        discretionaryOnly: Bool = false
     ) {
         self.startDate = startDate
         self.endDate = endDate
@@ -32,7 +38,8 @@ struct AllTransactionsView: View {
         self.initialTotalAmount = initialTotalAmount
         self.initialTransactionCount = initialTransactionCount
         self.showBillsBucket = showBillsBucket
-        
+        self.discretionaryOnly = discretionaryOnly
+
         self._searchQuery = State(initialValue: initialMerchantName ?? "")
         
         if let initialFilter {
@@ -58,6 +65,12 @@ struct AllTransactionsView: View {
     @State private var isLoading = false
     @State private var isPaginationLoading = false
     @State private var selectedTransaction: Transaction?
+
+    /// Grouped (is_spend, is_income, is_mandatory, category, subcategory) counts from the
+    /// DB — the source for the filter chips so their totals are complete and don't change
+    /// as the list paginates.
+    @State private var chipCountRows: [TransactionFilterCount] = []
+    @State private var didInitialCountFetch = false
 
     // Onboarding tracked categories
     private var trackedCategories: Set<FlexibleSpendingCategory> {
@@ -252,29 +265,55 @@ struct AllTransactionsView: View {
         }
         .task {
             isLoading = true
-            let options = FetchOptions(
-                limit: 100,
-                filter: TransactionFilter(startDate: computedStartDate, endDate: computedEndDate, onlySpendOrIncome: showBillsBucket),
-                sortColumn: sortColumn,
-                sortAscending: sortAscending
-            )
-            try? await sheetTransactionsService.fetchTransactions(options: options)
+            await fetchFirstPage()
             isLoading = false
+        }
+        .task(id: searchQuery) {
+            // Chip counts come from a lightweight grouped-count query (not the loaded
+            // rows), so they stay complete and stable as the list paginates. Debounce
+            // live typing in the search box; the very first run fires immediately.
+            if didInitialCountFetch {
+                try? await Task.sleep(nanoseconds: 250_000_000)
+                if Task.isCancelled { return }
+            }
+            didInitialCountFetch = true
+            await loadChipCounts()
         }
         .onChange(of: selectedSort) { _, newSort in
             Task {
                 isLoading = true
                 sheetTransactionsService.clearCache()
-                let options = FetchOptions(
-                    limit: 100,
-                    filter: TransactionFilter(startDate: computedStartDate, endDate: computedEndDate, onlySpendOrIncome: showBillsBucket),
-                    sortColumn: sortColumn,
-                    sortAscending: sortAscending
-                )
-                try? await sheetTransactionsService.fetchTransactions(options: options)
+                await fetchFirstPage()
                 isLoading = false
             }
         }
+    }
+
+    /// Fetch the first page of rows the list renders. The list keeps paginating on scroll
+    /// (the chip counts no longer depend on how many pages are loaded — see `loadChipCounts`).
+    private func fetchFirstPage() async {
+        let options = FetchOptions(
+            limit: 100,
+            filter: TransactionFilter(startDate: computedStartDate, endDate: computedEndDate, onlySpendOrIncome: showBillsBucket || discretionaryOnly),
+            sortColumn: sortColumn,
+            sortAscending: sortAscending
+        )
+        try? await sheetTransactionsService.fetchTransactions(options: options)
+    }
+
+    /// Pull complete, stable filter-chip counts from the DB grouped by the raw Plaid
+    /// classification columns. Category bucketing stays client-side (single source of
+    /// truth in `FlexibleSpendingCategory.map`), so this asks the server for numbers, not
+    /// rows — independent of pagination and scoped to the same date range + search the
+    /// list uses.
+    private func loadChipCounts() async {
+        guard let start = computedStartDate, let end = computedEndDate else { return }
+        let rows = try? await sheetTransactionsService.fetchFilterCounts(
+            startDate: start,
+            endDate: end,
+            search: searchQuery.isEmpty ? nil : searchQuery
+        )
+        chipCountRows = rows ?? []
     }
 
     // MARK: - Subcomputeds
@@ -328,6 +367,12 @@ struct AllTransactionsView: View {
         if let initialTransactionCount, isUsingInitialValues {
             return initialTransactionCount
         }
+        // Discretionary-only narrows the universe client-side (a single day always fits
+        // in one page), so the server pagination total — which still counts the bill —
+        // would over-report. Count the filtered rows instead.
+        if discretionaryOnly {
+            return baseTransactions.count
+        }
         return sheetTransactionsService.paginationInfo?.totalCount ?? processedTransactions.count
     }
 
@@ -335,7 +380,12 @@ struct AllTransactionsView: View {
         let totalCount = isUsingInitialValues ? (initialTransactionCount ?? displayTotalCount) : displayTotalCount
         guard totalCount > 0 else { return "0 txns" }
 
-        return "\(totalCount) txns · \(metricLabel) \(netAmountText) · last \(dateRangeText)"
+        var subtitle = "\(totalCount) txns · \(metricLabel) \(netAmountText)"
+        // Only show the "last N days" span when the visible rows actually have a range.
+        if !dateRangeText.isEmpty {
+            subtitle += " · last \(dateRangeText)"
+        }
+        return subtitle
     }
 
     /// The Damage-report hero drill-down: the whole period (`.all`, no single merchant),
@@ -411,44 +461,60 @@ struct AllTransactionsView: View {
 
     private var filterChips: [BabloFilterChip<TransactionFilterValue>] {
         var chips: [BabloFilterChip<TransactionFilterValue>] = []
-        let allTxns = sheetTransactionsService.transactions
-        
-        // 1. All chip
+        // Counts come from the grouped DB query (see `loadChipCounts`), already scoped to
+        // this sheet's date range + search. Mapping each raw-column group to a chip stays
+        // here so `FlexibleSpendingCategory.map` remains the single source of truth.
+        let rows = chipCountRows
+        func total(_ matching: (TransactionFilterCount) -> Bool) -> Int {
+            rows.lazy.filter(matching).reduce(0) { $0 + $1.cnt }
+        }
+
+        // In discretionary-only mode (streak day drill-down) the universe is already
+        // narrowed to non-mandatory spend, so "All" counts only that and the redundant
+        // Out/In chips are dropped.
+        // 1. All chip — every row the query returns is already spend-or-income.
         chips.append(BabloFilterChip(
             id: .all,
             title: "All",
-            count: allTxns.count
+            count: discretionaryOnly ? total { $0.isSpend && !$0.isMandatory } : total { _ in true }
         ))
-        
-        // 2. Out chip
-        let outCount = allTxns.filter { $0.isSpend }.count
-        chips.append(BabloFilterChip(
-            id: .out,
-            title: "Out",
-            count: outCount
-        ))
-        
-        // 3. In chip
-        let inCount = allTxns.filter { $0.isIncome }.count
-        chips.append(BabloFilterChip(
-            id: .income,
-            title: "In",
-            count: inCount
-        ))
-        
-        // When showing the Bills bucket (Pulse drill-down), bills are pulled out of the
-        // category/Other chips so each chip reconciles to its Where-it-went row. Off by
-        // default → Home chips are unchanged.
-        let excludeMandatory = showBillsBucket
+
+        if !discretionaryOnly {
+            // 2. Out chip — hidden when empty so a search drill with no outflow doesn't
+            // show "Out 0" (but keep it if it's the active filter).
+            let outCount = total { $0.isSpend }
+            if outCount > 0 || selectedFilter == .out {
+                chips.append(BabloFilterChip(
+                    id: .out,
+                    title: "Out",
+                    count: outCount
+                ))
+            }
+
+            // 3. In chip — same zero-hiding rule (this is what made Amazon show a phantom "1 in").
+            let inCount = total { $0.isIncome }
+            if inCount > 0 || selectedFilter == .income {
+                chips.append(BabloFilterChip(
+                    id: .income,
+                    title: "In",
+                    count: inCount
+                ))
+            }
+        }
+
+        // When showing the Bills bucket (Pulse drill-down) or the discretionary-only
+        // streak drill-down, bills are pulled out of the category/Other chips so each
+        // chip reconciles to its bucket. Off by default → Home chips are unchanged.
+        let excludeMandatory = showBillsBucket || discretionaryOnly
 
         // 4. Onboarding tracked categories (Eats, Transit, etc.)
         for category in FlexibleSpendingCategory.allCases {
             guard trackedCategories.contains(category) else { continue }
 
-            let count = allTxns.filter { txn in
-                if excludeMandatory && txn.isMandatory { return false }
-                return FlexibleSpendingCategory.map(primary: txn.personal_finance_category, detailed: txn.personal_finance_subcategory) == category
-            }.count
+            let count = total { row in
+                if excludeMandatory && row.isMandatory { return false }
+                return FlexibleSpendingCategory.map(primary: row.personal_finance_category, detailed: row.personal_finance_subcategory) == category
+            }
 
             if count > 0 {
                 chips.append(BabloFilterChip(
@@ -460,12 +526,12 @@ struct AllTransactionsView: View {
         }
 
         // 5. Other chip for non-tracked discretionary spending
-        let otherCount = allTxns.filter { txn in
-            guard txn.isSpend else { return false }
-            if excludeMandatory && txn.isMandatory { return false }
-            let mapped = FlexibleSpendingCategory.map(primary: txn.personal_finance_category, detailed: txn.personal_finance_subcategory)
+        let otherCount = total { row in
+            guard row.isSpend else { return false }
+            if excludeMandatory && row.isMandatory { return false }
+            let mapped = FlexibleSpendingCategory.map(primary: row.personal_finance_category, detailed: row.personal_finance_subcategory)
             return mapped == nil || !trackedCategories.contains(mapped!)
-        }.count
+        }
 
         if otherCount > 0 {
             chips.append(BabloFilterChip(
@@ -477,7 +543,7 @@ struct AllTransactionsView: View {
 
         // 6. Bills chip (Pulse drill-down only) — recurring/mandatory obligations.
         if showBillsBucket {
-            let billsCount = allTxns.filter { $0.isSpend && $0.isMandatory }.count
+            let billsCount = total { $0.isSpend && $0.isMandatory }
             if billsCount > 0 {
                 chips.append(BabloFilterChip(
                     id: .bills,
@@ -490,23 +556,39 @@ struct AllTransactionsView: View {
         return chips
     }
 
-    private var processedTransactions: [Transaction] {
+    /// The loaded rows the list shows, narrowed to spend/income and the active search
+    /// query but BEFORE the selected filter chip — i.e. the universe the chips partition.
+    /// Both the chip counts and `processedTransactions` derive from this, so a
+    /// merchant/search drill-down counts only what's actually on screen.
+    private var baseTransactions: [Transaction] {
         // Exclude ignored transactions (neither spend nor income)
         var txns = sheetTransactionsService.transactions.filter { $0.isSpend || $0.isIncome }
-        
-        // 1. Filter by Search Query
+
+        // Discretionary-only (streak day drill-down): keep exactly the rows that count
+        // toward the day's budget — non-mandatory spend, i.e. `variable_transactions`.
+        if discretionaryOnly {
+            txns = txns.filter { $0.isSpend && !$0.isMandatory }
+        }
+
+        // Filter by Search Query
         if !searchQuery.isEmpty {
             txns = txns.filter {
                 $0.displayName.localizedCaseInsensitiveContains(searchQuery) ||
                 ($0.personalFinanceCategory?.localizedCaseInsensitiveContains(searchQuery) ?? false)
             }
         }
-        
-        // 2. Filter by Category Chip
-        // When showBillsBucket (Pulse drill-down), category/Other exclude mandatory bills
-        // so each drill-down reconciles to its Where-it-went row. Off by default → Home
-        // filtering is unchanged.
-        let excludeMandatory = showBillsBucket
+
+        return txns
+    }
+
+    private var processedTransactions: [Transaction] {
+        var txns = baseTransactions
+
+        // Filter by Category Chip
+        // When showBillsBucket (Pulse drill-down) or discretionaryOnly (streak day
+        // drill-down), category/Other exclude mandatory bills so each drill-down
+        // reconciles to its bucket. Off by default → Home filtering is unchanged.
+        let excludeMandatory = showBillsBucket || discretionaryOnly
         switch selectedFilter {
         case .all:
             break

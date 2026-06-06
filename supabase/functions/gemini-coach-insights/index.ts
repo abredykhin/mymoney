@@ -100,10 +100,14 @@ Deno.serve(async (req: Request) => {
       .eq('id', user.id)
       .single();
 
-    // Fetch accounts to calculate net liquid cash
+    // Fetch accounts to calculate net liquid cash.
+    // NOTE: this uses the service-role client, which BYPASSES RLS — so the user_id
+    // filter is mandatory. The `accounts` view's RLS-based scoping does not apply here,
+    // and without it netCash would sum every user's balances (wrong number + cross-user leak).
     const { data: accounts } = await supabase
       .from('accounts')
       .select('current_balance, type')
+      .eq('user_id', user.id)
       .eq('hidden', false);
 
     const netCash = (accounts || []).reduce((sum, acc) => {
@@ -116,16 +120,22 @@ Deno.serve(async (req: Request) => {
       return sum;
     }, 0);
 
-    // Fetch last 14 days of transactions
+    // Fetch last 14 days of REAL spend from the `transactions` view (is_spend = true)
+    // rather than the raw transactions_table. The raw table mixes in income, internal
+    // transfers, and credit-card payments, which would skew the "largest overspend" read.
+    // is_spend is total spend INCLUDING bills; the is_mandatory flag lets the model tell
+    // fixed bills apart from variable/discretionary leaks. This mirrors the Pulse
+    // "where it went" layer (see CLAUDE.md spend-classification layers).
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 14);
     const startDateStr = startDate.toISOString().split('T')[0];
 
     const { data: txs } = await supabase
-      .from('transactions_table')
-      .select('amount, name, date, personal_finance_category')
+      .from('transactions')
+      .select('amount, name, merchant_name, spend_date, personal_finance_category, is_mandatory')
       .eq('user_id', user.id)
-      .gte('date', startDateStr);
+      .eq('is_spend', true)
+      .gte('spend_date', startDateStr);
 
     // Fetch active subscription streams. The view intentionally excludes rent/mortgage
     // so fixed housing costs don't get framed as subscription leaks.
@@ -179,7 +189,7 @@ Deno.serve(async (req: Request) => {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
         generationConfig: {
           responseMimeType: "application/json"
         }
@@ -197,7 +207,7 @@ Deno.serve(async (req: Request) => {
         Upcoming/Active Bills (Mandatory Recurring Streams):
         ${JSON.stringify(mandatoryStreams || [])}
         
-        Recent Transactions (Last 14 Days):
+        Recent Spend — Last 14 Days (real outflows including bills; "is_mandatory": true marks a fixed bill, false marks variable/discretionary spend):
         ${JSON.stringify(txs || [])}
         
         Active Recurring Subscriptions (Optional):

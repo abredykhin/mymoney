@@ -673,9 +673,26 @@ struct DailyTransactionStats: Decodable {
     let date: String
     let total_in: Double
     let total_out: Double
-    
+
     var totalIn: Double { total_in }
     var totalOut: Double { total_out }
+}
+
+/// One group of the `get_transaction_filter_counts` RPC: a distinct combination of the
+/// raw Plaid classification columns plus how many rows share it. The filter chips sum
+/// these (mapping category client-side) instead of counting loaded rows, so their totals
+/// are complete and stable regardless of pagination.
+struct TransactionFilterCount: Decodable {
+    let is_spend: Bool?
+    let is_income: Bool?
+    let is_mandatory: Bool?
+    let personal_finance_category: String?
+    let personal_finance_subcategory: String?
+    let cnt: Int
+
+    var isSpend: Bool { is_spend ?? false }
+    var isIncome: Bool { is_income ?? false }
+    var isMandatory: Bool { is_mandatory ?? false }
 }
 
 // MARK: - Stats Extensions for TransactionsService
@@ -706,6 +723,34 @@ extension TransactionsService {
         }
     }
     
+    /// Fetch grouped filter-chip counts for a date range (and optional merchant/text
+    /// search), grouped by the raw Plaid classification columns. Returns numbers, not
+    /// rows, so the All-activity sheet's chips stay complete and stable without loading
+    /// every transaction.
+    func fetchFilterCounts(startDate: String, endDate: String, search: String?) async throws -> [TransactionFilterCount] {
+        Logger.d("TransactionsService: Fetching filter counts")
+
+        struct Params: Encodable {
+            let start_date: String
+            let end_date: String
+            let search: String?
+        }
+
+        let params = Params(start_date: startDate, end_date: endDate, search: search)
+
+        do {
+            let counts: [TransactionFilterCount] = try await supabase
+                .rpc("get_transaction_filter_counts", params: params)
+                .execute()
+                .value
+
+            return counts
+        } catch {
+            Logger.e("TransactionsService: Failed to fetch filter counts: \(error)")
+            throw error
+        }
+    }
+
     /// Fetch daily statistics for a date range
     func fetchDailyStats(startDate: String, endDate: String) async throws -> [DailyTransactionStats] {
         Logger.d("TransactionsService: Fetching daily stats")
