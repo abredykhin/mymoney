@@ -27,6 +27,9 @@ enum HomeDestination: Hashable {
     /// (opened from the "What you've spent this period" breakdown step). Uses the same
     /// AllTransactionsView the "Recent" widget opens, rather than a bespoke list.
     case periodSpendList(HeroPeriod)
+
+    /// Transactions on a specific day (yyyy-MM-dd date string).
+    case dayTransactions(String)
 }
 
 // MARK: - Transaction source

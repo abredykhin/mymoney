@@ -99,6 +99,7 @@ struct StreakWidgetView: View {
 
 struct StreakDetailView: View {
     @EnvironmentObject private var streakService: StreakService
+    @EnvironmentObject private var navigationState: NavigationState
     @Environment(\.babloTheme) private var theme
 
     private var streak: UserStreak {
@@ -279,7 +280,15 @@ struct StreakDetailView: View {
                 .tracking(2)
                 .foregroundStyle(theme.colors.textTertiary.color)
 
-            StreakCalendarGrid(cells: streak.detailCalendarCells)
+            StreakCalendarGrid(cells: streak.detailCalendarCells) { cell in
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd"
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.timeZone = Calendar.bablo.timeZone
+                let dateStr = formatter.string(from: cell.date)
+                
+                navigationState.homeNavPath.append(HomeDestination.dayTransactions(dateStr))
+            }
 
             LazyVGrid(
                 columns: [GridItem(.adaptive(minimum: 92), spacing: 10)],
@@ -381,6 +390,7 @@ private struct StreakStatCell: View {
 
 private struct StreakCalendarGrid: View {
     let cells: [StreakCalendarCell]
+    let onCellTap: (StreakCalendarCell) -> Void
 
     @Environment(\.babloTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -402,11 +412,16 @@ private struct StreakCalendarGrid: View {
 
             LazyVGrid(columns: columns, spacing: 6) {
                 ForEach(Array(cells.enumerated()), id: \.element.id) { index, cell in
-                    StreakCalendarCellView(cell: cell)
-                        .aspectRatio(1, contentMode: .fit)
-                        .scaleEffect(scale(for: cell))
-                        .opacity(opacity(for: cell))
-                        .animation(animation(for: index, cell: cell), value: hasAppeared)
+                    Button {
+                        onCellTap(cell)
+                    } label: {
+                        StreakCalendarCellView(cell: cell)
+                    }
+                    .buttonStyle(.plain)
+                    .aspectRatio(1, contentMode: .fit)
+                    .scaleEffect(scale(for: cell))
+                    .opacity(opacity(for: cell))
+                    .animation(animation(for: index, cell: cell), value: hasAppeared)
                 }
             }
         }
@@ -648,6 +663,7 @@ struct StreakWidgetPreviewWrapper: View {
         NavigationStack {
             StreakDetailView()
                 .environmentObject(streakService)
+                .environmentObject(NavigationState())
                 .babloTheme(theme)
         }
     }
