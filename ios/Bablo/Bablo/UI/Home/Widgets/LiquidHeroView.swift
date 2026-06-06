@@ -75,7 +75,7 @@ struct LiquidHeroView: View {
     private var spentSoFar: Double         { calculator.spentSoFar(for: period) }
     private var spendable: Double          { calculator.spendable(for: period) }
     private var fillTarget: Double         { calculator.fillTarget(for: period) }
-    private var deltaLabel: String?        { calculator.deltaLabel(for: period) }
+    private var deltaChipValue: HeroDeltaChip? { calculator.deltaChip(for: period) }
 
     private var denominatorText: String {
         switch period {
@@ -160,15 +160,16 @@ struct LiquidHeroView: View {
 
     @ViewBuilder
     private var deltaChip: some View {
-        if let label = deltaLabel {
+        if let chip = deltaChipValue {
             let isPopArt = theme.effects.isPopArt
+            let accent = chip.hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color
             Button {
                 onDeltaTap?()
             } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: "bolt.fill")
+                    Image(systemName: chip.hasMoreRoom ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill")
                         .font(.system(size: 9, weight: .bold))
-                    Text(label)
+                    Text(chip.label)
                         .font(.system(
                             size: isPopArt ? 12 : 11,
                             weight: .semibold,
@@ -181,15 +182,15 @@ struct LiquidHeroView: View {
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .foregroundStyle(isPopArt ? theme.colors.surface.color : theme.colors.textSecondary.color)
+                .foregroundStyle(isPopArt ? theme.colors.surface.color : accent)
                 .frame(maxWidth: 168, alignment: .leading)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 5)
-                .background(isPopArt ? theme.colors.textPrimary.color : theme.colors.surface.color.opacity(0.7))
+                .background(isPopArt ? theme.colors.textPrimary.color : accent.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: isPopArt ? 0 : 999))
                 .overlay {
                     RoundedRectangle(cornerRadius: isPopArt ? 0 : 999)
-                        .stroke(theme.colors.line.color, lineWidth: theme.metrics.borderWidth)
+                        .stroke(isPopArt ? theme.colors.line.color : accent.opacity(0.35), lineWidth: theme.metrics.borderWidth)
                 }
                 .shadow(color: isPopArt ? theme.effects.shadowColor : .clear, radius: 0, x: 3, y: 3)
             }

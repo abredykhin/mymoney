@@ -19,6 +19,40 @@ struct BudgetServiceTests {
             .appendingPathComponent("\(name).json")
         return try Data(contentsOf: fixturePath)
     }
+
+    private static func budgetStateJSON(
+        spentMtd: Double = 182.5,
+        spentWeek: Double = 0,
+        spentToday: Double = 0,
+        knownIncome: Double = 0,
+        extraIncome: Double = 0
+    ) -> String {
+        """
+        [{
+          "pool_total": 3000.0,
+          "pool_remaining": 2817.5,
+          "daily_pace": 165.735,
+          "weekly_pace": 1160.147,
+          "spent_today": \(spentToday),
+          "spent_week": \(spentWeek),
+          "spent_mtd": \(spentMtd),
+          "prev_day_spent": 0.0,
+          "prev_week_spent": 0.0,
+          "prev_month_spent": 0.0,
+          "effective_income": 5000.0,
+          "mandatory": 2000.0,
+          "goals_set_aside": 0.0,
+          "net_cash": 0.0,
+          "upcoming_bills": 0.0,
+          "income_basis": "projected",
+          "days_in_month": 31,
+          "days_remaining": 17,
+          "days_elapsed_in_week": 4,
+          "known_income": \(knownIncome),
+          "extra_income": \(extraIncome)
+        }]
+        """
+    }
     
     @Test @MainActor func testFetchTotalBalance() async throws {
         // fetchTotalBalance uses the get_net_cash_balance RPC (replaced direct accounts query)
@@ -46,7 +80,7 @@ struct BudgetServiceTests {
             options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
         )
 
-        let service = await BudgetService(supabaseClient: client)
+        let service = BudgetService(supabaseClient: client)
         try await service.fetchTotalBalance()
 
         let total = service.totalBalance
@@ -84,10 +118,10 @@ struct BudgetServiceTests {
         )
         
         // 4. Initialize the refactored service with the mock client
-        let service = await BudgetService(supabaseClient: client)
+        let service = PulseService(supabaseClient: client)
         
         // 5. Execute weekly energy fetching
-        try await service.fetchWeeklyEnergy(weekStart: "2026-01-20", weekEnd: "2026-01-27")
+        await service.fetchDailyEnergy(startDate: "2026-01-20", endDate: "2026-01-27")
         
         // 6. Assert decodes and parsed structures correctly
         #expect(service.dailyEnergy.count == 8)
@@ -128,10 +162,10 @@ struct BudgetServiceTests {
         )
         
         // 4. Initialize the refactored service with the mock client
-        let service = await BudgetService(supabaseClient: client)
+        let service = PulseService(supabaseClient: client)
         
         // 5. Execute top merchants fetching
-        try await service.fetchTopMerchants(startDate: "2026-01-01", endDate: "2026-01-27", limit: 5)
+        await service.fetchTopMerchants(startDate: "2026-01-01", endDate: "2026-01-27", limit: 5)
         
         // 6. Assert decodes and parsed structures correctly
         #expect(service.topMerchants.count == 5)
@@ -148,17 +182,17 @@ struct BudgetServiceTests {
     }
     
 
-    // MARK: - fetchVariableSpend
+    // MARK: - fetchBudgetState
 
-    @Test @MainActor func testFetchVariableSpendQueriesRPC() async throws {
-        // fetchVariableSpend uses the get_variable_spend RPC (DB-side aggregation)
+    @Test @MainActor func testFetchBudgetStateQueriesRPC() async throws {
+        // fetchBudgetState uses get_budget_state as the single-pool source of truth.
         var capturedURL: URL?
 
         MockURLProtocol.mockHandler = { request in
             capturedURL = request.url
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
                                            headerFields: ["Content-Type": "application/json"])!
-            return (response, Data("182.5".utf8))
+            return (response, Data(Self.budgetStateJSON(spentMtd: 182.5).utf8))
         }
 
         let config = URLSessionConfiguration.ephemeral
@@ -169,23 +203,21 @@ struct BudgetServiceTests {
             options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
         )
 
-        let service = await BudgetService(supabaseClient: client)
-        try? await service.fetchVariableSpend()
+        let service = BudgetService(supabaseClient: client)
+        await service.fetchBudgetState()
 
-        #expect(capturedURL?.path.contains("/rest/v1/rpc/get_variable_spend") == true,
-                "Must call get_variable_spend RPC, not query raw tables client-side")
+        #expect(capturedURL?.path.contains("/rest/v1/rpc/get_budget_state") == true,
+                "Must call get_budget_state RPC, not query raw tables client-side")
     }
 
-    @Test @MainActor func testFetchVariableSpendPassesDateParamsToRPC() async throws {
-        // The RPC receives p_start/p_end; they may appear as URL query params or POST body params.
-        // We verify that the RPC URL is called and that the query or body contains the date keys.
+    @Test @MainActor func testFetchBudgetStateKeepsParamsOutOfURLQuery() async throws {
         var capturedRequest: URLRequest?
 
         MockURLProtocol.mockHandler = { request in
             capturedRequest = request
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
                                            headerFields: ["Content-Type": "application/json"])!
-            return (response, Data("0.0".utf8))
+            return (response, Data(Self.budgetStateJSON(spentMtd: 0).utf8))
         }
 
         let config = URLSessionConfiguration.ephemeral
@@ -196,24 +228,21 @@ struct BudgetServiceTests {
             options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
         )
 
-        let service = await BudgetService(supabaseClient: client)
-        try? await service.fetchVariableSpend()
+        let service = BudgetService(supabaseClient: client)
+        await service.fetchBudgetState(incomeBasis: .cashOnly)
 
-        // Date params are in the POST body stream; check the URL path is the RPC endpoint.
-        #expect(capturedRequest?.url?.path.contains("/rest/v1/rpc/get_variable_spend") == true,
-                "Variable spend RPC must be called so date params are passed server-side")
-        // Params must NOT leak into the URL query string (they belong in the body)
+        #expect(capturedRequest?.url?.path.contains("/rest/v1/rpc/get_budget_state") == true,
+                "Budget state RPC must be called so params are passed server-side")
         let query = capturedRequest?.url?.query ?? ""
-        #expect(!query.contains("p_start") && !query.contains("p_end") || query.isEmpty,
-                "Date params belong in the POST body, not the URL query string")
+        #expect(!query.contains("p_as_of") && !query.contains("p_income_basis") || query.isEmpty,
+                "Budget state params belong in the POST body, not the URL query string")
     }
 
-    @Test @MainActor func testFetchVariableSpendSumsPositiveAmounts() async throws {
-        // get_variable_spend RPC returns a single Double (the sum)
+    @Test @MainActor func testFetchBudgetStateMapsVariableSpendFromSpentMTD() async throws {
         MockURLProtocol.mockHandler = { request in
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
                                            headerFields: ["Content-Type": "application/json"])!
-            return (response, Data("182.5".utf8))
+            return (response, Data(Self.budgetStateJSON(spentMtd: 182.5).utf8))
         }
 
         let config = URLSessionConfiguration.ephemeral
@@ -224,14 +253,14 @@ struct BudgetServiceTests {
             options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
         )
 
-        let service = await BudgetService(supabaseClient: client)
-        try? await service.fetchVariableSpend()
+        let service = BudgetService(supabaseClient: client)
+        await service.fetchBudgetState()
         await Task.yield()
 
         #expect(abs(service.variableSpend - 182.50) < 0.001)
     }
 
-    @Test @MainActor func testFetchVariableSpendDoesNotQueryTransferParams() async throws {
+    @Test @MainActor func testFetchBudgetStateDoesNotQueryTransferParams() async throws {
         // RPC-based aggregation must not pass client-side NOT ILIKE filters in the URL.
         var capturedURL: URL?
 
@@ -239,7 +268,7 @@ struct BudgetServiceTests {
             capturedURL = request.url
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
                                            headerFields: ["Content-Type": "application/json"])!
-            return (response, Data("0.0".utf8))
+            return (response, Data(Self.budgetStateJSON(spentMtd: 0).utf8))
         }
 
         let config = URLSessionConfiguration.ephemeral
@@ -250,8 +279,8 @@ struct BudgetServiceTests {
             options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
         )
 
-        let service = await BudgetService(supabaseClient: client)
-        try? await service.fetchVariableSpend()
+        let service = BudgetService(supabaseClient: client)
+        await service.fetchBudgetState()
 
         let query = capturedURL?.query ?? ""
         #expect(!query.contains("ilike"),
@@ -260,20 +289,16 @@ struct BudgetServiceTests {
                 "CC-payment filter must live in the DB, not the iOS query")
     }
 
-    // MARK: - fetchActualIncome
+    // MARK: - fetchBudgetState income fields
 
-    @Test @MainActor func testFetchActualIncomeQueriesIncomeRPC() async throws {
-        // fetchActualIncome uses the get_monthly_income_summary RPC (replaced direct view query)
+    @Test @MainActor func testFetchBudgetStateMapsIncomeSummaryFields() async throws {
         var capturedURL: URL?
 
         MockURLProtocol.mockHandler = { request in
             capturedURL = request.url
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil,
                                            headerFields: ["Content-Type": "application/json"])!
-            let incomeJSON = """
-            [{"known_income": 5495.36, "extra_income": 0.0}]
-            """
-            return (response, Data(incomeJSON.utf8))
+            return (response, Data(Self.budgetStateJSON(knownIncome: 5495.36, extraIncome: 123.45).utf8))
         }
 
         let config = URLSessionConfiguration.ephemeral
@@ -291,12 +316,13 @@ struct BudgetServiceTests {
             email: "test@example.com"
         )
 
-        let service = await BudgetService(supabaseClient: client)
-        await service.fetchActualIncome()
+        let service = BudgetService(supabaseClient: client)
+        await service.fetchBudgetState()
 
-        #expect(capturedURL?.path.contains("/rest/v1/rpc/get_monthly_income_summary") == true,
-                "Income classification must use the DB RPC, not raw views")
+        #expect(capturedURL?.path.contains("/rest/v1/rpc/get_budget_state") == true,
+                "Income classification must come through the unified budget state RPC")
         #expect(abs(service.knownIncomeThisMonth - 5495.36) < 0.001)
+        #expect(abs(service.extraIncomeThisMonth - 123.45) < 0.001)
     }
 
     // MARK: - fetchHeroExcludedTransactionRows
@@ -390,7 +416,7 @@ struct BudgetServiceTests {
             options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
         )
 
-        let service = await BudgetService(supabaseClient: client)
+        let service = HomeBreakdownService(supabaseClient: client)
         let rows = await service.fetchHeroExcludedTransactionRows(for: .month)
 
         let positiveSpendURL = capturedURLs.first { $0.query?.contains("amount=gt.0") == true }
@@ -463,8 +489,11 @@ struct BudgetServiceTests {
             options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
         )
 
-        let service = await BudgetService(supabaseClient: client)
-        let rows = await service.fetchHeroSpendBreakdownRows(for: .month, trackedCategories: [.coffeeRuns])
+        let service = HomeBreakdownService(supabaseClient: client)
+        let rows = await service.fetchHeroSpendBreakdownRows(
+            for: .month,
+            trackedCategories: Set<FlexibleSpendingCategory>([.coffeeRuns])
+        )
 
         #expect(capturedURL?.query?.contains("personal_finance_subcategory") == true)
         #expect(rows.map(\.category) == ["Everything else", "Coffee runs"])
@@ -484,7 +513,7 @@ struct BudgetServiceTests {
             options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
         )
 
-        let service = await BudgetService(supabaseClient: client)
+        let service = BudgetService(supabaseClient: client)
         service.monthlyIncome = 5000
         service.monthlyMandatoryExpenses = 2000
         service.variableSpend = 500
@@ -505,7 +534,7 @@ struct BudgetServiceTests {
             options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
         )
 
-        let service = await BudgetService(supabaseClient: client)
+        let service = BudgetService(supabaseClient: client)
         service.monthlyIncome = 8000
         service.knownIncomeThisMonth = 8200   // e.g., 3-paycheck month
         service.extraIncomeThisMonth = 0
@@ -526,7 +555,7 @@ struct BudgetServiceTests {
             options: SupabaseClientOptions(global: .init(session: URLSession(configuration: config)))
         )
 
-        let service = await BudgetService(supabaseClient: client)
+        let service = BudgetService(supabaseClient: client)
         service.monthlyIncome = 5000
         service.knownIncomeThisMonth = 5000
         service.extraIncomeThisMonth = 1000   // freelance payment

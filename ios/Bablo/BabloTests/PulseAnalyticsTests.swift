@@ -19,10 +19,10 @@ struct PulseAnalyticsTests {
         _ = try await client.auth.signIn(email: "test@example.com", password: "password")
         
         // 3. Initialize the service with the live local client
-        let service = BudgetService(supabaseClient: client)
+        let service = PulseService(supabaseClient: client)
         
         // 4. Fetch daily weekly energy from live PostgreSQL aggregates
-        try await service.fetchWeeklyEnergy(weekStart: "2026-01-20", weekEnd: "2026-01-27")
+        await service.fetchDailyEnergy(startDate: "2026-01-20", endDate: "2026-01-27")
         
         // 5. Assert live database response matches the contract
         #expect(service.dailyEnergy.count == 8)
@@ -43,10 +43,10 @@ struct PulseAnalyticsTests {
         _ = try await client.auth.signIn(email: "test@example.com", password: "password")
         
         // 3. Initialize the service with the live local client
-        let service = BudgetService(supabaseClient: client)
+        let service = PulseService(supabaseClient: client)
         
         // 4. Fetch top merchants from live PostgreSQL aggregates
-        try await service.fetchTopMerchants(startDate: "2026-01-01", endDate: "2026-01-27", limit: 5)
+        await service.fetchTopMerchants(startDate: "2026-01-01", endDate: "2026-01-27", limit: 5)
         
         // 5. Assert live database response matches the contract
         let top = try #require(service.topMerchants.first, "Expected at least one merchant from DB")

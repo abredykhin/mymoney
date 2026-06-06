@@ -36,7 +36,7 @@ struct TheCushionSheetView: View {
                         )
                     }
 
-                    if !cumulativePoints.isEmpty {
+                    if period != .day && !cumulativePoints.isEmpty {
                         CushionPaceCard(
                             snapshot: snapshot,
                             points: cumulativePoints,
@@ -115,23 +115,47 @@ private struct CushionHeroComparisonCard: View {
     let theme: BabloResolvedTheme
 
     private var accent: Color {
-        if snapshot.currentRoom < 0 && snapshot.hasMoreRoom {
-            return theme.colors.textSecondary.color
-        }
         return snapshot.hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color
     }
 
-    private var percentChange: Int {
-        guard abs(snapshot.previousRoom) > 0.01 else { return 0 }
-        return Int((abs(snapshot.roomDelta) / abs(snapshot.previousRoom) * 100).rounded())
+    private var comparisonAmount: String {
+        formattedMoney(abs(snapshot.roomDelta))
     }
 
-    private func calculateFillFraction(amount: Double, current: Double, previous: Double) -> Double {
-        // amount/current/previous are cushion ("left to spend") values and may be negative when
-        // over budget. Scale bars by magnitude so the larger cushion fills the bar; clamp at 0.
-        let maxVal = max(abs(current), abs(previous))
+    private var headlineTitle: String {
+        let direction = snapshot.hasMoreRoom ? "MORE TO SPEND" : "LESS TO SPEND"
+        return "\(direction) THAN \(period.previousPeriodLabel)"
+    }
+
+    private var comparisonSentence: AttributedString {
+        let periodName: String
+        let prevPeriodName: String
+        switch period {
+        case .month:
+            periodName = "this month"
+            prevPeriodName = "last month"
+        case .week:
+            periodName = "this week"
+            prevPeriodName = "last week"
+        case .day:
+            periodName = "today"
+            prevPeriodName = "yesterday"
+        }
+        let sentence = "You have \(comparisonAmount) \(snapshot.hasMoreRoom ? "more" : "less") to spend \(periodName) than \(prevPeriodName)."
+        var text = AttributedString(sentence)
+        if let range = text.range(of: comparisonAmount) {
+            text[range].foregroundColor = accent
+            text[range].font = theme.typography.body(size: 14, weight: .bold)
+        }
+        return text
+    }
+
+    private func calculateSpendFillFraction(amount: Double, current: Double, previous: Double) -> Double {
+        let c = max(0.0, current)
+        let p = max(0.0, previous)
+        let maxVal = max(c, p)
         guard maxVal > 0 else { return 0.0 }
-        return max(0.0, amount / maxVal)
+        return max(0.0, max(0.0, amount) / maxVal)
     }
 
     var body: some View {
@@ -139,7 +163,7 @@ private struct CushionHeroComparisonCard: View {
         return VStack(alignment: .leading, spacing: 20) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(CushionVerdictCopy.metricTitle(for: snapshot))
+                    Text(headlineTitle)
                         .font(theme.typography.mono(size: 11, weight: .bold))
                         .tracking(1.5)
                         .foregroundStyle(theme.colors.textTertiary.color)
@@ -153,11 +177,11 @@ private struct CushionHeroComparisonCard: View {
 
                 Spacer()
 
-                if percentChange > 0 {
+                if abs(snapshot.roomDelta) >= 1 {
                     HStack(spacing: 4) {
                         Image(systemName: snapshot.hasMoreRoom ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill")
                             .font(.system(size: 10, weight: .bold))
-                        Text("\(percentChange) %")
+                        Text("\(comparisonAmount) \(snapshot.hasMoreRoom ? "more" : "less")")
                             .font(theme.typography.body(size: 14, weight: .bold))
                     }
                     .foregroundStyle(accent)
@@ -168,21 +192,25 @@ private struct CushionHeroComparisonCard: View {
                 }
             }
 
-            // Bars show the CUSHION (safe-to-spend left), not raw spend, so the headline delta
-            // is literally the difference between the two bars — no mental math required.
+            Text(comparisonSentence)
+                .font(theme.typography.body(size: 14, weight: .regular))
+                .foregroundStyle(theme.colors.textSecondary.color)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+
             VStack(spacing: 10) {
-                roomRow(
-                    title: period.previousPeriodLabel + " LEFT",
+                spendRow(
+                    title: period.currentPeriodLabel,
+                    dateRange: "",
+                    amount: snapshot.currentRoom,
+                    isCurrent: true
+                )
+
+                spendRow(
+                    title: period.previousPeriodLabel,
                     dateRange: period.previousWindowLabel,
                     amount: snapshot.previousRoom,
                     isCurrent: false
-                )
-
-                roomRow(
-                    title: period.currentPeriodLabel + " LEFT",
-                    dateRange: period.currentWindowLabel,
-                    amount: snapshot.currentRoom,
-                    isCurrent: true
                 )
             }
         }
@@ -199,8 +227,8 @@ private struct CushionHeroComparisonCard: View {
         .shadow(color: isPopArt ? theme.effects.shadowColor : Color.black.opacity(0.04), radius: isPopArt ? 0 : 12, x: isPopArt ? theme.effects.shadowX : 0, y: isPopArt ? theme.effects.shadowY : 4)
     }
 
-    private func roomRow(title: String, dateRange: String, amount: Double, isCurrent: Bool) -> some View {
-        let rawFill = calculateFillFraction(amount: amount, current: snapshot.currentRoom, previous: snapshot.previousRoom)
+    private func spendRow(title: String, dateRange: String, amount: Double, isCurrent: Bool) -> some View {
+        let rawFill = calculateSpendFillFraction(amount: amount, current: snapshot.currentRoom, previous: snapshot.previousRoom)
         let fillFraction = max(0.08, min(rawFill, 1.0))
 
         return VStack(alignment: .leading, spacing: 6) {
@@ -210,9 +238,11 @@ private struct CushionHeroComparisonCard: View {
                     .tracking(1.5)
                     .foregroundStyle(isCurrent ? theme.colors.textPrimary.color : theme.colors.textTertiary.color)
 
-                Text("· \(dateRange)")
-                    .font(theme.typography.body(size: 12, weight: isCurrent ? .semibold : .regular))
-                    .foregroundStyle(theme.colors.textTertiary.color)
+                if !dateRange.isEmpty {
+                    Text("· \(dateRange)")
+                        .font(theme.typography.body(size: 12, weight: isCurrent ? .semibold : .regular))
+                        .foregroundStyle(theme.colors.textTertiary.color)
+                }
 
                 Spacer()
 
@@ -229,7 +259,7 @@ private struct CushionHeroComparisonCard: View {
                         .frame(height: 8)
 
                     RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(isCurrent ? accent : theme.colors.textTertiary.color.opacity(0.35))
+                        .fill(isCurrent ? accent : accent.opacity(0.35))
                         .frame(width: geo.size.width * CGFloat(fillFraction), height: 8)
                 }
             }
@@ -245,42 +275,31 @@ private struct CushionDriversCard: View {
     let theme: BabloResolvedTheme
 
     private var maxDelta: Double {
-        drivers.map { abs($0.roomDelta) }.max() ?? 1
+        drivers.map { abs($0.spendDelta) }.max() ?? 1
     }
 
-    private var currentRoomColor: Color {
-        if snapshot.currentRoom < 0 {
-            return snapshot.hasMoreRoom ? theme.colors.textSecondary.color : theme.colors.danger.color
-        }
-        return snapshot.hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color
+    private var netSpendDelta: Double {
+        (snapshot.currentSpend - snapshot.previousSpend).rounded()
+    }
+
+    private var netColor: Color {
+        netSpendDelta <= 0 ? theme.colors.success.color : theme.colors.danger.color
     }
 
     var body: some View {
         let isPopArt = theme.effects.isPopArt
         return VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text(snapshot.hasMoreRoom ? "How the room grew" : "How the room shrank")
+                Text("HOW SPENDING IS MOVING IT")
                     .font(theme.typography.title(size: 16, weight: isPopArt ? .black : .bold))
+                    .tracking(isPopArt ? 0 : 1.2)
                     .foregroundStyle(theme.colors.textPrimary.color)
 
                 Spacer()
 
-                Text(period.previousPeriodShortLabel + " → " + period.currentPeriodShortLabel)
+                Text("vs \(period.previousPeriodShortLabel)")
                     .font(theme.typography.body(size: 12, weight: .semibold))
                     .foregroundStyle(theme.colors.textTertiary.color)
-            }
-
-            HStack {
-                Text(period.previousPeriodLabel)
-                    .font(theme.typography.mono(size: 11, weight: .bold))
-                    .tracking(1.5)
-                    .foregroundStyle(theme.colors.textSecondary.color)
-
-                Spacer()
-
-                Text(formattedMoney(snapshot.previousRoom))
-                    .font(theme.typography.body(size: 16, weight: .bold))
-                    .foregroundStyle(theme.colors.textSecondary.color)
             }
 
             VStack(spacing: 10) {
@@ -292,17 +311,23 @@ private struct CushionDriversCard: View {
             Divider()
                 .overlay(theme.colors.line.color)
 
-            HStack {
-                Text(period.currentPeriodLabel)
-                    .font(theme.typography.mono(size: 11, weight: .bold))
-                    .tracking(1.5)
-                    .foregroundStyle(theme.colors.textPrimary.color)
+            HStack(alignment: .center) {
+                HStack(alignment: .center, spacing: 4) {
+                    Text("◀ saved")
+                        .foregroundStyle(theme.colors.success.color)
+                    Text("·")
+                        .foregroundStyle(theme.colors.textTertiary.color)
+                    Text("spent more ▶")
+                        .foregroundStyle(theme.colors.danger.color)
+                }
+                .font(theme.typography.body(size: 12, weight: .bold))
 
                 Spacer()
 
-                Text(formattedMoney(snapshot.currentRoom))
-                    .font(theme.typography.body(size: 16, weight: .heavy))
-                    .foregroundStyle(currentRoomColor)
+                Text("Net \(formattedSigned(netSpendDelta))")
+                    .font(theme.typography.body(size: 18, weight: .heavy))
+                    .monospacedDigit()
+                    .foregroundStyle(netColor)
             }
         }
         .padding(16)
@@ -325,11 +350,15 @@ private struct CushionDriverRow: View {
     let theme: BabloResolvedTheme
 
     private var color: Color {
-        driver.kind == .grew ? theme.colors.success.color : theme.colors.danger.color
+        driver.spendDelta <= 0 ? theme.colors.success.color : theme.colors.danger.color
     }
 
     private var barFraction: Double {
-        min(abs(driver.roomDelta) / max(maxDelta, 1), 1.0)
+        min(abs(driver.spendDelta) / max(maxDelta, 1), 1.0)
+    }
+
+    private var barSide: HeroCushionDriver.BarSide {
+        driver.spendDelta <= 0 ? .left : .right
     }
 
     var body: some View {
@@ -359,7 +388,7 @@ private struct CushionDriverRow: View {
             HStack(spacing: 0) {
                 ZStack(alignment: .trailing) {
                     Color.clear
-                    if driver.barSide == .left {
+                    if barSide == .left {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
                             .fill(color)
                             .frame(width: max(40 * CGFloat(barFraction), 4), height: 12)
@@ -373,7 +402,7 @@ private struct CushionDriverRow: View {
 
                 ZStack(alignment: .leading) {
                     Color.clear
-                    if driver.barSide == .right {
+                    if barSide == .right {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
                             .fill(color)
                             .frame(width: max(40 * CGFloat(barFraction), 4), height: 12)
@@ -383,7 +412,7 @@ private struct CushionDriverRow: View {
             }
             .frame(width: 81, height: 18)
 
-            Text(formattedSigned(driver.roomDelta))
+            Text(formattedSigned(driver.spendDelta))
                 .font(theme.typography.body(size: 14, weight: .bold))
                 .monospacedDigit()
                 .lineLimit(1)
@@ -394,7 +423,7 @@ private struct CushionDriverRow: View {
     }
 
     private var detailText: String {
-        return "\(formattedMoney(driver.previousAmount)) → \(formattedMoney(driver.currentAmount))"
+        return "\(formattedMoney(driver.currentAmount))·was \(formattedMoney(driver.previousAmount))"
     }
 }
 
@@ -408,9 +437,6 @@ private struct CushionPaceCard: View {
     }
 
     private var paceSummaryColor: Color {
-        if snapshot.currentRoom < 0 && snapshot.hasMoreRoom {
-            return theme.colors.textSecondary.color
-        }
         return snapshot.hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color
     }
 
@@ -504,19 +530,19 @@ private struct CushionLineChart: View {
                 // Fill area between lines first
                 if !points.isEmpty {
                     var betweenPath = Path()
-                    let firstPrev = chartPoint(amount: points[0].previous, index: 0, count: points.count, size: size, top: top, bottom: bottom)
+                    let firstPrev = chartPoint(for: points[0], amount: points[0].previous, size: size, top: top, bottom: bottom)
                     betweenPath.move(to: firstPrev)
 
                     for index in 1..<points.count {
-                        let p = chartPoint(amount: points[index].previous, index: index, count: points.count, size: size, top: top, bottom: bottom)
+                        let p = chartPoint(for: points[index], amount: points[index].previous, size: size, top: top, bottom: bottom)
                         betweenPath.addLine(to: p)
                     }
 
-                    let lastCurr = chartPoint(amount: points[points.count - 1].current, index: points.count - 1, count: points.count, size: size, top: top, bottom: bottom)
+                    let lastCurr = chartPoint(for: points[points.count - 1], amount: points[points.count - 1].current, size: size, top: top, bottom: bottom)
                     betweenPath.addLine(to: lastCurr)
 
                     for index in stride(from: points.count - 2, through: 0, by: -1) {
-                        let p = chartPoint(amount: points[index].current, index: index, count: points.count, size: size, top: top, bottom: bottom)
+                        let p = chartPoint(for: points[index], amount: points[index].current, size: size, top: top, bottom: bottom)
                         betweenPath.addLine(to: p)
                     }
                     betweenPath.closeSubpath()
@@ -553,8 +579,8 @@ private struct CushionLineChart: View {
             .overlay {
                 GeometryReader { geo in
                     if let last = points.last {
-                        let previous = point(for: last.previous, index: points.count - 1, size: geo.size)
-                        let current = point(for: last.current, index: points.count - 1, size: geo.size)
+                        let previous = point(for: last.previous, item: last, size: geo.size)
+                        let current = point(for: last.current, item: last, size: geo.size)
 
                         Circle()
                             .stroke(theme.colors.textTertiary.color, lineWidth: 2)
@@ -582,28 +608,42 @@ private struct CushionLineChart: View {
     }
 
     private func linePath(size: CGSize, top: CGFloat, bottom: CGFloat, value: KeyPath<CushionCumulativePoint, Double>) -> Path {
-        var path = Path()
-        guard !points.isEmpty else { return path }
+        let chartPoints = points.map {
+            chartPoint(for: $0, amount: $0[keyPath: value], size: size, top: top, bottom: bottom)
+        }
+        return smoothPath(through: chartPoints)
+    }
 
-        for (index, item) in points.enumerated() {
-            let point = chartPoint(amount: item[keyPath: value], index: index, count: points.count, size: size, top: top, bottom: bottom)
+    private func smoothPath(through chartPoints: [CGPoint]) -> Path {
+        var path = Path()
+        guard let first = chartPoints.first else { return path }
+        path.move(to: first)
+        guard chartPoints.count > 1 else { return path }
+
+        for index in 1..<chartPoints.count {
+            let point = chartPoints[index]
             if index == 0 {
                 path.move(to: point)
             } else {
-                path.addLine(to: point)
+                let previous = chartPoints[index - 1]
+                let mid = CGPoint(x: (previous.x + point.x) / 2, y: (previous.y + point.y) / 2)
+                path.addQuadCurve(to: mid, control: previous)
+                if index == chartPoints.count - 1 {
+                    path.addQuadCurve(to: point, control: point)
+                }
             }
         }
         return path
     }
 
-    private func point(for amount: Double, index: Int, size: CGSize) -> CGPoint {
-        chartPoint(amount: amount, index: index, count: points.count, size: size, top: 10, bottom: 24)
+    private func point(for amount: Double, item: CushionCumulativePoint, size: CGSize) -> CGPoint {
+        chartPoint(for: item, amount: amount, size: size, top: 10, bottom: 24)
     }
 
-    private func chartPoint(amount: Double, index: Int, count: Int, size: CGSize, top: CGFloat, bottom: CGFloat) -> CGPoint {
+    private func chartPoint(for item: CushionCumulativePoint, amount: Double, size: CGSize, top: CGFloat, bottom: CGFloat) -> CGPoint {
         let width = max(size.width, 1)
         let height = max(size.height - top - bottom, 1)
-        let x = count <= 1 ? 0 : width * CGFloat(index) / CGFloat(count - 1)
+        let x = width * CGFloat(min(max(item.xFraction, 0), 1))
         let y = top + height * CGFloat(1 - min(max(amount / max(maxValue, 1), 0), 1))
         return CGPoint(x: x, y: y)
     }
@@ -761,9 +801,6 @@ enum CushionVerdictCopy {
     }
 
     static func metricAmount(for snapshot: HeroCushionSnapshot) -> String {
-        if snapshot.currentRoom < 0 {
-            return formattedMoney(abs(snapshot.roomDelta))
-        }
         return formattedSigned(snapshot.roomDelta)
     }
 
@@ -845,6 +882,7 @@ private struct CushionCumulativePoint: Identifiable, Equatable {
     let label: String
     let current: Double
     let previous: Double
+    let xFraction: Double
 
     /// Build the cumulative pace line from the discretionary daily series. Both windows are
     /// gap-filled (a day with no spend counts as $0) and aligned by elapsed position, so the
@@ -861,7 +899,8 @@ private struct CushionCumulativePoint: Identifiable, Equatable {
                     id: "today",
                     label: "Day",
                     current: currentDays.reduce(0) { $0 + $1.amount },
-                    previous: previousDays.reduce(0) { $0 + $1.amount }
+                    previous: previousDays.reduce(0) { $0 + $1.amount },
+                    xFraction: 0
                 )
             ]
 
@@ -873,6 +912,7 @@ private struct CushionCumulativePoint: Identifiable, Equatable {
             // so a full month doesn't crowd the axis.
             let count = max(currentDays.count, previousDays.count)
             guard count > 0 else { return [] }
+            let fullCount = fullMonthDayCount(start: series.currentStart)
             let labelStride = max(1, Int((Double(count) / 6.0).rounded(.up)))
             var currentSum = 0.0
             var previousSum = 0.0
@@ -886,7 +926,13 @@ private struct CushionCumulativePoint: Identifiable, Equatable {
                     let dayStr = currentDays[i].date.split(separator: "-").last.map(String.init) ?? ""
                     label = Int(dayStr).map(String.init) ?? dayStr
                 }
-                return CushionCumulativePoint(id: id, label: label, current: currentSum, previous: previousSum)
+                return CushionCumulativePoint(
+                    id: id,
+                    label: label,
+                    current: currentSum,
+                    previous: previousSum,
+                    xFraction: xFraction(index: i, fullCount: fullCount)
+                )
             }
 
         case .week:
@@ -909,9 +955,30 @@ private struct CushionCumulativePoint: Identifiable, Equatable {
                     label = ""
                 }
                 let id = i < currentDays.count ? currentDays[i].date : "d\(i)"
-                return CushionCumulativePoint(id: id, label: label, current: currentSum, previous: previousSum)
+                return CushionCumulativePoint(
+                    id: id,
+                    label: label,
+                    current: currentSum,
+                    previous: previousSum,
+                    xFraction: xFraction(index: i, fullCount: 7)
+                )
             }
         }
+    }
+
+    private static func xFraction(index: Int, fullCount: Int) -> Double {
+        guard fullCount > 1 else { return 0 }
+        return min(max(Double(index) / Double(fullCount - 1), 0), 1)
+    }
+
+    private static func fullMonthDayCount(start: String) -> Int {
+        let cal = Calendar.bablo
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.calendar = cal
+        fmt.timeZone = cal.timeZone
+        guard let date = fmt.date(from: start) else { return 30 }
+        return cal.range(of: .day, in: .month, for: date)?.count ?? 30
     }
 
     /// Expand a sparse spend series into one entry per calendar day in [start, end], $0 for gaps.

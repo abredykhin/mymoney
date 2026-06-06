@@ -143,6 +143,7 @@ struct HeroBudgetCalculatorTests {
         let drivers = HeroCushionDriver.drivers(from: items)
 
         #expect(drivers.map(\.roomDelta) == [31, -18, 12])
+        #expect(drivers.map(\.spendDelta) == [-31, 18, -12])
         #expect(drivers[0].kind == .grew)
         #expect(drivers[1].kind == .shrank)
     }
@@ -159,6 +160,19 @@ struct HeroBudgetCalculatorTests {
 
         #expect(eats.barSide == .left)
         #expect(shopping.barSide == .right)
+    }
+
+    @Test func cushionDriverKeepsActualSpendAmountsWhenScaledForRoomImpact() throws {
+        let items = [
+            CategoryBreakdownItem(bucket: .category(.eatsOut), totalAmount: 48, transactionCount: 3, percentOfTotal: 0.4, previousAmount: 79),
+        ]
+
+        let driver = try #require(HeroCushionDriver.drivers(from: items, scale: 0.5).first)
+
+        #expect(driver.currentAmount == 48)
+        #expect(driver.previousAmount == 79)
+        #expect(driver.spendDelta == -31)
+        #expect(driver.roomDelta == 16)
     }
 
     @Test func breakdownReconcilesWeekToHeroSpendable() {
@@ -490,21 +504,19 @@ struct HeroBudgetCalculatorTests {
     // MARK: - Delta label
 
     @Test func deltaLabelWeekPositiveWhenSpentLess() {
-        // prev week $300, this week $150 → saved $150 → "+$150 vs last wk"
+        // prev week $300, this week $150 → more room to spend.
         let c = calc(variableSpend: 500, currentWeekVariableSpend: 150, prevWeek: 300)
-        let label = c.deltaLabel(for: .week)
-        #expect(label != nil)
-        #expect(label!.hasPrefix("+"))
-        #expect(label!.hasSuffix("vs last wk"))
+        let chip = c.deltaChip(for: .week)
+        #expect(chip?.label.hasSuffix("more vs last wk") == true)
+        #expect(chip?.hasMoreRoom == true)
     }
 
     @Test func deltaLabelWeekNegativeWhenSpentMore() {
-        // prev week $100, this week $300 → overspent $200 → "-$200 vs last wk"
+        // prev week $100, this week $300 → less room to spend.
         let c = calc(variableSpend: 500, currentWeekVariableSpend: 300, prevWeek: 100)
-        let label = c.deltaLabel(for: .week)
-        #expect(label != nil)
-        #expect(label!.hasPrefix("-"))
-        #expect(label!.hasSuffix("vs last wk"))
+        let chip = c.deltaChip(for: .week)
+        #expect(chip?.label.hasSuffix("less vs last wk") == true)
+        #expect(chip?.hasMoreRoom == false)
     }
 
     /// The chip is the change in the WEEKLY PACE (pace-based room delta from the cushion
@@ -514,21 +526,21 @@ struct HeroBudgetCalculatorTests {
     @Test func deltaLabelWeekUsesActualCurrentWeekSpend() {
         let c = calc(variableSpend: 500, currentWeekVariableSpend: 250, prevWeek: 300)
         let label = c.deltaLabel(for: .week)
-        #expect(label == "+$21 vs last wk")
+        #expect(label == "$21 more vs last wk")
     }
 
     @Test func deltaLabelMonthPositive() {
-        // prev month $1200, curr month $500 → saved $700 → "+$700 vs last mo"
+        // prev month $1200, curr month $500 → more room.
         let c = calc(variableSpend: 500, prevMonth: 1200)
         let label = c.deltaLabel(for: .month)
-        #expect(label == "+$700 vs last mo")
+        #expect(label == "$700 more vs last mo")
     }
 
     @Test func deltaLabelMonthNegative() {
-        // prev month $400, curr month $500 → overspent $100 → "-$100 vs last mo"
+        // prev month $400, curr month $500 → less room.
         let c = calc(variableSpend: 500, prevMonth: 400)
         let label = c.deltaLabel(for: .month)
-        #expect(label == "-$100 vs last mo")
+        #expect(label == "$100 less vs last mo")
     }
 
     @Test func deltaLabelNilWhenBothZero() {
@@ -540,14 +552,14 @@ struct HeroBudgetCalculatorTests {
     @Test func deltaLabelNotNilWhenOnlyCurrentIsNonZero() {
         // prev = 0, curr > 0 → negative delta label is still shown
         let c = calc(variableSpend: 200, prevMonth: 0)
-        let label = c.deltaLabel(for: .month)
-        #expect(label != nil)
-        #expect(label!.hasPrefix("-"))
+        let chip = c.deltaChip(for: .month)
+        #expect(chip != nil)
+        #expect(chip?.hasMoreRoom == false)
     }
 
     @Test func deltaLabelShownWhenOnlyPreviousPeriodHasSpend() {
         let c = calc(variableSpend: 0, prevMonth: 25_878)
-        #expect(c.deltaLabel(for: .month) == "+$26K vs last mo")
+        #expect(c.deltaLabel(for: .month) == "$26K more vs last mo")
     }
 
     /// Delta label must appear when actual income is received (knownIncome > 0),
@@ -558,9 +570,9 @@ struct HeroBudgetCalculatorTests {
         // income=0, knownIncome=6000, mandatory=2000 → monthlyDiscretionary=4000
         // prevMonth=3000 is within budget → delta label is shown
         let c = calc(income: 0, knownIncome: 6000, variableSpend: 1000, prevMonth: 3000)
-        let label = c.deltaLabel(for: .month)
-        #expect(label != nil, "delta must be visible when effectiveIncome > 0")
-        #expect(label!.hasPrefix("+"))   // prev(3000) > curr(1000) → +$2,000 vs last mo
+        let chip = c.deltaChip(for: .month)
+        #expect(chip != nil, "delta must be visible when effectiveIncome > 0")
+        #expect(chip?.hasMoreRoom == true)   // prev(3000) > curr(1000) → more room
     }
 
     @Test func deltaLabelNilWhenIncomeBudgetIsUnavailable() {
@@ -579,12 +591,12 @@ struct HeroBudgetCalculatorTests {
     // 2500 and 17 days left, today $0 vs yesterday $42 nudges the daily pace by ~$2.
     @Test func deltaLabelDayPositiveWhenSpentLessThanYesterday() {
         let c = calc(todayVariableSpend: 0, prevDay: 42)
-        #expect(c.deltaLabel(for: .day) == "+$2 vs yesterday")
+        #expect(c.deltaLabel(for: .day) == "$2 more vs yesterday")
     }
 
     @Test func deltaLabelDayNegativeWhenSpentMoreThanYesterday() {
         let c = calc(todayVariableSpend: 64, prevDay: 12)
-        #expect(c.deltaLabel(for: .day) == "-$3 vs yesterday")
+        #expect(c.deltaLabel(for: .day) == "$3 less vs yesterday")
     }
 
     /// Chip rounds the pace-based room delta (not the raw spend delta). poolRemaining 1500,
@@ -598,14 +610,14 @@ struct HeroBudgetCalculatorTests {
             prevDay: 60.25
         )
 
-        #expect(c.deltaLabel(for: .day) == "-$1 vs yesterday")
+        #expect(c.deltaLabel(for: .day) == "$1 less vs yesterday")
     }
 
     @Test func deltaLabelWeekShownWhenCurrentWeekIsZeroButPreviousWeekHasSpend() {
         // Weekly pace room delta, not raw $88: pool 3000, 17 days left → pace 1235; if last
         // week's $88 had repeated, pool 2912 → pace 1199. Room delta ≈ +$36.
         let c = calc(variableSpend: 0, currentWeekVariableSpend: 0, prevWeek: 88)
-        #expect(c.deltaLabel(for: .week) == "+$36 vs last wk")
+        #expect(c.deltaLabel(for: .week) == "$36 more vs last wk")
     }
 
     /// The pill compares spend period over period, so it should still appear when
@@ -614,13 +626,13 @@ struct HeroBudgetCalculatorTests {
         // income=10990, mandatory=4366 → discretionary=6624
         // prevMonthSpend=30900 > 6624, but spend comparison is still meaningful.
         let c = calc(income: 10_990, mandatory: 4_366, variableSpend: 5_990, prevMonth: 30_900)
-        #expect(c.deltaLabel(for: .month) == "+$25K vs last mo")
+        #expect(c.deltaLabel(for: .month) == "$25K more vs last mo")
     }
 
     /// Previous month within budget — delta is a valid remaining-budget comparison and must show.
     @Test func deltaLabelMonthShownWhenPreviousMonthWithinBudget() {
         // income=10990, mandatory=4366 → discretionary=6624
-        // prevMonthSpend=4000 <= 6624, currSpend=5990 → delta = 4000-5990 = -1990 → "-$1,990 vs last mo"
+        // prevMonthSpend=4000 <= 6624, currSpend=5990 → less room.
         let c = calc(income: 10_990, mandatory: 4_366, variableSpend: 5_990, prevMonth: 4_000)
         #expect(c.deltaLabel(for: .month) != nil)
     }
@@ -630,7 +642,7 @@ struct HeroBudgetCalculatorTests {
         // Weekly pace room delta: pool 2500, 17 days left → pace 1029; had last week's $1500
         // repeated this week the pool would be 1200 → pace 494. Room delta ≈ +$535.
         let c = calc(income: 5_000, mandatory: 2_000, currentWeekVariableSpend: 200, prevWeek: 1_500)
-        #expect(c.deltaLabel(for: .week) == "+$535 vs last wk")
+        #expect(c.deltaLabel(for: .week) == "$535 more vs last wk")
     }
 
     @Test func deltaLabelMonthCurrentInRedImprovedUsesInTheRedCopy() {
@@ -663,7 +675,7 @@ struct HeroBudgetCalculatorTests {
         #expect(snapshot != nil)
         let roomDelta = Int(snapshot!.roomDelta.rounded())
         // Chip equals the snapshot's room delta (the cushion sheet headline)…
-        #expect(c.deltaLabel(for: .day) == "+$\(roomDelta) vs yesterday")
+        #expect(c.deltaLabel(for: .day) == "$\(roomDelta) more vs yesterday")
         // …and is on the daily-pace scale, nowhere near the raw spend delta (~$4,984).
         #expect(roomDelta < 100)
     }

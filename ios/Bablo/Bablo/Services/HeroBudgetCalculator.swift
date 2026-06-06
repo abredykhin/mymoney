@@ -194,6 +194,26 @@ struct HeroBudgetCalculator {
         }
     }
 
+    /// Like `pace`, but does not floor at 0. Used by the Cushion to show "Deeper in the red"
+    /// when the user is overspent.
+    func unflooredPace(for period: HeroPeriod, remaining: Double) -> Double {
+        let drem = Double(max(1, budgetState.daysRemaining))
+        switch period {
+        case .month: 
+            return remaining
+        case .day:   
+            return remaining / drem
+        case .week:  
+            let unflooredDaily = remaining / drem
+            let unflooredWeekly = unflooredDaily * 7.0
+            if remaining >= 0 {
+                return min(remaining, unflooredWeekly)
+            } else {
+                return max(remaining, unflooredWeekly)
+            }
+        }
+    }
+
     /// Projected income not yet received this month — the "Expected paycheck" row in the
     /// Money-Left breakdown. effectiveIncome already folds in BOTH received recurring income
     /// (known) and received one-off income (extra), so subtract both; otherwise a one-off
@@ -274,12 +294,7 @@ struct HeroBudgetCalculator {
 
     // MARK: - Derived: delta label vs previous period
 
-    func deltaLabel(for period: HeroPeriod) -> String? {
-        // The chip mirrors the cushion sheet it opens: both read the single-pool,
-        // pace-based room delta from HeroCushionSnapshot. Raw day-over-day spend would let a
-        // one-off lump (e.g. a spousal-support wire — legitimate spend that stays counted)
-        // read as "+$5K" next to a $40 daily pace and contradict the sheet's "+$40". For
-        // .month the pace is 1:1, so this still equals the month-over-month spend delta.
+    func deltaChip(for period: HeroPeriod) -> HeroDeltaChip? {
         guard let snapshot = HeroCushionSnapshot(calculator: self, period: period) else { return nil }
         let delta = Int(snapshot.roomDelta.rounded())
         guard abs(delta) >= 1 else { return nil }
@@ -291,12 +306,27 @@ struct HeroBudgetCalculator {
         case .month: suffix = "vs last mo"
         }
 
+        let amount = "$\(compactDollar(abs(delta)))"
         if spendable(for: period) < 0 {
-            let amount = "$\(compactDollar(abs(delta)))"
-            return delta >= 0 ? "\(amount) less in the red \(suffix)" : "\(amount) deeper in the red \(suffix)"
+            return HeroDeltaChip(
+                label: delta >= 0 ? "\(amount) less in the red \(suffix)" : "\(amount) deeper in the red \(suffix)",
+                hasMoreRoom: delta >= 0
+            )
         }
-        let sign = delta >= 0 ? "+" : "-"
-        return "\(sign)$\(compactDollar(abs(delta))) \(suffix)"
+
+        return HeroDeltaChip(
+            label: "\(amount) \(delta >= 0 ? "more" : "less") \(suffix)",
+            hasMoreRoom: delta >= 0
+        )
+    }
+
+    func deltaLabel(for period: HeroPeriod) -> String? {
+        // The chip mirrors the cushion sheet it opens: both read the single-pool,
+        // pace-based room delta from HeroCushionSnapshot. Raw day-over-day spend would let a
+        // one-off lump (e.g. a spousal-support wire — legitimate spend that stays counted)
+        // read as "+$5K" next to a $40 daily pace and contradict the sheet's "+$40". For
+        // .month the pace is 1:1, so this still equals the month-over-month spend delta.
+        deltaChip(for: period)?.label
     }
 
     // MARK: - Formatting helpers
@@ -608,6 +638,11 @@ struct HeroBudgetAccountAuditRow: Identifiable, Equatable {
     }
 }
 
+struct HeroDeltaChip: Equatable {
+    let label: String
+    let hasMoreRoom: Bool
+}
+
 struct HeroCushionSnapshot: Equatable {
     let period: HeroPeriod
     let currentRoom: Double
@@ -652,10 +687,20 @@ struct HeroCushionSnapshot: Equatable {
         // as it would stand had this period repeated last period's spend — so both rooms live
         // on one scale. A one-off lump now lowers the pace by (lump / daysRemaining), never
         // turns a $37 daily pace into a phantom $4,817 "yesterday".
+        let current: Double
+        let previous: Double
+
         let poolRemaining = calculator.spendable(for: .month)
         let poolRemainingPrev = poolRemaining + (currentSpend - previousSpend)
-        let current = calculator.spendable(for: period)
-        let previous = calculator.pace(for: period, remaining: poolRemainingPrev)
+
+        switch period {
+        case .month:
+            current = poolRemaining
+            previous = poolRemainingPrev
+        case .week, .day:
+            current = calculator.unflooredPace(for: period, remaining: poolRemaining)
+            previous = calculator.unflooredPace(for: period, remaining: poolRemainingPrev)
+        }
 
         self.period = period
         self.currentSpend = currentSpend
@@ -690,31 +735,34 @@ struct HeroCushionDriver: Equatable, Identifiable {
     let previousAmount: Double
     let transactionCount: Int
     let roomDelta: Double
+    let spendDelta: Double
 
     var kind: Kind {
         roomDelta >= 0 ? .grew : .shrank
     }
 
     var barSide: BarSide {
-        kind == .grew ? .left : .right
+        spendDelta <= 0 ? .left : .right
     }
 
     /// - Parameter scale: converts each category's raw spend delta into its room (pace)
     ///   impact, matching `HeroCushionSnapshot.roomScale`. Defaults to 1.0 (month / pure
-    ///   spend-delta view). For day/week the caller passes the snapshot's `roomScale` so the
-    ///   bars and amounts read in the same units as the headline room delta.
+    ///   spend-delta view). The original spend amounts stay raw for display; `roomDelta`
+    ///   is the scaled impact used to rank what moved available money.
     static func drivers(from items: [CategoryBreakdownItem], scale: Double = 1.0, limit: Int = 5) -> [HeroCushionDriver] {
         items.compactMap { item in
-            let previousAmount = (item.previousAmount ?? 0.0) * scale
-            let currentAmount = item.totalAmount * scale
-            let delta = (previousAmount - currentAmount).rounded()
-            guard abs(delta) >= 1 else { return nil }
+            let previousAmount = item.previousAmount ?? 0.0
+            let currentAmount = item.totalAmount
+            let spendDelta = (currentAmount - previousAmount).rounded()
+            let delta = ((previousAmount - currentAmount) * scale).rounded()
+            guard abs(spendDelta) >= 1 || abs(delta) >= 1 else { return nil }
             return HeroCushionDriver(
                 bucket: item.bucket,
                 currentAmount: currentAmount,
                 previousAmount: previousAmount,
                 transactionCount: item.transactionCount,
-                roomDelta: delta
+                roomDelta: delta,
+                spendDelta: spendDelta
             )
         }
         .sorted { abs($0.roomDelta) > abs($1.roomDelta) }
