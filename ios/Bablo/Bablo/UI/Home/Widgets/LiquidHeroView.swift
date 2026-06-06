@@ -141,11 +141,14 @@ struct LiquidHeroView: View {
     // MARK: - Top row: period switch + delta chip
 
     private var topRow: some View {
-        HStack {
+        HStack(alignment: .center) {
             periodSwitch
-            Spacer()
+            Spacer(minLength: 8)
             deltaChip
         }
+        // Reserve a stable height that fits a two-line chip so the canvas below doesn't
+        // jump up/down when switching periods (week's chip is one line, month's is two).
+        .frame(height: 40)
         .padding(.horizontal, 16)
         .padding(.top, 16)
     }
@@ -162,12 +165,16 @@ struct LiquidHeroView: View {
     private var deltaChip: some View {
         if let chip = deltaChipValue {
             let isPopArt = theme.effects.isPopArt
-            let accent = chip.hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color
+            let accent = chip.isFlat
+                ? theme.colors.textTertiary.color
+                : (chip.hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color)
             Button {
                 onDeltaTap?()
             } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: chip.hasMoreRoom ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill")
+                    Image(systemName: chip.isFlat
+                          ? "equal"
+                          : (chip.hasMoreRoom ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill"))
                         .font(.system(size: 9, weight: .bold))
                     Text(chip.label)
                         .font(.system(
@@ -179,11 +186,13 @@ struct LiquidHeroView: View {
                         .textCase(isPopArt ? .uppercase : nil)
                         .lineLimit(2)
                         .minimumScaleFactor(0.82)
-                        .multilineTextAlignment(.leading)
+                        .multilineTextAlignment(.trailing)
                         .fixedSize(horizontal: false, vertical: true)
+                        // Cap the wrap width (so a long "vs last mo" label breaks to two lines)
+                        // while letting the pill hug its content and sit flush right.
+                        .frame(maxWidth: 150, alignment: .trailing)
                 }
                 .foregroundStyle(isPopArt ? theme.colors.surface.color : accent)
-                .frame(maxWidth: 168, alignment: .leading)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 5)
                 .background(isPopArt ? theme.colors.textPrimary.color : accent.opacity(0.12))
@@ -318,19 +327,12 @@ struct LiquidHeroView: View {
 
     private var statusStrip: some View {
         let isOver = spendable < 0
-        let denominator: Double = {
-            switch period {
-            case .month:
-                return calculator.effectiveIncome > 0 ? calculator.effectiveIncome : effectiveBudget
-            case .week, .day:
-                // Anchor the badge % to the month's remaining pool the pace is a slice of, so it
-                // reconciles with the "of $X left this month" text instead of a separate base.
-                let monthRemaining = calculator.spendable(for: .month)
-                return monthRemaining > 0 ? monthRemaining : effectiveBudget
-            }
-        }()
+        // The badge shows how much of THIS period's own budget is still left — i.e. the same
+        // ratio as the liquid fill level, so the number agrees with the tank. (Day = today's
+        // budget, week = the original week budget, month = the month's budget.)
+        let denominator = effectiveBudget
         let realRatio = denominator > 0 ? spendable / denominator : 0
-        let pct = Int((max(0, realRatio) * 100).rounded())
+        let pct = Int((min(1, max(0, realRatio)) * 100).rounded())
         let badgeBg  = theme.effects.isPopArt ? theme.colors.accent.color : fillGradientColors(for: animatedFill).bottom
         let badgeFg: Color = theme.effects.isPopArt ? theme.colors.accentInk.color : .white
         return HStack(spacing: 6) {
@@ -445,15 +447,20 @@ struct LiquidHeroView: View {
         }
     }
 
-    // MARK: - Fill color (green → yellow → red as budget drains)
+    // MARK: - Fill color (green → grey as budget drains)
 
-    // Interpolates between design-system tokens: accent (full) → danger (empty).
-    // top uses the bright accent, bottom uses the deeper accentPressed shade.
+    // Full green at 100% of the budget left; fades toward a soft grey as the tank empties,
+    // reaching a flat grey at 0% (or over budget). No red — being low on budget reads as
+    // "drained / neutral" rather than "danger". `top` is the brighter surface shade, `bottom`
+    // the slightly deeper one beneath it.
     private func fillGradientColors(for fill: Double) -> (top: Color, bottom: Color) {
         let t = max(0, min(1, fill))
+        // A calm mid-grey for the empty end; the green tokens for the full end.
+        let emptyGrey = Color(red: 0.62, green: 0.62, blue: 0.64)
+        let emptyGreyDeep = Color(red: 0.52, green: 0.52, blue: 0.55)
         return (
-            top:    lerpColor(from: theme.colors.danger.color,        to: theme.colors.accent.color,        t: t),
-            bottom: lerpColor(from: theme.colors.danger.color,        to: theme.colors.accentPressed.color, t: t)
+            top:    lerpColor(from: emptyGrey,     to: theme.colors.accent.color,        t: t),
+            bottom: lerpColor(from: emptyGreyDeep, to: theme.colors.accentPressed.color, t: t)
         )
     }
 

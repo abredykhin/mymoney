@@ -558,7 +558,10 @@ private struct BreakdownStepCard: View {
 
     /// The header row shared by both the plain and NavigationLink variants.
     private var stepHeaderContent: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
+        // Center the number badge and the amount against the title block, so when the title
+        // wraps to two lines they sit centered beside it (title effectively top-aligned)
+        // rather than pinned to the first baseline.
+        HStack(alignment: .center, spacing: 12) {
             // Numbered badge
             Text("\(step.number)")
                 .font(theme.typography.body(size: 16, weight: .black))
@@ -577,9 +580,9 @@ private struct BreakdownStepCard: View {
 
             Spacer(minLength: 8)
 
-            // Signed amount
+            // Signed amount — a touch smaller than the title so the title reads as primary
             Text(signedMoney(step.amount))
-                .font(theme.typography.mono(size: 21, weight: .bold))
+                .font(theme.typography.mono(size: 18, weight: .bold))
                 .foregroundStyle(step.amount < 0 ? theme.colors.warning.color : theme.colors.success.color)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -720,8 +723,9 @@ private struct SheetInfoRow: View {
                     Text(detail)
                         .font(theme.typography.body(size: 12, weight: .semibold))
                         .foregroundStyle(theme.colors.textTertiary.color)
-                        .lineLimit(1)
+                        .lineLimit(2)
                         .truncationMode(.tail)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 

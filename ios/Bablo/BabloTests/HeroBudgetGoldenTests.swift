@@ -157,19 +157,18 @@ struct HeroBudgetGoldenTests {
         #expect(abs(c.spendable(for: .day) - 294.11) < 0.05)
         #expect(abs(c.effectiveBudget(for: .day) - 258.06) < 0.05)
 
-        // Day/week breakdown derives the pace from the monthly pool (Level-style) instead
-        // of the old prorated-slice-minus-spend chain, so it reconciles to the pace with
-        // no scary negative intermediate and no "+$X pace plug".
+        // Day/week breakdown is a true budget − spent = left chain (budget = spent + pace),
+        // so it reconciles to the hero pace by construction and shows the period's spend.
         let bdWeek = HeroBudgetBreakdownCalculator(calculator: c, period: .week)
         #expect(bdWeek.steps.count == 2)
-        #expect(bdWeek.steps[0].title == "Safe to spend this month")
-        #expect(bdWeek.steps[1].title == "Held for the rest of the month")
+        #expect(bdWeek.steps[0].title == "This week's budget")
+        #expect(bdWeek.steps[1].title == "What you've spent this week")
         #expect(abs(bdWeek.steps.map { $0.amount }.reduce(0, +) - bdWeek.finalAmount) < 0.01)
 
         let bdDay = HeroBudgetBreakdownCalculator(calculator: c, period: .day)
         #expect(bdDay.steps.count == 2)
-        #expect(bdDay.steps[0].title == "Safe to spend this month")
-        #expect(bdDay.steps[1].title == "Held for the rest of the month")
+        #expect(bdDay.steps[0].title == "Today's budget")
+        #expect(bdDay.steps[1].title == "What you've spent today")
         #expect(abs(bdDay.steps.map { $0.amount }.reduce(0, +) - bdDay.finalAmount) < 0.01)
     }
 
@@ -206,8 +205,8 @@ struct HeroBudgetGoldenTests {
 
         let bdDay = HeroBudgetBreakdownCalculator(calculator: c, period: .day)
         #expect(bdDay.steps.count == 2)
-        #expect(bdDay.steps[0].title == "Safe to spend this month")
-        #expect(bdDay.steps[1].title == "Held for the rest of the month")
+        #expect(bdDay.steps[0].title == "Today's budget")
+        #expect(bdDay.steps[1].title == "What you've spent today")
         #expect(abs(bdDay.steps.map { $0.amount }.reduce(0, +) - bdDay.finalAmount) < 0.01)
     }
 

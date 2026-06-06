@@ -190,6 +190,49 @@ struct HeroBudgetCalculatorTests {
         #expect(abs(breakdown.reconciledAmount - c.spendable(for: .week)) < 0.001)
     }
 
+    /// Week/day breakdown is a budget − spent = left chain: step 1 is the period's budget
+    /// (= what's left + what's already spent), step 2 subtracts the period's spend, and the
+    /// chain lands on the hero pace. Step 2 carries the category sub-rows (spendStepNumber).
+    @Test func breakdownWeekIsBudgetMinusSpentChain() {
+        let c = calc(
+            income: 5_000,
+            mandatory: 2_000,
+            variableSpend: 900,
+            currentWeekVariableSpend: 210,
+            daysInMonth: 30
+        )
+        let bd = HeroBudgetBreakdownCalculator(calculator: c, period: .week)
+        let pace = c.spendable(for: .week)
+        let spent = c.spentSoFar(for: .week)
+
+        #expect(bd.steps.count == 2)
+        #expect(bd.steps[0].title == "This week's budget")
+        #expect(abs(bd.steps[0].amount - (pace + spent)) < 0.01)
+        #expect(bd.steps[1].title == "What you've spent this week")
+        #expect(abs(bd.steps[1].amount - (-spent)) < 0.01)
+        #expect(abs(bd.steps[1].afterAmount - pace) < 0.01)
+        #expect(bd.spendStepNumber == 2)
+        #expect(bd.steps[1].transactionSource == .variableSpend)
+        #expect(bd.contextRows.isEmpty)
+    }
+
+    /// When spending barely moved versus the prior period (room delta rounds to $0) the chip
+    /// is shown in a "flat" state instead of vanishing, so an empty pill never leaves the user
+    /// guessing whether it means "the same" or "no data".
+    @Test func deltaChipDayIsFlatWhenRoomBarelyMoves() {
+        let c = calc(
+            income: 5_000,
+            mandatory: 2_000,
+            variableSpend: 500,
+            todayVariableSpend: 15,
+            prevDay: 10,
+            daysInMonth: 31
+        )
+        let chip = c.deltaChip(for: .day)
+        #expect(chip?.isFlat == true)
+        #expect(chip?.label == "about the same vs yesterday")
+    }
+
     @Test func breakdownUsesSafeToSpendCashCapLanguageWhenCashBinds() {
         let c = calc(
             income: 10_000,
@@ -913,11 +956,11 @@ struct HeroBudgetCalculatorTests {
         )
         let breakdown = HeroBudgetBreakdownCalculator(calculator: c, period: .day)
 
-        // Period breakdown now paces the monthly pool down (2 steps), reconciling to the
-        // daily pace with no negative intermediate or reconciling plug.
+        // Period breakdown is a budget − spent = left chain (2 steps), reconciling to the
+        // daily pace by construction (budget = spent + pace).
         #expect(breakdown.steps.count == 2)
-        #expect(breakdown.steps[0].title == "Safe to spend this month")
-        #expect(breakdown.steps[1].title == "Held for the rest of the month")
+        #expect(breakdown.steps[0].title == "Today's budget")
+        #expect(breakdown.steps[1].title == "What you've spent today")
 
         // Sum of all steps MUST exactly match finalAmount
         let sum = breakdown.steps.map(\.amount).reduce(0, +)

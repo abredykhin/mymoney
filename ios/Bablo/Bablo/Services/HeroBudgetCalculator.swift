@@ -297,13 +297,19 @@ struct HeroBudgetCalculator {
     func deltaChip(for period: HeroPeriod) -> HeroDeltaChip? {
         guard let snapshot = HeroCushionSnapshot(calculator: self, period: period) else { return nil }
         let delta = Int(snapshot.roomDelta.rounded())
-        guard abs(delta) >= 1 else { return nil }
 
         let suffix: String
         switch period {
         case .day:   suffix = "vs yesterday"
         case .week:  suffix = "vs last wk"
         case .month: suffix = "vs last mo"
+        }
+
+        // There IS a comparable prior period (snapshot exists), but the room barely moved.
+        // Show an explicit "flat" chip instead of an empty pill — an empty pill left users
+        // wondering whether it meant "exactly the same" or "no data".
+        guard abs(delta) >= 1 else {
+            return HeroDeltaChip(label: "about the same \(suffix)", hasMoreRoom: true, isFlat: true)
         }
 
         let amount = "$\(compactDollar(abs(delta)))"
@@ -379,9 +385,9 @@ struct HeroBudgetBreakdownCalculator {
                 return 3
             }
         case .week, .day:
-            // No category spend step in the period breakdown — the period's spend
-            // is shown as a context row instead. 0 matches no step.
-            return 0
+            // The period breakdown is a true budget − spent chain (see periodSteps);
+            // step 2 is "What you've spent this week/day" and carries the category sub-rows.
+            return 2
         }
     }
 
@@ -501,59 +507,56 @@ struct HeroBudgetBreakdownCalculator {
         return result
     }
 
-    /// Day/week are the SAME monthly pool viewed at a finer cadence (Level-style), so the
-    /// breakdown derives the pace from the month's remaining pool rather than from a prorated
-    /// "this week's budget − this week's spend" chain. That old chain produced a scary negative
-    /// intermediate ("after this step −$3,810") and a confusing reconciling plug ("+$4,071 pace
-    /// from your pool") whenever a lump landed. Here every line is a real, sensible number and
-    /// the chain reconciles to the headline pace by construction.
+    /// Day/week read as a true "budget − spent = left" chain, mirroring the month. The period's
+    /// budget is what it actually affords = what you've already spent this period + what's still
+    /// safe to spend (the hero's pace). Defining the budget this way keeps the chain reconciling
+    /// to the hero headline by construction: budget − spent = pace = finalAmount. (This replaces
+    /// the old "Safe to spend this month → held for the rest of the month" framing, where the
+    /// spent figure floated in a context row between two identical numbers and read as broken
+    /// math.)
     private var periodSteps: [HeroBudgetBreakdownStep] {
-        let poolRemaining = calculator.spendable(for: .month)
-        let pace = calculator.spendable(for: period)
-        let reserved = pace - poolRemaining   // ≤ 0: held back for the rest of the month
+        let pace = calculator.spendable(for: period)        // what's left this period (the hero number)
+        let spent = calculator.spentSoFar(for: period)
+        let budget = pace + spent                            // what this period affords in total
+
+        let budgetTitle: String
+        let spentTitle: String
+        switch period {
+        case .day:
+            budgetTitle = "Today's budget"
+            spentTitle = "What you've spent today"
+        case .week:
+            budgetTitle = "This week's budget"
+            spentTitle = "What you've spent this week"
+        case .month:
+            budgetTitle = "This month's budget"
+            spentTitle = "What you've spent this month"
+        }
 
         return [
             HeroBudgetBreakdownStep(
                 number: 1,
-                title: "Safe to spend this month",
-                amount: poolRemaining,
-                afterAmount: poolRemaining,
-                tone: poolRemaining < 0 ? .negative : .positive,
+                title: budgetTitle,
+                amount: budget,
+                afterAmount: budget,
+                tone: .positive,
                 transactionSource: nil
             ),
             HeroBudgetBreakdownStep(
                 number: 2,
-                title: reservedStepTitle,
-                amount: reserved,
+                title: spentTitle,
+                amount: -spent,
                 afterAmount: pace,
-                tone: reserved >= 0 ? .positive : .negative,
-                transactionSource: nil
+                tone: .negative,
+                transactionSource: .variableSpend
             )
         ]
     }
 
-    private var reservedStepTitle: String {
-        switch period {
-        case .day:   return "Held for the rest of the month"
-        case .week:  return "Held for the rest of the month"
-        case .month: return "Held for the rest of the month"
-        }
-    }
-
-    /// For day/week, surface how much has actually been spent in this period so the
-    /// "what's left" pace has context. Informational (not part of the reconciling chain).
+    /// No longer used by day/week (spend is a first-class step now), kept empty so the
+    /// breakdown view's context-row slot renders nothing.
     var contextRows: [HeroBudgetContextRow] {
-        guard period != .month else { return [] }
-
-        let spent = calculator.spentSoFar(for: period)
-        let label = period == .day ? "Spent today" : "Spent this week"
-        return [
-            HeroBudgetContextRow(
-                title: label,
-                detail: "Already drawn from your pool",
-                amount: -spent
-            )
-        ]
+        []
     }
 
     static func accountAuditRows(accounts: [HeroBudgetAccountInput]) -> HeroBudgetAccountAuditRows {
@@ -641,6 +644,9 @@ struct HeroBudgetAccountAuditRow: Identifiable, Equatable {
 struct HeroDeltaChip: Equatable {
     let label: String
     let hasMoreRoom: Bool
+    /// Spending essentially matched the prior period (room delta rounded to $0). Rendered in a
+    /// neutral style with no up/down arrow so it reads as "flat", not as a gain or a loss.
+    var isFlat: Bool = false
 }
 
 struct HeroCushionSnapshot: Equatable {
