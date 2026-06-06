@@ -143,16 +143,16 @@ struct StreakServiceTests {
         let streak = UserStreak(
             currentStreak: 5,
             maxStreak: 5,
-            last10DaysStatus: [true, false, true, true, true, false, true, true, true, true]
+            last28DaysStatus: [true, false, true, true, true, false, true, true, true, true] + Array(repeating: false, count: 18)
         )
 
         let cells = streak.detailCalendarCells
-        #expect(cells.count == 35)
+        #expect(cells.count == 28)
 
         let cal = Calendar.bablo
         let today = Date()
 
-        // The last cell (index 34) should be today
+        // The last cell (index 27) should be today
         if let lastCellDate = cells.last?.date {
             #expect(cal.isDate(lastCellDate, inSameDayAs: today))
         } else {
@@ -160,7 +160,7 @@ struct StreakServiceTests {
         }
 
         // Check that the cell dates are sequential (exactly 1 day apart)
-        for i in 0..<34 {
+        for i in 0..<27 {
             let currentCellDate = cells[i].date
             let nextCellDate = cells[i+1].date
             let diff = cal.dateComponents([.day], from: currentCellDate, to: nextCellDate).day
