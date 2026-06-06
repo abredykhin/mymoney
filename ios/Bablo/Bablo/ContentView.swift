@@ -332,6 +332,8 @@ private struct ContentViewPreviewHost: View {
     @StateObject private var plaidService = PlaidService()
     @StateObject private var coachService = CoachService()
     @StateObject private var pulseService = PulseService()
+    @StateObject private var subService = SubscriptionsService()
+    @StateObject private var homeBreakdownService = HomeBreakdownService()
 
     var body: some View {
         ContentView()
@@ -343,7 +345,8 @@ private struct ContentViewPreviewHost: View {
             .environmentObject(plaidService)
             .environmentObject(coachService)
             .environmentObject(pulseService)
-            .environment(\.managedObjectContext, CoreDataStack.shared.viewContext)
+            .environmentObject(subService)
+            .environmentObject(homeBreakdownService)
             .babloTheme(theme)
             .onAppear {
                 userAccount.isSignedIn = true

@@ -50,7 +50,7 @@ struct TransactionDetailSheet: View {
     @Environment(\.babloTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var accountsService: AccountsService
-    @EnvironmentObject private var budgetService: BudgetService
+    @EnvironmentObject private var subService: SubscriptionsService
     @EnvironmentObject private var transactionsService: TransactionsService
     @EnvironmentObject private var userAccount: UserAccount
 
@@ -370,7 +370,7 @@ struct TransactionDetailSheet: View {
             isCreatingRepeat = true
             defer { isCreatingRepeat = false }
             do {
-                try await budgetService.createManualStream(transactionId: transaction.id, frequency: frequency)
+                try await subService.createManualStream(transactionId: transaction.id, frequency: frequency)
                 showStatus("Repeat saved")
             } catch {
                 errorMessage = error.localizedDescription

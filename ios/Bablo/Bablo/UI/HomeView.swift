@@ -27,6 +27,11 @@ struct HomeView: View {
     @State private var heroPeriod: HeroPeriod = .month
     @Environment(\.scenePhase) private var scenePhase
     @State private var previousScenePhase: ScenePhase = .active
+    private let loadsData: Bool
+
+    init(loadsData: Bool = true) {
+        self.loadsData = loadsData
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -62,7 +67,9 @@ struct HomeView: View {
                         )
                     }, onDeltaTap: {
                         showingCushionSheet = true
-                        Task { await loadCushionSheetData() }
+                        if loadsData {
+                            Task { await loadCushionSheetData() }
+                        }
                     })
                     .environmentObject(budgetService)
                     .padding(.horizontal, Spacing.screenEdge)
@@ -149,12 +156,18 @@ struct HomeView: View {
             }
         }
         .refreshable {
+            guard loadsData else { return }
             checkConnectivityAndRefresh()
         }
         .task(id: userAccount.currentUser?.id) {
+            guard loadsData else { return }
             await refreshHomeForCurrentUser()
         }
         .onChange(of: scenePhase) { _, newPhase in
+            guard loadsData else {
+                previousScenePhase = newPhase
+                return
+            }
             // Returning to the foreground while Home is already on screen: the id-keyed
             // .task won't re-run, so transactions that synced while we were away would
             // otherwise only appear after a manual pull-to-refresh. Refresh the feed now.
@@ -167,7 +180,9 @@ struct HomeView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             // Check network status when view appears
-            checkNetworkStatus()
+            if loadsData {
+                checkNetworkStatus()
+            }
         }
         .onDisappear {
             networkMonitor?.cancel()
@@ -198,7 +213,7 @@ struct HomeView: View {
             todayVariableSpend: budgetService.todayVariableSpend,
             liquidCashAvailable: budgetService.totalBalance?.balance,
             spendingPlanMode: userAccount.spendingPlanMode,
-            upcomingUnpaidExpenses: budgetService.upcomingUnpaidBills,
+            upcomingUnpaidExpenses: subService.upcomingUnpaidBills,
             previousDayVariableSpend: budgetService.previousDayVariableSpend,
             previousWeekVariableSpend: budgetService.previousWeekVariableSpend,
             previousMonthVariableSpend: budgetService.previousMonthVariableSpend,
@@ -376,3 +391,252 @@ private extension HeroPeriod {
         }
     }
 }
+
+#if DEBUG
+
+#Preview("Home · Normal") {
+    HomeViewPreviewHost(theme: .normal)
+}
+
+#Preview("Home · Pop") {
+    HomeViewPreviewHost(theme: .pop)
+}
+
+private struct HomeViewPreviewHost: View {
+    let theme: BabloTheme
+
+    private let userAccount = HomeViewPreviewFixtures.userAccount()
+    private let accountsService = HomeViewPreviewFixtures.accountsService()
+    private let transactionsService = HomeViewPreviewFixtures.transactionsService()
+    private let budgetService = HomeViewPreviewFixtures.budgetService()
+    private let coachService = HomeViewPreviewFixtures.coachService()
+    private let streakService = HomeViewPreviewFixtures.streakService()
+    private let subService = HomeViewPreviewFixtures.subscriptionsService()
+    private let pulseService = PulseService()
+    private let homeBreakdownService = HomeBreakdownService()
+    private let navigationState = NavigationState()
+
+    var body: some View {
+        NavigationStack(path: navigationPath) {
+            HomeView(loadsData: false)
+                .environmentObject(accountsService)
+                .environmentObject(transactionsService)
+                .environmentObject(budgetService)
+                .environmentObject(userAccount)
+                .environmentObject(navigationState)
+                .environmentObject(coachService)
+                .environmentObject(streakService)
+                .environmentObject(subService)
+                .environmentObject(pulseService)
+                .environmentObject(homeBreakdownService)
+                .babloTheme(theme)
+        }
+    }
+
+    private var navigationPath: Binding<NavigationPath> {
+        Binding(
+            get: { navigationState.homeNavPath },
+            set: { navigationState.homeNavPath = $0 }
+        )
+    }
+}
+
+@MainActor
+private enum HomeViewPreviewFixtures {
+    static func userAccount() -> UserAccount {
+        let account = UserAccount()
+        account.currentUser = User(id: "preview-user", name: "Mia", token: "", email: "mia@example.com")
+        account.isSignedIn = true
+        account.spendingPlanMode = .monthlyPlan
+        account.incomeBasis = .projected
+        return account
+    }
+
+    static func accountsService() -> AccountsService {
+        let service = AccountsService()
+        service.banksWithAccounts = [
+            Bank(
+                id: 1,
+                bank_name: "Chase",
+                logo: nil,
+                primary_color: "#005EB8",
+                url: nil,
+                accounts: [
+                    BankAccount(
+                        id: 1,
+                        item_id: 1,
+                        name: "Everyday Checking",
+                        mask: "3382",
+                        official_name: "Chase Total Checking",
+                        current_balance: 1_920,
+                        available_balance: 1_875,
+                        _type: "depository",
+                        subtype: "checking",
+                        hidden: false,
+                        iso_currency_code: "USD",
+                        updated_at: nil
+                    ),
+                    BankAccount(
+                        id: 2,
+                        item_id: 1,
+                        name: "Freedom Card",
+                        mask: "1188",
+                        official_name: "Chase Freedom",
+                        current_balance: 420,
+                        available_balance: nil,
+                        _type: "credit",
+                        subtype: "credit card",
+                        hidden: false,
+                        iso_currency_code: "USD",
+                        updated_at: nil
+                    )
+                ]
+            )
+        ]
+        return service
+    }
+
+    static func budgetService() -> BudgetService {
+        let service = BudgetService()
+        service.totalBalance = TotalBalance(balance: 1_500, asOf: "2026-06-06", iso_currency_code: "USD")
+        service.monthlyIncome = 5_400
+        service.monthlyMandatoryExpenses = 2_250
+        service.knownIncomeThisMonth = 5_400
+        service.extraIncomeThisMonth = 120
+        service.variableSpend = 980
+        service.currentWeekVariableSpend = 218
+        service.todayVariableSpend = 38
+        service.previousDayVariableSpend = 54
+        service.previousWeekVariableSpend = 305
+        service.previousMonthVariableSpend = 1_360
+        return service
+    }
+
+    static func transactionsService() -> TransactionsService {
+        let service = TransactionsService()
+        service.transactions = [
+            transaction(id: 1, amount: 18.42, date: "2026-06-06", name: "Blue Bottle Coffee", merchant: "Blue Bottle", primary: "FOOD_AND_DRINK", detailed: "FOOD_AND_DRINK_COFFEE", isSpend: true, isIncome: false),
+            transaction(id: 2, amount: 64.18, date: "2026-06-05", name: "Trader Joe's", merchant: "Trader Joe's", primary: "GENERAL_MERCHANDISE", detailed: "GENERAL_MERCHANDISE_SUPERSTORES", isSpend: true, isIncome: false),
+            transaction(id: 3, amount: -2_850, date: "2026-06-05", name: "Payroll Deposit", merchant: nil, primary: "INCOME", detailed: "INCOME_WAGES", isSpend: false, isIncome: true),
+            transaction(id: 4, amount: 32.70, date: "2026-06-04", name: "Lyft", merchant: "Lyft", primary: "TRANSPORTATION", detailed: "TRANSPORTATION_TAXIS_AND_RIDE_SHARES", isSpend: true, isIncome: false),
+            transaction(id: 5, amount: 84.12, date: "2026-06-03", name: "Amazon Marketplace", merchant: "Amazon", primary: "GENERAL_MERCHANDISE", detailed: "GENERAL_MERCHANDISE_ONLINE_MARKETPLACES", isSpend: true, isIncome: false)
+        ]
+        return service
+    }
+
+    static func coachService() -> CoachService {
+        let service = CoachService()
+        service.currentInsight = CoachInsight(
+            badge: "COACH - TODAY",
+            headline: "Eats are warming up",
+            nudgeText: "Coffee and takeout are pacing ahead of last week. Skip two small buys and the cushion gets roomier.",
+            actionLabel: "Review eats",
+            alternativeTip: "One grocery run beats three tiny convenience stops."
+        )
+        return service
+    }
+
+    static func streakService() -> StreakService {
+        let service = StreakService()
+        service.userStreak = UserStreak(
+            currentStreak: 7,
+            maxStreak: 12,
+            last10DaysStatus: [true, true, false, true, true, true, true, false, true, true]
+        )
+        return service
+    }
+
+    static func subscriptionsService() -> SubscriptionsService {
+        let service = SubscriptionsService()
+        let streams = recurringStreams()
+        service.allRecurringStreams = streams
+        service.subscriptions = streams.filter { stream in
+            ["Spotify", "Netflix", "Canva"].contains(stream.merchantName ?? stream.description)
+        }
+        service.idleCount = 1
+        service.idleSubscriptionIDs = [3]
+        return service
+    }
+
+    private static func recurringStreams() -> [RecurringStream] {
+        [
+            recurringStream(id: 1, name: "Spotify", category: "ENTERTAINMENT", amount: 11.99, daysUntilDue: 2),
+            recurringStream(id: 2, name: "Rent", category: "RENT_OR_MORTGAGE", amount: 1_450, daysUntilDue: 6),
+            recurringStream(id: 3, name: "Canva", category: "GENERAL_SERVICES", amount: 12.85, daysUntilDue: 8),
+            recurringStream(id: 4, name: "Verizon", category: "UTILITIES", amount: 65, daysUntilDue: 10)
+        ]
+    }
+
+    private static func recurringStream(id: Int, name: String, category: String, amount: Double, daysUntilDue: Int) -> RecurringStream {
+        let cal = Calendar.bablo
+        let dueDate = cal.date(byAdding: .day, value: daysUntilDue, to: Date()) ?? Date()
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.calendar = cal
+        fmt.timeZone = cal.timeZone
+
+        return RecurringStream(
+            id: id,
+            plaidStreamId: "preview_stream_\(id)",
+            description: name,
+            merchantName: name,
+            personalFinanceCategory: category,
+            personalFinanceSubcategory: nil,
+            frequency: "MONTHLY",
+            averageAmount: amount,
+            monthlyAmount: amount,
+            isoCurrencyCode: "USD",
+            type: "expense",
+            status: "MATURE",
+            isActive: true,
+            firstDate: nil,
+            lastDate: nil,
+            predictedNextDate: fmt.string(from: dueDate),
+            isUserModified: false,
+            userMarkedRecurring: nil,
+            isExcluded: false,
+            isManual: false,
+            matchPattern: nil,
+            accountId: nil
+        )
+    }
+
+    private static func transaction(
+        id: Int,
+        amount: Double,
+        date: String,
+        name: String,
+        merchant: String?,
+        primary: String,
+        detailed: String,
+        isSpend: Bool,
+        isIncome: Bool
+    ) -> Transaction {
+        Transaction(
+            id: id,
+            account_id: 1,
+            amount: amount,
+            date: date,
+            authorized_date: date,
+            name: name,
+            merchant_name: merchant,
+            pending: false,
+            category: nil,
+            transaction_id: "preview_home_tx_\(id)",
+            pending_transaction_transaction_id: nil,
+            iso_currency_code: "USD",
+            payment_channel: "in store",
+            user_id: "preview-user",
+            logo_url: nil,
+            website: nil,
+            personal_finance_category: primary,
+            personal_finance_subcategory: detailed,
+            created_at: nil,
+            updated_at: nil,
+            is_spend: isSpend,
+            is_income: isIncome
+        )
+    }
+}
+
+#endif

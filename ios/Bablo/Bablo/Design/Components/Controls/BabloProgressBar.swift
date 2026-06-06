@@ -55,14 +55,14 @@ struct BabloProgressBar: View {
 
 // Helper Shape Wrapper to handle conditional clipping
 private struct AnyShape: Shape {
-    private let path: (CGRect) -> Path
+    nonisolated(unsafe) private let pathFn: (CGRect) -> Path
 
     init<S: Shape>(_ shape: S) {
-        self.path = shape.path(in:)
+        pathFn = shape.path(in:)
     }
 
     func path(in rect: CGRect) -> Path {
-        path(rect)
+        pathFn(rect)
     }
 }
 

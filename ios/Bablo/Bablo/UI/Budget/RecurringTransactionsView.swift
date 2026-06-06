@@ -1,13 +1,13 @@
 import SwiftUI
 
 struct RecurringTransactionsView: View {
-    @StateObject private var budgetService = BudgetService()
+    @StateObject private var subService = SubscriptionsService()
     @State private var showingIncomeOnly = false
     @State private var showingExpensesOnly = false
     @State private var isRefreshing = false
 
     var filteredStreams: [RecurringStream] {
-        budgetService.allRecurringStreams.filter { stream in
+        subService.allRecurringStreams.filter { stream in
             if showingIncomeOnly && stream.type != "income" { return false }
             if showingExpensesOnly && stream.type != "expense" { return false }
             return true
@@ -22,7 +22,7 @@ struct RecurringTransactionsView: View {
                     Button(action: {
                         Task {
                             isRefreshing = true
-                            try? await budgetService.syncRecurringTransactions()
+                            try? await subService.syncRecurringTransactions()
                             isRefreshing = false
                         }
                     }) {
@@ -66,7 +66,7 @@ struct RecurringTransactionsView: View {
         }
         .navigationTitle("Recurring Transactions")
         .task {
-            await budgetService.fetchRecurringStreams()
+            try? await subService.fetchSubscriptions()
         }
     }
 }
@@ -76,7 +76,7 @@ struct RecurringStreamRow: View {
     @State private var isExpanded = false
     @State private var isMarkedRecurring: Bool
     @State private var isExcluded: Bool
-    @StateObject private var budgetService = BudgetService()
+    @StateObject private var subService = SubscriptionsService()
 
     init(stream: RecurringStream) {
         self.stream = stream
@@ -127,17 +127,13 @@ struct RecurringStreamRow: View {
 
                 VStack(spacing: 12) {
                     Toggle("Mark as Recurring", isOn: $isMarkedRecurring)
-                        .onChange(of: isMarkedRecurring) { newValue in
-                            Task {
-                                await updateStreamOverride(recurring: newValue)
-                            }
+                        .onChange(of: isMarkedRecurring) { _, newValue in
+                            Task { await updateStreamOverride(recurring: newValue) }
                         }
 
                     Toggle("Exclude from Budget", isOn: $isExcluded)
-                        .onChange(of: isExcluded) { newValue in
-                            Task {
-                                await updateStreamExclusion(excluded: newValue)
-                            }
+                        .onChange(of: isExcluded) { _, newValue in
+                            Task { await updateStreamExclusion(excluded: newValue) }
                         }
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -163,9 +159,7 @@ struct RecurringStreamRow: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            withAnimation {
-                isExpanded.toggle()
-            }
+            withAnimation { isExpanded.toggle() }
         }
     }
 
@@ -178,9 +172,7 @@ struct RecurringStreamRow: View {
                 .execute()
 
             Logger.i("Updated stream \(stream.id) recurring status to \(recurring)")
-
-            // Refresh budget after update
-            await budgetService.fetchBudgetSummary()
+            try? await subService.fetchSubscriptions()
         } catch {
             Logger.e("Failed to update stream override: \(error)")
         }
@@ -195,20 +187,15 @@ struct RecurringStreamRow: View {
                 .execute()
 
             Logger.i("Updated stream \(stream.id) exclusion status to \(excluded)")
-
-            // Refresh budget after update
-            await budgetService.fetchBudgetSummary()
+            try? await subService.fetchSubscriptions()
         } catch {
             Logger.e("Failed to update stream exclusion: \(error)")
         }
     }
 
     func formatDate(_ dateString: String) -> String {
-        // Simple MM/DD format
         let parts = dateString.split(separator: "-")
-        if parts.count == 3 {
-            return "\(parts[1])/\(parts[2])"
-        }
+        if parts.count == 3 { return "\(parts[1])/\(parts[2])" }
         return dateString
     }
 }

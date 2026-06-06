@@ -8,7 +8,6 @@
 
 import Foundation
 import Valet
-import CoreData
 import Supabase
 
 struct User: Identifiable, Codable, Equatable, Sendable {
@@ -474,7 +473,6 @@ class UserAccount: ObservableObject {
                 currentUser = nil
                 profile = nil
                 isSignedIn = false
-                clearCoreDataCache()
                 // Clear AccountsService cache
                 UserDefaults.standard.removeObject(forKey: "cached_banks_v2")
                 Logger.i("Cleared AccountsService cache")
@@ -553,35 +551,6 @@ class UserAccount: ObservableObject {
         }
     }
     
-    private func clearCoreDataCache() {
-        let context = CoreDataStack.shared.viewContext
-        let entityNames = ["BankEntity", "AccountEntity", "TransactionEntity"]
-
-        for entityName in entityNames {
-            let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
-            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-            deleteRequest.resultType = .resultTypeObjectIDs
-
-            do {
-                let result = try context.execute(deleteRequest) as? NSBatchDeleteResult
-                let objectIDArray = result?.result as? [NSManagedObjectID] ?? []
-
-                // Merge the changes into the in-memory context
-                let changes = [NSDeletedObjectsKey: objectIDArray]
-                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [context])
-
-                try context.save()
-                Logger.i("Cleared \(entityName) cache (\(objectIDArray.count) objects)")
-            } catch {
-                Logger.e("Failed to clear \(entityName) cache: \(error)")
-            }
-        }
-
-        // Reset the context to clear all in-memory objects
-        context.reset()
-        Logger.i("CoreData context reset complete")
-    }
-
     private func onboardingCompletionKey(for userID: String) -> String {
         "hasCompletedOnboarding.\(userID)"
     }

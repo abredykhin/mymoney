@@ -111,6 +111,118 @@ class SubscriptionsService: ObservableObject {
         }
     }
 
+    // MARK: - Upcoming bills helpers
+
+    /// Total upcoming unpaid mandatory expenses in the next 14 days.
+    var upcomingUnpaidBills: Double {
+        let calendar = Calendar.bablo
+        let now = Date()
+        let todayStr = SpendDateRange.month.endDate()
+
+        guard let fourteenDaysLater = calendar.date(byAdding: .day, value: 14, to: now) else { return 0 }
+
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.calendar = calendar
+        fmt.timeZone = calendar.timeZone
+        let fourteenDaysLaterStr = fmt.string(from: fourteenDaysLater)
+
+        return allRecurringStreams.reduce(0.0) { sum, stream in
+            guard let nextDateStr = stream.predictedNextDate else { return sum }
+            if nextDateStr >= todayStr && nextDateStr <= fourteenDaysLaterStr {
+                return sum + stream.averageAmount
+            }
+            return sum
+        }
+    }
+
+    /// Most-recent spend date per merchant over the last `lookbackDays`.
+    /// Keyed by lowercased, whitespace-trimmed merchant name.
+    func fetchRecentExpenseMerchantDates(lookbackDays: Int = 45) async -> [String: String] {
+        let cal = Calendar.bablo
+        guard let start = cal.date(byAdding: .day, value: -lookbackDays, to: Date()) else { return [:] }
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = cal.timeZone
+
+        struct MerchantDateRow: Codable {
+            let merchantName: String?
+            let spendDate: String?
+            enum CodingKeys: String, CodingKey {
+                case merchantName = "merchant_name"
+                case spendDate = "spend_date"
+            }
+        }
+
+        do {
+            let rows: [MerchantDateRow] = try await supabase
+                .from("transactions")
+                .select("merchant_name, spend_date")
+                .gte("spend_date", value: fmt.string(from: start))
+                .gt("amount", value: 0)
+                .eq("is_spend", value: true)
+                .order("spend_date", ascending: false)
+                .limit(500)
+                .execute()
+                .value
+
+            var latestByMerchant: [String: String] = [:]
+            for row in rows {
+                guard let rawMerchant = row.merchantName,
+                      let spendDate = row.spendDate else { continue }
+                let key = rawMerchant.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                guard !key.isEmpty else { continue }
+                if latestByMerchant[key] == nil {
+                    latestByMerchant[key] = spendDate
+                }
+            }
+            return latestByMerchant
+        } catch {
+            Logger.e("SubscriptionsService: Failed to fetch recent expense merchant dates: \(error)")
+            return [:]
+        }
+    }
+
+    // MARK: - Manual stream management
+
+    func createManualStream(transactionId: Int, frequency: String) async throws {
+        guard let userId = UserAccount.shared.currentUser?.id else {
+            throw BudgetService.BudgetError.noUser
+        }
+
+        Logger.d("SubscriptionsService: Creating manual stream for transaction \(transactionId)")
+
+        let body: [String: Any] = [
+            "transaction_id": transactionId,
+            "frequency": frequency,
+            "user_id": userId
+        ]
+        let bodyData = try JSONSerialization.data(withJSONObject: body)
+
+        try await supabase.functions.invoke(
+            "create-manual-stream",
+            options: FunctionInvokeOptions(body: bodyData)
+        )
+
+        Logger.i("SubscriptionsService: Manual stream created successfully")
+        try await fetchSubscriptions()
+    }
+
+    func deleteManualStream(streamId: Int) async throws {
+        Logger.d("SubscriptionsService: Deleting manual stream \(streamId)")
+
+        try await supabase
+            .from("recurring_streams_table")
+            .delete()
+            .eq("id", value: streamId)
+            .eq("is_manual", value: true)
+            .execute()
+
+        Logger.i("SubscriptionsService: Manual stream deleted")
+        try await fetchSubscriptions()
+    }
+
     /// Trigger recurring transaction sync from Plaid
     func syncRecurringTransactions() async throws {
         guard let userId = UserAccount.shared.currentUser?.id else {

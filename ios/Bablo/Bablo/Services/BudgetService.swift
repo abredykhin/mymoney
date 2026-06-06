@@ -2,9 +2,6 @@
 //  BudgetService.swift
 //  Bablo
 //
-//  Created for Supabase Migration - Phase 4
-//  Replaces: Model/BudgetService.swift (legacy OpenAPI client)
-//
 
 import Foundation
 import SwiftUI
@@ -18,8 +15,8 @@ struct RecurringStream: Codable, Identifiable, Equatable {
     let plaidStreamId: String?
     let description: String
     let merchantName: String?
-    let personalFinanceCategory: String?  // Matches DB: stores PRIMARY value
-    let personalFinanceSubcategory: String?  // Matches DB: stores DETAILED value
+    let personalFinanceCategory: String?
+    let personalFinanceSubcategory: String?
     let frequency: String // WEEKLY, SEMI_MONTHLY, MONTHLY, ANNUALLY
     let averageAmount: Double
     let monthlyAmount: Double
@@ -62,7 +59,6 @@ struct RecurringStream: Codable, Identifiable, Equatable {
         case accountId = "account_id"
     }
 
-    /// Human-readable frequency label
     var frequencyDisplay: String {
         switch frequency {
         case "WEEKLY": return "Weekly"
@@ -72,13 +68,6 @@ struct RecurringStream: Codable, Identifiable, Equatable {
         default: return frequency.capitalized
         }
     }
-}
-
-/// Request model for creating manual recurring stream
-struct CreateManualStreamRequest: Codable {
-    let transaction_id: Int
-    let frequency: String
-    let user_id: String
 }
 
 /// Total balance across all accounts
@@ -178,11 +167,7 @@ struct HeroIncomeBreakdownRow: Identifiable, Equatable {
     let name: String
     let amount: Double
     let isRecurring: Bool
-    /// True for an expected-but-not-yet-received paycheck (projected income that
-    /// the "Income this month" total leans on before the deposit actually lands).
     var isProjected: Bool = false
-    /// When set, replaces the default subtitle for the row. Used to surface the
-    /// expected paycheck's predicted date (e.g. "expected Fri, Jun 5 · not yet received").
     var detailOverride: String? = nil
 }
 
@@ -214,9 +199,8 @@ enum SpendDateRange: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Get start date for this range, in local time to match Plaid transaction dates.
     func startDate() -> String {
-        let calendar = Calendar.bablo   // local timezone, local locale
+        let calendar = Calendar.bablo
         let now = Date()
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
@@ -238,37 +222,11 @@ enum SpendDateRange: String, CaseIterable, Identifiable {
         return fmt.string(from: startDate)
     }
 
-    /// Get end date (today) in local time.
     func endDate() -> String {
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd"
         fmt.timeZone = Calendar.bablo.timeZone
         return fmt.string(from: Date())
-    }
-}
-
-/// A recurring budget item identified by Gemini
-struct BudgetItem: Codable, Identifiable, Equatable {
-    let id: Int
-    let name: String
-    let pattern: String
-    let amount: Double
-    let frequency: String
-    let monthlyAmount: Double
-    let type: String
-    let confidence: Double
-    let is_active: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case name
-        case pattern
-        case amount
-        case frequency
-        case monthlyAmount = "monthly_amount"
-        case type
-        case confidence
-        case is_active
     }
 }
 
@@ -325,9 +283,6 @@ struct UserStreak: Codable, Equatable {
 
 // MARK: - get_budget_state RPC model
 
-/// Single-row response from the `get_budget_state` RPC.
-/// Replaces the collection of individual fetches (balance, variable spend,
-/// period comparisons, income summary) with one round trip.
 struct BudgetStateRow: Codable, Equatable {
     let poolTotal:          Double
     let poolRemaining:      Double
@@ -378,7 +333,6 @@ struct BudgetStateRow: Codable, Equatable {
 
 // MARK: - Service
 
-/// Service for budget and spending analysis via Supabase direct database access
 @MainActor
 class BudgetService: ObservableObject {
 
@@ -388,87 +342,38 @@ class BudgetService: ObservableObject {
     @Published var isLoadingBreakdown: Bool = false
     @Published var balanceError: Error? = nil
     @Published var breakdownError: Error? = nil
-    
-    // Budget profile data
+
     @Published var monthlyIncome: Double = 0
     @Published var monthlyMandatoryExpenses: Double = 0
-    @Published var variableBudget: Double = 0  // Renamed from discretionaryBudget
-    @Published var allBudgetItems: [BudgetItem] = []
-    @Published var allRecurringStreams: [RecurringStream] = []
-    
-    /// Total upcoming unpaid mandatory expenses in the next 14 days.
-    /// This rolling 14-day lookahead window prevents "month-boundary cliffs" (e.g., rent due
-    /// on the 1st of the next month is captured on the 25th of the current month).
-    var upcomingUnpaidBills: Double {
-        let calendar = Calendar.bablo
-        let now = Date()
-        let todayStr = SpendDateRange.month.endDate() // "yyyy-MM-dd" local date
-        
-        guard let fourteenDaysLater = calendar.date(byAdding: .day, value: 14, to: now) else { return 0 }
-        
-        let fmt = DateFormatter()
-        fmt.dateFormat = "yyyy-MM-dd"
-        fmt.calendar = calendar
-        fmt.timeZone = calendar.timeZone
-        
-        let fourteenDaysLaterStr = fmt.string(from: fourteenDaysLater)
-        
-        return allRecurringStreams.reduce(0.0) { sum, stream in
-            guard let nextDateStr = stream.predictedNextDate else { return sum }
-            
-            // The bill must be scheduled for today or in the future AND fall within the next 14 days.
-            if nextDateStr >= todayStr && nextDateStr <= fourteenDaysLaterStr {
-                return sum + stream.averageAmount
-            }
-            return sum
-        }
-    }
-    
-    // Dynamic income data
+    @Published var variableBudget: Double = 0
+
     @Published var knownIncomeThisMonth: Double = 0
     @Published var extraIncomeThisMonth: Double = 0
     @Published var variableSpend: Double = 0
-    // Previous-period spend for delta comparison in LiquidHeroView
     @Published var previousDayVariableSpend: Double = 0
     @Published var previousWeekVariableSpend: Double = 0
     @Published var previousMonthVariableSpend: Double = 0
-    // Current-period actuals (actual calendar-week and today spend, not MTD prorations)
     @Published var currentWeekVariableSpend: Double = 0
     @Published var todayVariableSpend: Double = 0
 
-    /// Full budget state — populated by `fetchBudgetState()`.
-    /// `nil` until the first successful fetch.
     @Published var budgetState: BudgetStateRow? = nil
 
-    // Checkpoint 2: Pulse Screen Properties
-    @Published var dailyEnergy: [DailyEnergyItem] = []
-    @Published var topMerchants: [TopMerchantItem] = []
-    
     private let supabase: SupabaseClient
 
     init(supabaseClient: SupabaseClient = SupabaseManager.shared.client) {
         self.supabase = supabaseClient
     }
 
-    // Total spend (for Spend Tab)
     var spendBreakdownItems: [BudgetCategoryItem] {
         spendBreakdownResponse?.breakdown ?? []
     }
-    
-    // MARK: - Hero Card Helpers
 
     // MARK: - Public Methods
 
-    /// Fetch total balance across all visible accounts via DB aggregate RPC.
-    /// Aggregation logic lives in get_net_cash_balance():
-    ///   depository → positive, credit → negative, investments/loans → excluded.
     func fetchTotalBalance() async throws {
         isLoadingBalance = true
         balanceError = nil
-
-        defer {
-            isLoadingBalance = false
-        }
+        defer { isLoadingBalance = false }
 
         Logger.d("BudgetService: Fetching total balance")
 
@@ -492,14 +397,6 @@ class BudgetService: ObservableObject {
         }
     }
 
-    /// Fetch the complete budget state in a single RPC round trip.
-    ///
-    /// Populates `budgetState` and also keeps the legacy `@Published` properties
-    /// in sync so callers that haven't been migrated to `budgetState` yet
-    /// continue to work unchanged.
-    ///
-    /// - Parameter incomeBasis: Override the stored `income_basis` preference.
-    ///   Pass `nil` to use the value stored on the profile.
     func fetchBudgetState(incomeBasis: IncomeBasis? = nil) async {
         struct Params: Encodable {
             let p_as_of: String?
@@ -524,7 +421,6 @@ class BudgetService: ObservableObject {
             Logger.i("BudgetService: budget state — pool \(row.poolTotal), remaining \(row.poolRemaining)")
             self.budgetState = row
 
-            // Keep legacy @Published properties in sync for unmigrated callers.
             self.variableSpend            = row.spentMtd
             self.currentWeekVariableSpend = row.spentWeek
             self.todayVariableSpend       = row.spentToday
@@ -540,42 +436,10 @@ class BudgetService: ObservableObject {
         }
     }
 
-    /// Fetch variable spending (filtered by DB view) for the current month
-    /// Used for Home Screen Budget Calculation
-    func fetchVariableSpend(range: SpendDateRange = .month) async throws {
-        let startDate = range.startDate()
-        let endDate = range.endDate()
-
-        Logger.d("BudgetService: Fetching variable spend (\(range.displayName))")
-
-        do {
-            struct Params: Encodable { let p_start: String; let p_end: String }
-            let total: Double = try await supabase
-                .rpc("get_variable_spend", params: Params(p_start: startDate, p_end: endDate))
-                .execute()
-                .value
-
-            DispatchQueue.main.async {
-                self.variableSpend = total
-                self.calculateVariableBudget()
-            }
-
-            Logger.i("BudgetService: Variable Spend (DB aggregate): $\(total)")
-        } catch {
-            Logger.e("BudgetService: Failed to fetch variable spend: \(error)")
-        }
-    }
-
-    /// Fetch TOTAL spending breakdown (Unfiltered)
-    /// Used for Spend Tab
-    /// - Parameter range: Time range for analysis
     func fetchTotalSpend(range: SpendDateRange = .month) async throws {
         isLoadingBreakdown = true
         breakdownError = nil
-
-        defer {
-            isLoadingBreakdown = false
-        }
+        defer { isLoadingBreakdown = false }
 
         let startDate = range.startDate()
         let endDate = range.endDate()
@@ -602,8 +466,6 @@ class BudgetService: ObservableObject {
                 .execute()
                 .value
 
-            Logger.i("BudgetService: Received \(rows.count) spending categories from DB")
-
             let totalSpent = rows.reduce(0.0) { $0 + $1.totalSpent }
 
             let breakdownItems = rows.map { row in
@@ -625,7 +487,7 @@ class BudgetService: ObservableObject {
                 totalSpent: totalSpent
             )
 
-            Logger.i("BudgetService: Total spending breakdown complete (\(breakdownItems.count) categories, total: $\(totalSpent))")
+            Logger.i("BudgetService: Total spending breakdown complete (\(breakdownItems.count) categories)")
         } catch {
             Logger.e("BudgetService: Failed to fetch spending breakdown: \(error)")
             self.breakdownError = error
@@ -633,234 +495,21 @@ class BudgetService: ObservableObject {
         }
     }
 
-    /// Get top spending categories
-    /// - Parameter limit: Number of top categories to return
-    /// - Returns: Top spending categories
     func topSpendingCategories(limit: Int = 5) -> [BudgetCategoryItem] {
         Array(spendBreakdownItems.prefix(limit))
     }
 
-    func fetchHeroSpendBreakdownRows(
-        for period: HeroPeriod,
-        trackedCategories: Set<FlexibleSpendingCategory> = [],
-        limit: Int = 6
-    ) async -> [HeroSpendBreakdownRow] {
-        let window = heroDateWindow(for: period)
-
-        do {
-            let transactions: [TransactionForBreakdown] = try await supabase
-                .from("variable_transactions")
-                .select("id, amount, name, personal_finance_category, personal_finance_subcategory, type")
-                .gte("spend_date", value: window.start)
-                .lte("spend_date", value: window.end)
-                .gt("amount", value: 0)
-                .execute()
-                .value
-
-            var buckets: [String: (amount: Double, count: Int, examples: [String])] = [:]
-            for transaction in transactions {
-                let category = displaySpendBucket(
-                    primary: transaction.personalFinanceCategory,
-                    detailed: transaction.personalFinanceSubcategory,
-                    trackedCategories: trackedCategories
-                )
-                var bucket = buckets[category] ?? (amount: 0, count: 0, examples: [])
-                bucket.amount += abs(transaction.amount)
-                bucket.count += 1
-                let merchant = cleanMerchantName(transaction.name)
-                if !merchant.isEmpty && !bucket.examples.contains(merchant) && bucket.examples.count < 2 {
-                    bucket.examples.append(merchant)
-                }
-                buckets[category] = bucket
-            }
-
-            return buckets
-                .map { category, bucket in
-                    HeroSpendBreakdownRow(
-                        category: category,
-                        amount: bucket.amount,
-                        transactionCount: bucket.count,
-                        examples: bucket.examples
-                    )
-                }
-                .sorted { $0.amount > $1.amount }
-                .prefix(limit)
-                .map { $0 }
-        } catch {
-            Logger.e("BudgetService: Failed to fetch hero spend rows: \(error)")
-            return []
+    func fetchBudgetSummary() async {
+        guard let userId = UserAccount.shared.currentUser?.id else {
+            Logger.e("BudgetService: Cannot fetch budget summary - no user ID")
+            return
         }
+
+        Logger.d("BudgetService: Fetching budget summary for \(userId)")
+        let basis = UserAccount.shared.incomeBasis
+        await fetchBudgetState(incomeBasis: basis)
     }
 
-    func fetchHeroIncomeRowsForCurrentMonth(limit: Int = 4) async -> [HeroIncomeBreakdownRow] {
-        let window = heroDateWindow(for: .month)
-
-        do {
-            let transactions: [TransactionForBreakdown] = try await supabase
-                .from("spendable_income_transactions")
-                .select("amount, name, type, is_recurring")
-                .gte("spend_date", value: window.start)
-                .lte("spend_date", value: window.end)
-                .execute()
-                .value
-
-            // Group by cleaned name so two biweekly paychecks with the same
-            // source don't show as near-duplicate rows.
-            var groups: [String: (amount: Double, count: Int, isRecurring: Bool)] = [:]
-            for tx in transactions where tx.type != "credit" && tx.type != "loan" {
-                let key = cleanIncomeName(tx.name)
-                var g = groups[key] ?? (amount: 0, count: 0, isRecurring: false)
-                g.amount += abs(tx.amount)
-                g.count += 1
-                g.isRecurring = g.isRecurring || (tx.isRecurring == true)
-                groups[key] = g
-            }
-            return groups
-                .map { name, g in
-                    let displayName = g.count > 1 ? "\(name) ×\(g.count)" : name
-                    return HeroIncomeBreakdownRow(name: displayName, amount: g.amount, isRecurring: g.isRecurring)
-                }
-                .sorted { $0.amount > $1.amount }
-                .prefix(limit)
-                .map { $0 }
-        } catch {
-            Logger.e("BudgetService: Failed to fetch hero income rows: \(error)")
-            return []
-        }
-    }
-
-    func fetchHeroExcludedTransactionRows(for period: HeroPeriod, limit: Int = 6) async -> [HeroExcludedTransactionRow] {
-        let window = heroDateWindow(for: period)
-
-        do {
-            let transactions: [TransactionForBreakdown] = try await supabase
-                .from("transactions")
-                .select("id, amount, name, personal_finance_category, personal_finance_subcategory, type, is_recurring, is_spend, is_income")
-                .gte("spend_date", value: window.start)
-                .lte("spend_date", value: window.end)
-                .gt("amount", value: 0)
-                .eq("is_income", value: false)
-                .order("amount", ascending: false)
-                .limit(100)
-                .execute()
-                .value
-            let cardPayments: [HeroCardPaymentMatch] = try await supabase
-                .from("transactions")
-                .select("amount, personal_finance_subcategory")
-                .gte("spend_date", value: window.start)
-                .lte("spend_date", value: window.end)
-                .lt("amount", value: 0)
-                .eq("personal_finance_subcategory", value: "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT")
-                .limit(100)
-                .execute()
-                .value
-            let cardPaymentAmounts = Set(cardPayments.map { roundedCents(abs($0.amount)) })
-
-            return transactions
-                .filter { isExcludedFromHeroSpend($0) }
-                .prefix(limit)
-                .map { transaction in
-                    HeroExcludedTransactionRow(
-                        name: cleanMerchantName(transaction.name),
-                        detail: exclusionReason(for: transaction, cardPaymentAmounts: cardPaymentAmounts),
-                        amount: transaction.amount
-                    )
-                }
-        } catch {
-            Logger.e("BudgetService: Failed to fetch hero excluded transaction rows: \(error)")
-            return []
-        }
-    }
-
-    // MARK: - Breakdown transaction lists (for drill-down navigation)
-
-    /// All variable (non-recurring) expense transactions for the given period, newest first.
-    /// Backs the "What you've spent…" step card drill-down.
-    func fetchVariableTransactionList(for period: HeroPeriod) async -> [Transaction] {
-        let window = heroDateWindow(for: period)
-        do {
-            let transactions: [Transaction] = try await supabase
-                .from("variable_transactions")
-                .select("id, account_id, amount, date, authorized_date, authorized_datetime, datetime, spend_date, name, merchant_name, pending, transaction_id, iso_currency_code, personal_finance_category, personal_finance_subcategory, logo_url, payment_channel, user_id, website, created_at, updated_at, pending_transaction_transaction_id")
-                .gte("spend_date", value: window.start)
-                .lte("spend_date", value: window.end)
-                .gt("amount", value: 0)
-                .order("spend_date", ascending: false)
-                .order("amount", ascending: false)
-                .execute()
-                .value
-            return transactions
-        } catch {
-            Logger.e("BudgetService: Failed to fetch variable transaction list: \(error)")
-            return []
-        }
-    }
-
-    /// Spendable income transactions for the current month, newest first.
-    /// Backs the "Income this month" step card drill-down.
-    func fetchIncomeTransactionList() async -> [Transaction] {
-        let window = heroDateWindow(for: .month)
-        do {
-            let transactions: [Transaction] = try await supabase
-                .from("spendable_income_transactions")
-                .select("id, account_id, amount, date, authorized_date, authorized_datetime, datetime, spend_date, name, merchant_name, pending, transaction_id, iso_currency_code, personal_finance_category, personal_finance_subcategory, logo_url, payment_channel, user_id, website, created_at, updated_at, pending_transaction_transaction_id")
-                .gte("spend_date", value: window.start)
-                .lte("spend_date", value: window.end)
-                .order("spend_date", ascending: false)
-                .execute()
-                .value
-            return transactions
-        } catch {
-            Logger.e("BudgetService: Failed to fetch income transaction list: \(error)")
-            return []
-        }
-    }
-
-    /// Most-recent spend date (yyyy-MM-dd) per merchant over the last `lookbackDays`.
-    /// Used to detect recurring bills already paid this cycle so they drop off the
-    /// "Coming up" widget and lose the "due soon" badge. Keyed by lowercased,
-    /// whitespace-trimmed merchant name. Includes mandatory bills (rent etc.), which
-    /// `variable_transactions` deliberately excludes — so this queries the raw
-    /// `transactions` view, not the variable subset.
-    func fetchRecentExpenseMerchantDates(lookbackDays: Int = 45) async -> [String: String] {
-        let cal = Calendar.bablo
-        guard let start = cal.date(byAdding: .day, value: -lookbackDays, to: Date()) else { return [:] }
-        let fmt = DateFormatter()
-        fmt.dateFormat = "yyyy-MM-dd"
-        fmt.locale = Locale(identifier: "en_US_POSIX")
-        fmt.timeZone = cal.timeZone
-
-        do {
-            let rows: [MerchantDateRow] = try await supabase
-                .from("transactions")
-                .select("merchant_name, spend_date")
-                .gte("spend_date", value: fmt.string(from: start))
-                .gt("amount", value: 0)
-                .eq("is_spend", value: true)
-                .order("spend_date", ascending: false)
-                .limit(500)
-                .execute()
-                .value
-
-            var latestByMerchant: [String: String] = [:]
-            for row in rows {
-                guard let rawMerchant = row.merchantName,
-                      let spendDate = row.spendDate else { continue }
-                let key = rawMerchant.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                guard !key.isEmpty else { continue }
-                // Rows arrive newest-first, so the first hit per merchant is the latest.
-                if latestByMerchant[key] == nil {
-                    latestByMerchant[key] = spendDate
-                }
-            }
-            return latestByMerchant
-        } catch {
-            Logger.e("BudgetService: Failed to fetch recent expense merchant dates: \(error)")
-            return [:]
-        }
-    }
-
-    /// Clear cached data
     func clearCache() {
         totalBalance = nil
         spendBreakdownResponse = nil
@@ -873,509 +522,39 @@ class BudgetService: ObservableObject {
         previousMonthVariableSpend = 0
         currentWeekVariableSpend = 0
         todayVariableSpend = 0
+        budgetState = nil
         Logger.d("BudgetService: Cleared cache")
     }
 
-    /// Fetch variable spend for an arbitrary date window via DB scalar RPC.
-    private func fetchVariableSpendRaw(start: String, end: String) async -> Double {
-        do {
-            struct Params: Encodable { let p_start: String; let p_end: String }
-            let total: Double = try await supabase
-                .rpc("get_variable_spend", params: Params(p_start: start, p_end: end))
-                .execute()
-                .value
-            return total
-        } catch {
-            Logger.e("BudgetService: Failed to fetch variable spend (\(start)–\(end)): \(error)")
-            return 0
-        }
-    }
-
-    private func heroDateWindow(for period: HeroPeriod) -> (start: String, end: String) {
-        switch period {
-        case .day:
-            let today = PreviousPeriodDateRange.compute(calendar: .bablo).todayDate
-            return (today, today)
-        case .week:
-            let ranges = PreviousPeriodDateRange.compute(calendar: .bablo)
-            return (ranges.currentWeekStart, ranges.todayDate)
-        case .month:
-            return (SpendDateRange.month.startDate(), SpendDateRange.month.endDate())
-        }
-    }
-
-    private func displayCategory(_ rawCategory: String?) -> String {
-        guard let rawCategory, !rawCategory.isEmpty else { return "Other" }
-        let map: [String: String] = [
-            "FOOD_AND_DRINK":          "Food & Drink",
-            "GENERAL_MERCHANDISE":     "Shopping",
-            "GENERAL_SERVICES":        "Services",
-            "TRANSFER_OUT":            "Transfers & Cash",
-            "TRANSPORTATION":          "Transportation",
-            "PERSONAL_CARE":           "Personal Care",
-            "ENTERTAINMENT":           "Entertainment",
-            "HOME_IMPROVEMENT":        "Home",
-            "MEDICAL":                 "Medical",
-            "TRAVEL":                  "Travel",
-            "GOVERNMENT_AND_NON_PROFIT": "Donations",
-            "RENT_AND_UTILITIES":      "Bills",
-            "BANK_FEES":               "Bank Fees",
-            "LOAN_PAYMENTS":           "Loan Payments",
-        ]
-        return map[rawCategory] ?? rawCategory
-            .split(separator: "_")
-            .map { $0.lowercased().capitalized }
-            .joined(separator: " ")
-    }
-
-    private func displaySpendBucket(
-        primary: String?,
-        detailed: String?,
-        trackedCategories: Set<FlexibleSpendingCategory>
-    ) -> String {
-        guard let category = FlexibleSpendingCategory.map(primary: primary, detailed: detailed) else {
-            return "Everything else"
-        }
-
-        if trackedCategories.isEmpty || trackedCategories.contains(category) {
-            return category.displayName
-        }
-
-        return "Everything else"
-    }
-
-    private func cleanMerchantName(_ raw: String) -> String {
-        var name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        // Strip transaction sub-IDs: "Amazon.com*5J94D85I3" → "Amazon.com"
-        if let r = name.range(of: #"\*[A-Z0-9]+"#, options: .regularExpression) {
-            name = String(name[..<r.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        // Known ugly bank strings
-        if name.uppercased().hasPrefix("NON-CHASE ATM") || name.uppercased().hasPrefix("NON CHASE ATM") {
-            return "ATM Withdrawal"
-        }
-        // Title-case all-caps bank descriptions (>4 chars to skip tickers/codes)
-        if name.count > 4 && name == name.uppercased() {
-            name = name.split(separator: " ").map { word -> String in
-                let w = String(word)
-                let lower = w.lowercased()
-                // Preserve common uppercase acronyms
-                let acronyms: Set<String> = ["llc", "atm", "ach", "ppd", "usa", "us", "nyc", "sf"]
-                return acronyms.contains(lower) ? w.uppercased() : lower.prefix(1).uppercased() + lower.dropFirst()
-            }.joined(separator: " ")
-        }
-        return name
-    }
-
-    private func exclusionReason(for transaction: TransactionForBreakdown, cardPaymentAmounts: Set<Int> = []) -> String {
-        let category = transaction.personalFinanceCategory ?? ""
-        let subcategory = transaction.personalFinanceSubcategory ?? ""
-        let name = transaction.name.lowercased()
-        let type = transaction.type?.lowercased() ?? ""
-
-        if subcategory == "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT" {
-            return "Credit card payment"
-        }
-        if cardPaymentAmounts.contains(roundedCents(abs(transaction.amount))) &&
-            (name.contains("card") || name.contains("citi") || name.contains("robinhood")) {
-            return "Credit card payment"
-        }
-        if category == "TRANSFER_IN" || category == "TRANSFER_OUT" || name.contains("transfer") {
-            if subcategory == "TRANSFER_OUT_OTHER_TRANSFER_OUT" {
-                return "Already in cash balance; not variable spend"
-            }
-            return "Transfer between accounts"
-        }
-        if type == "investment" || subcategory.contains("INVESTMENT_AND_RETIREMENT") {
-            return "Investment movement"
-        }
-        if transaction.amount <= 0 {
-            return "Not spendable income"
-        }
-        return "Outside the safe-spend calculation"
-    }
-
-    private func roundedCents(_ amount: Double) -> Int {
-        Int((amount * 100).rounded())
-    }
-
-    private func isExcludedFromHeroSpend(_ transaction: TransactionForBreakdown) -> Bool {
-        guard transaction.amount > 0 else { return false }
-        // "Not counted" = real outflows that are NOT variable spend. External wires
-        // (TRANSFER_OUT_OTHER_TRANSFER_OUT, e.g. spousal support) now count as variable
-        // spend, so they must not appear here — only non-spend outflows (credit-card
-        // payments, internal transfers) belong in the not-counted bucket.
-        return transaction.isSpend != true
-    }
-
-    private func cleanIncomeName(_ raw: String) -> String {
-        var name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        // Strip bank PPD/ACH/WEB ID suffixes
-        for suffix in [" PPD ID:", " ACH ID:", " WEB ID:", " CCD ID:", " TEL ID:"] {
-            if let r = name.range(of: suffix) {
-                name = String(name[..<r.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                break
-            }
-        }
-        // Trim common payroll noise suffixes
-        for suffix in [" PAYROLL", " DIRECT DEP", " DIR DEP"] {
-            if name.uppercased().hasSuffix(suffix) {
-                name = String(name.dropLast(suffix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
-                break
-            }
-        }
-        // Title-case all-caps names
-        if name.count > 4 && name == name.uppercased() {
-            name = name.split(separator: " ").map { word -> String in
-                let w = String(word)
-                let lower = w.lowercased()
-                let acronyms: Set<String> = ["llc", "inc", "usa", "us", "atm"]
-                return acronyms.contains(lower) ? w.uppercased() : lower.prefix(1).uppercased() + lower.dropFirst()
-            }.joined(separator: " ")
-        }
-        return name
-    }
-
-    /// Fetch budget summary from user profile
-    func fetchBudgetSummary() async {
-        guard let userId = UserAccount.shared.currentUser?.id else {
-            Logger.e("BudgetService: Cannot fetch budget summary - no user ID")
-            return
-        }
-        
-        Logger.d("BudgetService: Fetching budget summary for \(userId)")
-        
-        // Fetch budget state using current incomeBasis setting
-        let basis = UserAccount.shared.incomeBasis
-        await fetchBudgetState(incomeBasis: basis)
-        
-        // Fetch recurring streams (for upcoming bills list etc.)
-        await fetchRecurringStreams()
-    }
-
-    /// Fetch comparison windows used by the hero delta pill.
-    private func fetchAllPeriodSpend() async {
-        let ranges = PreviousPeriodDateRange.compute()
-        let previousDaySpend = await fetchVariableSpendRaw(start: ranges.yesterdayDate, end: ranges.yesterdayDate)
-
-        struct Params: Encodable {
-            let p_prev_week_start: String
-            let p_prev_week_same_day_end: String
-            let p_prev_month_start: String
-            let p_prev_month_same_day_end: String
-            let p_current_week_start: String
-            let p_today: String
-        }
-        struct PeriodRow: Codable {
-            let prevWeek: Double
-            let prevMonth: Double
-            let currentWeek: Double
-            let today: Double
-            enum CodingKeys: String, CodingKey {
-                case prevWeek    = "prev_week"
-                case prevMonth   = "prev_month"
-                case currentWeek = "current_week"
-                case today
-            }
-        }
-
-        do {
-            let params = Params(
-                p_prev_week_start:         ranges.prevWeekStart,
-                p_prev_week_same_day_end:  ranges.prevWeekSameDayEnd,
-                p_prev_month_start:        ranges.prevMonthStart,
-                p_prev_month_same_day_end: ranges.prevMonthSameDayEnd,
-                p_current_week_start:      ranges.currentWeekStart,
-                p_today:                   ranges.todayDate
-            )
-            let rows: [PeriodRow] = try await supabase
-                .rpc("get_period_spend_comparison", params: params)
-                .execute()
-                .value
-            if let row = rows.first {
-                previousDayVariableSpend   = previousDaySpend
-                previousWeekVariableSpend  = row.prevWeek
-                previousMonthVariableSpend = row.prevMonth
-                currentWeekVariableSpend   = row.currentWeek
-                todayVariableSpend         = row.today
-                Logger.d("BudgetService: Period spend — prevDay: \(previousDaySpend), prevWk: \(row.prevWeek), prevMo: \(row.prevMonth), curWk: \(row.currentWeek), today: \(row.today)")
-            }
-        } catch {
-            Logger.e("BudgetService: Failed to fetch period spend comparison: \(error)")
-        }
-    }
-
-    /// Fetch all recurring streams (income and expenses) from Plaid
-    func fetchRecurringStreams() async {
-        guard let userId = UserAccount.shared.currentUser?.id else { return }
-
-        do {
-            let streams: [RecurringStream] = try await supabase
-                .from("active_mandatory_expense_streams")
-                .select("*")
-                .eq("user_id", value: userId)
-                .execute()
-                .value
-
-            self.allRecurringStreams = streams
-            Logger.i("BudgetService: Loaded \(streams.count) active mandatory expense streams")
-        } catch {
-            Logger.e("BudgetService: Failed to fetch active mandatory expense streams: \(error)")
-        }
-    }
-
-    /// Fetch actual income for the current month via DB aggregate RPC.
-    /// The DB function buckets known (recurring) vs extra (one-off) income
-    /// using the spendable_income_transactions view, which already excludes
-    /// transfers, brokerage movements, and credit/loan account inflows.
-    func fetchActualIncome() async {
-        guard UserAccount.shared.currentUser?.id != nil else { return }
-
-        let startDate = SpendDateRange.month.startDate()
-        let endDate   = SpendDateRange.month.endDate()
-
-        struct Params: Encodable { let p_start: String; let p_end: String }
-        struct IncomeSummary: Codable {
-            let knownIncome: Double
-            let extraIncome: Double
-            enum CodingKeys: String, CodingKey {
-                case knownIncome = "known_income"
-                case extraIncome = "extra_income"
-            }
-        }
-
-        do {
-            let rows: [IncomeSummary] = try await supabase
-                .rpc("get_monthly_income_summary",
-                     params: Params(p_start: startDate, p_end: endDate))
-                .execute()
-                .value
-
-            if let summary = rows.first {
-                self.knownIncomeThisMonth = summary.knownIncome
-                self.extraIncomeThisMonth = summary.extraIncome
-                Logger.i("BudgetService: Income Analysis - Known: $\(summary.knownIncome), Extra: $\(summary.extraIncome)")
-            }
-        } catch {
-            Logger.e("BudgetService: Failed to fetch actual income: \(error)")
-        }
-    }
-
-    /// Effective income: max(expected, known) + extra
-    /// Use this for UI displays instead of raw monthlyIncome
     var effectiveIncome: Double {
         max(monthlyIncome, knownIncomeThisMonth) + extraIncomeThisMonth
     }
 
-    /// Calculate variable budget: (max(expected, known) + extra) - mandatory - variable_spending
     func calculateVariableBudget() {
-        // Use the fetched variable spend from DB view
         let totalMonthlyVariableSpent = variableSpend
-        
+
         Logger.d("BudgetService: --- Budget Calculation ---")
         Logger.d("BudgetService: 1. Expected Baseline Income: \(monthlyIncome)")
         Logger.d("BudgetService: 2. Known Income Received: \(knownIncomeThisMonth)")
         Logger.d("BudgetService: 3. Extra Income Received: \(extraIncomeThisMonth)")
-        
-        // Smarter income logic:
-        // Use the higher of expected vs known patterns (handles 3 paychecks)
-        // AND always add extra one-offs on top
+
         let incomeToUse = effectiveIncome
-        
+
         Logger.d("BudgetService: 4. Effective Income: \(incomeToUse)")
         Logger.d("BudgetService: 5. Fixed Expenses (Profile): \(monthlyMandatoryExpenses)")
         Logger.d("BudgetService: 6. Variable Spending (Current Month): \(totalMonthlyVariableSpent)")
-        
+
         let result = incomeToUse - monthlyMandatoryExpenses - totalMonthlyVariableSpent
         self.variableBudget = result
-        
+
         Logger.i("BudgetService: => Resulting Variable Budget: \(variableBudget)")
-        
+
         if monthlyIncome <= 0 && knownIncomeThisMonth <= 0 {
             Logger.w("BudgetService: Caution - No income source found yet")
         }
     }
 
-    /// Manually trigger a recurring transaction sync from Plaid
-    func syncRecurringTransactions() async throws {
-        Logger.d("BudgetService: Triggering recurring transaction sync")
-
-        // Get user's first item (or iterate through all items)
-        guard let userId = UserAccount.shared.currentUser?.id else {
-            throw BudgetError.noUser
-        }
-
-        struct ItemID: Codable { let plaid_item_id: String }
-        let items: [ItemID] = try await supabase
-            .from("items_table")
-            .select("plaid_item_id")
-            .eq("user_id", value: userId)
-            .eq("is_active", value: true)
-            .execute()
-            .value
-
-        guard let firstItem = items.first else {
-            Logger.w("BudgetService: No active items found for recurring sync")
-            return
-        }
-
-        let body = [
-            "plaid_item_id": firstItem.plaid_item_id,
-            "user_id": userId
-        ]
-        let bodyData = try JSONSerialization.data(withJSONObject: body)
-
-        try await supabase.functions.invoke(
-            "sync-recurring-transactions",
-            options: FunctionInvokeOptions(body: bodyData)
-        )
-
-        Logger.i("BudgetService: Recurring transaction sync triggered")
-
-        // Refresh data after sync
-        await fetchBudgetSummary()
-    }
-
-    /// Create a manual recurring stream from a transaction
-    func createManualStream(transactionId: Int, frequency: String) async throws {
-        Logger.d("BudgetService: Creating manual stream for transaction \(transactionId)")
-
-        guard let userId = UserAccount.shared.currentUser?.id else {
-            throw BudgetError.noUser
-        }
-
-        let body: [String: Any] = [
-            "transaction_id": transactionId,
-            "frequency": frequency,
-            "user_id": userId
-        ]
-        let bodyData = try JSONSerialization.data(withJSONObject: body)
-
-        let response = try await supabase.functions.invoke(
-            "create-manual-stream",
-            options: FunctionInvokeOptions(body: bodyData)
-        )
-
-        Logger.i("BudgetService: Manual stream created successfully")
-
-        // Refresh data after creating stream
-        await fetchBudgetSummary()
-    }
-
-    /// Delete a manual recurring stream
-    func deleteManualStream(streamId: Int) async throws {
-        Logger.d("BudgetService: Deleting manual stream \(streamId)")
-
-        try await supabase
-            .from("recurring_streams_table")
-            .delete()
-            .eq("id", value: streamId)
-            .eq("is_manual", value: true) // Safety: only allow deleting manual streams
-            .execute()
-
-        Logger.i("BudgetService: Manual stream deleted")
-
-        // Refresh data after deletion
-        await fetchBudgetSummary()
-    }
-
-    /// Fetch weekly energy spend aggregates from Supabase using local RPC
-    func fetchWeeklyEnergy(weekStart: String, weekEnd: String) async throws {
-        Logger.d("BudgetService: Fetching weekly energy (\(weekStart) to \(weekEnd))")
-        
-        struct Params: Encodable {
-            let week_start: String
-            let week_end: String
-        }
-        let params = Params(week_start: weekStart, week_end: weekEnd)
-        
-        do {
-            let energy: [DailyEnergyItem] = try await supabase
-                .rpc("get_pulse_weekly_energy", params: params)
-                .execute()
-                .value
-            
-            self.dailyEnergy = energy
-            Logger.i("BudgetService: Loaded \(energy.count) weekly energy daily values")
-        } catch {
-            Logger.e("BudgetService: Failed to fetch weekly energy: \(error)")
-            throw error
-        }
-    }
-
-    /// Fetch top spending merchants from Supabase using local RPC
-    func fetchTopMerchants(startDate: String, endDate: String, limit: Int = 5) async throws {
-        Logger.d("BudgetService: Fetching top merchants (\(startDate) to \(endDate), limit: \(limit))")
-        
-        struct Params: Encodable {
-            let start_date: String
-            let end_date: String
-            let lim: Int
-        }
-        let params = Params(start_date: startDate, end_date: endDate, lim: limit)
-        
-        do {
-            let merchants: [TopMerchantItem] = try await supabase
-                .rpc("get_pulse_top_merchants", params: params)
-                .execute()
-                .value
-            
-            self.topMerchants = merchants
-            Logger.i("BudgetService: Loaded \(merchants.count) top merchants")
-        } catch {
-            Logger.e("BudgetService: Failed to fetch top merchants: \(error)")
-            throw error
-        }
-    }
-
     enum BudgetError: Error {
         case noUser
-    }
-}
-
-// MARK: - Private Models
-
-/// Transaction model for breakdown analysis
-private struct TransactionForBreakdown: Codable {
-    let id: Int?
-    let amount: Double
-    let name: String
-    let personalFinanceCategory: String?
-    let personalFinanceSubcategory: String?
-    let type: String?
-    let isRecurring: Bool? // NEW
-    let isSpend: Bool?
-    let isIncome: Bool?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case amount
-        case name
-        case personalFinanceCategory = "personal_finance_category"
-        case personalFinanceSubcategory = "personal_finance_subcategory"
-        case type
-        case isRecurring = "is_recurring"
-        case isSpend = "is_spend"
-        case isIncome = "is_income"
-    }
-}
-
-private struct MerchantDateRow: Codable {
-    let merchantName: String?
-    let spendDate: String?
-
-    enum CodingKeys: String, CodingKey {
-        case merchantName = "merchant_name"
-        case spendDate = "spend_date"
-    }
-}
-
-private struct HeroCardPaymentMatch: Codable {
-    let amount: Double
-    let personalFinanceSubcategory: String?
-
-    enum CodingKeys: String, CodingKey {
-        case amount
-        case personalFinanceSubcategory = "personal_finance_subcategory"
     }
 }

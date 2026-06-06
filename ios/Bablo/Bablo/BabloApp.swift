@@ -21,13 +21,12 @@ struct BabloApp: App {
     @StateObject var subService = SubscriptionsService()
     @StateObject var goalsService = GoalsService()
     @StateObject var pulseService = PulseService()
+    @StateObject var homeBreakdownService = HomeBreakdownService()
     @State private var showBiometricEnrollment = false
     @State private var showAuthView = false
     @State private var isPresentingRequiredOnboarding = false
     @AppStorage("babloThemeVariant") private var babloThemeVariant = BabloTheme.normal.rawValue
     @Environment(\.scenePhase) var scenePhase
-
-    let coreDataStack = CoreDataStack.shared
 
     private var selectedTheme: BabloTheme {
         BabloTheme(rawValue: babloThemeVariant) ?? .normal
@@ -62,7 +61,7 @@ struct BabloApp: App {
                         .environmentObject(subService)
                         .environmentObject(goalsService)
                         .environmentObject(pulseService)
-                        .environment(\.managedObjectContext, coreDataStack.viewContext)
+                        .environmentObject(homeBreakdownService)
                         .babloTheme(selectedTheme)
                         .onAppear {
                             isPresentingRequiredOnboarding = true
@@ -81,7 +80,7 @@ struct BabloApp: App {
                             .environmentObject(subService)
                             .environmentObject(goalsService)
                             .environmentObject(pulseService)
-                            .environment(\.managedObjectContext, coreDataStack.viewContext)
+                            .environmentObject(homeBreakdownService)
                             .blur(radius: (userAccount.isBiometricEnabled && !userAccount.isBiometricallyAuthenticated) || showAuthView ? 20 : 0)
                             .animation(.default, value: userAccount.isBiometricallyAuthenticated)
                             .animation(.default, value: showAuthView)
@@ -175,6 +174,8 @@ struct BabloApp: App {
                 budgetService.clearCache()
                 goalsService.clearCache()
                 pulseService.clearData()
+                subService.allRecurringStreams = []
+                subService.subscriptions = []
 
                 if newUserID != nil {
                     Logger.i("BabloApp: Cleared user-scoped caches for auth transition")

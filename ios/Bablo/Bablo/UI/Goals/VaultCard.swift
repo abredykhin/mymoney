@@ -172,7 +172,6 @@ struct LiquidVesselView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let w = geo.size.width
             let h = geo.size.height
             let fillY = h * (1.0 - progress)
             let isPopArt = theme.effects.isPopArt
@@ -237,7 +236,7 @@ struct LiquidVesselView: View {
 }
 
 private struct AnyShape: Shape {
-    private let pathFn: (CGRect) -> Path
+    nonisolated(unsafe) private let pathFn: (CGRect) -> Path
 
     init<S: Shape>(_ shape: S) {
         pathFn = shape.path(in:)

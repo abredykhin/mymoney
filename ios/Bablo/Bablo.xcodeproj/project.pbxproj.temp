@@ -17,11 +17,8 @@
 		0E7A4C2B1BA54D6AB8D035C1 /* OnboardingNameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7A4C2A1BA54D6AB8D035C1 /* OnboardingNameView.swift */; };
 		0E7A4C2D1BA54D6AB8D035C1 /* OnboardingNameInputViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7A4C2C1BA54D6AB8D035C1 /* OnboardingNameInputViewModel.swift */; };
 		1318B84F8F0244479A7F2FE3 /* WhereItWentWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62941461BBDF45BCAC3D7FBD /* WhereItWentWidgetView.swift */; };
-		1881AB98837343C345188073 /* BabloNudgeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 908A153FE665DFCBC56DE24E /* BabloNudgeCard.swift */; };
-		190EBFD3E890777F7AFD5B75 /* BabloProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18A335F097180A8FF0DE4580 /* BabloProgressBar.swift */; };
 		1CE016C44405A7A1A8D5C8CC /* StreakServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 369BDB36299D77FAF29E5141 /* StreakServiceTests.swift */; };
 		1D9AD96CAE7DBB9681A92645 /* ComingUpCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09F923CF2BDE9F939F3F6CA6 /* ComingUpCalculator.swift */; };
-		20FBB6C143C71528B997219F /* BabloGoalCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7123CC6D146F0E6527D2C5DD /* BabloGoalCard.swift */; };
 		330F6DC2EF9CF04F1F99D6FF /* OnboardingAmountStepper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23C1810B7EF201D0786BA6B6 /* OnboardingAmountStepper.swift */; };
 		33C6FB76EEB2848412C11408 /* FixedExpenseCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E5474B40C370C7373F06D32 /* FixedExpenseCategory.swift */; };
 		34311409391ADEB01253AD34 /* OnboardingIncomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 425AC6E68DF39DF90BF31D70 /* OnboardingIncomeView.swift */; };
@@ -132,7 +129,6 @@
 		75D39A482EEE878500866367 /* TransactionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A472EEE878500866367 /* TransactionsService.swift */; };
 		75D39A492EEE878500866367 /* AccountsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A452EEE878500866367 /* AccountsService.swift */; };
 		75D39A4A2EEE878500866367 /* BudgetService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A462EEE878500866367 /* BudgetService.swift */; };
-		AB1234560000AABB00CC0001 /* HomeBreakdownService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234560000AABB00CC0000 /* HomeBreakdownService.swift */; };
 		75D39A532EEE878500866367 /* GoalsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39A522EEE878500866367 /* GoalsService.swift */; };
 		75D39AC22EEE5C7600866367 /* CoachService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39AC12EEE5C7600866367 /* CoachService.swift */; };
 		75D39AD02F2172A900866367 /* PulseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D39ACF2F2172A900866367 /* PulseService.swift */; };
@@ -156,7 +152,6 @@
 		B5495F1CDEB443E39AC897A8 /* AllTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6616A53A2E7FF7026E615DDA /* AllTransactionsView.swift */; };
 		B8203166A3A9DB62F68CD955 /* OnboardingFixedExpensesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB442FCBA28DFC63AED0C61 /* OnboardingFixedExpensesView.swift */; };
 		BB22CC33DD44EE55FF6600BB /* BreakdownTransactionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF6600AA /* BreakdownTransactionListView.swift */; };
-		BBEC5329C3B22505BA4DFA4E /* RecurringTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D981BB2AB306FC454F754128 /* RecurringTransactionsView.swift */; };
 		BBFAF2D7606587839EE55981 /* ComingUpCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF41A549D5DACE81A78B481C /* ComingUpCalculatorTests.swift */; };
 		C08570C0E1631BC9BDF7580C /* RecentWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 434D1815D10F4CEAB94A9F21 /* RecentWidgetView.swift */; };
 		C45E8EE5B7D3E0ACF798A4A6 /* SubscriptionsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9700A023804AE58B92F36AC /* SubscriptionsServiceTests.swift */; };
@@ -197,7 +192,6 @@
 		0E7A4C2A1BA54D6AB8D035C1 /* OnboardingNameView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingNameView.swift; sourceTree = "<group>"; };
 		0E7A4C2C1BA54D6AB8D035C1 /* OnboardingNameInputViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingNameInputViewModel.swift; sourceTree = "<group>"; };
 		170F06457D07F1D7E77F5B39 /* OnboardingLinkBankView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingLinkBankView.swift; sourceTree = "<group>"; };
-		18A335F097180A8FF0DE4580 /* BabloProgressBar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BabloProgressBar.swift; sourceTree = "<group>"; };
 		1CB442FCBA28DFC63AED0C61 /* OnboardingFixedExpensesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingFixedExpensesView.swift; sourceTree = "<group>"; };
 		1F7345AE9DF34B33BC92C821 /* TheLineupWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheLineupWidgetView.swift; sourceTree = "<group>"; };
 		210C60500BC94ADC88204FFE /* CategoryBreakdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryBreakdown.swift; sourceTree = "<group>"; };
@@ -219,7 +213,6 @@
 		3A68FA142F29000700D32561 /* BabloLogoMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloLogoMark.swift; sourceTree = "<group>"; };
 		3A68FA142F29000900D32561 /* BabloAuthProviderButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloAuthProviderButton.swift; sourceTree = "<group>"; };
 		3A68FA142F29000B00D32561 /* BabloAuthDivider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloAuthDivider.swift; sourceTree = "<group>"; };
-
 		3A68FA182F206EF300D325B1 /* BabloButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloButton.swift; sourceTree = "<group>"; };
 		3A68FA182F206EF300D325B2 /* BabloCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloCard.swift; sourceTree = "<group>"; };
 		3A68FA182F206EF300D325B3 /* BabloChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloChip.swift; sourceTree = "<group>"; };
@@ -266,7 +259,6 @@
 		6616A53A2E7FF7026E615DDA /* AllTransactionsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AllTransactionsView.swift; sourceTree = "<group>"; };
 		6B9101DF8EB9E698F0C5E20F /* SubsWidgetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubsWidgetView.swift; sourceTree = "<group>"; };
 		6E5474B40C370C7373F06D32 /* FixedExpenseCategory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FixedExpenseCategory.swift; sourceTree = "<group>"; };
-		7123CC6D146F0E6527D2C5DD /* BabloGoalCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BabloGoalCard.swift; sourceTree = "<group>"; };
 		754B69422D97D19800C0F001 /* BiometricAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthService.swift; sourceTree = "<group>"; };
 		754B69462D97D66F00C0F001 /* AuthenticationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationView.swift; sourceTree = "<group>"; };
 		754B694A2D97D8E500C0F001 /* BiometricsEnrollmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricsEnrollmentView.swift; sourceTree = "<group>"; };
@@ -310,7 +302,6 @@
 		75D39A2A2EEE607200866367 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		75D39A452EEE878500866367 /* AccountsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountsService.swift; sourceTree = "<group>"; };
 		75D39A462EEE878500866367 /* BudgetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BudgetService.swift; sourceTree = "<group>"; };
-		AB1234560000AABB00CC0000 /* HomeBreakdownService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeBreakdownService.swift; sourceTree = "<group>"; };
 		75D39A472EEE878500866367 /* TransactionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsService.swift; sourceTree = "<group>"; };
 		75D39A522EEE878500866367 /* GoalsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsService.swift; sourceTree = "<group>"; };
 		75D39AC12EEE5C7600866367 /* CoachService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachService.swift; sourceTree = "<group>"; };
@@ -322,7 +313,6 @@
 		865A50E81E5F6DE40E71C1C1 /* BabloBadge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BabloBadge.swift; sourceTree = "<group>"; };
 		8E7A4C201BA54D6AB8D035C1 /* OnboardingSandboxStateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingSandboxStateTests.swift; sourceTree = "<group>"; };
 		8E7A4C281BA54D6AB8D035C1 /* OnboardingNameInputViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingNameInputViewModelTests.swift; sourceTree = "<group>"; };
-		908A153FE665DFCBC56DE24E /* BabloNudgeCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BabloNudgeCard.swift; sourceTree = "<group>"; };
 		A0DEC7CC9911D35A887B73A8 /* OnboardingIncomeViewModelTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingIncomeViewModelTests.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60000AABBCCDD /* PreviousPeriodDateRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviousPeriodDateRange.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60002AABBCCDD /* PreviousPeriodDateRangeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviousPeriodDateRangeTests.swift; sourceTree = "<group>"; };
@@ -340,7 +330,6 @@
 		C59BAE89E94D453197B27FD8 /* PlaidCategoryMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidCategoryMapperTests.swift; sourceTree = "<group>"; };
 		C90B633301DD401FB4FCCB9B /* FlexibleSpendingCategory+PlaidMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FlexibleSpendingCategory+PlaidMapping.swift"; sourceTree = "<group>"; };
 		D47E430694C60746ECE37F8E /* HomeWidgetCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeWidgetCard.swift; sourceTree = "<group>"; };
-		D981BB2AB306FC454F754128 /* RecurringTransactionsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecurringTransactionsView.swift; sourceTree = "<group>"; };
 		E602630704DDD82AD6732BB4 /* StreakService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StreakService.swift; sourceTree = "<group>"; };
 		E9700A023804AE58B92F36AC /* SubscriptionsServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionsServiceTests.swift; sourceTree = "<group>"; };
 		EE66F55007324FE2A12DEE9C /* CategoryBreakdownTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryBreakdownTests.swift; sourceTree = "<group>"; };
@@ -391,36 +380,36 @@
 				3A68FA062EFCD12F00D32561 /* HeroBudgetEmptyStateView.swift */,
 				AA11BB22CC33DD44EE55FF66 /* HomeNavigation.swift */,
 				3A68FA0A2EFCD12F00D32561 /* HomeTopBarView.swift */,
-				ABCDEF0011223344AABB0001 /* Sheets */,
-				ABCDEF0011223344AABB0002 /* Widgets */,
+				3A68FA0A2EFCD12F00D32599 /* Widgets */,
+				3A68FA0A2EFCD12F00D32588 /* Sheets */,
 			);
 			path = Home;
 			sourceTree = "<group>";
 		};
-		ABCDEF0011223344AABB0001 /* Sheets */ = {
+		3A68FA0A2EFCD12F00D32599 /* Widgets */ = {
 			isa = PBXGroup;
 			children = (
-				4D4D4C002F2A000000BEEF01 /* MoneyLeftBreakdownSheetView.swift */,
-				BB22CC33DD44EE55FF6600AA /* BreakdownTransactionListView.swift */,
-				3255FFECD0F13F2CE07BFC5E /* ComingUpDetailsSheetView.swift */,
-				CC1A2B3C4D5E6F7A8B9C0D30 /* TheCushionSheetView.swift */,
-				6616A53A2E7FF7026E615DDA /* AllTransactionsView.swift */,
-			);
-			path = Sheets;
-			sourceTree = "<group>";
-		};
-		ABCDEF0011223344AABB0002 /* Widgets */ = {
-			isa = PBXGroup;
-			children = (
-				3A68FA082EFCD12F00D32561 /* LiquidHeroView.swift */,
 				3A88FA0A2EFCD12F00D32510 /* CoachCardView.swift */,
+				AC25787544568673BCA76D74 /* ComingUpWidgetView.swift */,
 				D47E430694C60746ECE37F8E /* HomeWidgetCard.swift */,
+				3A68FA082EFCD12F00D32561 /* LiquidHeroView.swift */,
+				434D1815D10F4CEAB94A9F21 /* RecentWidgetView.swift */,
 				BC8129EBE1C455154DCD4B88 /* StreakWidgetView.swift */,
 				6B9101DF8EB9E698F0C5E20F /* SubsWidgetView.swift */,
-				AC25787544568673BCA76D74 /* ComingUpWidgetView.swift */,
-				434D1815D10F4CEAB94A9F21 /* RecentWidgetView.swift */,
 			);
 			path = Widgets;
+			sourceTree = "<group>";
+		};
+		3A68FA0A2EFCD12F00D32588 /* Sheets */ = {
+			isa = PBXGroup;
+			children = (
+				6616A53A2E7FF7026E615DDA /* AllTransactionsView.swift */,
+				BB22CC33DD44EE55FF6600AA /* BreakdownTransactionListView.swift */,
+				3255FFECD0F13F2CE07BFC5E /* ComingUpDetailsSheetView.swift */,
+				4D4D4C002F2A000000BEEF01 /* MoneyLeftBreakdownSheetView.swift */,
+				CC1A2B3C4D5E6F7A8B9C0D30 /* TheCushionSheetView.swift */,
+			);
+			path = Sheets;
 			sourceTree = "<group>";
 		};
 		3A68FA142F29000C00D32561 /* Components */ = {
@@ -446,8 +435,6 @@
 			isa = PBXGroup;
 			children = (
 				3A68FA182F206EF300D325B2 /* BabloCard.swift */,
-				7123CC6D146F0E6527D2C5DD /* BabloGoalCard.swift */,
-				908A153FE665DFCBC56DE24E /* BabloNudgeCard.swift */,
 			);
 			path = Cards;
 			sourceTree = "<group>";
@@ -460,8 +447,7 @@
 				3A68FA182F206EF300D325B5 /* BabloSegmentedControl.swift */,
 				3A68FA182F206EF300D325B6 /* BabloProgressPills.swift */,
 				865A50E81E5F6DE40E71C1C1 /* BabloBadge.swift */,
-							18A335F097180A8FF0DE4580 /* BabloProgressBar.swift */,
-);
+			);
 			path = Controls;
 			sourceTree = "<group>";
 		};
@@ -663,68 +649,8 @@
 				757ABF3A2C18195300DF8CA8 /* Assets.xcassets */,
 				757ABF3C2C18195300DF8CA8 /* Bablo.entitlements */,
 				757ABF3D2C18195300DF8CA8 /* Preview Content */,
-			);
-			path = Bablo;
-			sourceTree = "<group>";
-		};
-		757ABF3D2C18195300DF8CA8 /* Preview Content */ = {
-			isa = PBXGroup;
-			children = (
-				757ABF3E2C18195300DF8CA8 /* Preview Assets.xcassets */,
-			);
-			path = "Preview Content";
-			sourceTree = "<group>";
-		};
-		757ABF472C18195400DF8CA8 /* BabloTests */ = {
-			isa = PBXGroup;
-			children = (
-				757ABF482C18195400DF8CA8 /* BabloTests.swift */,
-				757ABF482C18195400DF8C90 /* MockURLProtocol.swift */,
-				757ABF482C18195400DF8C91 /* TestSupabaseClient.swift */,
-				757ABF482C18195400DF8C92 /* FixtureGenerator.swift */,
-				757ABF482C18195400DF8C93 /* BudgetServiceTests.swift */,
-				757ABF482C18195400DF8C94 /* PulseAnalyticsTests.swift */,
-				757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */,
-				757ABF482C18195400DF8CAD /* CoachServiceTests.swift */,
-				757ABF482C18195400DF8CB0 /* DesignSystemTests.swift */,
-				757ABF482C18195400DF8CB1 /* AuthLoginViewModelTests.swift */,
-				241F8E9939B3B508CC812313 /* FixedExpenseCategoryTests.swift */,
-				A0DEC7CC9911D35A887B73A8 /* OnboardingIncomeViewModelTests.swift */,
-				8E7A4C281BA54D6AB8D035C1 /* OnboardingNameInputViewModelTests.swift */,
-				8E7A4C201BA54D6AB8D035C1 /* OnboardingSandboxStateTests.swift */,
-				C54E0A69D0900E1468D5091D /* ProfileDecodingTests.swift */,
-				C2A1F74D5DFF4A218E930A02 /* HeroBudgetGoldenTests.swift */,
-				A1B2C3D4E5F60002AABBCCDD /* PreviousPeriodDateRangeTests.swift */,
-				A1B2C3D4E5F60006AABBCCDD /* HeroBudgetCalculatorTests.swift */,
-				B2C3D4E5F60008AABBCCDDEE /* SpendingPlanModeStoreTests.swift */,
-				A1B2C3D4E5F60008AABBCCDD /* PulseServiceTests.swift */,
-				C59BAE89E94D453197B27FD8 /* PlaidCategoryMapperTests.swift */,
-				EE66F55007324FE2A12DEE9C /* CategoryBreakdownTests.swift */,
-				369BDB36299D77FAF29E5141 /* StreakServiceTests.swift */,
-				E9700A023804AE58B92F36AC /* SubscriptionsServiceTests.swift */,
-				FF41A549D5DACE81A78B481C /* ComingUpCalculatorTests.swift */,
-				4BF55D04A720BC63115F7BF7 /* TransactionsServiceTests.swift */,
-				03FA8E0BA4377F6BFD275DB0 /* PulseDateWindowTests.swift */,
-			);
-			path = BabloTests;
-			sourceTree = "<group>";
-		};
-		757ABF512C18195400DF8CA8 /* BabloUITests */ = {
-			isa = PBXGroup;
-			children = (
-				757ABF522C18195400DF8CA8 /* BabloUITests.swift */,
-				757ABF542C18195400DF8CA8 /* BabloUITestsLaunchTests.swift */,
-			);
-			path = BabloUITests;
-			sourceTree = "<group>";
-		};
-		757ABF6B2C181B3800DF8CA8 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
+				87B3C5167D01BBABC93FBC07 /* BabloApp.swift */,
+				8D71E6680292F8DD016A3711 /* ContentView.swift */,
 		757ABF742C181C2600DF8CA8 /* Util */ = {
 			isa = PBXGroup;
 			children = (
@@ -764,8 +690,7 @@
 				7549AB452D0E495200313F5C /* Onboarding */,
 				75579F212CD6F2B600845A62 /* Profile */,
 				7590F2972C86470400BCCDE6 /* HomeView.swift */,
-							AE10FA79399B3713BE8C164B /* Budget */,
-);
+			);
 			path = UI;
 			sourceTree = "<group>";
 		};
@@ -801,7 +726,6 @@
 				75D39AC12EEE5C7600866367 /* CoachService.swift */,
 				E602630704DDD82AD6732BB4 /* StreakService.swift */,
 				22B25505CD6016DA6F22EE29 /* SubscriptionsService.swift */,
-				AB1234560000AABB00CC0000 /* HomeBreakdownService.swift */,
 				09F923CF2BDE9F939F3F6CA6 /* ComingUpCalculator.swift */,
 			);
 			path = Services;
@@ -838,45 +762,6 @@
 			);
 			path = Components;
 			sourceTree = "<group>";
-		};
-		AE10FA79399B3713BE8C164B /* Budget */ = {
-			isa = PBXGroup;
-			children = (
-				D981BB2AB306FC454F754128 /* RecurringTransactionsView.swift */,
-			);
-			path = Budget;
-			sourceTree = "<group>";
-		};
-/* End PBXGroup section */
-
-/* Begin PBXNativeTarget section */
-		757ABF302C18195100DF8CA8 /* Bablo */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 757ABF582C18195400DF8CA8 /* Build configuration list for PBXNativeTarget "Bablo" */;
-			buildPhases = (
-				75DC5C7B2EEE5A0800CEC681 /* ShellScript */,
-				757ABF2D2C18195100DF8CA8 /* Sources */,
-				757ABF2E2C18195100DF8CA8 /* Frameworks */,
-				757ABF2F2C18195100DF8CA8 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = Bablo;
-			packageProductDependencies = (
-				757ABF702C181B4600DF8CA8 /* LinkKit */,
-				757ABF892C181DCC00DF8CA8 /* Valet */,
-				759CDE4E2EED1F3300F8BB96 /* Auth */,
-				759CDE502EED1F3300F8BB96 /* Functions */,
-				759CDE522EED1F3300F8BB96 /* PostgREST */,
-				759CDE542EED1F3300F8BB96 /* Realtime */,
-				759CDE562EED1F3300F8BB96 /* Storage */,
-				75DC5C692EED28EF00CEC681 /* Supabase */,
-			);
-			productName = Bablo;
-			productReference = 757ABF312C18195100DF8CA8 /* Bablo.app */;
-			productType = "com.apple.product-type.application";
 		};
 		757ABF432C18195400DF8CA8 /* BabloTests */ = {
 			isa = PBXNativeTarget;
@@ -1114,7 +999,6 @@
 				6531D64C6C0991EBCD4DC1D7 /* OnboardingCTAButton.swift in Sources */,
 				DB9C197693D486D311559170 /* StreakService.swift in Sources */,
 				817593B8E6AB203198C0B34E /* SubscriptionsService.swift in Sources */,
-				AB1234560000AABB00CC0001 /* HomeBreakdownService.swift in Sources */,
 				3A74E2DB137DA6D122D34566 /* HomeWidgetCard.swift in Sources */,
 				404A97A25E43424CF90CFAF1 /* StreakWidgetView.swift in Sources */,
 				01520639FA6EC516BB9CA56F /* SubsWidgetView.swift in Sources */,
@@ -1123,7 +1007,6 @@
 				0B1AD20BA28DD0A62BFE1DD9 /* BabloBadge.swift in Sources */,
 				C08570C0E1631BC9BDF7580C /* RecentWidgetView.swift in Sources */,
 				34C59262DC044BDA8B4FAA98 /* DailyEnergyWidgetView.swift in Sources */,
-				20FBB6C143C71528B997219F /* BabloGoalCard.swift in Sources */,
 				3AAA80FE2FCB683E00472401 /* GoalsTabView.swift in Sources */,
 				3AAA80FF2FCB683E00472401 /* VaultCard.swift in Sources */,
 				3AAA81002FCB683E00472401 /* GoalsList.swift in Sources */,
@@ -1132,9 +1015,6 @@
 				3AAA81032FCB683E00472401 /* GoalDetailSheet.swift in Sources */,
 				3AAA81042FCB683E00472401 /* GoalRowView.swift in Sources */,
 				3AAA81052FCB683E00472401 /* AddGoalSheet.swift in Sources */,
-				1881AB98837343C345188073 /* BabloNudgeCard.swift in Sources */,
-				190EBFD3E890777F7AFD5B75 /* BabloProgressBar.swift in Sources */,
-				BBEC5329C3B22505BA4DFA4E /* RecurringTransactionsView.swift in Sources */,
 				E1B4B76E356B782273AF3065 /* ComingUpDetailsSheetView.swift in Sources */,
 				B5495F1CDEB443E39AC897A8 /* AllTransactionsView.swift in Sources */,
 			);
@@ -1619,15 +1499,6 @@
 /* End XCSwiftPackageProductDependency section */
 
 /* Begin XCVersionGroup section */
-		75668FD52D83CE8C003A3D97 /* BabloModel.xcdatamodeld */ = {
-			isa = XCVersionGroup;
-			children = (
-			);
-			currentVersion = 75668FD62D83CE8C003A3D97 /* BabloModel.xcdatamodel */;
-			path = BabloModel.xcdatamodeld;
-			sourceTree = "<group>";
-			versionGroupType = wrapper.xcdatamodel;
-		};
 /* End XCVersionGroup section */
 	};
 	rootObject = 757ABF292C18195100DF8CA8 /* Project object */;
