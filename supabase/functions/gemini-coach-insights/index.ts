@@ -1,5 +1,5 @@
 import { createServiceRoleClient, requireAuth, handleCors, jsonResponse } from '../_shared/auth.ts';
-import { GoogleGenerativeAI } from 'npm:@google/generative-ai@0.2.0';
+import { GoogleGenerativeAI } from 'npm:@google/generative-ai@0.21.0';
 
 Deno.serve(async (req: Request) => {
   // Handle CORS
