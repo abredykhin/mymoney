@@ -7,7 +7,10 @@ struct RecentWidgetView: View {
     @State private var selectedTransaction: Transaction?
 
     private var recentTransactions: [Transaction] {
-        Array(transactionsService.transactions.prefix(8))
+        // Hide internal transfers (account-to-account moves, brokerage credits, card
+        // payments) — anything that is neither spend nor income. They aren't real
+        // "moves" the user makes and clutter the feed.
+        Array(transactionsService.transactions.filter { !$0.isActualTransfer }.prefix(8))
     }
 
     var body: some View {

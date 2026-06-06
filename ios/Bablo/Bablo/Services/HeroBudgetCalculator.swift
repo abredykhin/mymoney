@@ -26,6 +26,8 @@ struct HeroBudgetCalculator {
     let daysInMonth: Int         // 28-31
     let daysElapsedInWeek: Int   // 1-7: how many days of the current calendar week have elapsed?
 
+    let budgetState: BudgetStateRow
+
     init(
         monthlyIncome: Double,
         monthlyMandatoryExpenses: Double,
@@ -42,7 +44,9 @@ struct HeroBudgetCalculator {
         previousMonthVariableSpend: Double,
         dayOfMonth: Int,
         daysInMonth: Int,
-        daysElapsedInWeek: Int = 1
+        daysElapsedInWeek: Int = 1,
+        incomeBasis: IncomeBasis? = nil,
+        budgetState: BudgetStateRow? = nil
     ) {
         self.monthlyIncome = monthlyIncome
         self.monthlyMandatoryExpenses = monthlyMandatoryExpenses
@@ -60,6 +64,90 @@ struct HeroBudgetCalculator {
         self.dayOfMonth = dayOfMonth
         self.daysInMonth = daysInMonth
         self.daysElapsedInWeek = daysElapsedInWeek
+
+        if let budgetState = budgetState {
+            self.budgetState = budgetState
+        } else {
+            // Synthesize BudgetStateRow using the inputs
+            let salaryThreshold = monthlyIncome * 0.30
+            let expectedIncome: Double
+            if knownIncomeThisMonth < salaryThreshold, liquidCashAvailable != nil, dayOfMonth > 15 {
+                let totalDays = Double(daysInMonth)
+                let currentDay = Double(dayOfMonth)
+                let gracePeriod = 15.0
+                let decayFactor = max(0.0, 1.0 - (currentDay - gracePeriod) / (totalDays - gracePeriod))
+                expectedIncome = monthlyIncome * decayFactor
+            } else {
+                expectedIncome = monthlyIncome
+            }
+            let effIncome = max(expectedIncome, knownIncomeThisMonth) + extraIncomeThisMonth
+
+            // The pool model is driven by income_basis (the RPC's source of truth).
+            // When no basis is supplied (the synthesize-only fallback used before the
+            // RPC has loaded, and in unit tests), map the legacy spending_plan_mode:
+            // safeToSpend → cash_only, monthlyPlan → projected.
+            let resolvedBasis = incomeBasis
+                ?? (spendingPlanMode == .safeToSpend ? .cashOnly : .projected)
+
+            let poolTotalVal: Double
+            let poolRemainingVal: Double
+            if resolvedBasis == .cashOnly {
+                poolTotalVal = max(0.0, (liquidCashAvailable ?? 0.0) - upcomingUnpaidExpenses)
+                poolRemainingVal = poolTotalVal
+            } else {
+                poolTotalVal = max(0.0, effIncome - monthlyMandatoryExpenses)
+                poolRemainingVal = poolTotalVal - variableSpend
+            }
+
+            let daysRemaining = daysInMonth - dayOfMonth + 1
+            let dailyPaceVal = max(0.0, poolRemainingVal) / Double(max(1, daysRemaining))
+            let weeklyPaceVal = min(max(0.0, poolRemainingVal), dailyPaceVal * 7.0)
+
+            self.budgetState = BudgetStateRow(
+                poolTotal: poolTotalVal,
+                poolRemaining: poolRemainingVal,
+                dailyPace: dailyPaceVal,
+                weeklyPace: weeklyPaceVal,
+                spentToday: todayVariableSpend,
+                spentWeek: currentWeekVariableSpend,
+                spentMtd: variableSpend,
+                prevDaySpent: previousDayVariableSpend,
+                prevWeekSpent: previousWeekVariableSpend,
+                prevMonthSpent: previousMonthVariableSpend,
+                effectiveIncome: effIncome,
+                mandatory: monthlyMandatoryExpenses,
+                goalsSetAside: 0.0,
+                netCash: liquidCashAvailable ?? 0.0,
+                upcomingBills: upcomingUnpaidExpenses,
+                incomeBasis: resolvedBasis,
+                daysInMonth: daysInMonth,
+                daysRemaining: daysRemaining,
+                daysElapsedInWeek: daysElapsedInWeek,
+                knownIncome: knownIncomeThisMonth,
+                extraIncome: extraIncomeThisMonth
+            )
+        }
+    }
+
+    init(budgetState: BudgetStateRow, spendingPlanMode: SpendingPlanMode) {
+        self.budgetState = budgetState
+        self.spendingPlanMode = spendingPlanMode
+
+        self.monthlyIncome = budgetState.effectiveIncome
+        self.monthlyMandatoryExpenses = budgetState.mandatory
+        self.knownIncomeThisMonth = budgetState.knownIncome
+        self.extraIncomeThisMonth = budgetState.extraIncome
+        self.variableSpend = budgetState.spentMtd
+        self.currentWeekVariableSpend = budgetState.spentWeek
+        self.todayVariableSpend = budgetState.spentToday
+        self.liquidCashAvailable = budgetState.netCash
+        self.upcomingUnpaidExpenses = 0.0
+        self.previousDayVariableSpend = budgetState.prevDaySpent
+        self.previousWeekVariableSpend = budgetState.prevWeekSpent
+        self.previousMonthVariableSpend = budgetState.prevMonthSpent
+        self.dayOfMonth = budgetState.daysInMonth - budgetState.daysRemaining + 1
+        self.daysInMonth = budgetState.daysInMonth
+        self.daysElapsedInWeek = budgetState.daysElapsedInWeek
     }
 
     // MARK: - Derived: discretionary budget for the selected period
@@ -70,12 +158,6 @@ struct HeroBudgetCalculator {
     }
 
     /// Expected gross income for the month after the late-month decay guard (Edge Case D).
-    ///
-    /// Edge Case D: The Paycheck Illusion
-    /// If no paycheck has landed yet (knownIncomeThisMonth < 30% of expected) and the user has linked
-    /// bank accounts (liquidCashAvailable != nil), expected monthlyIncome is decayed linearly
-    /// from Day 15 down to 0 at month-end to prevent overspending on unreceived salary.
-    /// Once any actual paycheck lands (knownIncomeThisMonth >= 30%), no decay applies.
     var expectedMonthlyIncome: Double {
         let salaryThreshold = monthlyIncome * 0.30
         guard knownIncomeThisMonth < salaryThreshold, liquidCashAvailable != nil, dayOfMonth > 15 else {
@@ -89,185 +171,95 @@ struct HeroBudgetCalculator {
     }
 
     var effectiveIncome: Double {
-        max(expectedMonthlyIncome, knownIncomeThisMonth) + extraIncomeThisMonth
+        budgetState.effectiveIncome
     }
 
-    // MARK: - Derived: safe-to-spend cushion (cash on hand + pending paycheck − bills due)
-
-    /// Fraction of the month still ahead of us, including today (1.0 on the 1st → ~0 on the last day).
-    /// Used to discount a not-yet-received paycheck: we lean on it heavily early in the month and
-    /// trust it less as the month runs out without it arriving.
-    private var fractionOfMonthRemaining: Double {
-        guard daysInMonth > 0 else { return 0 }
-        let remaining = Double(daysInMonth - dayOfMonth + 1)
-        return max(0, min(1, remaining / Double(daysInMonth)))
+    /// Which pool model produced these numbers — the single source of truth for
+    /// the "How we got this" breakdown (cash vs income). Mirrors what the RPC used,
+    /// so the steps always reconcile with the headline.
+    var incomeBasis: IncomeBasis {
+        budgetState.incomeBasis
     }
 
-    /// Income we still expect to receive this month that has not yet hit the bank.
-    /// `knownIncomeThisMonth` is already sitting in `liquidCashAvailable`, so it is netted out
-    /// to avoid double-counting cash that has already landed.
+    /// The single-pool pace for a period given a remaining pool value. Identical to
+    /// the formula the RPC uses for daily/weekly pace, so `pace(period, poolRemaining)`
+    /// equals the hero's `spendable(period)`. Used to compute the previous-period room
+    /// for the cushion without mixing spend-scale and pace-scale numbers.
+    func pace(for period: HeroPeriod, remaining: Double) -> Double {
+        let drem = Double(max(1, budgetState.daysRemaining))
+        switch period {
+        case .month: return remaining
+        case .day:   return max(0, remaining) / drem
+        case .week:  return min(max(0, remaining), max(0, remaining) / drem * 7)
+        }
+    }
+
+    /// Projected income not yet received this month — the "Expected paycheck" row in the
+    /// Money-Left breakdown. effectiveIncome already folds in BOTH received recurring income
+    /// (known) and received one-off income (extra), so subtract both; otherwise a one-off
+    /// inflow (e.g. a brokerage credit counted as extra income) is double-counted — once as a
+    /// received income row and again inside this figure — inflating it and breaking the
+    /// breakdown's reconciliation to effectiveIncome.
     var expectedIncomeStillToCome: Double {
-        max(0, expectedMonthlyIncome - knownIncomeThisMonth)
+        max(0.0, effectiveIncome - knownIncomeThisMonth - extraIncomeThisMonth)
     }
 
-    /// The slice of a pending paycheck we credit toward the safe-to-spend cushion, discounted by
-    /// how much of the month remains. This keeps the month-start (pre-payday) period from cratering
-    /// to $0 just because current cash is low while a salary is imminent.
-    var projectedIncomeForCushion: Double {
-        expectedIncomeStillToCome * fractionOfMonthRemaining
-    }
 
-    /// Safe-to-spend ceiling on monthly discretionary before MTD spending: cash on hand plus the
-    /// discounted pending paycheck, minus mandatory bills coming due. Floored at 0.
-    /// Falls back to the full monthly discretionary when no balance is available (no linked accounts).
-    var safeCashCushion: Double {
-        guard let liquidCashAvailable else { return monthlyDiscretionary }
-        let projectedCash = liquidCashAvailable + projectedIncomeForCushion
-        return max(0, projectedCash - upcomingUnpaidExpenses)
-    }
-
-    /// Weekly discretionary = monthly prorated over 7 days.
-    var weeklyDiscretionary: Double {
-        guard daysInMonth > 0 else { return 0 }
-        return monthlyDiscretionary / Double(daysInMonth) * 7
-    }
-
-    /// Daily discretionary = monthly prorated over one day.
-    var dailyDiscretionary: Double {
-        guard daysInMonth > 0 else { return 0 }
-        return monthlyDiscretionary / Double(daysInMonth)
-    }
 
     func totalDiscretionary(for period: HeroPeriod) -> Double {
         switch period {
-        case .day:   return dailyDiscretionary
-        case .month: return monthlyDiscretionary
-        case .week:  return weeklyDiscretionary
+        case .day:   return budgetState.poolTotal / Double(max(1, budgetState.daysInMonth))
+        case .week:  return budgetState.poolTotal / Double(max(1, budgetState.daysInMonth)) * 7
+        case .month: return budgetState.poolTotal
         }
     }
 
     // MARK: - Derived: how much has been spent so far in the period
 
-    /// Monthly: actual month-to-date variable spend from the DB.
-    var monthlySpentSoFar: Double { variableSpend }
-
-    /// Weekly: actual spend in the current calendar week (Mon–today).
-    var weeklySpentSoFar: Double { currentWeekVariableSpend }
-
-    /// Daily: actual spend recorded so far today.
-    var dailySpentSoFar: Double { todayVariableSpend }
+    var monthlySpentSoFar: Double { budgetState.spentMtd }
+    var weeklySpentSoFar: Double { budgetState.spentWeek }
+    var dailySpentSoFar: Double { budgetState.spentToday }
 
     func spentSoFar(for period: HeroPeriod) -> Double {
         switch period {
         case .day:   return dailySpentSoFar
-        case .month: return monthlySpentSoFar
         case .week:  return weeklySpentSoFar
+        case .month: return monthlySpentSoFar
         }
     }
 
     // MARK: - Derived: budget baseline (stable denominator for "X of Y" display)
 
     func budget(for period: HeroPeriod) -> Double {
-        switch period {
-        case .month:
-            guard spendingPlanMode == .safeToSpend, liquidCashAvailable != nil else {
-                return monthlyDiscretionary
-            }
-            // For monthly, the baseline budget is capped by the safe cash cushion before MTD spending.
-            // The cushion is net liquid cash plus a discounted pending paycheck, minus upcoming
-            // unpaid mandatory bills (see `safeCashCushion`).
-            return max(0, min(monthlyDiscretionary, safeCashCushion + variableSpend))
-            
-        case .week:
-            // How many days of this week are in the current month?
-            // Today is `dayOfMonth`. The week started `daysElapsedInWeek` days ago.
-            // So the week covers from `dayOfMonth - (daysElapsedInWeek - 1)` to `dayOfMonth + (7 - daysElapsedInWeek)`.
-            // Count how many of these 7 days fall within [1, daysInMonth].
-            let weekStartDay = dayOfMonth - (daysElapsedInWeek - 1)
-            let weekEndDay = dayOfMonth + (7 - daysElapsedInWeek)
-            
-            var daysInCurrentMonthThisWeek = 0
-            for day in weekStartDay...weekEndDay {
-                if day >= 1 && day <= daysInMonth {
-                    daysInCurrentMonthThisWeek += 1
-                }
-            }
-            let daysInNextMonthThisWeek = 7 - daysInCurrentMonthThisWeek
-            
-            // Capped weekly budget baseline before this week's spending started.
-            let monthlyRemainingBeforeThisWeek = monthlyDiscretionary - (variableSpend - currentWeekVariableSpend)
-            
-            // Budget for current month's days of the week: capped by what's left in the month.
-            let currentMonthDiscretionaryPart = Double(daysInCurrentMonthThisWeek) * dailyDiscretionary
-            let currentMonthBudgetCapped = max(0, min(currentMonthDiscretionaryPart, monthlyRemainingBeforeThisWeek))
-            
-            // Budget for next month's days of the week: fresh and uncapped discretionary room.
-            let nextMonthBudget = Double(daysInNextMonthThisWeek) * dailyDiscretionary
-            
-            return currentMonthBudgetCapped + nextMonthBudget
-            
-        case .day:
-            // Daily budget = weekly budget / 7.
-            // Spending within this allowance each day for a full week exactly hits the weekly budget,
-            // answering "what can I safely spend today without blowing the week?"
-            return budget(for: .week) / 7
-        }
+        effectiveBudget(for: period)
     }
 
     // MARK: - Derived: monthly remaining (used as a cap for sub-month periods)
 
-    /// How much of the monthly discretionary budget is still available.
     var monthlySpendable: Double {
-        max(0, monthlyDiscretionary - monthlySpentSoFar)
+        budgetState.poolRemaining
     }
 
     // MARK: - Derived: spendable remaining
 
     func spendable(for period: HeroPeriod) -> Double {
-        let rawSpendable = effectiveBudget(for: period) - spentSoFar(for: period)
-
         switch period {
-        case .month:
-            return rawSpendable
-
-        case .week:
-            guard spendingPlanMode == .safeToSpend, liquidCashAvailable != nil else {
-                return rawSpendable
-            }
-            // A week can't be deeper in the red than the month that contains it.
-            let safeMonthlyRemaining = spendable(for: .month)
-            return safeMonthlyRemaining < 0 ? max(rawSpendable, safeMonthlyRemaining) : rawSpendable
-
-        case .day:
-            guard spendingPlanMode == .safeToSpend, liquidCashAvailable != nil else {
-                return rawSpendable
-            }
-            // A single day can't be deeper in the red than the week that contains it
-            // (the week is itself already floored at the month above). This prevents a
-            // large one-off charge — e.g. a rent or spousal-support payment that lands
-            // today — from making the daily number look worse than the whole week.
-            let safeWeekRemaining = spendable(for: .week)
-            return safeWeekRemaining < 0 ? max(rawSpendable, safeWeekRemaining) : rawSpendable
+        case .day:   return budgetState.dailyPace
+        case .week:  return budgetState.weeklyPace
+        case .month: return budgetState.poolRemaining
         }
     }
 
     // MARK: - Derived: effective budget (denominator for "X of Y" display and fill ratio)
 
-    /// Stable budget baseline that does not expand when overspent.
     func effectiveBudget(for period: HeroPeriod) -> Double {
         switch period {
         case .month:
-            return budget(for: .month)
-            
-        case .week, .day:
-            let rawBudget = budget(for: period)
-            guard spendingPlanMode == .safeToSpend, liquidCashAvailable != nil else {
-                return rawBudget
-            }
-            
-            // Remaining monthly budget before this period's spending started.
-            let monthlyRemainingBeforePeriod = spendable(for: .month) + spentSoFar(for: period)
-            return max(0, min(rawBudget, monthlyRemainingBeforePeriod))
+            return budgetState.poolTotal
+        case .week:
+            return budgetState.poolTotal / Double(max(1, budgetState.daysInMonth)) * 7
+        case .day:
+            return budgetState.poolTotal / Double(max(1, budgetState.daysInMonth))
         }
     }
 
@@ -277,41 +269,28 @@ struct HeroBudgetCalculator {
         let budget = effectiveBudget(for: period)
         guard budget > 0 else { return 0.10 }
         let ratio = spendable(for: period) / budget
-        // At 0% remaining show a deliberate red pool (10%) rather than an empty gray card.
         return ratio <= 0 ? 0.10 : min(1.0, ratio)
     }
 
     // MARK: - Derived: delta label vs previous period
 
-    /// Returns "+$42 vs last wk" / "-$12 vs last mo" (nil when no prior data).
-    /// Positive delta = MORE left than at this point last period (currentSpendable > previousSpendable).
-    /// Since both spendables share the same budget denominator the arithmetic reduces to
-    /// previousSpend − currentSpend, which is what the implementation computes.
     func deltaLabel(for period: HeroPeriod) -> String? {
-        guard budget(for: period) > 0 else { return nil }
+        // The chip mirrors the cushion sheet it opens: both read the single-pool,
+        // pace-based room delta from HeroCushionSnapshot. Raw day-over-day spend would let a
+        // one-off lump (e.g. a spousal-support wire — legitimate spend that stays counted)
+        // read as "+$5K" next to a $40 daily pace and contradict the sheet's "+$40". For
+        // .month the pace is 1:1, so this still equals the month-over-month spend delta.
+        guard let snapshot = HeroCushionSnapshot(calculator: self, period: period) else { return nil }
+        let delta = Int(snapshot.roomDelta.rounded())
+        guard abs(delta) >= 1 else { return nil }
 
-        let prev: Double
-        let curr: Double
         let suffix: String
         switch period {
-        case .day:
-            prev = previousDayVariableSpend
-            curr = todayVariableSpend
-            suffix = "vs yesterday"
-        case .week:
-            prev = previousWeekVariableSpend
-            curr = currentWeekVariableSpend   // actual this-week spend, not MTD proration
-            suffix = "vs last wk"
-        case .month:
-            prev = previousMonthVariableSpend
-            curr = variableSpend
-            suffix = "vs last mo"
+        case .day:   suffix = "vs yesterday"
+        case .week:  suffix = "vs last wk"
+        case .month: suffix = "vs last mo"
         }
-        // Show the chip when either side has real spending to compare.
-        // Budget/income availability should not suppress a period-over-period spend delta.
-        guard prev > 0 || curr > 0 else { return nil }
-        let delta = Int(prev.rounded() - curr.rounded())
-        guard abs(delta) >= 1 else { return nil }
+
         if spendable(for: period) < 0 {
             let amount = "$\(compactDollar(abs(delta)))"
             return delta >= 0 ? "\(amount) less in the red \(suffix)" : "\(amount) deeper in the red \(suffix)"
@@ -322,7 +301,6 @@ struct HeroBudgetCalculator {
 
     // MARK: - Formatting helpers
 
-    /// Compact dollar string: exact below $1 K, "2.6K" / "26K" at higher amounts.
     private func compactDollar(_ n: Int) -> String {
         guard n >= 1_000 else { return n.formatted() }
         let k = Double(n) / 1_000
@@ -358,157 +336,192 @@ struct HeroBudgetBreakdownCalculator {
         steps.reduce(0) { $0 + $1.amount }
     }
 
-    /// True when the liquid-cash safety cap is tighter than the income-based discretionary budget.
     var isCashCapped: Bool {
-        guard calculator.spendingPlanMode == .safeToSpend,
-              calculator.liquidCashAvailable != nil else { return false }
-        return (calculator.safeCashCushion + calculator.monthlySpentSoFar) < calculator.monthlyDiscretionary
+        false
     }
 
-    /// Step number that contains the variable-spending rows (always the last step).
-    var spendStepNumber: Int { mandatoryStepNumber != nil ? 3 : 2 }
+    var spendStepNumber: Int {
+        switch period {
+        case .month:
+            if calculator.monthlyMandatoryExpenses > 0 {
+                return 4
+            } else {
+                return 3
+            }
+        case .week, .day:
+            // No category spend step in the period breakdown — the period's spend
+            // is shown as a context row instead. 0 matches no step.
+            return 0
+        }
+    }
 
-    /// Step number for the monthly obligations rows, or nil when there is no such step.
     var mandatoryStepNumber: Int? {
-        guard period == .month, !isCashCapped,
-              calculator.monthlyMandatoryExpenses > 0 else { return nil }
+        guard period == .month, calculator.monthlyMandatoryExpenses > 0 else { return nil }
         return 2
     }
 
     var steps: [HeroBudgetBreakdownStep] {
         switch period {
         case .month:
-            return isCashCapped ? cashCappedMonthlySteps : incomeMonthlySteps
+            return monthlySteps
         case .week, .day:
             return periodSteps
         }
     }
 
-    // Monthly income-based flow: income → obligations → spending = what's left
-    private var incomeMonthlySteps: [HeroBudgetBreakdownStep] {
+    private var monthlySteps: [HeroBudgetBreakdownStep] {
         var result: [HeroBudgetBreakdownStep] = []
         var running = 0.0
 
-        let inc = calculator.effectiveIncome
-        running += inc
-        result.append(HeroBudgetBreakdownStep(
-            number: 1,
-            title: "Income this month",
-            amount: inc,
-            afterAmount: running,
-            tone: .positive,
-            transactionSource: .income
-        ))
+        if calculator.incomeBasis == .cashOnly {
+            let cash = calculator.budgetState.netCash
+            running += cash
+            result.append(HeroBudgetBreakdownStep(
+                number: 1,
+                title: "Net cash on hand",
+                amount: cash,
+                afterAmount: running,
+                tone: .positive,
+                transactionSource: nil
+            ))
 
-        if calculator.monthlyMandatoryExpenses > 0 {
-            let mandatory = -calculator.monthlyMandatoryExpenses
-            running += mandatory
+            let upcoming = -calculator.budgetState.upcomingBills
+            running += upcoming
             result.append(HeroBudgetBreakdownStep(
                 number: 2,
-                title: "Monthly obligations",
-                amount: mandatory,
+                title: "Upcoming bills",
+                amount: upcoming,
                 afterAmount: running,
                 tone: .negative,
                 transactionSource: .obligations
             ))
-        }
 
-        result.append(HeroBudgetBreakdownStep(
-            number: result.count + 1,
-            title: "What you've spent this month",
-            amount: -calculator.monthlySpentSoFar,
-            afterAmount: finalAmount,
-            tone: .negative,
-            transactionSource: .variableSpend
-        ))
+            let goals = -calculator.budgetState.goalsSetAside
+            running += goals
+            result.append(HeroBudgetBreakdownStep(
+                number: 3,
+                title: "Goals set aside",
+                amount: goals,
+                afterAmount: running,
+                tone: .neutral,
+                transactionSource: nil
+            ))
+
+            // Floor the running total if it went negative, matching the pool remaining floor of 0.
+            if running < 0 {
+                let floorAdjust = -running
+                running = 0.0
+                result.append(HeroBudgetBreakdownStep(
+                    number: result.count + 1,
+                    title: "Floor adjustment",
+                    amount: floorAdjust,
+                    afterAmount: running,
+                    tone: .positive,
+                    transactionSource: nil
+                ))
+            }
+        } else {
+            let inc = calculator.effectiveIncome
+            running += inc
+            result.append(HeroBudgetBreakdownStep(
+                number: 1,
+                title: "Income this month",
+                amount: inc,
+                afterAmount: running,
+                tone: .positive,
+                transactionSource: .income
+            ))
+
+            if calculator.monthlyMandatoryExpenses > 0 {
+                let mandatory = -calculator.monthlyMandatoryExpenses
+                running += mandatory
+                result.append(HeroBudgetBreakdownStep(
+                    number: 2,
+                    title: "Monthly obligations",
+                    amount: mandatory,
+                    afterAmount: running,
+                    tone: .negative,
+                    transactionSource: .obligations
+                ))
+            }
+
+            let goals = -calculator.budgetState.goalsSetAside
+            running += goals
+            result.append(HeroBudgetBreakdownStep(
+                number: result.count + 1,
+                title: "Goals set aside",
+                amount: goals,
+                afterAmount: running,
+                tone: .neutral,
+                transactionSource: nil
+            ))
+
+            let spent = -calculator.spentSoFar(for: .month)
+            running += spent
+            result.append(HeroBudgetBreakdownStep(
+                number: result.count + 1,
+                title: "What you've spent this month",
+                amount: spent,
+                afterAmount: calculator.spendable(for: .month),
+                tone: .negative,
+                transactionSource: .variableSpend
+            ))
+        }
 
         return result
     }
 
-    // Monthly cash-capped flow: safe budget → spending = what's left
-    private var cashCappedMonthlySteps: [HeroBudgetBreakdownStep] {
-        [
-            HeroBudgetBreakdownStep(
-                number: 1,
-                title: "Start with safe cash",
-                amount: calculator.effectiveBudget(for: .month),
-                afterAmount: calculator.effectiveBudget(for: .month),
-                tone: .positive,
-                transactionSource: nil     // calculated cap, not a transaction set
-            ),
-            HeroBudgetBreakdownStep(
-                number: 2,
-                title: "What you've spent this month",
-                amount: -calculator.monthlySpentSoFar,
-                afterAmount: finalAmount,
-                tone: .negative,
-                transactionSource: .variableSpend
-            )
-        ]
-    }
-
-    // Week / day flow
+    /// Day/week are the SAME monthly pool viewed at a finer cadence (Level-style), so the
+    /// breakdown derives the pace from the month's remaining pool rather than from a prorated
+    /// "this week's budget − this week's spend" chain. That old chain produced a scary negative
+    /// intermediate ("after this step −$3,810") and a confusing reconciling plug ("+$4,071 pace
+    /// from your pool") whenever a lump landed. Here every line is a real, sensible number and
+    /// the chain reconciles to the headline pace by construction.
     private var periodSteps: [HeroBudgetBreakdownStep] {
-        let budget = calculator.effectiveBudget(for: period)
-        let spent = calculator.spentSoFar(for: period)
-        let rawAfter = budget - spent
+        let poolRemaining = calculator.spendable(for: .month)
+        let pace = calculator.spendable(for: period)
+        let reserved = pace - poolRemaining   // ≤ 0: held back for the rest of the month
 
-        var steps: [HeroBudgetBreakdownStep] = [
+        return [
             HeroBudgetBreakdownStep(
                 number: 1,
-                title: startingStepTitle,
-                amount: budget,
-                afterAmount: budget,
-                tone: .positive,
-                transactionSource: nil     // prorated budget number, no transactions
+                title: "Safe to spend this month",
+                amount: poolRemaining,
+                afterAmount: poolRemaining,
+                tone: poolRemaining < 0 ? .negative : .positive,
+                transactionSource: nil
             ),
             HeroBudgetBreakdownStep(
                 number: 2,
-                title: burnedStepTitle,
-                amount: -spent,
-                afterAmount: rawAfter,
-                tone: .negative,
-                transactionSource: .variableSpend
+                title: reservedStepTitle,
+                amount: reserved,
+                afterAmount: pace,
+                tone: reserved >= 0 ? .positive : .negative,
+                transactionSource: nil
             )
         ]
-
-        // A day is floored at its week (and a week at its month): you can't be deeper in
-        // the red for today than for the whole week. When that floor bites, `finalAmount`
-        // is higher than `budget − spent`, so show the cap as an explicit step — otherwise
-        // the steps wouldn't reconcile to the headline ("the math doesn't math out").
-        let clampAdjustment = finalAmount - rawAfter
-        if abs(clampAdjustment.rounded()) >= 1 {
-            steps.append(HeroBudgetBreakdownStep(
-                number: 3,
-                title: clampStepTitle,
-                amount: clampAdjustment,
-                afterAmount: finalAmount,
-                tone: clampAdjustment >= 0 ? .positive : .negative,
-                transactionSource: nil     // calculated cap, no transactions
-            ))
-        }
-        return steps
     }
 
-    /// Title for the floor-reconciliation step (see `periodSteps`).
-    private var clampStepTitle: String {
+    private var reservedStepTitle: String {
         switch period {
-        case .day:   return "Capped at this week's room"
-        case .week:  return "Capped at this month's room"
-        case .month: return "Capped at safe cash"
+        case .day:   return "Held for the rest of the month"
+        case .week:  return "Held for the rest of the month"
+        case .month: return "Held for the rest of the month"
         }
     }
 
-    // Context rows are only used for week/day to show the monthly cap.
-    // Monthly steps are self-explanatory and need no additional context rows.
+    /// For day/week, surface how much has actually been spent in this period so the
+    /// "what's left" pace has context. Informational (not part of the reconciling chain).
     var contextRows: [HeroBudgetContextRow] {
         guard period != .month else { return [] }
 
+        let spent = calculator.spentSoFar(for: period)
+        let label = period == .day ? "Spent today" : "Spent this week"
         return [
             HeroBudgetContextRow(
-                title: "Monthly room left",
-                detail: "Caps this period when the month is tighter",
-                amount: calculator.monthlySpendable
+                title: label,
+                detail: "Already drawn from your pool",
+                amount: -spent
             )
         ]
     }
@@ -538,22 +551,6 @@ struct HeroBudgetBreakdownCalculator {
         return HeroBudgetAccountAuditRows(counted: counted, notCounted: [])
     }
 
-    private var startingStepTitle: String {
-        switch period {
-        case .day:   return "Start with today's room"
-        case .week:  return "Start with this week's room"
-        case .month: return "Start with safe cash"
-        }
-    }
-
-    private var burnedStepTitle: String {
-        switch period {
-        case .day:   return "What you've spent today"
-        case .week:  return "What you've spent this week"
-        case .month: return "What you've spent this month"
-        }
-    }
-
 }
 
 struct HeroBudgetBreakdownStep: Identifiable, Equatable {
@@ -569,8 +566,6 @@ struct HeroBudgetBreakdownStep: Identifiable, Equatable {
     let amount: Double
     let afterAmount: Double
     let tone: Tone
-    /// Which pool of transactions this step links to. `nil` means the step is
-    /// a calculated number with no drillable transactions (e.g. "Start with safe cash").
     let transactionSource: BreakdownTransactionSource?
 }
 
@@ -620,38 +615,57 @@ struct HeroCushionSnapshot: Equatable {
     let roomDelta: Double
     let currentSpend: Double
     let previousSpend: Double
+    /// Factor that converts a category's raw spend delta into its impact on this period's
+    /// room (pace). 1.0 for month (pool moves 1:1 with spend); ~1/daysRemaining for day;
+    /// ~7/daysRemaining for week. Keeps the driver bars in the same units as `roomDelta`
+    /// so they bridge `previousRoom → currentRoom` instead of dwarfing the gap.
+    let roomScale: Double
 
     init?(calculator: HeroBudgetCalculator, period: HeroPeriod) {
-        guard calculator.budget(for: period) > 0 else { return nil }
+        guard calculator.effectiveBudget(for: period) > 0 else { return nil }
 
         let previousSpend: Double
         let currentSpend: Double
 
         switch period {
         case .day:
-            previousSpend = calculator.previousDayVariableSpend
-            currentSpend = calculator.todayVariableSpend
+            previousSpend = calculator.budgetState.prevDaySpent
+            currentSpend = calculator.budgetState.spentToday
         case .week:
-            previousSpend = calculator.previousWeekVariableSpend
-            currentSpend = calculator.currentWeekVariableSpend
+            previousSpend = calculator.budgetState.prevWeekSpent
+            currentSpend = calculator.budgetState.spentWeek
         case .month:
-            previousSpend = calculator.previousMonthVariableSpend
+            previousSpend = calculator.budgetState.prevMonthSpent
             currentSpend = calculator.variableSpend
         }
 
         guard previousSpend > 0 || currentSpend > 0 else { return nil }
 
+        // Visibility guard (unchanged): show the cushion when spending moved
+        // meaningfully period-over-period.
         let displayedPreviousSpend = previousSpend.rounded()
         let displayedCurrentSpend = currentSpend.rounded()
-        let delta = displayedPreviousSpend - displayedCurrentSpend
-        guard abs(delta) >= 1 else { return nil }
+        guard abs(displayedPreviousSpend - displayedCurrentSpend) >= 1 else { return nil }
+
+        // currentRoom is the hero's safe-to-spend for the period (daily/weekly pace, or the
+        // month's remaining pool). previousRoom is that SAME pace formula applied to the pool
+        // as it would stand had this period repeated last period's spend — so both rooms live
+        // on one scale. A one-off lump now lowers the pace by (lump / daysRemaining), never
+        // turns a $37 daily pace into a phantom $4,817 "yesterday".
+        let poolRemaining = calculator.spendable(for: .month)
+        let poolRemainingPrev = poolRemaining + (currentSpend - previousSpend)
+        let current = calculator.spendable(for: period)
+        let previous = calculator.pace(for: period, remaining: poolRemainingPrev)
 
         self.period = period
         self.currentSpend = currentSpend
         self.previousSpend = previousSpend
-        self.currentRoom = calculator.spendable(for: period)
-        self.roomDelta = delta
-        self.previousRoom = self.currentRoom - delta
+        self.currentRoom = current
+        self.previousRoom = previous
+        self.roomDelta = current - previous
+
+        let rawSpendDelta = previousSpend - currentSpend
+        self.roomScale = abs(rawSpendDelta) > 0.0001 ? (current - previous) / rawSpendDelta : 1.0
     }
 
     var hasMoreRoom: Bool {
@@ -685,14 +699,19 @@ struct HeroCushionDriver: Equatable, Identifiable {
         kind == .grew ? .left : .right
     }
 
-    static func drivers(from items: [CategoryBreakdownItem], limit: Int = 5) -> [HeroCushionDriver] {
+    /// - Parameter scale: converts each category's raw spend delta into its room (pace)
+    ///   impact, matching `HeroCushionSnapshot.roomScale`. Defaults to 1.0 (month / pure
+    ///   spend-delta view). For day/week the caller passes the snapshot's `roomScale` so the
+    ///   bars and amounts read in the same units as the headline room delta.
+    static func drivers(from items: [CategoryBreakdownItem], scale: Double = 1.0, limit: Int = 5) -> [HeroCushionDriver] {
         items.compactMap { item in
-            let previousAmount = item.previousAmount ?? 0.0
-            let delta = (previousAmount - item.totalAmount).rounded()
+            let previousAmount = (item.previousAmount ?? 0.0) * scale
+            let currentAmount = item.totalAmount * scale
+            let delta = (previousAmount - currentAmount).rounded()
             guard abs(delta) >= 1 else { return nil }
             return HeroCushionDriver(
                 bucket: item.bucket,
-                currentAmount: item.totalAmount,
+                currentAmount: currentAmount,
                 previousAmount: previousAmount,
                 transactionCount: item.transactionCount,
                 roomDelta: delta

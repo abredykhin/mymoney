@@ -82,6 +82,27 @@ struct ProfileView: View {
                 }
             }
             .pickerStyle(.segmented)
+
+            Divider()
+                .padding(.vertical, Spacing.xs)
+
+            Text("Income Basis")
+                .font(Typography.bodySemibold)
+                .foregroundColor(ColorPalette.textPrimary)
+
+            Picker("Income Basis", selection: Binding(
+                get: { userAccount.incomeBasis },
+                set: { newBasis in
+                    Task {
+                        try? await userAccount.updateIncomeBasis(newBasis)
+                    }
+                }
+            )) {
+                ForEach(IncomeBasis.allCases, id: \.self) { basis in
+                    Text(basis.displayName).tag(basis)
+                }
+            }
+            .pickerStyle(.segmented)
         }
         .profileCardStyle()
     }

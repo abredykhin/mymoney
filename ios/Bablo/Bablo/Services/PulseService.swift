@@ -180,11 +180,14 @@ final class PulseService: ObservableObject {
         Logger.d("PulseService: Fetching category breakdown (\(startDate) to \(endDate))")
 
         do {
-            let current = try await fetchTransactionsForBreakdown(startDate: startDate, endDate: endDate)
+            // Discretionary layer (variable_transactions), so the Swing's category swing sums to
+            // the same "spent" the damage headline, hero, Money-Left, and Cushion show. Total
+            // spend (is_spend incl. mandatory bills) is already subtracted as obligations elsewhere.
+            let current = try await fetchTransactionsForBreakdown(from: "variable_transactions", startDate: startDate, endDate: endDate)
 
             var previous: [BreakdownTransaction] = []
             if let compStart = comparisonStartDate, let compEnd = comparisonEndDate {
-                previous = try await fetchTransactionsForBreakdown(startDate: compStart, endDate: compEnd)
+                previous = try await fetchTransactionsForBreakdown(from: "variable_transactions", startDate: compStart, endDate: compEnd)
             }
 
             categoryBreakdown = CategoryBreakdownBuilder.build(

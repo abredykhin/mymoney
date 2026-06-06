@@ -25,7 +25,9 @@ struct HomeView: View {
     @State private var showingCushionSheet = false
     @State private var networkMonitor: NWPathMonitor?
     @State private var heroPeriod: HeroPeriod = .month
-    
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var previousScenePhase: ScenePhase = .active
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: Spacing.sectionSpacing) {
@@ -152,6 +154,16 @@ struct HomeView: View {
         .task(id: userAccount.currentUser?.id) {
             await refreshHomeForCurrentUser()
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            // Returning to the foreground while Home is already on screen: the id-keyed
+            // .task won't re-run, so transactions that synced while we were away would
+            // otherwise only appear after a manual pull-to-refresh. Refresh the feed now.
+            if newPhase == .active,
+               previousScenePhase == .background || previousScenePhase == .inactive {
+                Task { await refreshRecentTransactionsOnForeground() }
+            }
+            previousScenePhase = newPhase
+        }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             // Check network status when view appears
@@ -192,7 +204,8 @@ struct HomeView: View {
             previousMonthVariableSpend: budgetService.previousMonthVariableSpend,
             dayOfMonth: cal.component(.day, from: now),
             daysInMonth: cal.range(of: .day, in: .month, for: now)?.count ?? 30,
-            daysElapsedInWeek: daysElapsedInWeek
+            daysElapsedInWeek: daysElapsedInWeek,
+            budgetState: budgetService.budgetState
         )
     }
 
@@ -255,7 +268,7 @@ struct HomeView: View {
                     // Refresh both accounts and transactions
                     try await accountsService.refreshAccounts(forceRefresh: forceRefresh)
                     try? await budgetService.fetchTotalBalance()
-                    try? await transactionsService.fetchRecentTransactions(forceRefresh: forceRefresh, limit: 5)
+                    try? await transactionsService.fetchRecentTransactions(forceRefresh: forceRefresh, limit: 20)
                     _ = try? await coachService.fetchCoachInsights()
                     await refreshStreakIfBankLinked()
                     try? await subService.fetchSubscriptions()
@@ -306,6 +319,16 @@ struct HomeView: View {
         }
     }
 
+    /// Lightweight foreground refresh: just the Recent feed (and the balance it pairs with),
+    /// so activity that synced while the app was backgrounded shows up without a manual
+    /// pull-to-refresh. Deliberately skips the full accounts/subscriptions/coach refresh to
+    /// avoid churn on every foreground.
+    private func refreshRecentTransactionsOnForeground() async {
+        guard !isOffline else { return }
+        try? await transactionsService.fetchRecentTransactions(forceRefresh: true, limit: 20)
+        try? await budgetService.fetchTotalBalance()
+    }
+
     private func refreshHomeForCurrentUser() async {
         isRefreshing = true
         defer { isRefreshing = false }
@@ -318,7 +341,7 @@ struct HomeView: View {
             do {
                 try await accountsService.refreshAccounts(forceRefresh: true)
                 try? await budgetService.fetchTotalBalance()
-                try? await transactionsService.fetchRecentTransactions(forceRefresh: true, limit: 5)
+                try? await transactionsService.fetchRecentTransactions(forceRefresh: true, limit: 20)
                 _ = try? await coachService.fetchCoachInsights()
                 await refreshStreakIfBankLinked()
                 try? await subService.fetchSubscriptions()

@@ -83,18 +83,22 @@ This Supabase Edge Function (`supabase/functions/gemini-budget-analysis/index.ts
     6.  High-confidence items (>= 0.85) are `upserted` into the `budget_items_table`.
 -   **Output**: Updates the user's `profiles_table` with calculated `monthly_income` and `monthly_mandatory_expenses` based on the identified high-confidence items.
 
-### Client-Side Calculation: iOS `BudgetService`
+### Client-Side Calculation: Single-Pool Budget and `HeroBudgetCalculator`
 
-The `ios/Bablo/Bablo/Services/BudgetService.swift` class drives the budget calculations within the iOS application, fetching data directly from Supabase tables and performing real-time aggregations. The `TotalBalanceView.swift` (`ios/Bablo/Bablo/UI/Budget/TotalBalanceView.swift`) is an example of a UI component that consumes this service.
+Under the unified single-pool model, the complex proration and capping logic has been consolidated into the backend database. The client-side iOS `BudgetService` fetches the budget state in one round trip using the `get_budget_state` RPC, and the UI consumes it via `HeroBudgetCalculator`.
 
--   **Key Calculations**:
-    -   **Total Balance (Net Available Cash)**: Calculated by summing `current_balance` of "depository" accounts and subtracting `current_balance` of "credit" accounts (representing debt) from the `accounts` table.
-    -   **Spending Breakdown**: Fetches `transactions` data for a specified period (week, month, year). Groups expenses by `personal_finance_category`, calculating `totalSpent`, `transactionCount`, and `percentOfTotal`. It intelligently filters out mandatory expenses if they have already occurred, providing a clearer view of variable spending.
-    -   **Income Analysis**: Identifies actual income transactions for the current month, classifying them as `knownIncomeThisMonth` (matching patterns from `budget_items_table`) or `extraIncomeThisMonth` (one-off income).
-    -   **Discretionary Budget**: The core budgeting metric, calculated as:
-        `(max(expected_monthly_income_from_profile, known_income_this_month) + extra_income_this_month) - monthly_mandatory_expenses_from_profile - total_variable_spending_this_month`.
--   **Data Sources**: Directly queries Supabase tables and views: `accounts`, `transactions`, `profiles`, and `budget_items_table`.
--   **Data Models**: Utilizes Swift `struct`s like `TotalBalance`, `CategoryBreakdownItem`, and `BudgetItem` to represent and process financial data.
+-   **Backend RPC (`get_budget_state`)**:
+    -   Computes the single monthly discretionary pool (`pool_total`) and the remaining amount after MTD variable spend (`pool_remaining`).
+    -   Daily and weekly paces floor at `$0` when the month is overspent (only the monthly remaining value goes negative).
+    -   Supports two `income_basis` settings:
+        -   `projected` (default): Uses the profile's expected monthly income (with late-month decay if the paycheck hasn't landed yet) minus fixed obligations.
+        -   `cash_only`: Uses `net_cash` (depository balances minus credit balances) minus upcoming bills in the next 14 days.
+-   **Client-Side Presentation Wrapper (`HeroBudgetCalculator`)**:
+    -   Backed directly by the `BudgetStateRow` model returned from the database RPC.
+    -   Provides stable presentation values for views (e.g., `spendable(for:)`, `effectiveBudget(for:)`, and `fillTarget(for:)`).
+    -   Unifies visual calculation metrics across `LiquidHeroView`, `MoneyLeftBreakdownSheetView`, and `TheCushionSheetView` to ensure complete mathematical consistency.
+-   **Data Sources**: Directly queries `get_budget_state(p_as_of, p_income_basis)` RPC, backed by views like `variable_transactions` and `spendable_income_transactions`.
+-   **Data Models**: Utilizes `BudgetStateRow` structure to decode the unified RPC output.
 
 ### Relevant Database Structures
 

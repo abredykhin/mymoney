@@ -175,6 +175,7 @@
 		EAA8C3A1F8A7496FB5FC7818 /* CategoryBreakdownTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE66F55007324FE2A12DEE9C /* CategoryBreakdownTests.swift */; };
 		F83BC2B9D87F40C49452EB32 /* PlaidCategoryMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C59BAE89E94D453197B27FD8 /* PlaidCategoryMapperTests.swift */; };
 		F8E5C258DCB524B34EECA4E7 /* ProfileDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C54E0A69D0900E1468D5091D /* ProfileDecodingTests.swift */; };
+		723601A5DA2545BB838B4EF3 /* HeroBudgetGoldenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2A1F74D5DFF4A218E930A02 /* HeroBudgetGoldenTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -547,6 +548,7 @@
 		C3DC534490E241483BE01B27 /* HomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		C4720585EDB0503EEAF8299D /* Logger.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		C54E0A69D0900E1468D5091D /* ProfileDecodingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfileDecodingTests.swift; sourceTree = "<group>"; };
+		C2A1F74D5DFF4A218E930A02 /* HeroBudgetGoldenTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeroBudgetGoldenTests.swift; sourceTree = "<group>"; };
 		C55FA1017EED8E45020D1C0F /* CornerRadius.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CornerRadius.swift; sourceTree = "<group>"; };
 		C59BAE89E94D453197B27FD8 /* PlaidCategoryMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaidCategoryMapperTests.swift; sourceTree = "<group>"; };
 		C69B75658CCA8280129DFA60 /* CoachCardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoachCardView.swift; sourceTree = "<group>"; };
@@ -1160,6 +1162,7 @@
 				8E7A4C281BA54D6AB8D035C1 /* OnboardingNameInputViewModelTests.swift */,
 				8E7A4C201BA54D6AB8D035C1 /* OnboardingSandboxStateTests.swift */,
 				C54E0A69D0900E1468D5091D /* ProfileDecodingTests.swift */,
+				C2A1F74D5DFF4A218E930A02 /* HeroBudgetGoldenTests.swift */,
 				A1B2C3D4E5F60002AABBCCDD /* PreviousPeriodDateRangeTests.swift */,
 				A1B2C3D4E5F60006AABBCCDD /* HeroBudgetCalculatorTests.swift */,
 				B2C3D4E5F60008AABBCCDDEE /* SpendingPlanModeStoreTests.swift */,
@@ -1823,6 +1826,7 @@
 				8E7A4C291BA54D6AB8D035C1 /* OnboardingNameInputViewModelTests.swift in Sources */,
 				8E7A4C211BA54D6AB8D035C1 /* OnboardingSandboxStateTests.swift in Sources */,
 				F8E5C258DCB524B34EECA4E7 /* ProfileDecodingTests.swift in Sources */,
+				723601A5DA2545BB838B4EF3 /* HeroBudgetGoldenTests.swift in Sources */,
 				A1B2C3D4E5F60003AABBCCDD /* PreviousPeriodDateRangeTests.swift in Sources */,
 				A1B2C3D4E5F60007AABBCCDD /* HeroBudgetCalculatorTests.swift in Sources */,
 				B2C3D4E5F60009AABBCCDDEE /* SpendingPlanModeStoreTests.swift in Sources */,

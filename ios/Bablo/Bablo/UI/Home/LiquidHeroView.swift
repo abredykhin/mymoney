@@ -65,7 +65,8 @@ struct LiquidHeroView: View {
             previousMonthVariableSpend: budgetService.previousMonthVariableSpend,
             dayOfMonth: cal.component(.day, from: now),
             daysInMonth: cal.range(of: .day, in: .month, for: now)?.count ?? 30,
-            daysElapsedInWeek: daysElapsedInWeek
+            daysElapsedInWeek: daysElapsedInWeek,
+            budgetState: budgetService.budgetState
         )
     }
 
@@ -316,10 +317,15 @@ struct LiquidHeroView: View {
     private var statusStrip: some View {
         let isOver = spendable < 0
         let denominator: Double = {
-            if period == .month, calculator.effectiveIncome > 0 {
-                return calculator.effectiveIncome
+            switch period {
+            case .month:
+                return calculator.effectiveIncome > 0 ? calculator.effectiveIncome : effectiveBudget
+            case .week, .day:
+                // Anchor the badge % to the month's remaining pool the pace is a slice of, so it
+                // reconciles with the "of $X left this month" text instead of a separate base.
+                let monthRemaining = calculator.spendable(for: .month)
+                return monthRemaining > 0 ? monthRemaining : effectiveBudget
             }
-            return effectiveBudget
         }()
         let realRatio = denominator > 0 ? spendable / denominator : 0
         let pct = Int((max(0, realRatio) * 100).rounded())
@@ -330,22 +336,44 @@ struct LiquidHeroView: View {
                 Text("over by \(moneyStr(abs(spendable)))")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(theme.colors.danger.color)
-            } else {
+                Text("·")
+                    .font(.system(size: 12))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+                Text(overBudgetPeriodLabel)
+                    .font(.system(size: 12))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+            } else if period == .month {
                 Text(moneyStr(spendable))
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(theme.colors.textPrimary.color)
                 Text(denominatorText)
                     .font(.system(size: 12))
                     .foregroundStyle(theme.colors.textTertiary.color)
+                Text("·")
+                    .font(.system(size: 12))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+                Text(periodLabel)
+                    .font(.system(size: 12))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+            } else {
+                // Day / week: the period's pace, anchored to the month's remaining pool it's a
+                // slice of — so the ladder reconciles (today ⊂ this week ⊂ this month). We do NOT
+                // pair it with "spent": period spend is cumulative and carries the month's lumps
+                // (wires, etc.), so "spent + left" would imply a fake period budget that ladders
+                // to nothing.
+                Text(moneyStr(spendable))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.colors.textPrimary.color)
+                Text(periodLabel)
+                    .font(.system(size: 12))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+                Text("·")
+                    .font(.system(size: 12))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+                Text("\(moneyStr(calculator.spendable(for: .month))) left this month")
+                    .font(.system(size: 12))
+                    .foregroundStyle(theme.colors.textTertiary.color)
             }
-
-            Text("·")
-                .font(.system(size: 12))
-                .foregroundStyle(theme.colors.textTertiary.color)
-
-            Text(isOver ? overBudgetPeriodLabel : periodLabel)
-                .font(.system(size: 12))
-                .foregroundStyle(theme.colors.textTertiary.color)
 
             Spacer()
 

@@ -14,6 +14,24 @@ enum SpendingPlanMode: String, Codable, CaseIterable, Equatable {
     }
 }
 
+/// Controls how the budget pool total is derived in `get_budget_state`.
+///
+/// - `projected`: income-discretionary model (default).
+///   pool_total = max(0, effectiveIncome − mandatory − goals)
+/// - `cashOnly`: cash-balance model.
+///   pool_total = max(0, netCash − upcomingBills − goals)
+enum IncomeBasis: String, Codable, CaseIterable, Equatable {
+    case projected = "projected"
+    case cashOnly  = "cash_only"
+
+    var displayName: String {
+        switch self {
+        case .projected: return "Income-based"
+        case .cashOnly:  return "Cash balance"
+        }
+    }
+}
+
 struct SpendingPlanModeStore {
     private let defaults: UserDefaults
 

@@ -28,6 +28,7 @@ struct ProfileDecodingTests {
         #expect(profile.monthlyIncome == 5500.0)
         #expect(profile.monthlyMandatoryExpenses == 1282.0)
         #expect(profile.spendingPlanMode == .monthlyPlan)
+        #expect(profile.incomeBasis == .projected)   // not in JSON yet → default
         #expect(profile.trackedSpendingCategories == ["eats_out", "coffee_runs", "fun"])
         #expect(profile.timeZone == "America/Los_Angeles")
     }
@@ -47,8 +48,51 @@ struct ProfileDecodingTests {
         let profile = try decoder.decode(Profile.self, from: json)
         #expect(profile.firstName == nil)
         #expect(profile.spendingPlanMode == .safeToSpend)
+        #expect(profile.incomeBasis == .projected)   // missing → default
         #expect(profile.trackedSpendingCategories == [])
         #expect(profile.timeZone == nil)
+    }
+
+    @Test func profileDecodesIncomeBasisProjected() throws {
+        let json = """
+        {
+          "id": "x",
+          "username": "u@u.com",
+          "monthly_income": 0,
+          "monthly_mandatory_expenses": 0,
+          "income_basis": "projected"
+        }
+        """.data(using: .utf8)!
+        let profile = try JSONDecoder().decode(Profile.self, from: json)
+        #expect(profile.incomeBasis == .projected)
+    }
+
+    @Test func profileDecodesIncomeBasisCashOnly() throws {
+        let json = """
+        {
+          "id": "x",
+          "username": "u@u.com",
+          "monthly_income": 0,
+          "monthly_mandatory_expenses": 0,
+          "income_basis": "cash_only"
+        }
+        """.data(using: .utf8)!
+        let profile = try JSONDecoder().decode(Profile.self, from: json)
+        #expect(profile.incomeBasis == .cashOnly)
+    }
+
+    @Test func profileDecodesUnknownIncomeBasisAsProjected() throws {
+        let json = """
+        {
+          "id": "x",
+          "username": "u@u.com",
+          "monthly_income": 0,
+          "monthly_mandatory_expenses": 0,
+          "income_basis": "future_value"
+        }
+        """.data(using: .utf8)!
+        let profile = try JSONDecoder().decode(Profile.self, from: json)
+        #expect(profile.incomeBasis == .projected)
     }
 
     @Test func profileDecodesUnknownSpendingPlanModeAsSafeToSpend() throws {

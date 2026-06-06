@@ -38,6 +38,7 @@ struct Profile: Codable, Equatable {
     let monthlyIncome: Double
     let monthlyMandatoryExpenses: Double
     let spendingPlanMode: SpendingPlanMode
+    let incomeBasis: IncomeBasis
     let trackedSpendingCategories: [String]
     let timeZone: String?
 
@@ -48,6 +49,7 @@ struct Profile: Codable, Equatable {
         case monthlyIncome = "monthly_income"
         case monthlyMandatoryExpenses = "monthly_mandatory_expenses"
         case spendingPlanMode = "spending_plan_mode"
+        case incomeBasis = "income_basis"
         case trackedSpendingCategories = "tracked_spending_categories"
         case timeZone = "time_zone"
     }
@@ -61,6 +63,8 @@ struct Profile: Codable, Equatable {
         monthlyMandatoryExpenses = try c.decode(Double.self, forKey: .monthlyMandatoryExpenses)
         let rawSpendingPlanMode = try c.decodeIfPresent(String.self, forKey: .spendingPlanMode)
         spendingPlanMode = rawSpendingPlanMode.flatMap(SpendingPlanMode.init(rawValue:)) ?? .safeToSpend
+        let rawIncomeBasis = try c.decodeIfPresent(String.self, forKey: .incomeBasis)
+        incomeBasis = rawIncomeBasis.flatMap(IncomeBasis.init(rawValue:)) ?? .projected
         trackedSpendingCategories = (try? c.decodeIfPresent([String].self, forKey: .trackedSpendingCategories)) ?? []
         timeZone = try c.decodeIfPresent(String.self, forKey: .timeZone)
     }
@@ -104,6 +108,7 @@ class UserAccount: ObservableObject {
     @Published var currentUser: User? = nil
     @Published var profile: Profile? = nil
     @Published var spendingPlanMode: SpendingPlanMode = .safeToSpend
+    @Published var incomeBasis: IncomeBasis = .projected
     @Published var isSignedIn: Bool = false
     @Published var isBiometricallyAuthenticated = false
     @Published var isBiometricEnabled = false
@@ -150,6 +155,7 @@ class UserAccount: ObservableObject {
                     self.currentUser = nil
                     self.profile = nil
                     self.spendingPlanMode = .safeToSpend
+                    self.incomeBasis = .projected
                     self.isSignedIn = false
                 }
             case .tokenRefreshed:
@@ -201,6 +207,7 @@ class UserAccount: ObservableObject {
                 self.profile = fetchedProfile
                 self.spendingPlanMode = fetchedProfile.spendingPlanMode
                 self.spendingPlanModeStore.save(fetchedProfile.spendingPlanMode, for: user.id)
+                self.incomeBasis = fetchedProfile.incomeBasis
                 Logger.i("UserAccount: Profile fetched for \(fetchedProfile.username). Budget setup: \(isBudgetSetup)")
             }
         } catch let error as PostgrestError where error.code == "PGRST116" {
@@ -304,6 +311,32 @@ class UserAccount: ObservableObject {
             spendingPlanMode = previousMode
             spendingPlanModeStore.save(previousMode, for: user.id)
             Logger.e("UserAccount: Failed to update spending plan mode: \(error)")
+            throw error
+        }
+    }
+
+    /// Persist the user's chosen income basis (projected vs cash-only).
+    func updateIncomeBasis(_ basis: IncomeBasis) async throws {
+        guard let user = currentUser else { return }
+
+        let previous = incomeBasis
+        incomeBasis = basis
+
+        struct IncomeBasisUpdate: Encodable {
+            let income_basis: String
+        }
+
+        do {
+            try await supabase
+                .from("profiles")
+                .update(IncomeBasisUpdate(income_basis: basis.rawValue))
+                .eq("id", value: user.id)
+                .execute()
+
+            await fetchProfile()
+        } catch {
+            incomeBasis = previous
+            Logger.e("UserAccount: Failed to update income basis: \(error)")
             throw error
         }
     }

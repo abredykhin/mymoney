@@ -39,7 +39,8 @@ struct MoneyLeftBreakdownView: View {
             previousMonthVariableSpend: budgetService.previousMonthVariableSpend,
             dayOfMonth: cal.component(.day, from: now),
             daysInMonth: cal.range(of: .day, in: .month, for: now)?.count ?? 30,
-            daysElapsedInWeek: daysElapsedInWeek
+            daysElapsedInWeek: daysElapsedInWeek,
+            budgetState: budgetService.budgetState
         )
     }
 
@@ -208,7 +209,7 @@ struct MoneyLeftBreakdownView: View {
                     period: period,
                     contextRows: step.number == 1 ? breakdown.contextRows : [],
                     spendRows: step.number == breakdown.spendStepNumber ? spendRows : [],
-                    incomeRows: period == .month && !breakdown.isCashCapped && step.number == 1 ? incomeRows : [],
+                    incomeRows: period == .month && calculator.incomeBasis == .projected && step.number == 1 ? incomeRows : [],
                     mandatoryRows: step.number == breakdown.mandatoryStepNumber ? mandatoryRows : [],
                     isLoading: isLoadingDetails && step.number == breakdown.spendStepNumber,
                     navigationDestination: navDest

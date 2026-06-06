@@ -405,9 +405,8 @@ struct BudgetServiceTests {
                 "Excluded rows should include ignored recurring transactions too")
         #expect(cardPaymentURL?.query?.contains("amount=lt.0") == true,
                 "Card-payment matching query must run and decode from a minimal amount-only response")
-        #expect(Set(rows.map(\.name)) == Set(["Domestic Wire Transfer", "Robinhood", "Chase Credit Card Payment"]))
+        #expect(Set(rows.map(\.name)) == Set(["Robinhood", "Chase Credit Card Payment"]))
         #expect(rows.filter { $0.detail == "Credit card payment" }.count == 2)
-        #expect(rows.contains { $0.detail == "Already in cash balance; not variable spend" })
     }
 
     @Test @MainActor func testFetchHeroSpendBreakdownRowsUsesTrackedFlexibleCategories() async throws {

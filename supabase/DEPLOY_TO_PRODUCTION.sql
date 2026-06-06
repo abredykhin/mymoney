@@ -2371,3 +2371,341 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
+
+
+-- =============================================================================
+-- Consolidated Single-Pool Budget Migrations (June 2026)
+-- =============================================================================
+
+-- T2: Add income_basis column to profiles_table and expose it in the profiles view.
+ALTER TABLE public.profiles_table
+  ADD COLUMN IF NOT EXISTS income_basis text NOT NULL DEFAULT 'projected'
+  CHECK (income_basis IN ('projected', 'cash_only'));
+
+DROP VIEW IF EXISTS public.profiles;
+
+CREATE OR REPLACE VIEW public.profiles
+WITH (security_invoker = true)
+AS
+  SELECT
+    id,
+    username,
+    monthly_income,
+    monthly_mandatory_expenses,
+    created_at,
+    updated_at,
+    tracked_spending_categories,
+    first_name,
+    spending_plan_mode,
+    time_zone,
+    income_basis
+  FROM
+    public.profiles_table;
+
+
+-- T2: get_budget_state RPC
+CREATE OR REPLACE FUNCTION public.get_budget_state(
+  p_as_of        date DEFAULT NULL,
+  p_income_basis text DEFAULT 'projected'   -- 'projected' | 'cash_only'
+)
+RETURNS TABLE (
+  pool_total            double precision,
+  pool_remaining        double precision,
+  daily_pace            double precision,
+  weekly_pace           double precision,
+  spent_today           double precision,
+  spent_week            double precision,
+  spent_mtd             double precision,
+  prev_day_spent        double precision,
+  prev_week_spent       double precision,
+  prev_month_spent      double precision,
+  effective_income      double precision,
+  mandatory             double precision,
+  goals_set_aside       double precision,
+  net_cash              double precision,
+  upcoming_bills        double precision,
+  income_basis          text,
+  days_in_month         int,
+  days_remaining        int,
+  days_elapsed_in_week  int,
+  known_income          double precision,
+  extra_income          double precision
+)
+LANGUAGE plpgsql SECURITY INVOKER SET search_path = public
+AS $$
+DECLARE
+  v_uid  uuid := auth.uid();
+  v_tz   text := public.profile_time_zone_for_user(v_uid);
+  v_today date := COALESCE(p_as_of, (now() AT TIME ZONE v_tz)::date);
+
+  -- Month / week boundaries
+  v_mstart     date := date_trunc('month', v_today)::date;
+  v_dim        int  := EXTRACT(day FROM
+                         (date_trunc('month', v_today) + interval '1 month - 1 day'))::int;
+  v_dom        int  := EXTRACT(day FROM v_today)::int;
+  v_drem       int  := v_dim - v_dom + 1;
+
+  -- ISO week: Mon = 1 … Sun = 7. daysElapsedInWeek matches Swift Calendar.bablo (Mon-start).
+  v_dow        int  := EXTRACT(isodow FROM v_today)::int;  -- 1=Mon … 7=Sun
+  v_week_start date := v_today - (v_dow - 1);             -- most recent Monday
+
+  -- MTD-aligned previous-period boundaries
+  v_prev_week_same_day  date := v_week_start - 7 + (v_today - v_week_start);
+  v_prev_week_start     date := v_week_start - 7;
+  v_prev_mstart         date := (date_trunc('month', v_today) - interval '1 month')::date;
+  v_prev_month_same_day date := v_prev_mstart + (v_dom - 1);
+  v_yesterday           date := v_today - 1;
+
+  -- Profile values
+  v_income    numeric;
+  v_mandatory numeric;
+  v_basis     text;
+
+  -- Income split (reuses get_monthly_income_summary rule)
+  v_known     double precision;
+  v_extra     double precision;
+  v_expected  double precision;
+  v_eff       double precision;
+
+  -- Cash and upcoming mandatory bills
+  v_cash      double precision;
+  v_upcoming  double precision;
+  v_goals     double precision := 0;   -- decision 6: deferred
+
+  -- Spend windows
+  v_spent_mtd   double precision;
+  v_spent_week  double precision;
+  v_spent_today double precision;
+  v_prev_day    double precision;
+  v_prev_week   double precision;
+  v_prev_month  double precision;
+
+  -- Pool
+  v_total  double precision;
+  v_rem    double precision;
+BEGIN
+  -- ── Profile ──────────────────────────────────────────────────────────────
+  SELECT COALESCE(profiles_table.monthly_income, 0),
+         COALESCE(profiles_table.monthly_mandatory_expenses, 0),
+         COALESCE(profiles_table.income_basis, 'projected')
+    INTO v_income, v_mandatory, v_basis
+    FROM public.profiles_table
+   WHERE profiles_table.id = v_uid;
+
+  v_income := COALESCE(v_income, 0);
+  v_mandatory := COALESCE(v_mandatory, 0);
+  v_basis := COALESCE(v_basis, 'projected');
+
+  -- Caller can override the stored preference (e.g. preview mode)
+  IF p_income_basis IS NOT NULL THEN
+    v_basis := p_income_basis;
+  END IF;
+
+  -- ── Spend windows ────────────────────────────────────────────────────────
+  SELECT
+    COALESCE(SUM(CASE WHEN spend_date >= v_mstart    AND spend_date <= v_today THEN ABS(amount) ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN spend_date >= v_week_start AND spend_date <= v_today THEN ABS(amount) ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN spend_date = v_today                                 THEN ABS(amount) ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN spend_date = v_yesterday                             THEN ABS(amount) ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN spend_date >= v_prev_week_start  AND spend_date <= v_prev_week_same_day THEN ABS(amount) ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN spend_date >= v_prev_mstart      AND spend_date <= v_prev_month_same_day THEN ABS(amount) ELSE 0 END), 0)
+  INTO v_spent_mtd, v_spent_week, v_spent_today,
+       v_prev_day, v_prev_week, v_prev_month
+  FROM public.variable_transactions
+  WHERE user_id = v_uid
+    AND spend_date >= LEAST(v_prev_week_start, v_prev_mstart);
+
+  -- ── Income MTD split (same rule as get_monthly_income_summary) ───────────
+  SELECT
+    COALESCE(SUM(CASE WHEN is_recurring = true              THEN ABS(amount) ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN is_recurring IS DISTINCT FROM true THEN ABS(amount) ELSE 0 END), 0)
+  INTO v_known, v_extra
+  FROM public.spendable_income_transactions
+  WHERE user_id = v_uid
+    AND spend_date >= v_mstart
+    AND spend_date <= v_today;
+
+  -- ── Net cash ─────────────────────────────────────────────────────────────
+  SELECT balance INTO v_cash FROM public.get_net_cash_balance();
+
+  -- ── Upcoming unpaid mandatory bills (next 14 days, not yet posted) ───────
+  SELECT COALESCE(SUM(s.average_amount), 0) INTO v_upcoming
+    FROM public.active_mandatory_expense_streams s
+   WHERE s.user_id = v_uid
+     AND s.predicted_next_date BETWEEN v_today AND (v_today + 14)
+     AND NOT EXISTS (
+       SELECT 1 FROM public.transactions t
+        WHERE t.user_id   = v_uid
+          AND t.is_spend  = true
+          AND t.spend_date >= v_today - 10
+          AND NULLIF(BTRIM(s.merchant_name), '') IS NOT NULL
+          AND LOWER(BTRIM(t.merchant_name)) = LOWER(BTRIM(s.merchant_name))
+     );
+
+  -- ── Effective income (late-month decay mirrors HeroBudgetCalculator) ─────
+  IF v_known < v_income * 0.30 AND v_dom > 15 THEN
+    v_expected := v_income *
+                  GREATEST(0, 1 - (v_dom - 15)::double precision /
+                               NULLIF(v_dim - 15, 0));
+  ELSE
+    v_expected := v_income;
+  END IF;
+  v_eff := GREATEST(v_expected, v_known) + v_extra;
+
+  -- ── Pool total & remaining ───────────────────────────────────────────────
+  IF v_basis = 'cash_only' THEN
+    -- Simple-style: cash − scheduled upcoming bills − goals.
+    -- Cash already reflects MTD spend, so no separate subtraction.
+    v_total := GREATEST(0, v_cash - v_upcoming - v_goals);
+    v_rem   := v_total;
+  ELSE
+    -- Projected (default): income-discretionary model.
+    v_total := GREATEST(0, v_eff - v_mandatory::double precision - v_goals);
+    v_rem   := v_total - v_spent_mtd;
+  END IF;
+
+  -- ── Return ───────────────────────────────────────────────────────────────
+  RETURN QUERY SELECT
+    v_total,
+    v_rem,
+    -- daily_pace: floors at $0 when overspent; never negative
+    GREATEST(0, v_rem) / NULLIF(v_drem, 0),
+    -- weekly_pace: same pool at weekly cadence; caps at pool_remaining near month-end
+    LEAST(GREATEST(0, v_rem),
+          GREATEST(0, v_rem) / NULLIF(v_drem, 0) * 7),
+    v_spent_today,
+    v_spent_week,
+    v_spent_mtd,
+    v_prev_day,
+    v_prev_week,
+    v_prev_month,
+    v_eff,
+    v_mandatory::double precision,
+    v_goals,
+    v_cash,
+    v_upcoming,
+    v_basis,
+    v_dim,
+    v_drem,
+    v_dow,   -- ISO day-of-week (1=Mon…7=Sun) = days elapsed in week
+    v_known,
+    v_extra;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.get_budget_state(date, text) FROM PUBLIC;
+GRANT  EXECUTE ON FUNCTION public.get_budget_state(date, text) TO authenticated;
+
+
+-- Fix Pulse Analytics RLS context under SECURITY DEFINER by using cached v_uid local variables
+CREATE OR REPLACE FUNCTION public.get_pulse_weekly_energy(
+    week_start DATE,
+    week_end DATE
+)
+RETURNS TABLE (
+    weekday TEXT,
+    date_label DATE,
+    total_spent DOUBLE PRECISION,
+    is_peak BOOLEAN,
+    peak_merchant TEXT,
+    peak_category TEXT,
+    peak_amount DOUBLE PRECISION
+)
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+    v_uid uuid := auth.uid();
+    peak_date DATE;
+BEGIN
+    -- Find the day in the range with the absolute highest spending
+    SELECT COALESCE(t.authorized_date, t.date) INTO peak_date
+    FROM public.transactions_table t
+    WHERE t.user_id = v_uid
+      AND COALESCE(t.authorized_date, t.date) BETWEEN week_start AND week_end
+      AND t.amount > 0
+      AND (t.personal_finance_category IS NULL OR t.personal_finance_category NOT ILIKE '%TRANSFER%')
+    GROUP BY COALESCE(t.authorized_date, t.date)
+    ORDER BY SUM(t.amount) DESC
+    LIMIT 1;
+
+    -- Return daily stats along with peak transaction details
+    RETURN QUERY
+    WITH daily_totals AS (
+        SELECT 
+            COALESCE(t.authorized_date, t.date) as t_date,
+            SUM(t.amount)::double precision as t_sum
+        FROM public.transactions_table t
+        WHERE t.user_id = v_uid
+          AND COALESCE(t.authorized_date, t.date) BETWEEN week_start AND week_end
+          AND t.amount > 0
+          AND (t.personal_finance_category IS NULL OR t.personal_finance_category NOT ILIKE '%TRANSFER%')
+        GROUP BY COALESCE(t.authorized_date, t.date)
+    ),
+    peak_transactions AS (
+        SELECT DISTINCT ON (COALESCE(t.authorized_date, t.date))
+            COALESCE(t.authorized_date, t.date) as t_date,
+            COALESCE(t.merchant_name, t.name) as merchant,
+            t.personal_finance_category as category,
+            t.amount::double precision as amount
+        FROM public.transactions_table t
+        WHERE t.user_id = v_uid
+          AND COALESCE(t.authorized_date, t.date) BETWEEN week_start AND week_end
+          AND t.amount > 0
+        ORDER BY COALESCE(t.authorized_date, t.date), t.amount DESC
+    )
+    SELECT 
+        TO_CHAR(d.date_series, 'Dy') as weekday,
+        d.date_series::date as date_label,
+        COALESCE(dt.t_sum, 0.0)::double precision as total_spent,
+        (d.date_series::date = peak_date) as is_peak,
+        COALESCE(pt.merchant, 'No Spend') as peak_merchant,
+        pt.category as peak_category,
+        COALESCE(pt.amount, 0.0)::double precision as peak_amount
+    FROM 
+        GENERATE_SERIES(week_start::timestamp, week_end::timestamp, '1 day'::interval) d(date_series)
+    LEFT JOIN daily_totals dt ON dt.t_date = d.date_series::date
+    LEFT JOIN peak_transactions pt ON pt.t_date = d.date_series::date
+    ORDER BY d.date_series ASC;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_pulse_top_merchants(
+    start_date DATE,
+    end_date DATE,
+    lim INTEGER DEFAULT 5
+)
+RETURNS TABLE (
+    merchant_name TEXT,
+    total_spent DOUBLE PRECISION,
+    transaction_count BIGINT,
+    personal_finance_category TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+    v_uid uuid := auth.uid();
+BEGIN
+    RETURN QUERY
+    SELECT 
+        COALESCE(t.merchant_name, t.name) as merchant_name,
+        SUM(t.amount)::double precision as total_spent,
+        COUNT(*)::bigint as transaction_count,
+        MIN(t.personal_finance_category) as personal_finance_category
+    FROM 
+        public.transactions_table t
+    WHERE 
+        t.user_id = v_uid
+        AND COALESCE(t.authorized_date, t.date) BETWEEN start_date AND end_date
+        AND t.amount > 0
+        AND (t.personal_finance_category IS NULL OR t.personal_finance_category NOT ILIKE '%TRANSFER%')
+    GROUP BY 
+        COALESCE(t.merchant_name, t.name)
+    ORDER BY 
+        total_spent DESC
+    LIMIT 
+        lim;
+END;
+$$;
+

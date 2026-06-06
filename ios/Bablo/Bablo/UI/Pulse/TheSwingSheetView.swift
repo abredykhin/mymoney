@@ -949,7 +949,7 @@ struct TheCushionSheetView: View {
     @Environment(\.babloTheme) private var theme
 
     private var drivers: [HeroCushionDriver] {
-        HeroCushionDriver.drivers(from: breakdown)
+        HeroCushionDriver.drivers(from: breakdown, scale: snapshot.roomScale)
     }
 
     var body: some View {
@@ -1829,22 +1829,27 @@ private struct CushionCumulativePoint: Identifiable, Equatable {
             ]
 
         case .month:
-            func weekIndex(_ dateLabel: String) -> Int {
-                let day = Int(dateLabel.split(separator: "-").last.map(String.init) ?? "1") ?? 1
-                return ((day - 1) / 7) + 1
-            }
-            var currentByWeek: [Int: Double] = [:]
-            for p in currentDays { currentByWeek[weekIndex(p.date), default: 0] += p.amount }
-            var previousByWeek: [Int: Double] = [:]
-            for p in previousDays { previousByWeek[weekIndex(p.date), default: 0] += p.amount }
-
-            let maxWeek = max(currentByWeek.keys.max() ?? 1, previousByWeek.keys.max() ?? 1, 1)
+            // Daily cumulative, aligned by elapsed position (current = month-to-date, previous =
+            // the MTD-aligned prior-month window). Weekly buckets used to collapse to a single
+            // point early in the month (days 1–6 → one week → just two dots, no line); a per-day
+            // line always renders and reads like-for-like. Labels are sparse day-of-month numbers
+            // so a full month doesn't crowd the axis.
+            let count = max(currentDays.count, previousDays.count)
+            guard count > 0 else { return [] }
+            let labelStride = max(1, Int((Double(count) / 6.0).rounded(.up)))
             var currentSum = 0.0
             var previousSum = 0.0
-            return (1...maxWeek).map { w in
-                currentSum += currentByWeek[w, default: 0]
-                previousSum += previousByWeek[w, default: 0]
-                return CushionCumulativePoint(id: "W\(w)", label: "W\(w)", current: currentSum, previous: previousSum)
+            return (0..<count).map { i in
+                if i < currentDays.count { currentSum += currentDays[i].amount }
+                if i < previousDays.count { previousSum += previousDays[i].amount }
+                let id = i < currentDays.count ? currentDays[i].date : "d\(i)"
+                let showLabel = (i % labelStride == 0) || i == count - 1
+                var label = ""
+                if showLabel, i < currentDays.count {
+                    let dayStr = currentDays[i].date.split(separator: "-").last.map(String.init) ?? ""
+                    label = Int(dayStr).map(String.init) ?? dayStr
+                }
+                return CushionCumulativePoint(id: id, label: label, current: currentSum, previous: previousSum)
             }
 
         case .week:

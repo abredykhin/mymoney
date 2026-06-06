@@ -323,11 +323,65 @@ struct UserStreak: Codable, Equatable {
     }
 }
 
+// MARK: - get_budget_state RPC model
+
+/// Single-row response from the `get_budget_state` RPC.
+/// Replaces the collection of individual fetches (balance, variable spend,
+/// period comparisons, income summary) with one round trip.
+struct BudgetStateRow: Codable, Equatable {
+    let poolTotal:          Double
+    let poolRemaining:      Double
+    let dailyPace:          Double
+    let weeklyPace:         Double
+    let spentToday:         Double
+    let spentWeek:          Double
+    let spentMtd:           Double
+    let prevDaySpent:       Double
+    let prevWeekSpent:      Double
+    let prevMonthSpent:     Double
+    let effectiveIncome:    Double
+    let mandatory:          Double
+    let goalsSetAside:      Double
+    let netCash:            Double
+    let upcomingBills:      Double
+    let incomeBasis:        IncomeBasis
+    let daysInMonth:        Int
+    let daysRemaining:      Int
+    let daysElapsedInWeek:  Int
+    let knownIncome:        Double
+    let extraIncome:        Double
+
+    enum CodingKeys: String, CodingKey {
+        case poolTotal         = "pool_total"
+        case poolRemaining     = "pool_remaining"
+        case dailyPace         = "daily_pace"
+        case weeklyPace        = "weekly_pace"
+        case spentToday        = "spent_today"
+        case spentWeek         = "spent_week"
+        case spentMtd          = "spent_mtd"
+        case prevDaySpent      = "prev_day_spent"
+        case prevWeekSpent     = "prev_week_spent"
+        case prevMonthSpent    = "prev_month_spent"
+        case effectiveIncome   = "effective_income"
+        case mandatory
+        case goalsSetAside     = "goals_set_aside"
+        case netCash           = "net_cash"
+        case upcomingBills     = "upcoming_bills"
+        case incomeBasis       = "income_basis"
+        case daysInMonth       = "days_in_month"
+        case daysRemaining     = "days_remaining"
+        case daysElapsedInWeek = "days_elapsed_in_week"
+        case knownIncome       = "known_income"
+        case extraIncome       = "extra_income"
+    }
+}
+
 // MARK: - Service
 
 /// Service for budget and spending analysis via Supabase direct database access
 @MainActor
 class BudgetService: ObservableObject {
+
     @Published var totalBalance: TotalBalance? = nil
     @Published var spendBreakdownResponse: CategoryBreakdownResponse? = nil
     @Published var isLoadingBalance: Bool = false
@@ -381,7 +435,11 @@ class BudgetService: ObservableObject {
     // Current-period actuals (actual calendar-week and today spend, not MTD prorations)
     @Published var currentWeekVariableSpend: Double = 0
     @Published var todayVariableSpend: Double = 0
-    
+
+    /// Full budget state — populated by `fetchBudgetState()`.
+    /// `nil` until the first successful fetch.
+    @Published var budgetState: BudgetStateRow? = nil
+
     // Checkpoint 2: Pulse Screen Properties
     @Published var dailyEnergy: [DailyEnergyItem] = []
     @Published var topMerchants: [TopMerchantItem] = []
@@ -431,6 +489,54 @@ class BudgetService: ObservableObject {
             Logger.e("BudgetService: Failed to fetch total balance: \(error)")
             self.balanceError = error
             throw error
+        }
+    }
+
+    /// Fetch the complete budget state in a single RPC round trip.
+    ///
+    /// Populates `budgetState` and also keeps the legacy `@Published` properties
+    /// in sync so callers that haven't been migrated to `budgetState` yet
+    /// continue to work unchanged.
+    ///
+    /// - Parameter incomeBasis: Override the stored `income_basis` preference.
+    ///   Pass `nil` to use the value stored on the profile.
+    func fetchBudgetState(incomeBasis: IncomeBasis? = nil) async {
+        struct Params: Encodable {
+            let p_as_of: String?
+            let p_income_basis: String?
+        }
+        let params = Params(
+            p_as_of: nil,
+            p_income_basis: incomeBasis?.rawValue
+        )
+
+        do {
+            let rows: [BudgetStateRow] = try await supabase
+                .rpc("get_budget_state", params: params)
+                .execute()
+                .value
+
+            guard let row = rows.first else {
+                Logger.e("BudgetService: get_budget_state returned empty result")
+                return
+            }
+
+            Logger.i("BudgetService: budget state — pool \(row.poolTotal), remaining \(row.poolRemaining)")
+            self.budgetState = row
+
+            // Keep legacy @Published properties in sync for unmigrated callers.
+            self.variableSpend            = row.spentMtd
+            self.currentWeekVariableSpend = row.spentWeek
+            self.todayVariableSpend       = row.spentToday
+            self.previousDayVariableSpend   = row.prevDaySpent
+            self.previousWeekVariableSpend  = row.prevWeekSpent
+            self.previousMonthVariableSpend = row.prevMonthSpent
+            self.monthlyIncome            = row.effectiveIncome
+            self.monthlyMandatoryExpenses = row.mandatory
+            self.knownIncomeThisMonth     = row.knownIncome
+            self.extraIncomeThisMonth     = row.extraIncome
+        } catch {
+            Logger.e("BudgetService: fetchBudgetState failed: \(error)")
         }
     }
 
@@ -939,29 +1045,12 @@ class BudgetService: ObservableObject {
         
         Logger.d("BudgetService: Fetching budget summary for \(userId)")
         
-        do {
-        // Select all fields (*) to avoid decoding errors for Profile struct
-            let profile: Profile = try await supabase
-                .from("profiles")
-                .select("*")
-                .eq("id", value: userId)
-                .single()
-                .execute()
-                .value
-            
-            self.monthlyIncome = profile.monthlyIncome
-            self.monthlyMandatoryExpenses = profile.monthlyMandatoryExpenses
-            Logger.i("BudgetService: Loaded profile successfully for \(userId)")
-            Logger.d("BudgetService: -> monthly_income (expected): \(monthlyIncome)")
-            Logger.d("BudgetService: -> monthly_mandatory_expenses: \(monthlyMandatoryExpenses)")
-            
-            await fetchRecurringStreams() // CHANGED: was fetchBudgetItems()
-            await fetchActualIncome()
-            try? await fetchVariableSpend() // Fetch variable spend to calc budget
-            await fetchAllPeriodSpend()
-        } catch {
-            Logger.e("BudgetService: Failed to fetch budget summary: \(error)")
-        }
+        // Fetch budget state using current incomeBasis setting
+        let basis = UserAccount.shared.incomeBasis
+        await fetchBudgetState(incomeBasis: basis)
+        
+        // Fetch recurring streams (for upcoming bills list etc.)
+        await fetchRecurringStreams()
     }
 
     /// Fetch comparison windows used by the hero delta pill.

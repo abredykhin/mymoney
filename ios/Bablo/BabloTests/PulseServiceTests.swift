@@ -108,7 +108,7 @@ struct PulseServiceTests {
 
     // MARK: - Category breakdown
 
-    @Test @MainActor func testFetchCategoryBreakdownQueriesTransactionsView() async throws {
+    @Test @MainActor func testFetchCategoryBreakdownQueriesVariableTransactionsView() async throws {
         let transactionJSON = """
         [{
           "id": 1, "account_id": 1, "amount": 55.0, "date": "2026-05-13",
@@ -139,8 +139,8 @@ struct PulseServiceTests {
             trackedCategories: []
         )
 
-        #expect(capturedPath?.contains("/rest/v1/transactions") == true,
-                "Category breakdown should query the transactions view")
+        #expect(capturedPath?.contains("/rest/v1/variable_transactions") == true,
+                "Category breakdown should query the variable_transactions (discretionary) view")
     }
 
     @Test @MainActor func testFetchCategoryBreakdownPopulatesBreakdownItems() async throws {
