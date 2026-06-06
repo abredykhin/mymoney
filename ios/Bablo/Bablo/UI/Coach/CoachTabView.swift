@@ -251,7 +251,7 @@ struct CoachTabView: View {
     private func triggerAnalysis() {
         Task {
             do {
-                _ = try await coachService.fetchCoachInsights()
+                _ = try await coachService.fetchCoachInsights(force: true)
                 withAnimation {
                     showingRefreshSuccess = true
                 }
