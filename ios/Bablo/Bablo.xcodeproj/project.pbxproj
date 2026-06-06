@@ -58,6 +58,9 @@
 		3A68FA302F206EF300D325DD /* BabloListSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA182F206EF300D325DD /* BabloListSheet.swift */; };
 		3A68FA302F206EF300D325EE /* AllMerchantsSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA182F206EF300D325EE /* AllMerchantsSheetView.swift */; };
 		CC1A2B3C4D5E6F7A8B9C0D2F /* TheSwingSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1A2B3C4D5E6F7A8B9C0D1E /* TheSwingSheetView.swift */; };
+		CC1A2B3C4D5E6F7A8B9C0D31 /* TheCushionSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1A2B3C4D5E6F7A8B9C0D30 /* TheCushionSheetView.swift */; };
+		CC1A2B3C4D5E6F7A8B9C0D33 /* PulseSheetPeriodLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1A2B3C4D5E6F7A8B9C0D32 /* PulseSheetPeriodLabels.swift */; };
+		CC1A2B3C4D5E6F7A8B9C0D35 /* SheetCloseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1A2B3C4D5E6F7A8B9C0D34 /* SheetCloseButton.swift */; };
 		3A68FA312F206EF300D32561 /* CornerRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA262F206EF300D32561 /* CornerRadius.swift */; };
 		3A68FA322F206EF300D32561 /* Elevation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA272F206EF300D32561 /* Elevation.swift */; };
 		3A68FA342F206EF300D32561 /* Spacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A68FA282F206EF300D32561 /* Spacing.swift */; };
@@ -595,6 +598,9 @@
 		FE82A3B2A131217300AE749D /* TransactionsManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TransactionsManager.swift; sourceTree = "<group>"; };
 		FF41A549D5DACE81A78B481C /* ComingUpCalculatorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComingUpCalculatorTests.swift; sourceTree = "<group>"; };
 		FF6D62AF4F3040CD20E54370 /* StreakService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StreakService.swift; sourceTree = "<group>"; };
+		CC1A2B3C4D5E6F7A8B9C0D30 /* TheCushionSheetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TheCushionSheetView.swift; sourceTree = "<group>"; };
+		CC1A2B3C4D5E6F7A8B9C0D32 /* PulseSheetPeriodLabels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PulseSheetPeriodLabels.swift; sourceTree = "<group>"; };
+		CC1A2B3C4D5E6F7A8B9C0D34 /* SheetCloseButton.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SheetCloseButton.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -772,6 +778,7 @@
 				AC25787544568673BCA76D74 /* ComingUpWidgetView.swift */,
 				434D1815D10F4CEAB94A9F21 /* RecentWidgetView.swift */,
 				3255FFECD0F13F2CE07BFC5E /* ComingUpDetailsSheetView.swift */,
+				CC1A2B3C4D5E6F7A8B9C0D30 /* TheCushionSheetView.swift */,
 				6616A53A2E7FF7026E615DDA /* AllTransactionsView.swift */,
 			);
 			path = Home;
@@ -1224,6 +1231,7 @@
 		757ABF912C18242900DF8CA8 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				CC1A2B3C4D5E6F7A8B9C0D36 /* Components */,
 				3AAA810E2FCCB91E00472401 /* Transaction */,
 				3A68F9FF2EFB9FDA00D32561 /* Home */,
 				75D39AD12F2178B500866367 /* Pulse */,
@@ -1235,6 +1243,14 @@
 				7590F2972C86470400BCCDE6 /* HomeView.swift */,
 			);
 			path = UI;
+			sourceTree = "<group>";
+		};
+		CC1A2B3C4D5E6F7A8B9C0D36 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				CC1A2B3C4D5E6F7A8B9C0D34 /* SheetCloseButton.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		7590F29D2C86471D00BCCDE6 /* Link */ = {
@@ -1275,6 +1291,7 @@
 				1F7345AE9DF34B33BC92C821 /* TheLineupWidgetView.swift */,
 				3A68FA182F206EF300D325EE /* AllMerchantsSheetView.swift */,
 				CC1A2B3C4D5E6F7A8B9C0D1E /* TheSwingSheetView.swift */,
+				CC1A2B3C4D5E6F7A8B9C0D32 /* PulseSheetPeriodLabels.swift */,
 			);
 			path = Pulse;
 			sourceTree = "<group>";
@@ -1719,6 +1736,9 @@
 				3A68FA302F206EF300D325DD /* BabloListSheet.swift in Sources */,
 				3A68FA302F206EF300D325EE /* AllMerchantsSheetView.swift in Sources */,
 				CC1A2B3C4D5E6F7A8B9C0D2F /* TheSwingSheetView.swift in Sources */,
+				CC1A2B3C4D5E6F7A8B9C0D31 /* TheCushionSheetView.swift in Sources */,
+				CC1A2B3C4D5E6F7A8B9C0D33 /* PulseSheetPeriodLabels.swift in Sources */,
+				CC1A2B3C4D5E6F7A8B9C0D35 /* SheetCloseButton.swift in Sources */,
 				3AAA810F2FCCB91E00472401 /* MerchantSpendCardView.swift in Sources */,
 				3AAA81102FCCB91E00472401 /* TransactionDetailHeroView.swift in Sources */,
 				3AAA81112FCCB91E00472401 /* TransactionDateParser.swift in Sources */,
