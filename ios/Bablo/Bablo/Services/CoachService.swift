@@ -38,13 +38,10 @@ class CoachService: ObservableObject {
 
     private let supabase: SupabaseClient
 
-    /// Minimum spacing between non-forced network refreshes. The edge function enforces
-    /// the same 24h cooldown server-side; this client guard stops redundant invokes when
-    /// Home re-renders or its id-keyed load task re-runs in quick succession (which was
-    /// causing the card to regenerate a couple of times right after launch).
-    private static let refreshCooldown: TimeInterval = 24 * 60 * 60
-    private var lastFetchedAt: Date?
-    /// Coalesces overlapping callers onto a single in-flight request.
+    /// Coalesces overlapping callers onto a single in-flight request so simultaneous
+    /// triggers (e.g. Home's load task re-running) don't fire duplicate invokes. The 24h
+    /// refresh cadence itself is owned by the server: the edge function returns its cached
+    /// insight within the cooldown window, so the client doesn't gate on time at all.
     private var inFlightTask: Task<CoachInsight, Error>?
 
     init(supabaseClient: SupabaseClient = SupabaseManager.shared.client) {
@@ -54,18 +51,10 @@ class CoachService: ObservableObject {
     /// Fetch tailored financial recommendations and manga nudge insights
     func fetchCoachInsights(force: Bool = false) async throws -> CoachInsight {
         // Coalesce concurrent callers onto the same request instead of firing several.
+        // The server decides whether to regenerate or return its cached insight (24h
+        // cooldown), so the client always invokes and lets the backend drive the cadence.
         if let inFlight = inFlightTask {
             return try await inFlight.value
-        }
-
-        // Skip the round-trip entirely if we already refreshed within the cooldown
-        // window (non-forced calls only — the Coach tab's manual refresh passes force).
-        if !force,
-           let last = lastFetchedAt,
-           let cached = currentInsight,
-           Date().timeIntervalSince(last) < Self.refreshCooldown {
-            Logger.d("CoachService: Skipping fetch; within 24h refresh cooldown")
-            return cached
         }
 
         Logger.d("CoachService: Invoking gemini-coach-insights function (force: \(force))")
@@ -93,7 +82,6 @@ class CoachService: ObservableObject {
             let insight = try await task.value
             self.currentInsight = insight
             self.isDismissed = false
-            self.lastFetchedAt = Date()
             Logger.i("CoachService: Loaded Coach insights successfully")
             return insight
         } catch {

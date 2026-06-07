@@ -137,6 +137,71 @@ Deno.serve(async (req: Request) => {
       .eq('is_spend', true)
       .gte('spend_date', startDateStr);
 
+    // Aggregate the raw rows into compact summaries rather than sending 50+ line items,
+    // AND split spend into two buckets the coach must treat very differently:
+    //
+    //   • OBLIGATIONS — money the user cannot simply "cut". This is is_spend that is
+    //     either flagged mandatory (rent/bills), a person-to-person/external transfer
+    //     (TRANSFER_OUT — e.g. spousal/child support, wires), or a large one-off lump sum
+    //     (e.g. a legal retainer). These are real spend, but coaching someone to "stop
+    //     paying support / legal fees" is both useless and tone-deaf, so they are kept
+    //     OUT of the discretionary leak analysis and only summarized as fixed context.
+    //   • DISCRETIONARY — everything else (dining, coffee, alcohol, shopping, etc.). This
+    //     is the only bucket the leak/"pause X" nudges should draw from.
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+    const ONE_OFF_LUMP_THRESHOLD = 1000; // a single payment this large is not a habit to pace
+    const spendRows = txs || [];
+
+    const isObligation = (t: any) =>
+      !!t.is_mandatory
+      || t.personal_finance_category === 'TRANSFER_OUT'
+      || Math.abs(Number(t.amount || 0)) > ONE_OFF_LUMP_THRESHOLD;
+
+    const categoryAgg = new Map<string, { spent: number; count: number }>();
+    const merchantAgg = new Map<string, { spent: number; count: number }>();
+    let totalSpent = 0;
+    let obligationsSpent = 0;
+
+    for (const t of spendRows) {
+      const amt = Math.abs(Number(t.amount || 0));
+      totalSpent += amt;
+
+      if (isObligation(t)) {
+        obligationsSpent += amt;
+        continue; // never a discretionary leak — excluded from category/merchant analysis
+      }
+
+      const cat = t.personal_finance_category || 'UNKNOWN';
+      const c = categoryAgg.get(cat) || { spent: 0, count: 0 };
+      c.spent += amt;
+      c.count += 1;
+      categoryAgg.set(cat, c);
+
+      const m = (t.merchant_name || t.name || 'Unknown').trim();
+      const ma = merchantAgg.get(m) || { spent: 0, count: 0 };
+      ma.spent += amt;
+      ma.count += 1;
+      merchantAgg.set(m, ma);
+    }
+
+    const discretionaryByCategory = [...categoryAgg.entries()]
+      .map(([category, v]) => ({ category, spent: round2(v.spent), count: v.count }))
+      .sort((a, b) => b.spent - a.spent);
+
+    const topDiscretionaryMerchants = [...merchantAgg.entries()]
+      .map(([merchant, v]) => ({ merchant, spent: round2(v.spent), count: v.count }))
+      .sort((a, b) => b.spent - a.spent)
+      .slice(0, 8);
+
+    const discretionarySpent = round2(totalSpent - obligationsSpent);
+    totalSpent = round2(totalSpent);
+    obligationsSpent = round2(obligationsSpent);
+
+    // Rolling coaching memory: a short running summary the model maintains across runs so
+    // it can avoid repeating past nudges and acknowledge progress. Bounded to ~1-2
+    // sentences, so it never grows the prompt the way storing full history would.
+    const priorMemory = (cachedInsight as { coach_memory?: string } | null)?.coach_memory || '';
+
     // Fetch active subscription streams. The view intentionally excludes rent/mortgage
     // so fixed housing costs don't get framed as subscription leaks.
     const { data: subs } = await supabase
@@ -150,6 +215,28 @@ Deno.serve(async (req: Request) => {
       .from('active_mandatory_expense_streams')
       .select('description, average_amount, monthly_amount, predicted_next_date, personal_finance_category')
       .eq('user_id', user.id);
+
+    // The cash-squeeze rule must reason over money that is *about to* leave, not money
+    // that already left. Compute the bills genuinely due in the next 10 days so the model
+    // can compare that against net cash — instead of misreading past large spend (a legal
+    // payment, a support wire) as an imminent crunch.
+    const nowMs = Date.now();
+    const in10DaysMs = nowMs + 10 * 24 * 60 * 60 * 1000;
+    const upcomingBills = (mandatoryStreams || [])
+      .filter((s) => {
+        if (!s.predicted_next_date) return false;
+        const due = new Date(s.predicted_next_date).getTime();
+        return due >= nowMs && due <= in10DaysMs;
+      })
+      .map((s) => ({
+        description: s.description,
+        amount: round2(Number(s.average_amount ?? s.monthly_amount ?? 0)),
+        due: s.predicted_next_date,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+    const upcomingBills10dTotal = round2(
+      upcomingBills.reduce((sum, b) => sum + b.amount, 0),
+    );
 
     const fallbackResponse = {
       badge: "COACH • INSIGHT",
@@ -191,40 +278,61 @@ Deno.serve(async (req: Request) => {
       const model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
         generationConfig: {
-          responseMimeType: "application/json"
+          responseMimeType: "application/json",
+          // Disable thinking: this is a short, well-scoped nudge, not a reasoning task.
+          // Thinking tokens are billed at the (10x) output rate and add latency for no
+          // meaningful quality gain here — cuts per-call cost ~3x and speeds it up.
+          thinkingConfig: { thinkingBudget: 0 }
         }
       });
 
       const prompt = `
-        You are Bablo's premium financial coach, styled in a punchy, direct comic-book manga tone.
-        Analyze the following financial data and write a short, highly-contextual spending nudge.
-        
+        You are Bablo's premium financial coach, styled in a punchy, direct comic-book manga tone — but always supportive, never alarmist or preachy.
+
+        IMPORTANT — read this before analyzing:
+        - All "Last 14 Days" spend below is money that has ALREADY been spent (historical). NEVER describe it as upcoming, pending, or a reason to "avoid" a future crunch.
+        - The ONLY forward-looking figure is "Upcoming Bills (Next 10 Days)". Use that, and only that, for any cash-squeeze reasoning.
+        - Spend has been split for you into OBLIGATIONS (fixed, uncuttable — rent, loans, insurance, taxes, legal fees, and money sent to people such as spousal/child support or wires) and DISCRETIONARY (everything you can actually coach). Obligations are given only as context; you must NEVER suggest reducing, pausing, or "locking down" an obligation.
+        - BE REALISTIC. A person can never spend $0 — they still have to buy ESSENTIALS (groceries, fuel/gas, basic household needs, medicine). Never demand a "zero-spend lockdown" or "spend nothing", and ESPECIALLY not when Net Cash is low or negative — that is impossible advice. When cash is tight, coach trimming NON-ESSENTIAL discretionary (dining out, alcohol, coffee, entertainment, shopping, subscriptions) while explicitly allowing essentials to continue. If Net Cash is negative, lead with empathy and a realistic, prioritized plan (cover essentials + obligations first, pause non-essentials), not a guilt trip.
+
         User Context:
-        - Current Net Cash Available (Bank minus Credit Debt): $${netCash}
-        - Monthly Income (Expected): $${profile?.monthly_income ?? 0}
-        - Fixed Expenses (Expected Monthly): $${profile?.monthly_mandatory_expenses ?? 0}
-        
-        Upcoming/Active Bills (Mandatory Recurring Streams):
-        ${JSON.stringify(mandatoryStreams || [])}
-        
-        Recent Spend — Last 14 Days (real outflows including bills; "is_mandatory": true marks a fixed bill, false marks variable/discretionary spend):
-        ${JSON.stringify(txs || [])}
-        
-        Active Recurring Subscriptions (Optional):
+        - Current Net Cash Available (Bank minus Credit Debt): $${round2(netCash)}
+        - Monthly Income (Expected): $${round2(Number(profile?.monthly_income ?? 0))}
+        - Fixed Expenses (Expected Monthly): $${round2(Number(profile?.monthly_mandatory_expenses ?? 0))}
+
+        Spend Totals — Last 14 Days (historical):
+        - Total spent: $${totalSpent} (fixed obligations $${obligationsSpent} / discretionary $${discretionarySpent})
+
+        Discretionary Spend by Category — Last 14 Days (THIS is your leak-hunting ground):
+        ${JSON.stringify(discretionaryByCategory)}
+
+        Top Discretionary Merchants — Last 14 Days (use for specific "pause/trim X" nudges):
+        ${JSON.stringify(topDiscretionaryMerchants)}
+
+        Upcoming Bills (Next 10 Days) — total $${upcomingBills10dTotal}:
+        ${JSON.stringify(upcomingBills)}
+
+        Active Recurring Subscriptions (Optional, possible trims):
         ${JSON.stringify(subs || [])}
-        
+
+        Your Running Coaching Memory (prior nudges + observations; empty if this is the first time):
+        ${priorMemory || '(none yet)'}
+
         Rules:
-        1. CASH SQUEEZE RULE (High Priority): If the user's Current Net Cash Available is low (e.g. under $1,000) and they have a large mandatory bill (like rent, mortgage, or credit payment) due in the next 10 days that exceeds their cash available, prioritize alerting them about this squeeze. Challenge them to a "zero-spend lockdown" until the next paycheck hits.
-        2. Otherwise, focus on the single largest area of overspending or variable leak (e.g. Dining out, Coffee, Subscriptions).
-        3. Give a highly specific, mathematical recommendation (e.g., "Pause coffee for 3 days and bank ~$24").
-        4. Keep the output extremely brief (max 2 sentences for notification, 2 for detail).
-        5. Return a valid JSON object matching this structure EXACTLY:
+        1. CASH SQUEEZE RULE (High Priority, but only when REAL): Trigger this ONLY if "Upcoming Bills (Next 10 Days)" total is close to or greater than Current Net Cash Available. If upcoming bills are comfortably below net cash, there is NO squeeze — do not invent one, and use badge "COACH • INSIGHT". When a real squeeze exists, alert the user and suggest easing NON-ESSENTIAL discretionary spend until their next paycheck (never their obligations, and never their essentials like groceries or fuel). Do NOT tell them to "spend nothing".
+        2. Otherwise, find the single biggest DISCRETIONARY leak from the category/merchant data and coach it. Ignore obligations entirely when picking the leak.
+        3. Give a highly specific, mathematical recommendation grounded in the discretionary numbers (e.g., "Trim dining from $X to $Y and bank ~$Z").
+        4. Keep it brief (max ~2 sentences each for nudge_text and alternative_tip) and empathetic.
+        5. Use the Running Coaching Memory to AVOID repeating a nudge you already gave — pick a fresh angle, and acknowledge progress if the data shows the user improved on a past nudge.
+        6. Update the memory: in "coach_memory", return an updated 1-2 sentence running summary (what you've now nudged about + key patterns/progress). Keep it short; it is fed back to you next time.
+        7. Return a valid JSON object matching this structure EXACTLY:
         {
           "badge": "COACH • URGENT" or "COACH • INSIGHT",
           "headline": "headline message here",
           "nudge_text": "nudge text with pacing and exact numbers here",
           "action_label": "action button text",
-          "alternative_tip": "alternative option or tip here"
+          "alternative_tip": "alternative option or tip here",
+          "coach_memory": "updated 1-2 sentence running summary for next time"
         }
       `;
 
@@ -243,6 +351,11 @@ Deno.serve(async (req: Request) => {
             nudge_text: json.nudge_text,
             action_label: json.action_label,
             alternative_tip: json.alternative_tip,
+            // Persist the rolling memory so the next run can avoid repeating itself.
+            // Fall back to the prior memory if the model omitted it this time.
+            coach_memory: (typeof json.coach_memory === 'string' && json.coach_memory.trim())
+              ? json.coach_memory.trim()
+              : (priorMemory || null),
             updated_at: new Date().toISOString()
           });
 
@@ -252,6 +365,8 @@ Deno.serve(async (req: Request) => {
           console.log(`Successfully cached generated insight for user ${user.id}.`);
         }
 
+        // coach_memory is server-only rolling state; don't ship it to the client.
+        delete json.coach_memory;
         return jsonResponse(json);
       } catch (parseError) {
         console.error('Failed to parse Gemini response as JSON. Raw response:', text);
