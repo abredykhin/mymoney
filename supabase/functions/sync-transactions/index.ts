@@ -18,7 +18,7 @@ import {
   batchDeleteTransactions,
   updateCursor,
 } from './database.ts';
-import { fetchTransactionUpdates, fetchAccountBalances } from './plaid.ts';
+import { fetchTransactionUpdates, fetchAccountBalances, PlaidItemError } from './plaid.ts';
 import type { SyncResponse } from './types.ts';
 
 interface SyncRequest {
@@ -208,7 +208,7 @@ async function updateDatabase(
     modified: any[];
     removed: any[];
     accounts: any[];
-    nextCursor: string;
+    nextCursor: string | null;
   }
 ) {
   const { plaidItemId, itemId, userId, added, modified, removed, accounts, nextCursor } = params;
@@ -296,10 +296,15 @@ async function callPlaidWithRetry<T>(
       }
 
       // Check for invalid access token (ITEM_LOGIN_REQUIRED)
-      if (error.response?.data?.error_code === 'ITEM_LOGIN_REQUIRED') {
+      if (error instanceof PlaidItemError && error.code === 'ITEM_LOGIN_REQUIRED') {
         console.error('❌ Item requires re-authentication');
         // Mark item as requiring user action
-        await markItemAsNeedsReauth(error.item_id);
+        await markItemAsNeedsReauth(error.plaidItemId, error.message);
+        throw new Error('Item requires re-authentication');
+      }
+
+      if (error.response?.data?.error_code === 'ITEM_LOGIN_REQUIRED') {
+        console.error('❌ Item requires re-authentication');
         throw new Error('Item requires re-authentication');
       }
 
@@ -325,15 +330,18 @@ async function callPlaidWithRetry<T>(
 /**
  * Mark item as needing reauth
  */
-async function markItemAsNeedsReauth(itemId: string) {
+async function markItemAsNeedsReauth(plaidItemId: string, message?: string) {
   const supabase = createServiceRoleClient();
   await supabase
     .from('items_table')
     .update({
-      status: 'NEEDS_REAUTH',
+      status: 'needs_reauth',
+      plaid_health_updated_at: new Date().toISOString(),
+      plaid_last_error_code: 'ITEM_LOGIN_REQUIRED',
+      plaid_last_error_message: message || 'Item requires user re-authentication',
       updated_at: new Date().toISOString()
     })
-    .eq('plaid_item_id', itemId);
+    .eq('plaid_item_id', plaidItemId);
 }
 
 /**

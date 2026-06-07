@@ -210,7 +210,7 @@ bank_name
 plaid_institution_id (also required!)
 ```
 
-**Key insight:** Read the schema before writing tests (`supabase/DEPLOY_TO_PRODUCTION.sql`)
+**Key insight:** Read the schema migrations before writing tests (`supabase/migrations/`)
 
 ---
 

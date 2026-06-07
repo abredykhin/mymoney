@@ -63,6 +63,7 @@ export interface Item {
   plaid_access_token: string;
   transactions_cursor: string | null;
   plaid_item_id: string;
+  historical_sync_complete: boolean | null;
 }
 
 /**

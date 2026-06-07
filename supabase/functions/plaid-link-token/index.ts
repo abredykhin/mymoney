@@ -100,14 +100,9 @@ Deno.serve(async (req) => {
       // Update mode - include access token and empty products array
       console.log('Update mode - retrieving existing item:', itemId);
 
-      if (isLocal) {
-        console.log('⚠️  Local mode: Cannot retrieve items without auth. Skipping update mode.');
-        // Fall through to new link mode
-      } else {
-        const item = await retrieveItemById(supabase, itemId);
-        accessToken = item.plaid_access_token;
-        products = [];
-      }
+      const item = await retrieveItemById(supabase, itemId);
+      accessToken = item.plaid_access_token;
+      products = [];
     } else {
       console.log('New link mode - creating fresh link token');
     }

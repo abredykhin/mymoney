@@ -7,6 +7,18 @@
 import { createPlaidClient } from '../_shared/plaid.ts';
 import type { Item, TransactionUpdates, PlaidAccount, PlaidTransaction, PlaidRemovedTransaction } from './types.ts';
 
+export class PlaidItemError extends Error {
+  code: string;
+  plaidItemId: string;
+
+  constructor(code: string, plaidItemId: string, message?: string) {
+    super(message || code);
+    this.name = 'PlaidItemError';
+    this.code = code;
+    this.plaidItemId = plaidItemId;
+  }
+}
+
 /**
  * Fetch transaction updates from Plaid using cursor-based pagination
  *
@@ -78,7 +90,11 @@ export async function fetchTransactionUpdates(item: Item): Promise<TransactionUp
 
     if (error.response?.data?.error_code === 'ITEM_LOGIN_REQUIRED') {
       console.error('❌ Item requires user re-authentication');
-      throw new Error('ITEM_LOGIN_REQUIRED');
+      throw new PlaidItemError(
+        'ITEM_LOGIN_REQUIRED',
+        item.plaid_item_id,
+        error.response?.data?.error_message || 'Item requires user re-authentication'
+      );
     }
 
     // Generic Plaid error

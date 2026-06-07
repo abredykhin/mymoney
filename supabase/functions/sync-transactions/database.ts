@@ -23,7 +23,7 @@ export async function fetchItemDetails(
 
   const { data, error } = await supabase
     .from('items_table')
-    .select('id, user_id, plaid_access_token, transactions_cursor, plaid_item_id')
+    .select('id, user_id, plaid_access_token, transactions_cursor, plaid_item_id, historical_sync_complete')
     .eq('plaid_item_id', plaidItemId)
     .single();
 
@@ -260,7 +260,7 @@ export async function batchDeleteTransactions(
 export async function updateCursor(
   supabase: SupabaseClient,
   plaidItemId: string,
-  cursor: string
+  cursor: string | null
 ): Promise<void> {
   console.log(`💾 Updating cursor to: ${cursor}`);
 

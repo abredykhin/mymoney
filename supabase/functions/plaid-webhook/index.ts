@@ -21,18 +21,21 @@ interface PlaidWebhookBody {
     error_code: string;
     error_message: string;
   };
+  account_id?: string;
+  account_ids?: string[];
   new_transactions?: number;
   removed_transactions?: string[];
   historical_update_complete?: boolean; // Critical for recurring sync timing
   initial_update_complete?: boolean;
-  account_ids?: string[]; // NEW: For RECURRING_TRANSACTIONS_UPDATE webhook
+  consent_expiration_time?: string;
+  pending_disconnect_date?: string;
   environment: string; // "production" or "sandbox"
 }
 
 /**
  * Main webhook handler
  */
-Deno.serve(async (req, ctx) => {
+Deno.serve(async (req, ctx: any) => {
   console.log('🔔 Incoming Plaid webhook');
 
   // Only accept POST requests
@@ -98,6 +101,8 @@ Deno.serve(async (req, ctx) => {
  * Process webhook in background (doesn't block response)
  */
 async function processWebhook(body: PlaidWebhookBody) {
+  const eventId = await recordWebhookReceipt(body);
+
   try {
     const { webhook_type, webhook_code } = body;
 
@@ -111,8 +116,14 @@ async function processWebhook(body: PlaidWebhookBody) {
       default:
         console.log(`ℹ️  Unhandled webhook type: ${webhook_type}`);
     }
+
+    await markWebhookProcessed(eventId);
   } catch (error) {
     console.error('❌ Error processing webhook:', error);
+    await markWebhookProcessed(
+      eventId,
+      error instanceof Error ? error.message : String(error)
+    );
     // Don't throw - we already returned 200 OK to Plaid
   }
 }
@@ -171,38 +182,73 @@ async function handleItemWebhook(code: string, body: PlaidWebhookBody) {
     case 'ERROR':
       console.error(`❌ Item error for ${body.item_id}:`);
       console.error(`   ${body.error?.error_message || 'Unknown error'}`);
-      console.error(`   → User should reconnect their bank account`);
-
-      // TODO: In the future, notify user to reconnect their account
-      // For now, just log it
+      if (body.error?.error_code === 'ITEM_LOGIN_REQUIRED') {
+        await updateItemHealth(body.item_id, {
+          status: 'needs_reauth',
+          errorCode: body.error.error_code,
+          errorMessage: body.error.error_message,
+        });
+        console.error(`   → Marked item as needs_reauth`);
+      } else {
+        await updateItemHealth(body.item_id, {
+          errorCode: body.error?.error_code,
+          errorMessage: body.error?.error_message,
+        });
+      }
       break;
 
     case 'LOGIN_REPAIRED':
       console.log(`✅ Login repaired for item ${body.item_id}`);
       console.log(`   → Account is ready to sync again`);
+      await updateItemHealth(body.item_id, {
+        status: 'good',
+        clearError: true,
+        clearAccessExpiresAt: true,
+      });
+      await triggerTransactionSync(body.item_id, false);
       break;
 
     case 'NEW_ACCOUNTS_AVAILABLE':
       console.log(`🆕 New accounts available for item ${body.item_id}`);
       console.log(`   → User can be prompted to link additional accounts`);
-
-      // TODO: Notify user about new accounts
+      await updateItemHealth(body.item_id, {
+        status: 'new_accounts_available',
+        clearError: true,
+      });
       break;
 
     case 'PENDING_EXPIRATION':
+      console.warn(`⏰ Item ${body.item_id} is pending expiration`);
+      console.warn(`   → User should reconnect their bank account soon`);
+      await updateItemHealth(body.item_id, {
+        status: 'pending_expiration',
+        accessExpiresAt: body.consent_expiration_time,
+        clearError: true,
+      });
+      break;
+
     case 'PENDING_DISCONNECT':
       console.warn(`⏰ Item ${body.item_id} is pending expiration/disconnect`);
       console.warn(`   → User should reconnect their bank account soon`);
-
-      // TODO: Notify user to reconnect before service disruption
+      await updateItemHealth(body.item_id, {
+        status: 'pending_disconnect',
+        accessExpiresAt: body.pending_disconnect_date,
+        clearError: true,
+      });
       break;
 
     case 'USER_PERMISSION_REVOKED':
-    case 'USER_ACCOUNT_REVOKED':
       console.warn(`🚫 User revoked access to item ${body.item_id}`);
       console.warn(`   → Should remove this item from our records`);
+      await updateItemHealth(body.item_id, {
+        status: 'permission_revoked',
+        clearError: true,
+      });
+      break;
 
-      // TODO: Mark item as revoked in database
+    case 'USER_ACCOUNT_REVOKED':
+      console.warn(`🚫 User revoked account access for item ${body.item_id}`);
+      await markAccountsRevoked(body.item_id, body.account_ids || (body.account_id ? [body.account_id] : []));
       break;
 
     case 'WEBHOOK_UPDATE_ACKNOWLEDGED':
@@ -212,6 +258,141 @@ async function handleItemWebhook(code: string, body: PlaidWebhookBody) {
     default:
       console.log(`⚠️  Unhandled item webhook code: ${code}`);
   }
+}
+
+/**
+ * Record webhook body before processing so we can audit received events.
+ */
+async function recordWebhookReceipt(body: PlaidWebhookBody): Promise<number | null> {
+  try {
+    const supabase = createServiceRoleClient();
+    const { data, error } = await supabase
+      .from('plaid_webhook_events')
+      .insert({
+        plaid_item_id: body.item_id || null,
+        webhook_type: body.webhook_type,
+        webhook_code: body.webhook_code,
+        environment: body.environment || null,
+        payload: body,
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error(`❌ Failed to record webhook receipt: ${error.message}`);
+      return null;
+    }
+
+    return data?.id ?? null;
+  } catch (error) {
+    console.error('❌ Error recording webhook receipt:', error);
+    return null;
+  }
+}
+
+async function markWebhookProcessed(eventId: number | null, errorMessage?: string) {
+  if (eventId == null) return;
+
+  try {
+    const supabase = createServiceRoleClient();
+    const { error } = await supabase
+      .from('plaid_webhook_events')
+      .update({
+        processed_at: new Date().toISOString(),
+        processing_error: errorMessage || null,
+      })
+      .eq('id', eventId);
+
+    if (error) {
+      console.error(`❌ Failed to update webhook receipt: ${error.message}`);
+    }
+  } catch (error) {
+    console.error('❌ Error updating webhook receipt:', error);
+  }
+}
+
+interface ItemHealthUpdate {
+  status?: string;
+  errorCode?: string;
+  errorMessage?: string;
+  accessExpiresAt?: string;
+  clearError?: boolean;
+  clearAccessExpiresAt?: boolean;
+}
+
+async function updateItemHealth(plaidItemId: string, update: ItemHealthUpdate) {
+  const supabase = createServiceRoleClient();
+  const patch: Record<string, string | null> = {
+    plaid_health_updated_at: new Date().toISOString(),
+  };
+
+  if (update.status) {
+    patch.status = update.status;
+  }
+
+  if (update.clearError) {
+    patch.plaid_last_error_code = null;
+    patch.plaid_last_error_message = null;
+  } else {
+    if (update.errorCode !== undefined) {
+      patch.plaid_last_error_code = update.errorCode || null;
+    }
+    if (update.errorMessage !== undefined) {
+      patch.plaid_last_error_message = update.errorMessage || null;
+    }
+  }
+
+  if (update.clearAccessExpiresAt) {
+    patch.plaid_access_expires_at = null;
+  } else if (update.accessExpiresAt !== undefined) {
+    patch.plaid_access_expires_at = update.accessExpiresAt || null;
+  }
+
+  const { error } = await supabase
+    .from('items_table')
+    .update(patch)
+    .eq('plaid_item_id', plaidItemId);
+
+  if (error) {
+    throw new Error(`Failed to update item health for ${plaidItemId}: ${error.message}`);
+  }
+}
+
+async function markAccountsRevoked(plaidItemId: string, plaidAccountIds: string[]) {
+  if (plaidAccountIds.length === 0) {
+    console.warn(`   → No account IDs included; marking item as permission_revoked`);
+    await updateItemHealth(plaidItemId, {
+      status: 'permission_revoked',
+      clearError: true,
+    });
+    return;
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data: item, error: itemError } = await supabase
+    .from('items_table')
+    .select('id')
+    .eq('plaid_item_id', plaidItemId)
+    .single();
+
+  if (itemError || !item) {
+    throw new Error(`Failed to find item for account revocation ${plaidItemId}: ${itemError?.message}`);
+  }
+
+  const { error } = await supabase
+    .from('accounts_table')
+    .update({ plaid_access_revoked_at: new Date().toISOString() })
+    .eq('item_id', item.id)
+    .in('plaid_account_id', plaidAccountIds);
+
+  if (error) {
+    throw new Error(`Failed to mark accounts revoked for ${plaidItemId}: ${error.message}`);
+  }
+
+  await updateItemHealth(plaidItemId, {
+    status: 'permission_revoked',
+    clearError: true,
+  });
 }
 
 /**

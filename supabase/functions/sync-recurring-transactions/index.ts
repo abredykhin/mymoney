@@ -1,7 +1,6 @@
 import { createServiceRoleClient, requireAuth, handleCors, jsonResponse } from '../_shared/auth.ts';
 import { createPlaidClient } from '../_shared/plaid.ts';
 import { updateTransactionRecurringFlags, updateProfileRecurringSummary } from '../_shared/recurring.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 interface SyncRequest {
   plaid_item_id: string;
@@ -58,13 +57,15 @@ async function syncRecurringTransactions(
   // 2. Call Plaid recurring endpoint
   console.log('📞 Calling Plaid /transactions/recurring/get');
   const plaidClient = createPlaidClient();
-  const response = await callPlaidWithRetry(() =>
-    plaidClient.transactionsRecurringGet({
-      access_token: item.plaid_access_token,
-      options: {
-        include_personal_finance_category: true
-      }
-    })
+  const response = await callPlaidWithRetry(
+    () =>
+      plaidClient.transactionsRecurringGet({
+        access_token: item.plaid_access_token,
+        options: {
+          include_personal_finance_category: true
+        }
+      }),
+    plaidItemId
   );
 
   const { inflow_streams, outflow_streams } = response.data;
@@ -159,10 +160,10 @@ async function syncRecurringTransactions(
   await syncManualStreams(supabase, userId);
 
   // 6. Update is_recurring flags on transactions
-  await updateTransactionRecurringFlags(supabase, userId);
+  await updateTransactionRecurringFlags(supabase as any, userId);
 
   // 7. Update profile monthly totals
-  await updateProfileRecurringSummary(supabase, userId);
+  await updateProfileRecurringSummary(supabase as any, userId);
 
   console.log(`✅ Recurring sync completed: ${allStreams.length} Plaid streams processed`);
 
@@ -285,6 +286,7 @@ function formatFrequencyForDisplay(plaidFrequency: string): string {
  */
 async function callPlaidWithRetry<T>(
   fn: () => Promise<T>,
+  plaidItemId?: string,
   maxRetries: number = 3,
   baseDelay: number = 1000
 ): Promise<T> {
@@ -309,7 +311,12 @@ async function callPlaidWithRetry<T>(
       if (error.response?.data?.error_code === 'ITEM_LOGIN_REQUIRED') {
         console.error('❌ Item requires re-authentication');
         // Mark item as requiring user action
-        await markItemAsNeedsReauth(error.item_id);
+        if (plaidItemId) {
+          await markItemAsNeedsReauth(
+            plaidItemId,
+            error.response?.data?.error_message || 'Item requires user re-authentication'
+          );
+        }
         throw new Error('Item requires re-authentication');
       }
 
@@ -335,16 +342,16 @@ async function callPlaidWithRetry<T>(
 /**
  * Mark item as needing reauth
  */
-async function markItemAsNeedsReauth(itemId: string) {
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-  );
+async function markItemAsNeedsReauth(plaidItemId: string, message?: string) {
+  const supabase = createServiceRoleClient();
   await supabase
     .from('items_table')
     .update({
-      status: 'NEEDS_REAUTH',
+      status: 'needs_reauth',
+      plaid_health_updated_at: new Date().toISOString(),
+      plaid_last_error_code: 'ITEM_LOGIN_REQUIRED',
+      plaid_last_error_message: message || 'Item requires user re-authentication',
       updated_at: new Date().toISOString()
     })
-    .eq('plaid_item_id', itemId);
+    .eq('plaid_item_id', plaidItemId);
 }

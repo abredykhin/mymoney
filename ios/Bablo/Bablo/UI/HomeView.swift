@@ -56,7 +56,7 @@ struct HomeView: View {
                 }
                 
                 let hasBudgetData = budgetService.monthlyIncome > 0 || budgetService.monthlyMandatoryExpenses > 0
-                let hasBankAccounts = !accountsService.banksWithAccounts.isEmpty
+                let hasBankAccounts = !accountsService.visibleBanksWithAccounts.isEmpty
 
                 let shouldShowMoneyWidgets = hasBudgetData || hasBankAccounts || !transactionsService.transactions.isEmpty
 
@@ -76,7 +76,7 @@ struct HomeView: View {
                     .padding(.top, Spacing.md)
                 }
 
-                if !accountsService.banksWithAccounts.isEmpty && coachService.currentInsight != nil && !coachService.isDismissed {
+                if !accountsService.visibleBanksWithAccounts.isEmpty && coachService.currentInsight != nil && !coachService.isDismissed {
                     CoachCardView()
                         .transition(.asymmetric(
                             insertion: .opacity.combined(with: .scale(scale: 0.95)),
@@ -426,7 +426,7 @@ struct HomeView: View {
     }
 
     private func refreshStreakIfBankLinked() async {
-        guard !accountsService.banksWithAccounts.isEmpty else {
+        guard !accountsService.visibleBanksWithAccounts.isEmpty else {
             streakService.clearStreak()
             return
         }

@@ -33,8 +33,6 @@ The `supabase/` directory contains all the backend infrastructure, managed by th
 
 -   **`migrations/`**: This directory holds the full history of database schema changes as incremental, timestamped SQL files. These migrations are version-controlled and applied locally by the Supabase CLI (e.g., `supabase db reset`).
 
--   **`DEPLOY_TO_PRODUCTION.sql`**: This is a non-standard, manually-managed script that aggregates all the SQL from the `migrations/` directory. It serves as a master script to set up a new production database from scratch. It is executed directly in the Supabase Dashboard's SQL editor during initial setup or major deployments.
-
 ### Authentication Flow
 
 Authentication is handled by Supabase Auth, providing a secure and streamlined experience.
@@ -169,12 +167,9 @@ All `supabase` commands should be executed from the root of the project reposito
 
 ### Production Deployment
 
-To deploy database migrations to production, follow the consolidated manual deployment process rather than `supabase db push` for maximum safety:
+Production database changes should be reviewed as normal Supabase migrations in `supabase/migrations/`. Do not reference or recreate a consolidated `DEPLOY_TO_PRODUCTION.sql` script; it is not part of the current repository.
 
-1.  **Consolidate Migrations:** Before completing your work, make sure all schema changes from `supabase/migrations` are copied and consolidated into the main production script: `supabase/DEPLOY_TO_PRODUCTION.sql`.
-2.  **Claiming Victory / Manual Execution:** 
-    > [!IMPORTANT]
-    > **CRITICAL RULE FOR AGENTS:** An agent **MUST** explicitly run the updated consolidated SQL in the Supabase Dashboard's SQL editor (or instruct the user to do so if permissions are restricted) to deploy the migration to production **BEFORE** declaring the task complete or claiming victory. Do not rely solely on local database verification.
+Before claiming a production schema change is deployed, explicitly state whether the migration was only created locally or actually applied to production.
 
 ### Querying The Production Database For Debugging
 

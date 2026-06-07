@@ -19,6 +19,12 @@ struct Bank: Codable, Identifiable, Equatable, Hashable {
     let logo: String?
     let primary_color: String? // Keep snake_case for compatibility
     let url: String?
+    let plaid_item_id: String?
+    let item_status: String
+    let plaid_health_updated_at: Date?
+    let plaid_last_error_code: String?
+    let plaid_last_error_message: String?
+    let plaid_access_expires_at: Date?
     var accounts: [BankAccount]
 
     enum CodingKeys: String, CodingKey {
@@ -27,7 +33,41 @@ struct Bank: Codable, Identifiable, Equatable, Hashable {
         case logo
         case primary_color
         case url
+        case plaid_item_id
+        case item_status
+        case plaid_health_updated_at
+        case plaid_last_error_code
+        case plaid_last_error_message
+        case plaid_access_expires_at
         case accounts
+    }
+
+    init(
+        id: Int,
+        bank_name: String,
+        logo: String?,
+        primary_color: String?,
+        url: String?,
+        plaid_item_id: String? = nil,
+        item_status: String = "good",
+        plaid_health_updated_at: Date? = nil,
+        plaid_last_error_code: String? = nil,
+        plaid_last_error_message: String? = nil,
+        plaid_access_expires_at: Date? = nil,
+        accounts: [BankAccount]
+    ) {
+        self.id = id
+        self.bank_name = bank_name
+        self.logo = logo
+        self.primary_color = primary_color
+        self.url = url
+        self.plaid_item_id = plaid_item_id
+        self.item_status = item_status
+        self.plaid_health_updated_at = plaid_health_updated_at
+        self.plaid_last_error_code = plaid_last_error_code
+        self.plaid_last_error_message = plaid_last_error_message
+        self.plaid_access_expires_at = plaid_access_expires_at
+        self.accounts = accounts
     }
 
     // Convenience property for camelCase access
@@ -57,6 +97,68 @@ struct Bank: Codable, Identifiable, Equatable, Hashable {
         guard let colorHex = primary_color else { return nil }
         return Color(hex: colorHex)
     }
+
+    var healthStatus: PlaidItemHealthStatus {
+        PlaidItemHealthStatus(rawValue: item_status.lowercased()) ?? .good
+    }
+
+    var needsAttention: Bool {
+        healthStatus != .good
+    }
+
+    var repairable: Bool {
+        healthStatus.isRepairable
+    }
+}
+
+enum PlaidItemHealthStatus: String, Codable, Equatable, Hashable {
+    case good
+    case needsReauth = "needs_reauth"
+    case pendingDisconnect = "pending_disconnect"
+    case pendingExpiration = "pending_expiration"
+    case permissionRevoked = "permission_revoked"
+    case newAccountsAvailable = "new_accounts_available"
+
+    var displayTitle: String {
+        switch self {
+        case .good:
+            return "Connected"
+        case .needsReauth:
+            return "Needs refresh"
+        case .pendingDisconnect, .pendingExpiration:
+            return "Refresh soon"
+        case .permissionRevoked:
+            return "Access revoked"
+        case .newAccountsAvailable:
+            return "New accounts"
+        }
+    }
+
+    var displayMessage: String {
+        switch self {
+        case .good:
+            return "Connection is healthy."
+        case .needsReauth:
+            return "Refresh this bank connection to keep transactions syncing."
+        case .pendingDisconnect:
+            return "Plaid says this connection may disconnect soon."
+        case .pendingExpiration:
+            return "Plaid says this connection consent expires soon."
+        case .permissionRevoked:
+            return "Access was revoked. Try repairing, or link this bank again if Plaid asks."
+        case .newAccountsAvailable:
+            return "This bank has additional accounts available to share."
+        }
+    }
+
+    var isRepairable: Bool {
+        switch self {
+        case .good:
+            return false
+        case .needsReauth, .pendingDisconnect, .pendingExpiration, .permissionRevoked, .newAccountsAvailable:
+            return true
+        }
+    }
 }
 
 /// Represents a bank account
@@ -70,9 +172,10 @@ struct BankAccount: Codable, Identifiable, Equatable, Hashable {
     let available_balance: Double? // Keep snake_case for compatibility
     let _type: String // Underscore prefix for compatibility with old schema
     let subtype: String?
-    let hidden: Bool
+    var hidden: Bool
     let iso_currency_code: String? // For compatibility
     let updated_at: Date? // For compatibility
+    let plaid_access_revoked_at: Date?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -87,6 +190,37 @@ struct BankAccount: Codable, Identifiable, Equatable, Hashable {
         case hidden
         case iso_currency_code
         case updated_at
+        case plaid_access_revoked_at
+    }
+
+    init(
+        id: Int,
+        item_id: Int,
+        name: String,
+        mask: String?,
+        official_name: String?,
+        current_balance: Double,
+        available_balance: Double?,
+        _type: String,
+        subtype: String?,
+        hidden: Bool,
+        iso_currency_code: String?,
+        updated_at: Date?,
+        plaid_access_revoked_at: Date? = nil
+    ) {
+        self.id = id
+        self.item_id = item_id
+        self.name = name
+        self.mask = mask
+        self.official_name = official_name
+        self.current_balance = current_balance
+        self.available_balance = available_balance
+        self._type = _type
+        self.subtype = subtype
+        self.hidden = hidden
+        self.iso_currency_code = iso_currency_code
+        self.updated_at = updated_at
+        self.plaid_access_revoked_at = plaid_access_revoked_at
     }
 
     // Convenience properties for camelCase access
@@ -95,6 +229,7 @@ struct BankAccount: Codable, Identifiable, Equatable, Hashable {
     var currentBalance: Double { current_balance }
     var availableBalance: Double? { available_balance }
     var type: String { _type }
+    var accessRevoked: Bool { plaid_access_revoked_at != nil }
 
     var displayName: String {
         official_name ?? name
@@ -146,12 +281,10 @@ class AccountsService: ObservableObject {
         Logger.d("AccountsService: Fetching accounts from Supabase")
 
         do {
-            // Fetch accounts with bank information using a view or join
-            // The accounts view in Supabase joins accounts with items and institutions
+            // Fetch all accounts. Visibility is applied by presentation helpers, not this base model.
             let response: [AccountWithBank] = try await supabase
                 .from("accounts_with_banks")
                 .select()
-                .eq("hidden", value: false)
                 .order("name")
                 .execute()
                 .value
@@ -159,11 +292,11 @@ class AccountsService: ObservableObject {
             Logger.i("AccountsService: Received \(response.count) accounts")
 
             // Group accounts by bank
-            let groupedBanks = Dictionary(grouping: response) { $0.institutionId }
+            let groupedBanks = Dictionary(grouping: response) { $0.itemId }
 
             // Transform to Bank objects
             var banks: [Bank] = []
-            for (institutionId, accountsForBank) in groupedBanks {
+            for (itemId, accountsForBank) in groupedBanks {
                 guard let firstAccount = accountsForBank.first else { continue }
 
                 let bankAccounts = accountsForBank.map { accountData in
@@ -178,17 +311,24 @@ class AccountsService: ObservableObject {
                         _type: accountData.type,
                         subtype: accountData.subtype,
                         hidden: accountData.hidden,
-                        iso_currency_code: "USD", // Default to USD
-                        updated_at: Date() // Current timestamp
+                        iso_currency_code: accountData.isoCurrencyCode ?? "USD",
+                        updated_at: accountData.updatedAt,
+                        plaid_access_revoked_at: accountData.plaidAccessRevokedAt
                     )
                 }
 
                 let bank = Bank(
-                    id: institutionId,
+                    id: itemId,
                     bank_name: firstAccount.institutionName,
                     logo: firstAccount.institutionLogo,
                     primary_color: firstAccount.institutionColor,
                     url: firstAccount.institutionUrl,
+                    plaid_item_id: firstAccount.plaidItemId,
+                    item_status: firstAccount.itemStatus,
+                    plaid_health_updated_at: firstAccount.plaidHealthUpdatedAt,
+                    plaid_last_error_code: firstAccount.plaidLastErrorCode,
+                    plaid_last_error_message: firstAccount.plaidLastErrorMessage,
+                    plaid_access_expires_at: firstAccount.plaidAccessExpiresAt,
                     accounts: bankAccounts
                 )
 
@@ -231,21 +371,7 @@ class AccountsService: ObservableObject {
             // Update local state
             if let bankIndex = banksWithAccounts.firstIndex(where: { $0.accounts.contains(where: { $0.id == accountId }) }),
                let accountIndex = banksWithAccounts[bankIndex].accounts.firstIndex(where: { $0.id == accountId }) {
-                let account = banksWithAccounts[bankIndex].accounts[accountIndex]
-                banksWithAccounts[bankIndex].accounts[accountIndex] = BankAccount(
-                    id: account.id,
-                    item_id: account.item_id,
-                    name: account.name,
-                    mask: account.mask,
-                    official_name: account.official_name,
-                    current_balance: account.current_balance,
-                    available_balance: account.available_balance,
-                    _type: account._type,
-                    subtype: account.subtype,
-                    hidden: hidden,
-                    iso_currency_code: account.iso_currency_code,
-                    updated_at: account.updated_at
-                )
+                banksWithAccounts[bankIndex].accounts[accountIndex].hidden = hidden
             }
 
             // Refresh to get updated data
@@ -258,10 +384,21 @@ class AccountsService: ObservableObject {
 
     /// Get total balance across all visible accounts
     var totalBalance: Double {
-        banksWithAccounts
+        visibleBanksWithAccounts
             .flatMap { $0.accounts }
-            .filter { !$0.hidden }
             .reduce(0) { $0 + $1.current_balance }
+    }
+
+    /// Banks with only accounts that are visible in spend/budget surfaces.
+    var visibleBanksWithAccounts: [Bank] {
+        banksWithAccounts.compactMap { bank in
+            let visibleAccounts = bank.accounts.filter { !$0.hidden && !$0.accessRevoked }
+            guard !visibleAccounts.isEmpty else { return nil }
+
+            var visibleBank = bank
+            visibleBank.accounts = visibleAccounts
+            return visibleBank
+        }
     }
 
     /// Clear user-scoped account data when the authenticated user changes.
@@ -298,11 +435,21 @@ private struct AccountWithBank: Codable {
     let type: String
     let subtype: String?
     let hidden: Bool
+    let accountId: String?
+    let isoCurrencyCode: String?
+    let updatedAt: Date?
     let institutionId: Int
     let institutionName: String
     let institutionLogo: String?
     let institutionColor: String?
     let institutionUrl: String?
+    let plaidItemId: String?
+    let itemStatus: String
+    let plaidHealthUpdatedAt: Date?
+    let plaidLastErrorCode: String?
+    let plaidLastErrorMessage: String?
+    let plaidAccessExpiresAt: Date?
+    let plaidAccessRevokedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -315,11 +462,21 @@ private struct AccountWithBank: Codable {
         case type
         case subtype
         case hidden
+        case accountId = "account_id"
+        case isoCurrencyCode = "iso_currency_code"
+        case updatedAt = "updated_at"
         case institutionId = "institution_id"
         case institutionName = "institution_name"
         case institutionLogo = "institution_logo"
         case institutionColor = "institution_color"
         case institutionUrl = "institution_url"
+        case plaidItemId = "plaid_item_id"
+        case itemStatus = "item_status"
+        case plaidHealthUpdatedAt = "plaid_health_updated_at"
+        case plaidLastErrorCode = "plaid_last_error_code"
+        case plaidLastErrorMessage = "plaid_last_error_message"
+        case plaidAccessExpiresAt = "plaid_access_expires_at"
+        case plaidAccessRevokedAt = "plaid_access_revoked_at"
     }
 }
 

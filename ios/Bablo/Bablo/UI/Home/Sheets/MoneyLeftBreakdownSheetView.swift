@@ -99,7 +99,7 @@ struct MoneyLeftBreakdownView: View {
     }
 
     private var accountAuditRows: HeroBudgetAccountAuditRows {
-        let inputs = accountsService.banksWithAccounts.flatMap { bank in
+        let inputs = accountsService.visibleBanksWithAccounts.flatMap { bank in
             bank.accounts.map {
                 HeroBudgetAccountInput(
                     name: $0.name,
