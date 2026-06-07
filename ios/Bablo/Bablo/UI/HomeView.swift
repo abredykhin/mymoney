@@ -118,8 +118,34 @@ struct HomeView: View {
             switch destination {
             case .budgetBreakdown(let period):
                 MoneyLeftBreakdownView(period: period)
-            case .breakdownTransactions(let source, let period, let categoryName):
-                BreakdownTransactionListView(source: source, period: period, categoryFilter: categoryName)
+            case .categorySpendList(let period, let category):
+                let range = periodSpendDateRange(for: period)
+                let initialFilter: TransactionFilterValue = {
+                    if let cat = FlexibleSpendingCategory.allCases.first(where: { $0.displayName == category }) {
+                        return .category(cat)
+                    } else if category == "Everything else" {
+                        return .other
+                    } else {
+                        return .out
+                    }
+                }()
+                AllTransactionsView(
+                    startDate: range.start,
+                    endDate: range.end,
+                    title: category,
+                    initialFilter: initialFilter,
+                    discretionaryOnly: true
+                )
+            case .incomeTransactions:
+                let range = periodSpendDateRange(for: .month)
+                AllTransactionsView(
+                    startDate: range.start,
+                    endDate: range.end,
+                    title: "Income this month",
+                    initialFilter: .income
+                )
+            case .obligationsDetails:
+                ComingUpDetailsSheetView()
             case .streakDetail:
                 StreakDetailView()
             case .allTransactions:

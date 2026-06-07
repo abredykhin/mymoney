@@ -155,7 +155,6 @@
 		B2C3D4E5F60009AABBCCDDEE /* SpendingPlanModeStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60008AABBCCDDEE /* SpendingPlanModeStoreTests.swift */; };
 		B5495F1CDEB443E39AC897A8 /* AllTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6616A53A2E7FF7026E615DDA /* AllTransactionsView.swift */; };
 		B8203166A3A9DB62F68CD955 /* OnboardingFixedExpensesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB442FCBA28DFC63AED0C61 /* OnboardingFixedExpensesView.swift */; };
-		BB22CC33DD44EE55FF6600BB /* BreakdownTransactionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF6600AA /* BreakdownTransactionListView.swift */; };
 		BBEC5329C3B22505BA4DFA4E /* RecurringTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D981BB2AB306FC454F754128 /* RecurringTransactionsView.swift */; };
 		BBFAF2D7606587839EE55981 /* ComingUpCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF41A549D5DACE81A78B481C /* ComingUpCalculatorTests.swift */; };
 		C08570C0E1631BC9BDF7580C /* RecentWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 434D1815D10F4CEAB94A9F21 /* RecentWidgetView.swift */; };
@@ -333,7 +332,6 @@
 		AA11BB22CC33DD44EE55FF66 /* HomeNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeNavigation.swift; sourceTree = "<group>"; };
 		AC25787544568673BCA76D74 /* ComingUpWidgetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComingUpWidgetView.swift; sourceTree = "<group>"; };
 		B2C3D4E5F60008AABBCCDDEE /* SpendingPlanModeStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingPlanModeStoreTests.swift; sourceTree = "<group>"; };
-		BB22CC33DD44EE55FF6600AA /* BreakdownTransactionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakdownTransactionListView.swift; sourceTree = "<group>"; };
 		BC8129EBE1C455154DCD4B88 /* StreakWidgetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StreakWidgetView.swift; sourceTree = "<group>"; };
 		C54E0A69D0900E1468D5091D /* ProfileDecodingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProfileDecodingTests.swift; sourceTree = "<group>"; };
 		C2A1F74D5DFF4A218E930A02 /* HeroBudgetGoldenTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeroBudgetGoldenTests.swift; sourceTree = "<group>"; };
@@ -401,7 +399,6 @@
 			isa = PBXGroup;
 			children = (
 				4D4D4C002F2A000000BEEF01 /* MoneyLeftBreakdownSheetView.swift */,
-				BB22CC33DD44EE55FF6600AA /* BreakdownTransactionListView.swift */,
 				3255FFECD0F13F2CE07BFC5E /* ComingUpDetailsSheetView.swift */,
 				CC1A2B3C4D5E6F7A8B9C0D30 /* TheCushionSheetView.swift */,
 				6616A53A2E7FF7026E615DDA /* AllTransactionsView.swift */,
@@ -1022,7 +1019,6 @@
 				3A68FA092EFCD12F00D32561 /* LiquidHeroView.swift in Sources */,
 				4D4D4C002F2A000100BEEF01 /* MoneyLeftBreakdownSheetView.swift in Sources */,
 				AA11BB22CC33DD44EE55FF67 /* HomeNavigation.swift in Sources */,
-				BB22CC33DD44EE55FF6600BB /* BreakdownTransactionListView.swift in Sources */,
 				3A68FA0B2EFCD12F00D32561 /* HomeTopBarView.swift in Sources */,
 				3A88FA0A2EFCD12F00D32511 /* CoachCardView.swift in Sources */,
 				3A88FA0A2EFCD12F00D32521 /* CoachTabView.swift in Sources */,

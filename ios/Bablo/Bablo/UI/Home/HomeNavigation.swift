@@ -14,9 +14,6 @@ enum HomeDestination: Hashable {
     /// The "How we got this" budget breakdown detail for a given period.
     case budgetBreakdown(HeroPeriod)
 
-    /// Transaction list for one of the breakdown steps.
-    case breakdownTransactions(BreakdownTransactionSource, HeroPeriod, String? = nil)
-
     /// Detail screen for the user's saving streak.
     case streakDetail
 
@@ -30,6 +27,15 @@ enum HomeDestination: Hashable {
 
     /// Transactions on a specific day (yyyy-MM-dd date string).
     case dayTransactions(String)
+
+    /// Discretionary transactions list for a specific category and budget period.
+    case categorySpendList(period: HeroPeriod, category: String)
+
+    /// Income transactions for the current month.
+    case incomeTransactions
+
+    /// Upcoming / monthly obligations details.
+    case obligationsDetails
 }
 
 // MARK: - Transaction source

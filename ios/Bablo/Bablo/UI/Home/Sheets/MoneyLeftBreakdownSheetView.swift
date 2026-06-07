@@ -236,7 +236,8 @@ struct MoneyLeftBreakdownView: View {
                     // month's spend, and in the week/day breakdown the spend step is also the
                     // month's spend (the period number is derived from what's left this month).
                     case .variableSpend: return .periodSpendList(.month)
-                    case .income, .obligations: return .breakdownTransactions(source, period, nil)
+                    case .income: return .incomeTransactions
+                    case .obligations: return .obligationsDetails
                     }
                 }
 
@@ -476,7 +477,7 @@ private struct BreakdownStepCard: View {
                 VStack(spacing: 6) {
                     ForEach(spendRows) { row in
                         if let _ = navigationDestination {
-                            let categoryDest = HomeDestination.breakdownTransactions(step.transactionSource ?? .variableSpend, period, row.category)
+                            let categoryDest = HomeDestination.categorySpendList(period: period, category: row.category)
                             NavigationLink(value: categoryDest) {
                                 SheetInfoRow(
                                     symbol: categorySymbol(for: row.category),
