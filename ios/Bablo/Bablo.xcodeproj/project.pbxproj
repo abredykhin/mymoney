@@ -91,6 +91,7 @@
 		754B694B2D97D8E500C0F001 /* BiometricsEnrollmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B694A2D97D8E500C0F001 /* BiometricsEnrollmentView.swift */; };
 		754B694D2D97EAD100C0F001 /* AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 754B694C2D97EAD100C0F001 /* AuthManager.swift */; };
 		75579F232CD6F2D800845A62 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75579F222CD6F2D800845A62 /* ProfileView.swift */; };
+		B6A11F102FDEE00100A11C01 /* LinkedAccountsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6A11F112FDEE00100A11C01 /* LinkedAccountsView.swift */; };
 		757ABF352C18195100DF8CA8 /* BabloApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF342C18195100DF8CA8 /* BabloApp.swift */; };
 		757ABF372C18195100DF8CA8 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF362C18195100DF8CA8 /* ContentView.swift */; };
 		757ABF3B2C18195300DF8CA8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 757ABF3A2C18195300DF8CA8 /* Assets.xcassets */; };
@@ -271,6 +272,7 @@
 		754B694A2D97D8E500C0F001 /* BiometricsEnrollmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricsEnrollmentView.swift; sourceTree = "<group>"; };
 		754B694C2D97EAD100C0F001 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		75579F222CD6F2D800845A62 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		B6A11F112FDEE00100A11C01 /* LinkedAccountsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkedAccountsView.swift; sourceTree = "<group>"; };
 		757ABF312C18195100DF8CA8 /* Bablo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bablo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		757ABF342C18195100DF8CA8 /* BabloApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloApp.swift; sourceTree = "<group>"; };
 		757ABF362C18195100DF8CA8 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -618,6 +620,7 @@
 			isa = PBXGroup;
 			children = (
 				75579F222CD6F2D800845A62 /* ProfileView.swift */,
+				B6A11F112FDEE00100A11C01 /* LinkedAccountsView.swift */,
 			);
 			path = Profile;
 			sourceTree = "<group>";
@@ -1066,6 +1069,7 @@
 				757ABF932C18243C00DF8CA8 /* WelcomeView.swift in Sources */,
 				754B69472D97D66F00C0F001 /* AuthenticationView.swift in Sources */,
 				75579F232CD6F2D800845A62 /* ProfileView.swift in Sources */,
+				B6A11F102FDEE00100A11C01 /* LinkedAccountsView.swift in Sources */,
 				75E49BAC2CA3EACF008D72F8 /* Dates.swift in Sources */,
 				7590F29F2C86471D00BCCDE6 /* LinkController.swift in Sources */,
 				75D39A082EEE5C7600866367 /* PlaidService.swift in Sources */,
