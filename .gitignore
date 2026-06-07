@@ -7,10 +7,9 @@ yarn-error.log*
 database/last-cleared.dummy
 db-data/
 config.toml
+!supabase/config.toml
 .agent/
 .gemini-clipboard/
-
-supabase/config.toml
 
 # Runtime data
 pids

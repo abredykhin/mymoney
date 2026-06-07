@@ -1,0 +1,2 @@
+[functions.plaid-webhook]
+verify_jwt = false

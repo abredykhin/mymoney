@@ -114,13 +114,8 @@ struct CoachCardView: View {
                         systemImage: "arrow.up.forward",
                         isPrimary: true
                     ) {
-                        // Navigate to dynamic tab based on action label
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            if insight.actionLabel.lowercased().contains("goal") {
-                                navigationState.selectedTab = .goals
-                            } else {
-                                navigationState.selectedTab = .pulse
-                            }
+                            navigationState.selectedTab = .coach
                         }
                     }
                     
