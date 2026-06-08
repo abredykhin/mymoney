@@ -992,4 +992,3 @@ enum TransactionFilterValue: Hashable {
         .environmentObject(UserAccount())
         .environmentObject(AccountsService())
 }
-

@@ -156,7 +156,8 @@ struct HomeView: View {
                     startDate: range.start,
                     endDate: range.end,
                     title: periodSpendListTitle(for: period),
-                    initialFilter: .out
+                    initialFilter: .out,
+                    discretionaryOnly: true
                 )
             case .monthSpendBeforePeriod(let period):
                 let range = monthBeforePeriodDateRange(for: period)
@@ -164,7 +165,8 @@ struct HomeView: View {
                     startDate: range.start,
                     endDate: range.end,
                     title: "Spent earlier this month",
-                    initialFilter: .out
+                    initialFilter: .out,
+                    discretionaryOnly: true
                 )
             case .dayTransactions(let dateStr):
                 // Streak day drill-down: show only discretionary spend (the
