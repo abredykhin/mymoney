@@ -13,6 +13,7 @@ struct ProfileView: View {
     @EnvironmentObject var accountsService: AccountsService
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.babloTheme) private var theme: BabloResolvedTheme
+    @AppStorage("babloThemeVariant") private var babloThemeVariant = BabloTheme.normal.rawValue
     
     @State private var isManagingAccounts = false
     @State private var activePlaceholder: PlaceholderSheetData? = nil
@@ -275,6 +276,12 @@ struct ProfileView: View {
                 .background(theme.colors.line.color)
                 .padding(.vertical, 2)
             
+            themeToggleRow
+            
+            Divider()
+                .background(theme.colors.line.color)
+                .padding(.vertical, 2)
+            
             OptionRow(
                 title: "Help & support",
                 subtitle: nil,
@@ -292,6 +299,39 @@ struct ProfileView: View {
             }
         }
         .babloCard(padding: Spacing.md)
+    }
+    
+    private var themeToggleRow: some View {
+        HStack(spacing: Spacing.md) {
+            ZStack {
+                Circle()
+                    .fill(theme.colors.info.color.opacity(0.12))
+                    .frame(width: 38, height: 38)
+                Image(systemName: "paintpalette.fill")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(theme.colors.info.color)
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Pop theme")
+                    .font(theme.typography.body(size: 16, weight: .bold))
+                    .foregroundColor(theme.colors.textPrimary.color)
+                Text("Halftones, bold borders, retro look")
+                    .font(theme.typography.body(size: 12, weight: .medium))
+                    .foregroundColor(theme.colors.textTertiary.color)
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: Binding(
+                get: { babloThemeVariant == BabloTheme.pop.rawValue },
+                set: { babloThemeVariant = $0 ? BabloTheme.pop.rawValue : BabloTheme.normal.rawValue }
+            ))
+            .labelsHidden()
+            .tint(theme.colors.accent.color)
+            .accessibilityIdentifier("me.popThemeToggle")
+        }
+        .padding(.vertical, Spacing.sm)
     }
     
     private var signOutCard: some View {
