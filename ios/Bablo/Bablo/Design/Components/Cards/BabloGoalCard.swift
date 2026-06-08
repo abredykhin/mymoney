@@ -88,11 +88,7 @@ struct BabloGoalCard: View {
     }
 
     private func formatCurrency(_ value: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: value)) ?? "$\(Int(value))"
+        value.formatted(.currency(code: "USD").precision(.fractionLength(0)))
     }
 }
 

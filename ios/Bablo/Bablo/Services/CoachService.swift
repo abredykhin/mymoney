@@ -397,7 +397,11 @@ class CoachService: ObservableObject {
         Logger.d("CoachService: Invoking gemini-coach-insights function (force: \(force))")
 
         let task = Task { [supabase] () throws -> CoachInsight in
-            let body: [String: Any] = ["force": force]
+            let localeId = Locale.current.language.languageCode?.identifier ?? "en"
+            let body: [String: Any] = [
+                "force": force,
+                "locale": localeId
+            ]
             let bodyData = try JSONSerialization.data(withJSONObject: body)
             return try await supabase.functions.invoke(
                 "gemini-coach-insights",

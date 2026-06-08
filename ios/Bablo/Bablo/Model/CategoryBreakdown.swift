@@ -51,11 +51,7 @@ struct CategoryBreakdownItem: Equatable, Identifiable {
     }
 
     var formattedAmount: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: totalAmount)) ?? "$0"
+        totalAmount.formatted(.currency(code: "USD").precision(.fractionLength(0)))
     }
 }
 

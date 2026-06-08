@@ -83,10 +83,7 @@ struct TotalBalance: Codable, Equatable {
     }
 
     var formattedBalance: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        return formatter.string(from: NSNumber(value: balance)) ?? "$0.00"
+        balance.formatted(.currency(code: "USD"))
     }
 }
 
@@ -113,10 +110,7 @@ struct BudgetCategoryItem: Codable, Identifiable, Equatable {
     }
 
     var formattedAmount: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        return formatter.string(from: NSNumber(value: totalSpent)) ?? "$0.00"
+        totalSpent.formatted(.currency(code: "USD"))
     }
 
     var formattedPercent: String {
@@ -140,10 +134,7 @@ struct CategoryBreakdownResponse: Codable, Equatable {
     }
 
     var formattedTotal: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        return formatter.string(from: NSNumber(value: totalSpent)) ?? "$0.00"
+        totalSpent.formatted(.currency(code: "USD"))
     }
 }
 

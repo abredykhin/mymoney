@@ -76,6 +76,8 @@
 		3AAA81122FCCB91E00472401 /* MerchantWeeklyDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AAA810A2FCCB91E00472401 /* MerchantWeeklyDataProvider.swift */; };
 		3AAA81132FCCB91E00472401 /* TransactionDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AAA810D2FCCB91E00472401 /* TransactionDetailSheet.swift */; };
 		3AAA81142FCCB91E00472401 /* TransactionCategoryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AAA81072FCCB91E00472401 /* TransactionCategoryPickerView.swift */; };
+		3ABE7F7E2FD67B1F00CEB0CA /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 3ABE7F7D2FD67B1F00CEB0CA /* Localizable.xcstrings */; };
+		3ABE7F822FD67B8900CEB0CA /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 3ABE7F812FD67B8900CEB0CA /* InfoPlist.xcstrings */; };
 		404A97A25E43424CF90CFAF1 /* StreakWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC8129EBE1C455154DCD4B88 /* StreakWidgetView.swift */; };
 		44FC673B7FFDCA94F4061DD3 /* OnboardingNumPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4629BAFB74D6D69F5B6A000E /* OnboardingNumPad.swift */; };
 		4D4D4C002F2A000100BEEF01 /* MoneyLeftBreakdownSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4D4C002F2A000000BEEF01 /* MoneyLeftBreakdownSheetView.swift */; };
@@ -255,6 +257,8 @@
 		3AAA810A2FCCB91E00472401 /* MerchantWeeklyDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MerchantWeeklyDataProvider.swift; sourceTree = "<group>"; };
 		3AAA810B2FCCB91E00472401 /* TransactionDateParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDateParser.swift; sourceTree = "<group>"; };
 		3AAA810D2FCCB91E00472401 /* TransactionDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailSheet.swift; sourceTree = "<group>"; };
+		3ABE7F7D2FD67B1F00CEB0CA /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		3ABE7F812FD67B8900CEB0CA /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		425AC6E68DF39DF90BF31D70 /* OnboardingIncomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingIncomeView.swift; sourceTree = "<group>"; };
 		434D1815D10F4CEAB94A9F21 /* RecentWidgetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecentWidgetView.swift; sourceTree = "<group>"; };
 		4629BAFB74D6D69F5B6A000E /* OnboardingNumPad.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingNumPad.swift; sourceTree = "<group>"; };
@@ -640,6 +644,8 @@
 				757ABF3A2C18195300DF8CA8 /* Assets.xcassets */,
 				757ABF3C2C18195300DF8CA8 /* Bablo.entitlements */,
 				757ABF3D2C18195300DF8CA8 /* Preview Content */,
+				3ABE7F7D2FD67B1F00CEB0CA /* Localizable.xcstrings */,
+				3ABE7F812FD67B8900CEB0CA /* InfoPlist.xcstrings */,
 			);
 			path = Bablo;
 			sourceTree = "<group>";
@@ -978,7 +984,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				757ABF3F2C18195300DF8CA8 /* Preview Assets.xcassets in Resources */,
+				3ABE7F822FD67B8900CEB0CA /* InfoPlist.xcstrings in Resources */,
 				757ABF3B2C18195300DF8CA8 /* Assets.xcassets in Resources */,
+				3ABE7F7E2FD67B1F00CEB0CA /* Localizable.xcstrings in Resources */,
 				75E49BAA2CA3E647008D72F8 /* transactions-personal-finance-category-taxonomy.csv in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1271,6 +1279,7 @@
 				SUPABASE_ANON_KEY = sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH;
 				SUPABASE_URL = "http://127.0.0.1:54321";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -1329,6 +1338,7 @@
 				SUPABASE_ANON_KEY = "sb_publishable_7ZUYuwTGQ-MaL0l-d7B6DQ_09GHi0LL";
 				SUPABASE_URL = "https://teuyzmreoyganejfvquk.supabase.co";
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
 			name = Release;
 		};

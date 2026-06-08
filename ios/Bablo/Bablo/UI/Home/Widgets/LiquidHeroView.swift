@@ -8,6 +8,14 @@ enum HeroPeriod: String, CaseIterable {
     case week  = "Wk"
     case month = "Mo"
 
+    var title: LocalizedStringResource {
+        switch self {
+        case .day:   return LocalizedStringResource("Day", comment: "Hero period: Day")
+        case .week:  return LocalizedStringResource("Wk", comment: "Hero period: Week")
+        case .month: return LocalizedStringResource("Mo", comment: "Hero period: Month")
+        }
+    }
+
     var topBarLabel: String {
         switch self {
         case .day:   return topBarDateLabel(for: .day)
@@ -149,7 +157,7 @@ struct LiquidHeroView: View {
 
     private var periodSwitch: some View {
         BabloSegmentedControl(
-            items: HeroPeriod.allCases.map { .init(id: $0, title: $0.rawValue) },
+            items: HeroPeriod.allCases.map { .init(id: $0, title: String(localized: $0.title)) },
             selection: $period,
             size: .compact
         )
@@ -475,19 +483,11 @@ struct LiquidHeroView: View {
     }
 
     private func formatAmount(_ v: Double) -> String {
-        let amount = Int(v.rounded())
-        if amount < 0 {
-            return "-$\(abs(amount).formatted())"
-        }
-        return "$\(amount.formatted())"
+        v.formatted(.currency(code: "USD").precision(.fractionLength(0)))
     }
 
     private func moneyStr(_ v: Double) -> String {
-        let amount = Int(v.rounded())
-        if amount < 0 {
-            return "-$\(abs(amount).formatted())"
-        }
-        return "$\(amount.formatted())"
+        v.formatted(.currency(code: "USD").precision(.fractionLength(0)))
     }
 }
 

@@ -23,14 +23,20 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createServiceRoleClient();
 
-    // 1. Parse optional force refresh flag from JSON body
+    // 1. Parse optional force refresh flag and locale from JSON body
     let force = false;
+    let locale = 'en';
     const contentType = req.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
       try {
         const body = await req.json();
-        if (body && typeof body.force === 'boolean') {
-          force = body.force;
+        if (body) {
+          if (typeof body.force === 'boolean') {
+            force = body.force;
+          }
+          if (typeof body.locale === 'string') {
+            locale = body.locale;
+          }
         }
       } catch (_) {
         // Safe to ignore: empty or invalid request body
@@ -288,6 +294,12 @@ Deno.serve(async (req: Request) => {
 
       const prompt = `
         You are Bablo's premium financial coach, styled in a punchy, direct comic-book manga tone — but always supportive, never alarmist or preachy.
+
+        USER LOCALE PREFERENCE:
+        - The user's preferred language is: "${locale}" (e.g. "es" for Spanish, "zh" for Chinese/Mandarin, "en" for English).
+        - You MUST generate all user-facing text fields ("headline", "nudge_text", "action_label", "alternative_tip", and "badge") translated into this target language.
+        - Ensure that the JSON keys remain exactly as defined in the output format, but their values are translated.
+        - The rolling "coach_memory" summary should remain in English for consistency across translation switches.
 
         IMPORTANT — read this before analyzing:
         - All "Last 14 Days" spend below is money that has ALREADY been spent (historical). NEVER describe it as upcoming, pending, or a reason to "avoid" a future crunch.

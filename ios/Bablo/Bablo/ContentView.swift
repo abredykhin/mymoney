@@ -42,13 +42,13 @@ enum TabSelection: CaseIterable, Identifiable {
 
     var id: Self { self }
 
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
-        case .home: return "Home"
-        case .pulse: return "Pulse"
-        case .goals: return "Goals"
-        case .coach: return "Coach"
-        case .me: return "Me"
+        case .home: return LocalizedStringResource("Home", comment: "Home tab title")
+        case .pulse: return LocalizedStringResource("Pulse", comment: "Pulse tab title")
+        case .goals: return LocalizedStringResource("Goals", comment: "Goals tab title")
+        case .coach: return LocalizedStringResource("Coach", comment: "Coach tab title")
+        case .me: return LocalizedStringResource("Me", comment: "Profile tab title")
         }
     }
 

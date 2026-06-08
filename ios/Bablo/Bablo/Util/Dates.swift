@@ -10,10 +10,12 @@ import SwiftUI
 // Helper method for date formatting
 func formatDate(_ dateString: String, inputFormat: String = "yyyy-MM-dd'T'HH:mm:ss.SSSZ", outputFormat: DateFormatter.Style = .medium) -> String {
     let inputFormatter = DateFormatter()
+    inputFormatter.locale = Locale(identifier: "en_US_POSIX")
     inputFormatter.dateFormat = inputFormat
 
     let outputFormatter = DateFormatter()
     outputFormatter.dateStyle = outputFormat
+    outputFormatter.locale = .current
 
     if let date = inputFormatter.date(from: dateString) {
         return outputFormatter.string(from: date)
@@ -25,10 +27,12 @@ func formatDate(_ dateString: String, inputFormat: String = "yyyy-MM-dd'T'HH:mm:
 // Compact date formatting for transaction lists (e.g., "Jan 25")
 func formatDateShort(_ dateString: String, inputFormat: String = "yyyy-MM-dd'T'HH:mm:ss.SSSZ") -> String {
     let inputFormatter = DateFormatter()
+    inputFormatter.locale = Locale(identifier: "en_US_POSIX")
     inputFormatter.dateFormat = inputFormat
 
     let outputFormatter = DateFormatter()
-    outputFormatter.dateFormat = "MMM d"
+    outputFormatter.locale = .current
+    outputFormatter.setLocalizedDateFormatFromTemplate("MMMd")
 
     if let date = inputFormatter.date(from: dateString) {
         return outputFormatter.string(from: date)
@@ -74,25 +78,29 @@ func topBarDateLabel(for period: TopBarPeriodKind, calendar: Calendar = .bablo, 
 
 private let shortDayFormatter: DateFormatter = {
     let f = DateFormatter()
-    f.dateFormat = "EEE"   // "Sun", "Mon", …
+    f.locale = .current
+    f.setLocalizedDateFormatFromTemplate("EEE")   // "Sun", "Mon", …
     return f
 }()
 
 private let fullDayFormatter: DateFormatter = {
     let f = DateFormatter()
-    f.dateFormat = "EEEE"  // "Sunday", …
+    f.locale = .current
+    f.setLocalizedDateFormatFromTemplate("EEEE")  // "Sunday", …
     return f
 }()
 
 private let monthDayFormatter: DateFormatter = {
     let f = DateFormatter()
-    f.dateFormat = "MMM d" // "May 23"
+    f.locale = .current
+    f.setLocalizedDateFormatFromTemplate("MMMd") // "May 23"
     return f
 }()
 
 private let monthNameFormatter: DateFormatter = {
     let f = DateFormatter()
-    f.dateFormat = "MMMM" // "June"
+    f.locale = .current
+    f.setLocalizedDateFormatFromTemplate("MMMM") // "June"
     return f
 }()
 

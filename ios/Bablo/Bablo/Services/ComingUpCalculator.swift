@@ -63,6 +63,7 @@ struct ComingUpCalculator {
 
     func parseDate(_ dateString: String) -> Date? {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = timeZone
         return formatter.date(from: dateString)
@@ -87,7 +88,8 @@ struct ComingUpCalculator {
 
     func dayOfWeekDisplay(for targetDate: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEE"
+        formatter.locale = .current
+        formatter.setLocalizedDateFormatFromTemplate("EEE")
         formatter.timeZone = timeZone
         return formatter.string(from: targetDate)
     }

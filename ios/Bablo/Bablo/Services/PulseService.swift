@@ -54,17 +54,11 @@ struct PulseDamageReport: Equatable {
     }
 
     private static func currency(_ amount: Double, maximumFractionDigits: Int = 2) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = maximumFractionDigits
-        formatter.minimumFractionDigits = maximumFractionDigits
-        return formatter.string(from: NSNumber(value: abs(amount))) ?? "$0.00"
+        abs(amount).formatted(.currency(code: "USD").precision(.fractionLength(maximumFractionDigits)))
     }
 
     private static func signedCurrency(_ amount: Double, maximumFractionDigits: Int = 2) -> String {
-        let sign = amount >= 0 ? "+" : "-"
-        return "\(sign)\(currency(amount, maximumFractionDigits: maximumFractionDigits))"
+        amount.formatted(.currency(code: "USD").sign(strategy: .always()).precision(.fractionLength(maximumFractionDigits)))
     }
 }
 
