@@ -68,3 +68,10 @@ private struct ScaleButtonStyle: ButtonStyle {
             .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
 }
+
+#Preview {
+    OnboardingNumPad(onKey: { _ in })
+        .padding()
+        .background(Color.gray.opacity(0.1))
+}
+

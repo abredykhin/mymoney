@@ -240,3 +240,8 @@ struct EditGoalSheet: View {
         }
     }
 }
+
+#Preview {
+    EditGoalSheet(goal: GoalsPreviewFixtures.goals[0])
+        .environmentObject(GoalsService())
+}

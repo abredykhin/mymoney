@@ -96,3 +96,11 @@ struct AuthenticationView: View {
         }
     }
 }
+
+#Preview {
+    AuthenticationView(
+        onAuthenticated: {},
+        onSignOut: {}
+    )
+    .environmentObject(UserAccount())
+}

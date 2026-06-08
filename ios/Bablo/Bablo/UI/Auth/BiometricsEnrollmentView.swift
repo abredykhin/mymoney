@@ -56,3 +56,8 @@ struct BiometricEnrollmentView: View {
         .padding(Spacing.lg)
     }
 }
+
+#Preview {
+    BiometricEnrollmentView()
+        .environmentObject(UserAccount())
+}

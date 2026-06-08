@@ -199,3 +199,9 @@ struct RecurringStreamRow: View {
         return dateString
     }
 }
+
+#Preview {
+    NavigationView {
+        RecurringTransactionsView()
+    }
+}

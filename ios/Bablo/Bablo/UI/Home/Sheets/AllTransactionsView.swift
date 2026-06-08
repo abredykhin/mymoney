@@ -986,3 +986,10 @@ enum TransactionFilterValue: Hashable {
     /// `showBillsBucket` (the Pulse Where-it-went drill-down).
     case bills
 }
+
+#Preview {
+    AllTransactionsView()
+        .environmentObject(UserAccount())
+        .environmentObject(AccountsService())
+}
+

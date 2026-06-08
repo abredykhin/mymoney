@@ -180,3 +180,10 @@ struct GoalsEmptyStateView: View {
     }
 }
 
+#Preview {
+    GoalsTabView()
+        .environmentObject(GoalsService())
+        .environmentObject(AccountsService())
+        .environmentObject(UserAccount())
+}
+

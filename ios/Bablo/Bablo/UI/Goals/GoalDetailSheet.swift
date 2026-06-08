@@ -308,3 +308,8 @@ struct GoalDetailSheet: View {
         return dateString
     }
 }
+
+#Preview {
+    GoalDetailSheet(goal: GoalsPreviewFixtures.goals[0])
+        .environmentObject(GoalsService())
+}

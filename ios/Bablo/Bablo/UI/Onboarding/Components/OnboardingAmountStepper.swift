@@ -51,3 +51,9 @@ struct OnboardingAmountStepper: View {
         )
     }
 }
+
+#Preview {
+    OnboardingAmountStepper(amount: .constant(100))
+        .padding()
+}
+

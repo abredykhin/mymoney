@@ -236,3 +236,32 @@ struct TransactionDetailHeroView: View {
             .joined(separator: " ")
     }
 }
+
+#Preview {
+    let mockTx = Transaction(
+        id: 1,
+        account_id: 10,
+        amount: 25.50,
+        date: "2026-06-05",
+        authorized_date: "2026-06-05",
+        name: "Blue Bottle Coffee",
+        merchant_name: "Blue Bottle",
+        pending: false,
+        category: nil,
+        transaction_id: "preview_tx_1",
+        pending_transaction_transaction_id: nil,
+        iso_currency_code: "USD",
+        payment_channel: "in store",
+        user_id: nil,
+        logo_url: nil,
+        website: nil,
+        personal_finance_category: "FOOD_AND_DRINK",
+        personal_finance_subcategory: "FOOD_AND_DRINK_COFFEE",
+        created_at: nil,
+        updated_at: nil,
+        is_spend: true,
+        is_income: false
+    )
+    return TransactionDetailHeroView(transaction: mockTx, onCategoryTap: {})
+}
+

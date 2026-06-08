@@ -30,3 +30,9 @@ struct OnboardingCTAButton: View {
         .disabled(isLoading || isDisabled)
     }
 }
+
+#Preview {
+    OnboardingCTAButton(label: "Continue", action: {})
+        .padding()
+}
+

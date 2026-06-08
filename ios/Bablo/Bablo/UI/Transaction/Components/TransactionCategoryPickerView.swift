@@ -157,3 +157,15 @@ struct TransactionCategoryPickerView: View {
         return "\(selectedCategory.emoji) \(selectedCategory.displayName) · \(selectedCategory.subtitle)"
     }
 }
+
+#Preview {
+    TransactionCategoryPickerView(
+        transactionName: "Trader Joe's",
+        selectedCategory: .constant(.groceries),
+        availableCategories: FlexibleSpendingCategory.allCases,
+        isSavingCategory: false,
+        onDismiss: {},
+        onSave: {}
+    )
+}
+

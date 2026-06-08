@@ -38,3 +38,8 @@ struct SheetCloseButton: View {
         .accessibilityLabel("Close")
     }
 }
+
+#Preview {
+    SheetCloseButton(theme: BabloTheme.normal.resolved(for: .light), action: {})
+        .padding()
+}

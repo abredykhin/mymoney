@@ -872,3 +872,15 @@ private struct ExcludedTransactionRowsList: View {
         }
     }
 }
+
+#Preview {
+    NavigationView {
+        MoneyLeftBreakdownView(period: .month)
+            .environmentObject(BudgetService())
+            .environmentObject(SubscriptionsService())
+            .environmentObject(HomeBreakdownService())
+            .environmentObject(AccountsService())
+            .environmentObject(UserAccount())
+    }
+}
+
