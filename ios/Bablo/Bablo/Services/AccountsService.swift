@@ -75,20 +75,20 @@ struct Bank: Codable, Identifiable, Equatable, Hashable {
 
     // Computed property for decoded logo (base64 to UIImage)
     var decodedLogo: UIImage? {
-        guard let logo = logo,
-              logo.hasPrefix("data:image") else {
-            return nil
+        guard let logo = logo else { return nil }
+        
+        var base64String = logo
+        if logo.hasPrefix("data:image") {
+            let components = logo.components(separatedBy: ",")
+            guard components.count == 2 else { return nil }
+            base64String = components[1]
         }
-
-        // Extract base64 part from data URL
-        let components = logo.components(separatedBy: ",")
-        guard components.count == 2,
-              let base64String = components.last,
-              let data = Data(base64Encoded: base64String),
+        
+        guard let data = Data(base64Encoded: base64String),
               let image = UIImage(data: data) else {
             return nil
         }
-
+        
         return image
     }
 
@@ -378,6 +378,31 @@ class AccountsService: ObservableObject {
             try await refreshAccounts(forceRefresh: true)
         } catch {
             Logger.e("AccountsService: Failed to toggle account visibility: \(error)")
+            throw error
+        }
+    }
+
+    /// Unlink/delete a bank item connection
+    /// - Parameter bankId: The bank item ID to delete
+    func unlinkBank(bankId: Int) async throws {
+        Logger.d("AccountsService: Unlinking bank item \(bankId)")
+        
+        do {
+            try await supabase
+                .from("items_table")
+                .delete()
+                .eq("id", value: bankId)
+                .execute()
+                
+            Logger.i("AccountsService: Successfully unlinked bank item \(bankId)")
+            
+            // Update local state by removing the bank
+            banksWithAccounts.removeAll { $0.id == bankId }
+            
+            // Save to cache
+            cacheManager.saveBanks(banksWithAccounts)
+        } catch {
+            Logger.e("AccountsService: Failed to unlink bank item: \(error)")
             throw error
         }
     }

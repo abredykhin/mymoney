@@ -3,6 +3,7 @@
 //  Bablo
 //
 //  Created for Plaid account health.
+//  Redesigned for Mockup 2 & 3.
 //
 
 import SwiftUI
@@ -13,6 +14,7 @@ struct LinkedAccountsView: View {
     @EnvironmentObject var plaidService: PlaidService
     @EnvironmentObject var authManager: AuthManager
     @SwiftUI.Environment(\.dismiss) private var dismiss
+    @SwiftUI.Environment(\.babloTheme) private var theme: BabloResolvedTheme
 
     private let loadsData: Bool
 
@@ -20,6 +22,9 @@ struct LinkedAccountsView: View {
     @State private var shouldPresentLink = false
     @State private var repairingItemId: Int?
     @State private var accountError: String?
+    @State private var bankToUnlink: Bank? = nil
+    @State private var showingUnlinkConfirmation = false
+    @State private var isLinkingNewBank = false
 
     init(loadsData: Bool = true) {
         self.loadsData = loadsData
@@ -27,13 +32,60 @@ struct LinkedAccountsView: View {
 
     var body: some View {
         ZStack {
-            ColorPalette.backgroundSecondary
-                .ignoresSafeArea()
-
-            content
+            VStack(spacing: 0) {
+                // Drag handle
+                Capsule()
+                    .fill(theme.colors.lineStrong.color)
+                    .frame(width: 36, height: 5)
+                    .padding(.top, Spacing.sm)
+                
+                // Custom Sheet Header
+                sheetHeader
+                
+                Divider()
+                    .background(theme.colors.line.color)
+                    .padding(.top, Spacing.sm)
+                
+                ScrollView {
+                    VStack(spacing: Spacing.xxl) {
+                        // Global Attention Banner
+                        if attentionCount > 0 {
+                            globalWarningBanner
+                        }
+                        
+                        // Bank Cards List
+                        if accountsService.isLoading && accountsService.banksWithAccounts.isEmpty {
+                            ProgressView()
+                                .padding(.vertical, Spacing.xxl)
+                        } else if accountsService.banksWithAccounts.isEmpty {
+                            emptyStateView
+                        } else {
+                            ForEach(accountsService.banksWithAccounts) { bank in
+                                LinkedBankCard(
+                                    bank: bank,
+                                    isRepairing: repairingItemId == bank.id,
+                                    onRepair: {
+                                        Task { await repair(bank) }
+                                    },
+                                    onUnlink: {
+                                        bankToUnlink = bank
+                                        showingUnlinkConfirmation = true
+                                    }
+                                )
+                            }
+                        }
+                        
+                        if !accountsService.banksWithAccounts.isEmpty {
+                            linkNewBankButton
+                            securityNotice
+                        }
+                    }
+                    .padding(.horizontal, Spacing.xxl)
+                    .padding(.vertical, Spacing.xxl)
+                }
+            }
         }
-        .navigationTitle("Linked accounts")
-        .navigationBarTitleDisplayMode(.inline)
+        .babloScreenBackground()
         .task {
             guard loadsData else { return }
             try? await accountsService.refreshAccounts(forceRefresh: true)
@@ -54,8 +106,8 @@ struct LinkedAccountsView: View {
                 VStack(spacing: Spacing.lg) {
                     ProgressView()
                     Text("Opening Plaid...")
-                        .font(Typography.body)
-                        .foregroundColor(ColorPalette.textSecondary)
+                        .font(theme.typography.body(size: 16, weight: .semibold))
+                        .foregroundColor(theme.colors.textSecondary.color)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -68,46 +120,168 @@ struct LinkedAccountsView: View {
         } message: {
             Text(accountError ?? "")
         }
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        if accountsService.isLoading && accountsService.banksWithAccounts.isEmpty {
-            ProgressView()
-        } else if accountsService.banksWithAccounts.isEmpty {
-            VStack(spacing: Spacing.md) {
-                Image(systemName: "building.columns")
-                    .font(.system(size: 32, weight: .semibold))
-                    .foregroundColor(ColorPalette.textSecondary)
-
-                Text("No linked accounts")
-                    .font(Typography.bodySemibold)
-                    .foregroundColor(ColorPalette.textPrimary)
-
-                Text("Link a bank from Home to see account health here.")
-                    .font(Typography.body)
-                    .foregroundColor(ColorPalette.textSecondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(Spacing.xl)
-        } else {
-            ScrollView {
-                VStack(spacing: Spacing.md) {
-                    ForEach(accountsService.banksWithAccounts) { bank in
-                        LinkedBankCard(
-                            bank: bank,
-                            isRepairing: repairingItemId == bank.id,
-                            onRepair: {
-                                Task { await repair(bank) }
-                            }
-                        )
+        .alert("Unlink Bank", isPresented: $showingUnlinkConfirmation, presenting: bankToUnlink) { bank in
+            Button("Unlink", role: .destructive) {
+                Task {
+                    do {
+                        try await accountsService.unlinkBank(bankId: bank.id)
+                    } catch {
+                        accountError = "Failed to unlink bank: \(error.localizedDescription)"
                     }
                 }
-                .padding(.horizontal, Spacing.lg)
-                .padding(.vertical, Spacing.lg)
             }
+            Button("Cancel", role: .cancel) {}
+        } message: { bank in
+            Text("Are you sure you want to unlink \(bank.bank_name)? This will remove all associated accounts and transactions, which may affect your budget calculations.")
         }
     }
+
+    // MARK: - Calculations
+    
+    private var bankCount: Int {
+        accountsService.banksWithAccounts.count
+    }
+    
+    private var accountCount: Int {
+        accountsService.banksWithAccounts.flatMap { $0.accounts }.count
+    }
+    
+    private var attentionCount: Int {
+        accountsService.banksWithAccounts.filter { $0.needsAttention }.count
+    }
+    
+    // MARK: - Subviews
+    
+    private var sheetHeader: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("BANKS & CARDS")
+                    .font(theme.typography.body(size: 11, weight: .black))
+                    .foregroundColor(theme.colors.textTertiary.color)
+                    .tracking(1.5)
+                
+                Text("Linked accounts")
+                    .font(theme.typography.title(size: 24, weight: .bold))
+                    .foregroundColor(theme.colors.textPrimary.color)
+                    
+                Text("\(bankCount) bank\(bankCount == 1 ? "" : "s") · \(accountCount) account\(accountCount == 1 ? "" : "s")")
+                    .font(theme.typography.body(size: 14, weight: .medium))
+                    .foregroundColor(theme.colors.textTertiary.color)
+            }
+            
+            Spacer()
+            
+            // Close Button
+            Button(action: { dismiss() }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(theme.colors.textPrimary.color)
+                    .frame(width: 32, height: 32)
+                    .background(theme.colors.surfaceMuted.color)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(theme.colors.lineStrong.color, lineWidth: theme.metrics.borderWidth)
+                    )
+            }
+        }
+        .padding(.horizontal, Spacing.xxl)
+        .padding(.top, Spacing.lg)
+    }
+
+    private var globalWarningBanner: some View {
+        HStack(alignment: .top, spacing: Spacing.sm) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(theme.colors.danger.color)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(attentionCount) connection\(attentionCount == 1 ? "" : "s") need a repair")
+                    .font(theme.typography.body(size: 14, weight: .bold))
+                    .foregroundColor(theme.colors.danger.color)
+                
+                Text("Balances below may be out of date until you reconnect.")
+                    .font(theme.typography.body(size: 13, weight: .medium))
+                    .foregroundColor(theme.colors.textSecondary.color.opacity(0.85))
+            }
+            
+            Spacer()
+        }
+        .padding(Spacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.colors.danger.color.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(theme.colors.danger.color.opacity(0.18), lineWidth: 1)
+        )
+    }
+
+    private var emptyStateView: some View {
+        VStack(spacing: Spacing.md) {
+            Image(systemName: "building.columns")
+                .font(.system(size: 32, weight: .semibold))
+                .foregroundColor(theme.colors.textTertiary.color)
+
+            Text("No linked accounts")
+                .font(theme.typography.body(size: 16, weight: .bold))
+                .foregroundColor(theme.colors.textPrimary.color)
+
+            Text("Link a bank from Home to see account health here.")
+                .font(theme.typography.body(size: 14, weight: .medium))
+                .foregroundColor(theme.colors.textSecondary.color)
+                .multilineTextAlignment(.center)
+        }
+        .padding(Spacing.xxl)
+    }
+    
+    private var linkNewBankButton: some View {
+        Button(action: {
+            Task { await linkNewBank() }
+        }) {
+            HStack(spacing: 8) {
+                if isLinkingNewBank {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Image(systemName: "plus")
+                        .font(.system(size: 16, weight: .bold))
+                }
+                
+                Text("Link a new bank")
+                    .font(theme.typography.body(size: 16, weight: .bold))
+            }
+            .foregroundColor(theme.colors.textPrimary.color)
+            .frame(maxWidth: .infinity)
+            .frame(height: theme.metrics.buttonHeight)
+            .background(theme.colors.surface.color)
+            .clipShape(RoundedRectangle(cornerRadius: theme.metrics.buttonCornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: theme.metrics.buttonCornerRadius, style: .continuous)
+                    .strokeBorder(
+                        theme.colors.lineStrong.color,
+                        style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round, dash: [4, 4])
+                    )
+            )
+        }
+        .disabled(isLinkingNewBank)
+        .padding(.top, Spacing.sm)
+    }
+    
+    private var securityNotice: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 10))
+            Text("Bank-grade encryption · read-only · powered by Plaid")
+                .font(theme.typography.body(size: 12, weight: .semibold))
+        }
+        .foregroundColor(theme.colors.textTertiary.color)
+        .padding(.top, Spacing.xs)
+        .padding(.bottom, Spacing.lg)
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    // MARK: - Plaid Functions
 
     private func repair(_ bank: Bank) async {
         guard bank.repairable else { return }
@@ -132,6 +306,60 @@ struct LinkedAccountsView: View {
             repairingItemId = nil
             accountError = "Failed to start repair: \(error.localizedDescription)"
         }
+    }
+
+    private func linkNewBank() async {
+        isLinkingNewBank = true
+        defer { isLinkingNewBank = false }
+
+        do {
+            let linkToken = try await plaidService.createLinkToken()
+            let config = generateNewModeLinkConfig(linkToken: linkToken)
+            let handlerResult = Plaid.create(config)
+
+            switch handlerResult {
+            case .success(let handler):
+                plaidService.currentHandler = handler
+                linkController = LinkController(handler: handler)
+                shouldPresentLink = true
+            case .failure(let error):
+                accountError = "Failed to initialize Plaid Link: \(error.localizedDescription)"
+            }
+        } catch {
+            accountError = "Failed to start linking: \(error.localizedDescription)"
+        }
+    }
+
+    private func generateNewModeLinkConfig(linkToken: String) -> LinkTokenConfiguration {
+        var config = LinkTokenConfiguration(token: linkToken) { success in
+            Logger.i("Link finished successfully: \(success)")
+            Task {
+                do {
+                    try await plaidService.saveNewItem(
+                        publicToken: success.publicToken,
+                        institutionId: success.metadata.institution.id
+                    )
+                    try? await accountsService.refreshAccounts(forceRefresh: true)
+                } catch {
+                    await MainActor.run {
+                        accountError = "Failed to save bank connection: \(error.localizedDescription)"
+                    }
+                }
+                await MainActor.run {
+                    shouldPresentLink = false
+                }
+            }
+        }
+        config.onExit = { exit in
+            if let error = exit.error {
+                accountError = "Plaid Link exited: \(error.localizedDescription)"
+            }
+            shouldPresentLink = false
+        }
+        config.onEvent = { event in
+            Logger.d("Plaid Link event: \(event.eventName)")
+        }
+        return config
     }
 
     private func generateUpdateModeLinkConfig(linkToken: String) -> LinkTokenConfiguration {
@@ -163,134 +391,246 @@ private struct LinkedBankCard: View {
     let bank: Bank
     let isRepairing: Bool
     let onRepair: () -> Void
+    let onUnlink: () -> Void
+    
+    @SwiftUI.Environment(\.babloTheme) private var theme: BabloResolvedTheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack(alignment: .top, spacing: Spacing.md) {
-                BankLogo(bank: bank)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(bank.bank_name)
-                        .font(Typography.bodySemibold)
-                        .foregroundColor(ColorPalette.textPrimary)
-
-                    Text("\(bank.accounts.count) account\(bank.accounts.count == 1 ? "" : "s")")
-                        .font(Typography.caption)
-                        .foregroundColor(ColorPalette.textSecondary)
-                }
-
-                Spacer()
-
-                PlaidHealthBadge(status: bank.healthStatus)
+        VStack(spacing: 0) {
+            // Accent bar representing connection health
+            if let statusColor = connectionHealthColor {
+                Rectangle()
+                    .fill(statusColor)
+                    .frame(height: 6)
             }
+            
+            VStack(alignment: .leading, spacing: Spacing.lg) {
+                // Bank info row
+                HStack(alignment: .top, spacing: Spacing.md) {
+                    BankLogo(bank: bank)
 
-            if bank.needsAttention {
-                Text(bank.plaid_last_error_message ?? bank.healthStatus.displayMessage)
-                    .font(Typography.caption)
-                    .foregroundColor(ColorPalette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(bank.bank_name)
+                            .font(theme.typography.body(size: 16, weight: .bold))
+                            .foregroundColor(theme.colors.textPrimary.color)
 
-            VStack(spacing: 0) {
-                ForEach(bank.accounts) { account in
-                    LinkedAccountRow(account: account)
-
-                    if account != bank.accounts.last {
-                        Divider()
+                        Text(subtitleText)
+                            .font(theme.typography.body(size: 12, weight: .semibold))
+                            .foregroundColor(theme.colors.textTertiary.color)
                     }
-                }
-            }
 
-            if bank.repairable {
-                Button(action: onRepair) {
-                    HStack {
-                        if isRepairing {
-                            ProgressView()
-                                .controlSize(.small)
+                    Spacer()
+
+                    PlaidHealthBadge(status: bank.healthStatus)
+                }
+                .padding(.top, connectionHealthColor != nil ? 0 : Spacing.xs)
+
+                // Warning message in card (if needs attention)
+                if bank.needsAttention {
+                    HStack(alignment: .top, spacing: Spacing.xs) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(theme.colors.warning.color)
+                            
+                        Text(bank.plaid_last_error_message ?? bank.healthStatus.displayMessage)
+                            .font(theme.typography.body(size: 12, weight: .semibold))
+                            .foregroundColor(theme.colors.textSecondary.color)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(Spacing.sm)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(theme.colors.warning.color.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(theme.colors.warning.color.opacity(0.18), lineWidth: 1)
+                    )
+                }
+
+                // Accounts List
+                VStack(spacing: 0) {
+                    ForEach(bank.accounts) { account in
+                        LinkedAccountRow(account: account, isStale: bank.needsAttention)
+
+                        if account != bank.accounts.last {
+                            Divider()
+                                .background(theme.colors.line.color)
                         }
-
-                        Text(isRepairing ? "Opening Plaid..." : "Repair connection")
-                            .font(Typography.bodySemibold)
                     }
-                    .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.babloPrimary)
-                .disabled(isRepairing)
+
+                // Action Buttons
+                VStack(spacing: Spacing.sm) {
+                    if bank.repairable {
+                        Button(action: onRepair) {
+                            HStack(spacing: 6) {
+                                if isRepairing {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                } else {
+                                    Image(systemName: "link")
+                                }
+
+                                Text(isRepairing ? "Opening Plaid..." : "Repair connection")
+                                    .font(theme.typography.body(size: 16, weight: .bold))
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.babloPrimary)
+                        .disabled(isRepairing)
+                    }
+                    
+                    // Unlink bank button
+                    Button(action: onUnlink) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "trash")
+                            Text("Unlink bank")
+                        }
+                        .font(theme.typography.body(size: 14, weight: .bold))
+                        .foregroundColor(theme.colors.danger.color)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, Spacing.xs)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+            .padding(Spacing.lg)
+        }
+        .babloCard(tone: .surface, padding: 0) // Padding is zero so the top accent bar reaches the card boundary!
+    }
+    
+    private var connectionHealthColor: Color? {
+        switch bank.healthStatus {
+        case .good:
+            return nil
+        case .needsReauth, .pendingDisconnect, .pendingExpiration, .newAccountsAvailable:
+            return theme.colors.warning.color
+        case .permissionRevoked:
+            return theme.colors.danger.color
+        }
+    }
+    
+    private var subtitleText: String {
+        let accountCountText = "\(bank.accounts.count) account\(bank.accounts.count == 1 ? "" : "s")"
+        guard bank.healthStatus == .good, let healthDate = bank.plaid_health_updated_at else {
+            return accountCountText
+        }
+        return "\(accountCountText) · synced \(relativeTimeString(for: healthDate))"
+    }
+    
+    private func relativeTimeString(for date: Date) -> String {
+        let diff = Date().timeIntervalSince(date)
+        let minutes = Int(diff / 60)
+        if minutes < 1 {
+            return "just now"
+        } else if minutes < 60 {
+            return "\(minutes)m ago"
+        } else {
+            let hours = minutes / 60
+            if hours < 24 {
+                return "\(hours)h ago"
+            } else {
+                let days = hours / 24
+                return "\(days)d ago"
             }
         }
-        .padding(Spacing.lg)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(ColorPalette.backgroundPrimary)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md, style: .continuous))
     }
 }
 
 private struct LinkedAccountRow: View {
     let account: BankAccount
+    let isStale: Bool
+
+    @SwiftUI.Environment(\.babloTheme) private var theme: BabloResolvedTheme
 
     var body: some View {
         HStack(spacing: Spacing.md) {
             Image(systemName: account._type == "credit" ? "creditcard.fill" : "building.columns.fill")
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(ColorPalette.textSecondary)
-                .frame(width: 30, height: 30)
-                .background(ColorPalette.backgroundSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: CornerRadius.sm, style: .continuous))
+                .foregroundColor(theme.colors.textSecondary.color)
+                .frame(width: 32, height: 32)
+                .background(theme.colors.surfaceMuted.color)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(account.displayName)
-                    .font(Typography.body)
-                    .foregroundColor(ColorPalette.textPrimary)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(account.displayName)
+                        .font(theme.typography.body(size: 15, weight: .semibold))
+                        .foregroundColor(theme.colors.textPrimary.color)
+                    
+                    if account.hidden {
+                        Text("HIDDEN")
+                            .font(theme.typography.body(size: 9, weight: .black))
+                            .foregroundColor(theme.colors.textTertiary.color)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(theme.colors.surfaceMuted.color)
+                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                    .stroke(theme.colors.lineStrong.color, lineWidth: theme.metrics.borderWidth)
+                            )
+                    }
+                }
 
                 HStack(spacing: 6) {
                     if !account.maskedNumber.isEmpty {
                         Text(account.maskedNumber)
                     }
 
-                    if account.hidden {
-                        Text("Hidden")
-                    }
-
-                    if account.accessRevoked {
-                        Text("Access revoked")
+                    if isStale {
+                        Text("· Stale")
+                            .foregroundColor(theme.colors.danger.color)
+                            .bold()
+                    } else if account.accessRevoked {
+                        Text("· Access revoked")
+                            .foregroundColor(theme.colors.danger.color)
+                            .bold()
                     }
                 }
-                .font(Typography.caption)
-                .foregroundColor(account.accessRevoked ? ColorPalette.error : ColorPalette.textSecondary)
+                .font(theme.typography.body(size: 12, weight: .medium))
+                .foregroundColor(theme.colors.textTertiary.color)
             }
 
             Spacer()
 
             Text(account.current_balance, format: .currency(code: account.iso_currency_code ?? "USD"))
-                .font(Typography.bodySemibold)
-                .foregroundColor(account._type == "credit" ? ColorPalette.error : ColorPalette.textPrimary)
+                .font(theme.typography.body(size: 15, weight: .bold))
+                .foregroundColor(isStale ? theme.colors.danger.color : (account._type == "credit" ? theme.colors.danger.color : theme.colors.textPrimary.color))
         }
-        .padding(.vertical, Spacing.sm)
+        .padding(.vertical, Spacing.lg)
     }
 }
 
 private struct PlaidHealthBadge: View {
     let status: PlaidItemHealthStatus
+    
+    @SwiftUI.Environment(\.babloTheme) private var theme: BabloResolvedTheme
 
     var body: some View {
-        Text(status.displayTitle)
-            .font(Typography.caption)
-            .fontWeight(.semibold)
-            .foregroundColor(foreground)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(background)
-            .clipShape(Capsule())
+        HStack(spacing: 4) {
+            if status == .good {
+                Text("●")
+                    .font(.system(size: 8))
+            }
+            Text(status.displayTitle)
+        }
+        .font(theme.typography.body(size: 12, weight: .bold))
+        .foregroundColor(foreground)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(background)
+        .clipShape(Capsule())
     }
 
     private var foreground: Color {
         switch status {
         case .good:
-            return ColorPalette.success
+            return theme.colors.success.color
         case .needsReauth, .pendingDisconnect, .pendingExpiration, .newAccountsAvailable:
-            return ColorPalette.warning
+            return theme.colors.warning.color
         case .permissionRevoked:
-            return ColorPalette.error
+            return theme.colors.danger.color
         }
     }
 
@@ -301,23 +641,28 @@ private struct PlaidHealthBadge: View {
 
 private struct BankLogo: View {
     let bank: Bank
+    
+    @SwiftUI.Environment(\.babloTheme) private var theme: BabloResolvedTheme
 
     var body: some View {
         Group {
-            if let image = bank.decodedLogo {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
+            if let logo = bank.logo {
+                AsyncBankLogoView(
+                    logoString: logo,
+                    placeholderText: String(bank.bank_name.prefix(1)).uppercased(),
+                    backgroundColor: bank.primaryColor ?? theme.colors.accent.color,
+                    fontSize: 16
+                )
             } else {
                 Text(String(bank.bank_name.prefix(1)).uppercased())
-                    .font(Typography.bodySemibold)
+                    .font(theme.typography.body(size: 16, weight: .black))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(bank.primaryColor ?? ColorPalette.primary)
+                    .background(bank.primaryColor ?? theme.colors.accent.color)
             }
         }
         .frame(width: 40, height: 40)
-        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.sm, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
@@ -557,22 +902,97 @@ enum ProfilePreviewFixtures {
 }
 
 #Preview("Linked Accounts · Normal") {
-    NavigationStack {
-        LinkedAccountsView(loadsData: false)
-            .environmentObject(ProfilePreviewFixtures.accountsService(.normal))
-            .environmentObject(ProfilePreviewFixtures.plaidService())
-            .environmentObject(ProfilePreviewFixtures.authManager())
-    }
-    .babloTheme(.normal)
+    LinkedAccountsView(loadsData: false)
+        .environmentObject(ProfilePreviewFixtures.accountsService(.normal))
+        .environmentObject(ProfilePreviewFixtures.plaidService())
+        .environmentObject(ProfilePreviewFixtures.authManager())
+        .babloTheme(.normal)
 }
 
 #Preview("Linked Accounts · Needs Repair") {
-    NavigationStack {
-        LinkedAccountsView(loadsData: false)
-            .environmentObject(ProfilePreviewFixtures.accountsService(.attention))
-            .environmentObject(ProfilePreviewFixtures.plaidService())
-            .environmentObject(ProfilePreviewFixtures.authManager())
-    }
-    .babloTheme(.normal)
+    LinkedAccountsView(loadsData: false)
+        .environmentObject(ProfilePreviewFixtures.accountsService(.attention))
+        .environmentObject(ProfilePreviewFixtures.plaidService())
+        .environmentObject(ProfilePreviewFixtures.authManager())
+        .babloTheme(.normal)
 }
 #endif
+
+// MARK: - Async Bank Logo View
+struct AsyncBankLogoView: View {
+    let logoString: String
+    let placeholderText: String
+    let backgroundColor: Color
+    var fontSize: CGFloat = 16
+    
+    @State private var decodedImage: UIImage? = nil
+    @State private var isLoading = false
+    
+    var body: some View {
+        Group {
+            if let image = decodedImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+            } else if isLoading {
+                ProgressView()
+                    .controlSize(.small)
+            } else {
+                Text(placeholderText)
+                    .font(.system(size: fontSize, weight: .black))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(backgroundColor)
+            }
+        }
+        .task(id: logoString) {
+            await loadLogo()
+        }
+    }
+    
+    private func loadLogo() async {
+        guard !logoString.isEmpty else { return }
+        
+        // Check if it's a web URL
+        if logoString.hasPrefix("http://") || logoString.hasPrefix("https://") {
+            guard let url = URL(string: logoString) else { return }
+            isLoading = true
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                if let image = UIImage(data: data) {
+                    await MainActor.run {
+                        self.decodedImage = image
+                        self.isLoading = false
+                    }
+                } else {
+                    await MainActor.run { self.isLoading = false }
+                }
+            } catch {
+                await MainActor.run { self.isLoading = false }
+            }
+            return
+        }
+        
+        // Otherwise, assume it is base64 data URL or raw base64
+        isLoading = true
+        // Decode on background thread
+        let image = await Task.detached(priority: .userInitiated) { () -> UIImage? in
+            var base64String = logoString
+            if logoString.hasPrefix("data:image") {
+                let components = logoString.components(separatedBy: ",")
+                guard components.count == 2 else { return nil }
+                base64String = components[1]
+            }
+            
+            guard let data = Data(base64Encoded: base64String) else {
+                return nil
+            }
+            return UIImage(data: data)
+        }.value
+        
+        await MainActor.run {
+            self.decodedImage = image
+            self.isLoading = false
+        }
+    }
+}

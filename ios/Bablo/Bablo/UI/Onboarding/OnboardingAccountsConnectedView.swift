@@ -132,8 +132,13 @@ private struct BankGroupCard: View {
             HStack(spacing: 12) {
                 // Avatar: decoded logo or initial
                 Group {
-                    if let img = bank.decodedLogo {
-                        Image(uiImage: img).resizable().scaledToFit()
+                    if let logo = bank.logo {
+                        AsyncBankLogoView(
+                            logoString: logo,
+                            placeholderText: String(bank.bank_name.prefix(1)).uppercased(),
+                            backgroundColor: bank.primaryColor ?? theme.colors.accent.color,
+                            fontSize: 17
+                        )
                     } else {
                         Text(String(bank.bank_name.prefix(1)).uppercased())
                             .font(.system(size: 17, weight: .bold))
