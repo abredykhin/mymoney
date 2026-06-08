@@ -232,10 +232,11 @@ struct MoneyLeftBreakdownView: View {
                 // "Recent" widget (scoped to this period) instead of a bespoke list.
                 let navDest: HomeDestination? = step.transactionSource.map { source in
                     switch source {
-                    // The spend step is always month-scoped: in the month breakdown it's the
-                    // month's spend, and in the week/day breakdown the spend step is also the
-                    // month's spend (the period number is derived from what's left this month).
-                    case .variableSpend: return .periodSpendList(.month)
+                    // The spend step is scoped to the breakdown's own period: the month breakdown's
+                    // spend step opens the month list, while the week/day breakdown's "Spent this
+                    // week / today" step opens that period's list (its number is this period's spend).
+                    case .variableSpend: return .periodSpendList(period)
+                    case .priorMonthSpend: return .monthSpendBeforePeriod(period)
                     case .income: return .incomeTransactions
                     case .obligations: return .obligationsDetails
                     }
@@ -438,6 +439,16 @@ private struct BreakdownStepCard: View {
                 stepHeaderContent
             }
 
+            // Optional clarifier under the title (e.g. the period-slice "÷ days left" math).
+            if let subtitle = step.subtitle, !subtitle.isEmpty {
+                Text(subtitle)
+                    .font(theme.typography.body(size: 13, weight: .semibold))
+                    .foregroundStyle(theme.colors.textSecondary.color)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 46)
+            }
+
             // Income sub-rows (step 1 in monthly income mode)
             if !incomeRows.isEmpty {
                 VStack(spacing: 6) {
@@ -503,35 +514,20 @@ private struct BreakdownStepCard: View {
                 }
             }
 
-            // Context rows — only used for week/day to show monthly cap
+            // Context rows — for week/day step 1, unpack the pool into income/obligations. Styled
+            // as the month breakdown's income sub-rows (SheetInfoRow) for visual consistency.
             if !contextRows.isEmpty {
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(spacing: 6) {
                     ForEach(contextRows) { row in
-                        HStack(spacing: 8) {
-                            Image(systemName: row.amount < 0 ? "lock.fill" : "info.circle")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(theme.colors.textTertiary.color)
-                                .frame(width: 18)
-
-                            Text(row.title)
-                                .font(theme.typography.body(size: 13, weight: .medium))
-                                .foregroundStyle(theme.colors.textTertiary.color)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.85)
-
-                            Spacer(minLength: 4)
-
-                            let abs = Int(abs(row.amount).rounded())
-                            Text(row.amount < 0 ? "-$\(abs.formatted())" : "$\(abs.formatted())")
-                                .font(theme.typography.mono(size: 13, weight: .semibold))
-                                .foregroundStyle(theme.colors.textTertiary.color)
-                        }
+                        SheetInfoRow(
+                            symbol: row.amount < 0 ? "lock.fill" : "briefcase.fill",
+                            title: row.title,
+                            detail: row.detail,
+                            amount: row.amount,
+                            isNegative: row.amount < 0
+                        )
                     }
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background(theme.colors.surfaceMuted.color)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
 
             // After-this-step footer

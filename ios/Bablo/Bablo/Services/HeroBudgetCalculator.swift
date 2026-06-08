@@ -264,9 +264,32 @@ struct HeroBudgetCalculator {
 
     func spendable(for period: HeroPeriod) -> Double {
         switch period {
-        case .day:   return budgetState.dailyPace
-        case .week:  return budgetState.weeklyPace
-        case .month: return budgetState.poolRemaining
+        case .month:
+            // "Left this month": the remaining pool, already net of month-to-date spend.
+            return budgetState.poolRemaining
+
+        case .day:
+            // "Safe to spend the rest of today." Treat today as a fresh day: spread the pool
+            // as it stood at the START of today (poolRemaining + what's gone out today) evenly
+            // across the days left in the month, then subtract today's spend. Drops ~1:1 with
+            // today's spend and resets each day — unlike the raw pace, which already folded
+            // today's spend into the pool and so barely moved when you spent. Mirrors the month,
+            // which is likewise net of its own spend. Can go negative → "over by X today".
+            let daysRemaining = Double(max(1, budgetState.daysRemaining))
+            let poolAtDayStart = budgetState.poolRemaining + budgetState.spentToday
+            let dayBudget = max(0, poolAtDayStart) / daysRemaining
+            return dayBudget - budgetState.spentToday
+
+        case .week:
+            // "Safe to spend the rest of this week." Same idea, frozen at the START of the week:
+            // spread the pool as it stood at week-start (poolRemaining + this week's spend) over
+            // the days from week-start to month-end, take 7 days' worth (capped at that pool),
+            // then subtract this week's spend. Nests with the day (today ⊂ this week ⊂ month).
+            let daysFromWeekStart = Double(max(1, budgetState.daysRemaining + budgetState.daysElapsedInWeek - 1))
+            let poolAtWeekStart = budgetState.poolRemaining + budgetState.spentWeek
+            let weekBudget = min(max(0, poolAtWeekStart),
+                                 max(0, poolAtWeekStart) / daysFromWeekStart * 7)
+            return weekBudget - budgetState.spentWeek
         }
     }
 
@@ -394,9 +417,12 @@ struct HeroBudgetBreakdownCalculator {
                 return 3
             }
         case .week, .day:
-            // The period breakdown is month-derived (see periodSteps); the spend step is the
-            // month's spend (step 2), tappable to the month list but with no inline sub-rows.
-            return 0
+            // The period breakdown ends with a "Spent today/this week" card — the LAST step —
+            // which shows this period's category sub-rows (like the month's spend step) and is
+            // tappable to the period's transaction list. Income/projected mode has 4 steps
+            // (budget → spent earlier → held back → spent this period); cash mode has 3 (it
+            // doesn't net month-to-date spend, so the "spent earlier" step is dropped).
+            return calculator.incomeBasis == .cashOnly ? 3 : 4
         }
     }
 
@@ -516,62 +542,133 @@ struct HeroBudgetBreakdownCalculator {
         return result
     }
 
-    /// Day/week are derived from the month so the period number is unambiguous: start from the
-    /// month's budget, subtract what's been spent this month to land on what's left this month
-    /// (the hero's "left this month"), then set aside the part reserved for the rest of the
-    /// month — what remains is this period's slice (the hero number). Every line is a distinct,
-    /// real number and the chain reconciles to the headline pace by construction.
+    /// Day/week are derived from the month so the period number is explicable, and every line is
+    /// a real, distinct number that reconciles to the headline pace by construction:
+    ///   1. "This month's budget" — the discretionary pool (income − obligations, or cash − bills).
+    ///      Its context rows spell out that arithmetic (Total income / Obligations).
+    ///   2. "Spent earlier this month" — month-to-date spend *before* this period began, landing
+    ///      on the pool as it stood at the start of the period (income/projected only; cash mode's
+    ///      pool isn't net of spend, so this step is dropped).
+    ///   3. "Held for your other days" — spreads that pool across the days left in the month and
+    ///      reserves everyone-else's-days share, leaving this period's allowance. The subtitle
+    ///      shows the division so "what's left today" isn't a black box.
+    ///   4. "Spent today" / "Spent this week" — this period's own spend, the card the user wanted
+    ///      so the headline visibly drops with today's spending. It carries the period's category
+    ///      sub-rows and is tappable to the period's transaction list.
     private var periodSteps: [HeroBudgetBreakdownStep] {
         let monthBudget = calculator.effectiveBudget(for: .month)   // month pool (income or cash)
-        let monthLeft = calculator.spendable(for: .month)           // what's left this month
-        let pace = calculator.spendable(for: period)                // = final (left this period)
-        let setAside = pace - monthLeft                             // ≤ 0: held for the other days
+        let finalAmt = calculator.spendable(for: period)            // = hero number (left this period)
+        let periodSpent = calculator.spentSoFar(for: period)        // today's / this week's spend
+        let allowance = finalAmt + periodSpent                      // frozen period budget, pre-spend
+        let isCash = calculator.incomeBasis == .cashOnly
 
-        var steps: [HeroBudgetBreakdownStep] = [
+        var steps: [HeroBudgetBreakdownStep] = []
+        var running = 0.0
+
+        // 1 — the discretionary pool for the whole month.
+        running += monthBudget
+        steps.append(
             HeroBudgetBreakdownStep(
                 number: 1,
                 title: "This month's budget",
                 amount: monthBudget,
-                afterAmount: monthBudget,
+                afterAmount: running,
                 tone: .positive,
                 transactionSource: nil
             )
-        ]
+        )
 
-        // Income/projected mode subtracts month-to-date spend to reach "left this month"; cash
-        // mode's pool is cash-on-hand and does not net spend, so it skips this step (matching
-        // the month breakdown, which has no spend step in cash mode).
-        if calculator.incomeBasis != .cashOnly {
+        // 2 — spend that already happened earlier this month (income/projected mode only). This
+        // lands `running` on the pool as it stood at the start of the current period, which is
+        // what step 3 divides. Cash mode's pool doesn't net spend, so it skips this.
+        if !isCash {
             let monthSpent = calculator.spentSoFar(for: .month)
+            let earlier = monthSpent - periodSpent
+            running -= earlier
             steps.append(
                 HeroBudgetBreakdownStep(
-                    number: 2,
-                    title: "What you've spent this month",
-                    amount: -monthSpent,
-                    afterAmount: monthLeft,
+                    number: steps.count + 1,
+                    title: "Spent earlier this month",
+                    subtitle: period == .day ? "everything before today" : "everything before this week",
+                    amount: -earlier,
+                    afterAmount: running,
                     tone: .negative,
-                    transactionSource: .variableSpend
+                    transactionSource: .priorMonthSpend
                 )
             )
         }
 
+        // 3 — reserve the other days' share, leaving this period's slice. `reserve` is ≤ 0.
+        let poolAtPeriodStart = running
+        let reserve = allowance - running
+        running = allowance
         steps.append(
             HeroBudgetBreakdownStep(
                 number: steps.count + 1,
-                title: "Set aside for the rest of the month",
-                amount: setAside,
-                afterAmount: pace,
+                title: "Saved for the rest of the month",
+                subtitle: sliceSubtitle(poolAtPeriodStart: poolAtPeriodStart, allowance: allowance),
+                amount: reserve,
+                afterAmount: running,
                 tone: .neutral,
                 transactionSource: nil
             )
         )
+
+        // 4 — this period's own spend. afterAmount == finalAmt by construction.
+        running -= periodSpent
+        steps.append(
+            HeroBudgetBreakdownStep(
+                number: steps.count + 1,
+                title: period == .day ? "Spent today" : "Spent this week",
+                amount: -periodSpent,
+                afterAmount: running,
+                tone: .negative,
+                transactionSource: .variableSpend
+            )
+        )
+
         return steps
     }
 
-    /// No longer used by day/week (the month-derived steps tell the whole story), kept empty so
-    /// the breakdown view's context-row slot renders nothing.
+    /// A plain-English line under the period-slice step, so "what's left for today/this week"
+    /// reads as a sentence rather than a formula. "about" because rounding (and cash mode's
+    /// start-of-day freeze) can nudge the figure by a dollar.
+    private func sliceSubtitle(poolAtPeriodStart: Double, allowance: Double) -> String {
+        let pool = Int(max(0, poolAtPeriodStart).rounded())
+        let per = Int(max(0, allowance).rounded())
+        let daysLeft = max(1, calculator.budgetState.daysRemaining)
+        switch period {
+        case .day:
+            return "Spreading the $\(pool.formatted()) you have left over \(daysLeft) days leaves about $\(per.formatted()) for today."
+        case .week:
+            return "Spreading the $\(pool.formatted()) you have left across the month leaves about $\(per.formatted()) for this week."
+        case .month:
+            return ""
+        }
+    }
+
+    /// Context rows under step 1 of the day/week breakdown — they unpack "This month's budget"
+    /// into its inputs (Total income − Obligations, or Cash − Upcoming bills) so the pool isn't an
+    /// unexplained number. Empty for the month breakdown, which carries its own income sub-rows.
     var contextRows: [HeroBudgetContextRow] {
-        []
+        guard period != .month else { return [] }
+        if calculator.incomeBasis == .cashOnly {
+            var rows = [
+                HeroBudgetContextRow(title: "Cash on hand", detail: "across your accounts", amount: calculator.budgetState.netCash)
+            ]
+            if calculator.budgetState.upcomingBills > 0 {
+                rows.append(HeroBudgetContextRow(title: "Upcoming bills", detail: "still due this month", amount: -calculator.budgetState.upcomingBills))
+            }
+            return rows
+        } else {
+            var rows = [
+                HeroBudgetContextRow(title: "Total income", detail: "expected this month", amount: calculator.effectiveIncome)
+            ]
+            if calculator.monthlyMandatoryExpenses > 0 {
+                rows.append(HeroBudgetContextRow(title: "Obligations", detail: "bills & subscriptions", amount: -calculator.monthlyMandatoryExpenses))
+            }
+            return rows
+        }
     }
 
     static func accountAuditRows(accounts: [HeroBudgetAccountInput]) -> HeroBudgetAccountAuditRows {
@@ -611,6 +708,10 @@ struct HeroBudgetBreakdownStep: Identifiable, Equatable {
     var id: Int { number }
     let number: Int
     let title: String
+    /// Optional one-line clarifier shown under the title (e.g. the "÷ days left" math on the
+    /// period-slice step, or "before today" on the earlier-spend step). Defaults to nil so the
+    /// month steps — which don't set it — are unaffected.
+    var subtitle: String? = nil
     let amount: Double
     let afterAmount: Double
     let tone: Tone

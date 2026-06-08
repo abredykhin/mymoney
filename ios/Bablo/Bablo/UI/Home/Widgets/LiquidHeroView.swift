@@ -350,11 +350,11 @@ struct LiquidHeroView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(theme.colors.textTertiary.color)
             } else {
-                // Day / week: the period's pace, anchored to the month's remaining pool it's a
-                // slice of — so the ladder reconciles (today ⊂ this week ⊂ this month). We do NOT
-                // pair it with "spent": period spend is cumulative and carries the month's lumps
-                // (wires, etc.), so "spent + left" would imply a fake period budget that ladders
-                // to nothing.
+                // Day / week: what's safe to spend in the REMAINDER of the period — the period's
+                // pace (a slice of the month's remaining pool) net of what's already gone out this
+                // period, mirroring how "left this month" is net of month-to-date spend. The ladder
+                // still reconciles (today ⊂ this week ⊂ this month), and spending today visibly
+                // lowers "left today" instead of being smoothed away by the pace.
                 Text(moneyStr(spendable))
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(theme.colors.textPrimary.color)

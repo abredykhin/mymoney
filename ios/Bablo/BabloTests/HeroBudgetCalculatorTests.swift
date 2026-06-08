@@ -72,10 +72,12 @@ struct HeroBudgetCalculatorTests {
 
         let snapshot = HeroCushionSnapshot(calculator: c, period: .week)
 
-        // Room delta is the change in the WEEKLY PACE (the hero number), not the raw spend
-        // delta. Spending $42 less this week lifts the weekly pace by $42 × 7/daysRemaining
-        // (= 7/16 here) ≈ $18.38 — sane and on the same scale as the headline.
-        #expect(snapshot?.currentRoom == c.spendable(for: .week))
+        // Room delta is the change in the WEEKLY PACE, not the raw spend delta. Spending $42
+        // less this week lifts the weekly pace by $42 × 7/daysRemaining (= 7/16 here) ≈ $18.38
+        // — sane and lump-safe. NOTE: currentRoom is the pace, which the cushion deliberately
+        // keeps even though the hero headline (spendable) is now net of this week's spend — the
+        // cushion compares spending PACE period-over-period, a different lens than "left to spend".
+        #expect(snapshot?.currentRoom == c.unflooredPace(for: .week, remaining: c.spendable(for: .month)))
         #expect(abs((snapshot?.roomDelta ?? -1) - 18.375) < 0.01)
         // previousRoom = currentRoom − roomDelta identity (display relies on it).
         #expect(abs((snapshot?.previousRoom ?? 0) - ((snapshot?.currentRoom ?? 0) - (snapshot?.roomDelta ?? 0))) < 0.001)
@@ -191,8 +193,9 @@ struct HeroBudgetCalculatorTests {
     }
 
     /// Week/day breakdown is month-derived so the period number is explicable: step 1 is the
-    /// month budget, step 2 subtracts what's been spent this month (landing on what's left this
-    /// month), step 3 sets aside the rest of the month — leaving this period's slice (the pace).
+    /// month budget, step 2 subtracts spend from earlier this month (landing on the pool as it
+    /// stood at the start of the period), step 3 holds back the other days' share — leaving this
+    /// period's allowance — and step 4 subtracts this period's own spend to reach the pace.
     @Test func breakdownWeekIsMonthDerivedChain() {
         let c = calc(
             income: 5_000,
@@ -204,20 +207,25 @@ struct HeroBudgetCalculatorTests {
         let bd = HeroBudgetBreakdownCalculator(calculator: c, period: .week)
         let monthBudget = c.effectiveBudget(for: .month)
         let monthSpent = c.spentSoFar(for: .month)
-        let monthLeft = c.spendable(for: .month)
+        let weekSpent = c.spentSoFar(for: .week)
         let pace = c.spendable(for: .week)
 
-        #expect(bd.steps.count == 3)
+        #expect(bd.steps.count == 4)
         #expect(bd.steps[0].title == "This month's budget")
         #expect(abs(bd.steps[0].amount - monthBudget) < 0.01)
-        #expect(bd.steps[1].title == "What you've spent this month")
-        #expect(abs(bd.steps[1].amount - (-monthSpent)) < 0.01)
-        #expect(abs(bd.steps[1].afterAmount - monthLeft) < 0.01)
-        #expect(bd.steps[1].transactionSource == .variableSpend)
-        #expect(bd.steps[2].title == "Set aside for the rest of the month")
-        #expect(abs(bd.steps[2].afterAmount - pace) < 0.01)
-        #expect(bd.spendStepNumber == 0)
-        #expect(bd.contextRows.isEmpty)
+        #expect(bd.steps[1].title == "Spent earlier this month")
+        #expect(abs(bd.steps[1].amount - (-(monthSpent - weekSpent))) < 0.01)
+        #expect(bd.steps[2].title == "Saved for the rest of the month")
+        #expect(bd.steps[3].title == "Spent this week")
+        #expect(abs(bd.steps[3].amount - (-weekSpent)) < 0.01)
+        #expect(abs(bd.steps[3].afterAmount - pace) < 0.01)
+        #expect(bd.steps[3].transactionSource == .variableSpend)
+        // The period-spend card is the last step and carries the period's category sub-rows.
+        #expect(bd.spendStepNumber == 4)
+        // Step 1 unpacks the pool into Total income − Obligations.
+        #expect(bd.contextRows.count == 2)
+        #expect(bd.contextRows[0].title == "Total income")
+        #expect(bd.contextRows[1].title == "Obligations")
         #expect(abs(bd.steps.map(\.amount).reduce(0, +) - pace) < 0.01)
     }
 
@@ -379,15 +387,13 @@ struct HeroBudgetCalculatorTests {
     }
 
     @Test func spendableWeekPositive() {
-        // under single pool pace model:
-        // monthlyIncome = 5000, mandatory = 2000 -> poolTotal = 3000
-        // variableSpend = 500 -> poolRemaining = 2500
-        // daysRemaining = 17 -> dailyPace = 2500 / 17 = 147.0588
-        // weeklyPace = min(2500, 147.0588 * 7) = 1029.41
+        // single-pool, net-of-this-week's-spend:
+        // poolTotal = 3000, variableSpend 500 -> poolRemaining = 2500, daysRemaining = 17.
+        // weekBudget = min(2733, (2500+233)/17 * 7) = 1125.35; spendable = 1125.35 - 233 = 892.35.
         let weekSpent = 233.0
         let c = calc(income: 5000, mandatory: 2000, variableSpend: 500,
                      currentWeekVariableSpend: weekSpent, daysInMonth: 31)
-        #expect(abs(c.spendable(for: .week) - 1029.41) < 0.05)
+        #expect(abs(c.spendable(for: .week) - 892.35) < 0.05)
     }
 
     // MARK: - safeToSpend mode
@@ -745,7 +751,7 @@ struct HeroBudgetCalculatorTests {
     /// the weekly remaining must not exceed the monthly remaining.
     @Test func weekSpendableCannotExceedMonthlyRemaining() {
         // Monthly discretionary = $6,626, spent $5,846 → $780 left for the month.
-        // Weekly pace is 780 / 17 * 7 = 321.17 <= 780.
+        // weekBudget = min(791, (780+11)/17 * 7) = 325.71; spendable = 325.71 − 11 = 314.71 ≤ 780.
         let c = calc(
             income: 6_626,
             mandatory: 0,
@@ -756,7 +762,7 @@ struct HeroBudgetCalculatorTests {
         let monthRemaining = c.monthlyDiscretionary - c.monthlySpentSoFar
         #expect(c.spendable(for: .week) <= monthRemaining + 0.01,
                 "weekly spendable must not exceed monthly remaining")
-        #expect(abs(c.spendable(for: .week) - 321.17) < 0.05)
+        #expect(abs(c.spendable(for: .week) - 314.71) < 0.05)
     }
 
     @Test func dailyBudgetIsWeeklyBudgetDividedBy7() {
@@ -825,8 +831,8 @@ struct HeroBudgetCalculatorTests {
             currentWeekVariableSpend: weeklySpend,
             daysInMonth: 31
         )
-        // pool = 4900, daily = 4900 / 17 = 288.23, weeklyPace = 2017.64
-        #expect(abs(c.spendable(for: .week) - 2017.64) < 0.05)
+        // pool = 4900. weekBudget = min(5100, (4900+200)/17 * 7) = 2100; spendable = 2100 − 200 = 1900.
+        #expect(abs(c.spendable(for: .week) - 1900.0) < 0.05)
     }
 
     // MARK: - Effective budget (denominator for "X of Y" display)
@@ -893,7 +899,10 @@ struct HeroBudgetCalculatorTests {
         #expect(c.effectiveBudget(for: .month) == 3000)
     }
 
-    @Test func weekPaceFloorsAtZeroWhenOverspent() {
+    @Test func weekGoesNegativeWhenOverspent() {
+        // Month overspent (poolRemaining −900) and $800 spent this week. The week's budget floors
+        // at $0 (poolAtWeekStart −100 → 0), so "safe to spend this week" = 0 − 800 = −800
+        // ("over by $800 this week"), mirroring how .month goes negative when overspent.
         let c = calc(
             income: 3100,
             mandatory: 0,
@@ -901,7 +910,7 @@ struct HeroBudgetCalculatorTests {
             currentWeekVariableSpend: 800,
             daysInMonth: 31
         )
-        #expect(c.spendable(for: .week) == 0)
+        #expect(abs(c.spendable(for: .week) - (-800)) < 0.05)
         #expect(c.effectiveBudget(for: .week) == 700)
     }
 
@@ -963,17 +972,21 @@ struct HeroBudgetCalculatorTests {
         let breakdown = HeroBudgetBreakdownCalculator(calculator: c, period: .day)
 
         // Cash mode (safeToSpend): the month pool is cash-on-hand and doesn't net spend, so the
-        // month-derived chain is 2 steps — month budget → set aside — reconciling to the pace.
-        #expect(breakdown.steps.count == 2)
+        // month-derived chain is 3 steps — month budget → held for the other days → spent today —
+        // reconciling to the pace. (No "spent earlier this month" step; that's income mode only.)
+        #expect(breakdown.steps.count == 3)
         #expect(breakdown.steps[0].title == "This month's budget")
-        #expect(breakdown.steps[1].title == "Set aside for the rest of the month")
+        #expect(breakdown.steps[1].title == "Saved for the rest of the month")
+        #expect(breakdown.steps[2].title == "Spent today")
 
         // Sum of all steps MUST exactly match finalAmount
         let sum = breakdown.steps.map(\.amount).reduce(0, +)
         #expect(abs(sum - breakdown.finalAmount) < 0.01)
     }
 
-    @Test func overspentDailyPeriodFloorsAtZero() {
+    @Test func overspentDailyPeriodGoesNegative() {
+        // Month overspent (poolRemaining −6000); $400 spent today. Day budget floors at $0, so
+        // "safe to spend today" = 0 − 400 = −400 ("over by $400 today").
         let c = calc(
             income: 10_000,
             mandatory: 1_000,
@@ -984,10 +997,12 @@ struct HeroBudgetCalculatorTests {
             daysInMonth: 30
         )
         let spendable = c.spendable(for: .day)
-        #expect(spendable == 0)
+        #expect(abs(spendable - (-400)) < 0.05)
     }
 
-    @Test func weekOverspendingFloorsAtZero() {
+    @Test func weekOverspendingGoesNegative() {
+        // A $7,511 lump this week against a tiny week budget (≈$388) → "over by ~$7,123 this week".
+        // The user wants this period spend reflected even when it's a lump.
         let c = calc(
             income: 10_000,
             mandatory: 1_000,
@@ -997,7 +1012,7 @@ struct HeroBudgetCalculatorTests {
             spendingPlanMode: .monthlyPlan,
             daysInMonth: 31
         )
-        #expect(c.spendable(for: .week) == 0)
+        #expect(abs(c.spendable(for: .week) - (-7122.71)) < 0.1)
     }
 
     @Test func weekSpanningMonthBoundaryDoesNotStarveWhenMonthOverspent() {

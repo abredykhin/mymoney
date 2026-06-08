@@ -25,6 +25,10 @@ enum HomeDestination: Hashable {
     /// AllTransactionsView the "Recent" widget opens, rather than a bespoke list.
     case periodSpendList(HeroPeriod)
 
+    /// This month's spend that landed BEFORE the given period began — i.e. month-to-date minus
+    /// the current day/week. Opened from the "Spent earlier this month" breakdown step.
+    case monthSpendBeforePeriod(HeroPeriod)
+
     /// Transactions on a specific day (yyyy-MM-dd date string).
     case dayTransactions(String)
 
@@ -50,4 +54,8 @@ enum BreakdownTransactionSource: Hashable {
 
     /// Variable (non-recurring) expense transactions for the selected period.
     case variableSpend
+
+    /// This month's spend that landed before the selected period began (the "Spent earlier
+    /// this month" step). Drills into month-to-date minus the current day/week.
+    case priorMonthSpend
 }

@@ -158,6 +158,14 @@ struct HomeView: View {
                     title: periodSpendListTitle(for: period),
                     initialFilter: .out
                 )
+            case .monthSpendBeforePeriod(let period):
+                let range = monthBeforePeriodDateRange(for: period)
+                AllTransactionsView(
+                    startDate: range.start,
+                    endDate: range.end,
+                    title: "Spent earlier this month",
+                    initialFilter: .out
+                )
             case .dayTransactions(let dateStr):
                 // Streak day drill-down: show only discretionary spend (the
                 // `variable_transactions` that drive the day's budget/streak calc).
@@ -286,6 +294,32 @@ struct HomeView: View {
             startDate = cal.dateInterval(of: .month, for: now)?.start ?? cal.startOfDay(for: now)
         }
         return (fmt.string(from: startDate), fmt.string(from: now))
+    }
+
+    /// Date window (yyyy-MM-dd) for "Spent earlier this month": from the start of the month up to
+    /// the day BEFORE the given period began (yesterday for day, the day before this week's start
+    /// for week). On the first day/week of the month this collapses to an empty range, matching
+    /// the $0 "earlier" figure the breakdown shows.
+    private func monthBeforePeriodDateRange(for period: HeroPeriod) -> (start: String, end: String) {
+        let cal = Calendar.bablo
+        let now = Date()
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = cal.timeZone
+
+        let monthStart = cal.dateInterval(of: .month, for: now)?.start ?? cal.startOfDay(for: now)
+        let periodStart: Date
+        switch period {
+        case .day:
+            periodStart = cal.startOfDay(for: now)
+        case .week:
+            periodStart = cal.dateInterval(of: .weekOfYear, for: now)?.start ?? cal.startOfDay(for: now)
+        case .month:
+            periodStart = monthStart
+        }
+        let end = cal.date(byAdding: .day, value: -1, to: periodStart) ?? monthStart
+        return (fmt.string(from: monthStart), fmt.string(from: end))
     }
 
     private func formatDisplayDate(_ dateStr: String) -> String {

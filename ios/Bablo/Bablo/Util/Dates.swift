@@ -107,6 +107,11 @@ extension Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .current
         calendar.locale = .current
+        // US convention: the week begins on Sunday. Pin it explicitly rather than
+        // inheriting from the device region, and keep it in lockstep with the
+        // get_budget_state RPC (EXTRACT(dow): Sun = 0) so weekly spend windows,
+        // daysElapsedInWeek, and week-over-week deltas all agree.
+        calendar.firstWeekday = 1
         return calendar
     }
 }
