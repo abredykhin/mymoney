@@ -151,6 +151,7 @@ struct LiquidHeroView: View {
             Spacer(minLength: 16)
             deltaChip
         }
+        .frame(height: 40)
         .padding(.horizontal, 16)
         .padding(.top, 16)
     }
@@ -159,7 +160,7 @@ struct LiquidHeroView: View {
         BabloSegmentedControl(
             items: HeroPeriod.allCases.map { .init(id: $0, title: String(localized: $0.title)) },
             selection: $period,
-            size: .compact
+            size: .mini
         )
     }
 
@@ -171,25 +172,23 @@ struct LiquidHeroView: View {
             Button {
                 onDeltaTap?()
             } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: chip.hasMoreRoom ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill")
-                        .font(.system(size: 9, weight: .bold))
+                HStack(spacing: 0) {
                     Text(chip.label)
                         .font(.system(
-                            size: isPopArt ? 12 : 11,
+                            size: isPopArt ? 11.5 : 10.5,
                             weight: .semibold,
                             design: theme.typography.bodyDesign
                         ))
                         .tracking(isPopArt ? 0.6 : 0)
                         .textCase(isPopArt ? .uppercase : nil)
-                        // One line that hugs its content (no fixed width, no two-line wrap), so
-                        // the pill stays compact for both the short week label and the long month
-                        // one and never balloons to a reserved width.
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.82)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: 86, alignment: .center)
                 }
                 .foregroundStyle(isPopArt ? theme.colors.surface.color : accent)
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 9)
                 .padding(.vertical, 5)
                 .background(isPopArt ? theme.colors.textPrimary.color : accent.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: isPopArt ? 0 : 999))

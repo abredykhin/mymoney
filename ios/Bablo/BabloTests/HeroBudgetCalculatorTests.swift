@@ -135,6 +135,55 @@ struct HeroBudgetCalculatorTests {
         #expect(CushionVerdictCopy.headline(for: snapshot, comparisonName: "last month") == "Still over, but better than last month.")
     }
 
+    @Test func cushionMonthAxisLabelsSpanTheFullMonth() {
+        let labels = CushionMonthAxis.labels(start: "2026-06-01", loadedDayCount: 8)
+
+        #expect(labels.map(\.label) == ["1", "7", "15", "21", "30"])
+        #expect(labels.map(\.xFraction) == [0, 6.0 / 29.0, 14.0 / 29.0, 20.0 / 29.0, 1])
+    }
+
+    @Test func cushionYAxisLabelsDescribeCumulativeSpendMagnitude() {
+        let labels = CushionChartScale.yAxisLabels(maxValue: 41_804)
+
+        #expect(labels.map(\.label) == ["$42k", "$21k", "$0"])
+        #expect(labels.map(\.yFraction) == [0, 0.5, 1])
+    }
+
+    @Test func cushionSpendMovementUsesDownCaretOnlyWhenCurrentSpendIsLower() {
+        #expect(CushionSpendMovement(spendDelta: -1).systemImageName == "chevron.down")
+        #expect(CushionSpendMovement(spendDelta: 1).systemImageName == "chevron.up")
+        #expect(CushionSpendMovement(spendDelta: 0).systemImageName == "chevron.up")
+    }
+
+    @Test func cushionFillRunsSplitWhenCurrentSpendMovesAbovePreviousSpend() {
+        let points = [
+            CushionLineFillPoint(xFraction: 0.0, current: 10, previous: 20),
+            CushionLineFillPoint(xFraction: 0.5, current: 20, previous: 20),
+            CushionLineFillPoint(xFraction: 1.0, current: 30, previous: 20)
+        ]
+
+        let runs = CushionLineFillClassifier.runs(for: points)
+
+        #expect(runs.map(\.state) == [.currentUnderPrevious, .currentOverPrevious])
+        #expect(runs.last?.points.last?.xFraction == 1.0)
+    }
+
+    @Test func cushionFillRunsPreserveRedStartWhenCurrentBeginsAbovePreviousSpend() throws {
+        let points = [
+            CushionLineFillPoint(xFraction: 0.0, current: 12, previous: 4),
+            CushionLineFillPoint(xFraction: 0.25, current: 22, previous: 18),
+            CushionLineFillPoint(xFraction: 0.5, current: 26, previous: 34),
+            CushionLineFillPoint(xFraction: 1.0, current: 30, previous: 42)
+        ]
+
+        let runs = CushionLineFillClassifier.runs(for: points)
+
+        let firstRun = try #require(runs.first)
+        #expect(firstRun.state == .currentOverPrevious)
+        #expect(firstRun.points.first?.xFraction == 0.0)
+        #expect(runs.map(\.state) == [.currentOverPrevious, .currentUnderPrevious])
+    }
+
     @Test func cushionDriversInvertSpendDeltaIntoRoomDelta() {
         let items = [
             CategoryBreakdownItem(bucket: .category(.eatsOut), totalAmount: 49, transactionCount: 3, percentOfTotal: 0.4, previousAmount: 80),

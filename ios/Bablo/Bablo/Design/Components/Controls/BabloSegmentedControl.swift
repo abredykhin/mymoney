@@ -9,6 +9,7 @@ struct BabloSegmentedControl<Selection: Hashable>: View {
     enum Size {
         case regular
         case compact
+        case mini
     }
 
     let items: [Item]
@@ -58,6 +59,7 @@ struct BabloSegmentedControl<Selection: Hashable>: View {
         switch size {
         case .regular: 13
         case .compact: 11.5
+        case .mini: 10.5
         }
     }
 
@@ -65,6 +67,7 @@ struct BabloSegmentedControl<Selection: Hashable>: View {
         switch size {
         case .regular: 62
         case .compact: 48
+        case .mini: 42
         }
     }
 
@@ -72,6 +75,7 @@ struct BabloSegmentedControl<Selection: Hashable>: View {
         switch size {
         case .regular: 36
         case .compact: 26
+        case .mini: 23
         }
     }
 
@@ -79,6 +83,7 @@ struct BabloSegmentedControl<Selection: Hashable>: View {
         switch size {
         case .regular: 8
         case .compact: 6
+        case .mini: 5
         }
     }
 
@@ -86,6 +91,7 @@ struct BabloSegmentedControl<Selection: Hashable>: View {
         switch size {
         case .regular: 4
         case .compact: 3
+        case .mini: 2
         }
     }
 
@@ -93,6 +99,7 @@ struct BabloSegmentedControl<Selection: Hashable>: View {
         switch size {
         case .regular: 4
         case .compact: 3
+        case .mini: 2
         }
     }
 

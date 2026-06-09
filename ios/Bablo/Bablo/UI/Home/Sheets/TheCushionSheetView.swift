@@ -21,7 +21,7 @@ struct TheCushionSheetView: View {
         VStack(spacing: 0) {
             header
 
-            ScrollView(showsIndicators: false) {
+            CushionVerticalScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
                     CushionHeroComparisonCard(snapshot: snapshot, period: period, theme: theme)
 
@@ -55,6 +55,7 @@ struct TheCushionSheetView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
                 .padding(.bottom, 48)
+                .frame(maxWidth: .infinity)
             }
         }
         .babloScreenBackground()
@@ -106,6 +107,74 @@ struct TheCushionSheetView: View {
         // hero's spend totals.
         guard let dailySeries else { return [] }
         return CushionCumulativePoint.build(series: dailySeries, period: period)
+    }
+}
+
+private struct CushionVerticalScrollView<Content: View>: UIViewControllerRepresentable {
+    let showsIndicators: Bool
+    @ViewBuilder let content: () -> Content
+
+    func makeUIViewController(context _: Context) -> CushionScrollHostingController<Content> {
+        CushionScrollHostingController(rootView: content(), showsIndicators: showsIndicators)
+    }
+
+    func updateUIViewController(_ controller: CushionScrollHostingController<Content>, context _: Context) {
+        controller.update(rootView: content(), showsIndicators: showsIndicators)
+    }
+}
+
+private final class CushionScrollHostingController<Content: View>: UIViewController {
+    private let scrollView = UIScrollView()
+    private let hostingController: UIHostingController<Content>
+
+    init(rootView: Content, showsIndicators: Bool) {
+        hostingController = UIHostingController(rootView: rootView)
+        super.init(nibName: nil, bundle: nil)
+        scrollView.showsVerticalScrollIndicator = showsIndicators
+    }
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        view.backgroundColor = .clear
+        scrollView.backgroundColor = .clear
+        scrollView.alwaysBounceHorizontal = false
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.refreshControl = nil
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+
+        hostingController.view.backgroundColor = .clear
+        hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+
+        addChild(hostingController)
+        view.addSubview(scrollView)
+        scrollView.addSubview(hostingController.view)
+        hostingController.didMove(toParent: self)
+
+        NSLayoutConstraint.activate([
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            hostingController.view.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            hostingController.view.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            hostingController.view.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            hostingController.view.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            hostingController.view.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
+        ])
+    }
+
+    func update(rootView: Content, showsIndicators: Bool) {
+        hostingController.rootView = rootView
+        scrollView.showsVerticalScrollIndicator = showsIndicators
+        scrollView.refreshControl = nil
+        scrollView.contentOffset.x = 0
     }
 }
 
@@ -177,19 +246,6 @@ private struct CushionHeroComparisonCard: View {
 
                 Spacer()
 
-                if abs(snapshot.roomDelta) >= 1 {
-                    HStack(spacing: 4) {
-                        Image(systemName: snapshot.hasMoreRoom ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill")
-                            .font(.system(size: 10, weight: .bold))
-                        Text("\(comparisonAmount) \(snapshot.hasMoreRoom ? "more" : "less")")
-                            .font(theme.typography.body(size: 14, weight: .bold))
-                    }
-                    .foregroundStyle(accent)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(accent.opacity(0.12))
-                    .clipShape(Capsule())
-                }
             }
 
             Text(comparisonSentence)
@@ -215,6 +271,7 @@ private struct CushionHeroComparisonCard: View {
             }
         }
         .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.colors.surface.color)
         .clipShape(RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous))
         .overlay {
@@ -288,18 +345,22 @@ private struct CushionDriversCard: View {
 
     var body: some View {
         let isPopArt = theme.effects.isPopArt
-        return VStack(alignment: .leading, spacing: 16) {
-            HStack {
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 10) {
                 Text("HOW SPENDING IS MOVING IT")
-                    .font(theme.typography.title(size: 16, weight: isPopArt ? .black : .bold))
-                    .tracking(isPopArt ? 0 : 1.2)
+                    .font(theme.typography.mono(size: 13, weight: isPopArt ? .black : .bold))
+                    .tracking(isPopArt ? 0.7 : 0.9)
                     .foregroundStyle(theme.colors.textPrimary.color)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Spacer()
 
                 Text("vs \(period.previousPeriodShortLabel)")
                     .font(theme.typography.body(size: 12, weight: .semibold))
                     .foregroundStyle(theme.colors.textTertiary.color)
+                    .padding(.top, 1)
+                    .lineLimit(1)
             }
 
             VStack(spacing: 10) {
@@ -324,13 +385,14 @@ private struct CushionDriversCard: View {
 
                 Spacer()
 
-                Text("Net \(formattedSigned(netSpendDelta))")
+                Text(netSummaryText)
                     .font(theme.typography.body(size: 18, weight: .heavy))
                     .monospacedDigit()
                     .foregroundStyle(netColor)
             }
         }
         .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.colors.surface.color)
         .clipShape(RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous))
         .overlay {
@@ -341,6 +403,29 @@ private struct CushionDriversCard: View {
                 )
         }
         .shadow(color: isPopArt ? theme.effects.shadowColor : Color.black.opacity(0.04), radius: isPopArt ? 0 : 12, x: isPopArt ? theme.effects.shadowX : 0, y: isPopArt ? theme.effects.shadowY : 4)
+    }
+
+    private var netSummaryText: String {
+        let amount = formattedMoney(abs(netSpendDelta))
+        return "\(amount) \(netSpendDelta <= 0 ? "more" : "less")"
+    }
+}
+
+enum CushionSpendMovement: Equatable {
+    case lowerSpend
+    case higherOrEqualSpend
+
+    init(spendDelta: Double) {
+        self = spendDelta < 0 ? .lowerSpend : .higherOrEqualSpend
+    }
+
+    var systemImageName: String {
+        switch self {
+        case .lowerSpend:
+            return "chevron.down"
+        case .higherOrEqualSpend:
+            return "chevron.up"
+        }
     }
 }
 
@@ -359,6 +444,10 @@ private struct CushionDriverRow: View {
 
     private var barSide: HeroCushionDriver.BarSide {
         driver.spendDelta <= 0 ? .left : .right
+    }
+
+    private var movement: CushionSpendMovement {
+        CushionSpendMovement(spendDelta: driver.spendDelta)
     }
 
     var body: some View {
@@ -412,13 +501,17 @@ private struct CushionDriverRow: View {
             }
             .frame(width: 81, height: 18)
 
-            Text(formattedSigned(driver.spendDelta))
-                .font(theme.typography.body(size: 14, weight: .bold))
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .foregroundStyle(color)
-                .frame(width: 74, alignment: .trailing)
+            HStack(spacing: 3) {
+                Image(systemName: movement.systemImageName)
+                    .font(.system(size: 9, weight: .black))
+                Text(formattedMoney(abs(driver.spendDelta)))
+                    .font(theme.typography.body(size: 14, weight: .bold))
+                    .monospacedDigit()
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .foregroundStyle(color)
+            .frame(width: 74, alignment: .trailing)
         }
     }
 
@@ -463,7 +556,7 @@ private struct CushionPaceCard: View {
                     .foregroundStyle(theme.colors.textTertiary.color)
             }
 
-            CushionLineChart(points: points, maxValue: maxValue, hasMoreRoom: snapshot.hasMoreRoom, theme: theme)
+            CushionLineChart(points: points, maxValue: maxValue, period: snapshot.period, hasMoreRoom: snapshot.hasMoreRoom, theme: theme)
                 .frame(height: 166)
 
             HStack(spacing: 18) {
@@ -479,6 +572,7 @@ private struct CushionPaceCard: View {
             }
         }
         .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(theme.colors.surface.color)
         .clipShape(RoundedRectangle(cornerRadius: theme.metrics.cardCornerRadius, style: .continuous))
         .overlay {
@@ -505,147 +599,350 @@ private struct CushionPaceCard: View {
 private struct CushionLineChart: View {
     let points: [CushionCumulativePoint]
     let maxValue: Double
+    let period: HeroPeriod
     let hasMoreRoom: Bool
     let theme: BabloResolvedTheme
 
+    private let yAxisLabelWidth: CGFloat = 42
+    private let topInset: CGFloat = 10
+    private let bottomInset: CGFloat = 34
+
     var body: some View {
-        VStack(spacing: 8) {
-            Canvas { ctx, size in
-                let top: CGFloat = 10
-                let bottom: CGFloat = 24
-                let height = max(size.height - top - bottom, 1)
-                let width = max(size.width, 1)
+        Canvas { ctx, size in
+            let top = topInset
+            let bottom = bottomInset
+            let height = max(size.height - top - bottom, 1)
+            let chartWidth = max(size.width - yAxisLabelWidth, 1)
 
-                for fraction in [0.0, 0.5, 1.0] {
-                    var grid = Path()
-                    let y = top + height * CGFloat(fraction)
-                    grid.move(to: CGPoint(x: 0, y: y))
-                    grid.addLine(to: CGPoint(x: width, y: y))
-                    ctx.stroke(grid, with: .color(theme.colors.line.color.opacity(0.75)), lineWidth: 1)
-                }
-
-                let previousPath = linePath(size: size, top: top, bottom: bottom, value: \.previous)
-                let currentPath = linePath(size: size, top: top, bottom: bottom, value: \.current)
-
-                // Fill area between lines first
-                if !points.isEmpty {
-                    var betweenPath = Path()
-                    let firstPrev = chartPoint(for: points[0], amount: points[0].previous, size: size, top: top, bottom: bottom)
-                    betweenPath.move(to: firstPrev)
-
-                    for index in 1..<points.count {
-                        let p = chartPoint(for: points[index], amount: points[index].previous, size: size, top: top, bottom: bottom)
-                        betweenPath.addLine(to: p)
-                    }
-
-                    let lastCurr = chartPoint(for: points[points.count - 1], amount: points[points.count - 1].current, size: size, top: top, bottom: bottom)
-                    betweenPath.addLine(to: lastCurr)
-
-                    for index in stride(from: points.count - 2, through: 0, by: -1) {
-                        let p = chartPoint(for: points[index], amount: points[index].current, size: size, top: top, bottom: bottom)
-                        betweenPath.addLine(to: p)
-                    }
-                    betweenPath.closeSubpath()
-
-                    let fillColors: [Color] = hasMoreRoom ? [
-                        theme.colors.success.color.opacity(0.24),
-                        theme.colors.success.color.opacity(0.02)
-                    ] : [
-                        theme.colors.danger.color.opacity(0.24),
-                        theme.colors.danger.color.opacity(0.02)
-                    ]
-
-                    ctx.fill(
-                        betweenPath,
-                        with: .linearGradient(
-                            Gradient(colors: fillColors),
-                            startPoint: CGPoint(x: 0, y: top),
-                            endPoint: CGPoint(x: 0, y: top + height)
-                        )
-                    )
-                }
-
-                ctx.stroke(
-                    previousPath,
-                    with: .color(theme.colors.textTertiary.color.opacity(0.75)),
-                    style: StrokeStyle(lineWidth: 2.3, lineCap: .round, lineJoin: .round, dash: [5, 5])
-                )
-                ctx.stroke(
-                    currentPath,
-                    with: .color(hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color),
-                    style: StrokeStyle(lineWidth: 3.4, lineCap: .round, lineJoin: .round)
-                )
-            }
-            .overlay {
-                GeometryReader { geo in
-                    if let last = points.last {
-                        let previous = point(for: last.previous, item: last, size: geo.size)
-                        let current = point(for: last.current, item: last, size: geo.size)
-
-                        Circle()
-                            .stroke(theme.colors.textTertiary.color, lineWidth: 2)
-                            .background(Circle().fill(theme.colors.surface.color))
-                            .frame(width: 9, height: 9)
-                            .position(previous)
-
-                        Circle()
-                            .fill(hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color)
-                            .frame(width: 10, height: 10)
-                            .position(current)
-                    }
-                }
+            for fraction in [0.0, 0.5, 1.0] {
+                var grid = Path()
+                let y = top + height * CGFloat(fraction)
+                grid.move(to: CGPoint(x: 0, y: y))
+                grid.addLine(to: CGPoint(x: chartWidth, y: y))
+                ctx.stroke(grid, with: .color(theme.colors.line.color.opacity(0.75)), lineWidth: 1)
             }
 
-            HStack {
-                ForEach(points) { point in
-                    Text(point.label)
+            for label in CushionChartScale.yAxisLabels(maxValue: maxValue) {
+                ctx.draw(
+                    Text(label.label)
+                        .font(theme.typography.mono(size: 9, weight: .bold))
+                        .foregroundStyle(theme.colors.textTertiary.color),
+                    at: CGPoint(x: chartWidth + yAxisLabelWidth / 2, y: top + height * CGFloat(label.yFraction)),
+                    anchor: .center
+                )
+            }
+
+            for label in axisLabels {
+                let x = label.xPosition(in: chartWidth)
+                if period == .month {
+                    var tick = Path()
+                    tick.move(to: CGPoint(x: x, y: top + height + 3))
+                    tick.addLine(to: CGPoint(x: x, y: top + height + 8))
+                    ctx.stroke(tick, with: .color(theme.colors.line.color.opacity(0.9)), lineWidth: 1)
+                }
+
+                ctx.draw(
+                    Text(label.label)
                         .font(theme.typography.mono(size: 10, weight: .bold))
-                        .foregroundStyle(theme.colors.textTertiary.color)
-                        .frame(maxWidth: .infinity)
+                        .foregroundStyle(theme.colors.textTertiary.color),
+                    at: CGPoint(x: x, y: top + height + 24),
+                    anchor: .center
+                )
+            }
+
+            let previousPath = linePath(size: size, top: top, bottom: bottom, value: \.previous)
+            let currentPath = linePath(size: size, top: top, bottom: bottom, value: \.current)
+
+            for run in fillRuns where run.points.count > 1 {
+                let fillColor = run.state == .currentUnderPrevious ? theme.colors.success.color : theme.colors.danger.color
+                ctx.fill(
+                    areaPath(for: run.points, size: size, top: top, bottom: bottom),
+                    with: .linearGradient(
+                        Gradient(colors: [
+                            fillColor.opacity(0.24),
+                            fillColor.opacity(0.10)
+                        ]),
+                        startPoint: CGPoint(x: 0, y: top),
+                        endPoint: CGPoint(x: 0, y: top + height)
+                    )
+                )
+            }
+
+            ctx.stroke(
+                previousPath,
+                with: .color(theme.colors.textTertiary.color.opacity(0.75)),
+                style: StrokeStyle(lineWidth: 2.3, lineCap: .round, lineJoin: .round, dash: [5, 5])
+            )
+            ctx.stroke(
+                currentPath,
+                with: .color(hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color),
+                style: StrokeStyle(lineWidth: 3.4, lineCap: .round, lineJoin: .round)
+            )
+        }
+        .overlay {
+            GeometryReader { geo in
+                if let last = points.last {
+                    let previous = point(for: last.previous, item: last, size: geo.size)
+                    let current = point(for: last.current, item: last, size: geo.size)
+
+                    Circle()
+                        .stroke(theme.colors.textTertiary.color, lineWidth: 2)
+                        .background(Circle().fill(theme.colors.surface.color))
+                        .frame(width: 9, height: 9)
+                        .position(previous)
+
+                    Circle()
+                        .fill(hasMoreRoom ? theme.colors.success.color : theme.colors.danger.color)
+                        .frame(width: 10, height: 10)
+                        .position(current)
                 }
             }
         }
     }
 
-    private func linePath(size: CGSize, top: CGFloat, bottom: CGFloat, value: KeyPath<CushionCumulativePoint, Double>) -> Path {
-        let chartPoints = points.map {
-            chartPoint(for: $0, amount: $0[keyPath: value], size: size, top: top, bottom: bottom)
+    private var axisLabels: [CushionAxisLabel] {
+        switch period {
+        case .month:
+            guard let start = points.first?.id else { return [] }
+            return CushionMonthAxis.labels(start: start, loadedDayCount: points.count)
+        case .week, .day:
+            return points
+                .filter { !$0.label.isEmpty }
+                .map { CushionAxisLabel(label: $0.label, xFraction: $0.xFraction) }
         }
-        return smoothPath(through: chartPoints)
+    }
+
+    private func linePath(size: CGSize, top: CGFloat, bottom: CGFloat, value: KeyPath<CushionCumulativePoint, Double>) -> Path {
+        smoothPath(through: chartPoints(size: size, top: top, bottom: bottom, value: value))
+    }
+
+    private func areaPath(for runPoints: [CushionLineFillPoint], size: CGSize, top: CGFloat, bottom: CGFloat) -> Path {
+        let previousPoints = runPoints.map {
+            chartPoint(xFraction: $0.xFraction, amount: $0.previous, size: size, top: top, bottom: bottom)
+        }
+        let currentPoints = runPoints.map {
+            chartPoint(xFraction: $0.xFraction, amount: $0.current, size: size, top: top, bottom: bottom)
+        }
+        var path = Path()
+        guard let firstPrevious = previousPoints.first,
+              let lastCurrent = currentPoints.last else { return path }
+
+        path.move(to: firstPrevious)
+        addSmoothSegments(to: &path, through: previousPoints)
+        path.addLine(to: lastCurrent)
+        addSmoothSegments(to: &path, through: Array(currentPoints.reversed()))
+        path.closeSubpath()
+        return path
+    }
+
+    private func chartPoints(size: CGSize, top: CGFloat, bottom: CGFloat, value: KeyPath<CushionCumulativePoint, Double>) -> [CGPoint] {
+        points.map {
+            chartPoint(xFraction: $0.xFraction, amount: $0[keyPath: value], size: size, top: top, bottom: bottom)
+        }
+    }
+
+    private var fillRuns: [CushionLineFillRun] {
+        CushionLineFillClassifier.runs(for: points.map(CushionLineFillPoint.init(point:)))
     }
 
     private func smoothPath(through chartPoints: [CGPoint]) -> Path {
         var path = Path()
         guard let first = chartPoints.first else { return path }
         path.move(to: first)
-        guard chartPoints.count > 1 else { return path }
-
-        for index in 1..<chartPoints.count {
-            let point = chartPoints[index]
-            if index == 0 {
-                path.move(to: point)
-            } else {
-                let previous = chartPoints[index - 1]
-                let mid = CGPoint(x: (previous.x + point.x) / 2, y: (previous.y + point.y) / 2)
-                path.addQuadCurve(to: mid, control: previous)
-                if index == chartPoints.count - 1 {
-                    path.addQuadCurve(to: point, control: point)
-                }
-            }
-        }
+        addSmoothSegments(to: &path, through: chartPoints)
         return path
     }
 
-    private func point(for amount: Double, item: CushionCumulativePoint, size: CGSize) -> CGPoint {
-        chartPoint(for: item, amount: amount, size: size, top: 10, bottom: 24)
+    private func addSmoothSegments(to path: inout Path, through chartPoints: [CGPoint]) {
+        guard chartPoints.count > 1 else { return }
+        for index in 1..<chartPoints.count {
+            let point = chartPoints[index]
+            let previous = chartPoints[index - 1]
+            let mid = CGPoint(x: (previous.x + point.x) / 2, y: (previous.y + point.y) / 2)
+            path.addQuadCurve(to: mid, control: previous)
+            if index == chartPoints.count - 1 {
+                path.addQuadCurve(to: point, control: point)
+            }
+        }
     }
 
-    private func chartPoint(for item: CushionCumulativePoint, amount: Double, size: CGSize, top: CGFloat, bottom: CGFloat) -> CGPoint {
-        let width = max(size.width, 1)
+    private func point(for amount: Double, item: CushionCumulativePoint, size: CGSize) -> CGPoint {
+        chartPoint(xFraction: item.xFraction, amount: amount, size: size, top: topInset, bottom: bottomInset)
+    }
+
+    private func chartPoint(xFraction: Double, amount: Double, size: CGSize, top: CGFloat, bottom: CGFloat) -> CGPoint {
+        let width = max(size.width - yAxisLabelWidth, 1)
         let height = max(size.height - top - bottom, 1)
-        let x = width * CGFloat(min(max(item.xFraction, 0), 1))
-        let y = top + height * CGFloat(1 - min(max(amount / max(maxValue, 1), 0), 1))
+        let x = width * CGFloat(min(max(xFraction, 0), 1))
+        let y = top + height * CGFloat(1 - min(max(amount / CushionChartScale.roundedMaxValue(maxValue), 0), 1))
         return CGPoint(x: x, y: y)
+    }
+}
+
+struct CushionAxisLabel: Identifiable, Equatable {
+    let label: String
+    let xFraction: Double
+
+    var id: String { "\(label)-\(xFraction)" }
+
+    func xPosition(in width: CGFloat) -> CGFloat {
+        let labelWidth: CGFloat = 32
+        let minX = labelWidth / 2
+        let maxX = max(minX, width - labelWidth / 2)
+        return min(max(width * CGFloat(min(max(xFraction, 0), 1)), minX), maxX)
+    }
+}
+
+enum CushionMonthAxis {
+    static func labels(start: String, loadedDayCount _: Int) -> [CushionAxisLabel] {
+        let dayCount = fullMonthDayCount(start: start)
+        guard dayCount > 1 else {
+            return [CushionAxisLabel(label: "1", xFraction: 0)]
+        }
+        let middleDay = max(1, (dayCount + 1) / 2)
+        let days = Array(Set([1, 7, middleDay, 21, dayCount]))
+            .filter { $0 <= dayCount }
+            .sorted()
+        return days.map { day in
+            CushionAxisLabel(
+                label: "\(day)",
+                xFraction: Double(day - 1) / Double(dayCount - 1)
+            )
+        }
+    }
+
+    private static func fullMonthDayCount(start: String) -> Int {
+        let cal = Calendar.bablo
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.calendar = cal
+        fmt.timeZone = cal.timeZone
+        guard let date = fmt.date(from: start) else { return 30 }
+        return cal.range(of: .day, in: .month, for: date)?.count ?? 30
+    }
+}
+
+struct CushionYAxisLabel: Identifiable, Equatable {
+    let label: String
+    let yFraction: Double
+
+    var id: String { "\(label)-\(yFraction)" }
+}
+
+enum CushionChartScale {
+    static func roundedMaxValue(_ maxValue: Double) -> Double {
+        guard maxValue > 0 else { return 1 }
+        if maxValue >= 1_000 {
+            return (maxValue / 1_000).rounded(.up) * 1_000
+        }
+        if maxValue >= 100 {
+            return (maxValue / 100).rounded(.up) * 100
+        }
+        if maxValue >= 10 {
+            return (maxValue / 10).rounded(.up) * 10
+        }
+        return maxValue.rounded(.up)
+    }
+
+    static func yAxisLabels(maxValue: Double) -> [CushionYAxisLabel] {
+        let topValue = roundedMaxValue(maxValue)
+        return [
+            CushionYAxisLabel(label: formattedAxisAmount(topValue), yFraction: 0),
+            CushionYAxisLabel(label: formattedAxisAmount(topValue / 2), yFraction: 0.5),
+            CushionYAxisLabel(label: "$0", yFraction: 1)
+        ]
+    }
+
+    private static func formattedAxisAmount(_ amount: Double) -> String {
+        let rounded = Int(amount.rounded())
+        guard rounded > 0 else { return "$0" }
+        if rounded >= 1_000 {
+            if rounded % 1_000 == 0 {
+                return "$\(rounded / 1_000)k"
+            }
+            return "$\(String(format: "%.1f", Double(rounded) / 1_000))k"
+        }
+        return "$\(rounded.formatted())"
+    }
+}
+
+struct CushionLineFillPoint: Equatable {
+    let xFraction: Double
+    let current: Double
+    let previous: Double
+
+    init(xFraction: Double, current: Double, previous: Double) {
+        self.xFraction = xFraction
+        self.current = current
+        self.previous = previous
+    }
+
+    fileprivate init(point: CushionCumulativePoint) {
+        self.xFraction = point.xFraction
+        self.current = point.current
+        self.previous = point.previous
+    }
+}
+
+struct CushionLineFillRun: Equatable {
+    enum State: Equatable {
+        case currentUnderPrevious
+        case currentOverPrevious
+    }
+
+    let points: [CushionLineFillPoint]
+    let state: State
+}
+
+enum CushionLineFillClassifier {
+    static func runs(for points: [CushionLineFillPoint]) -> [CushionLineFillRun] {
+        guard let first = points.first else { return [] }
+
+        var runs: [CushionLineFillRun] = []
+        var currentRun = [first]
+        var currentState = state(for: first)
+
+        for next in points.dropFirst() {
+            guard let previous = currentRun.last else { continue }
+            let nextState = state(for: next)
+
+            if nextState == currentState {
+                currentRun.append(next)
+            } else {
+                let crossing = crossingPoint(from: previous, to: next)
+                currentRun.append(crossing)
+                if currentRun.count > 1 {
+                    runs.append(CushionLineFillRun(points: currentRun, state: currentState))
+                }
+                currentRun = [crossing, next]
+                currentState = nextState
+            }
+        }
+
+        if currentRun.count > 1 {
+            runs.append(CushionLineFillRun(points: currentRun, state: currentState))
+        }
+        return runs
+    }
+
+    private static func state(for point: CushionLineFillPoint) -> CushionLineFillRun.State {
+        point.current <= point.previous ? .currentUnderPrevious : .currentOverPrevious
+    }
+
+    private static func crossingPoint(from start: CushionLineFillPoint, to end: CushionLineFillPoint) -> CushionLineFillPoint {
+        let startDelta = start.current - start.previous
+        let endDelta = end.current - end.previous
+        let denominator = startDelta - endDelta
+        let t = denominator == 0 ? 0.5 : min(max(startDelta / denominator, 0), 1)
+        let x = lerp(start.xFraction, end.xFraction, t)
+        let current = lerp(start.current, end.current, t)
+        let previous = lerp(start.previous, end.previous, t)
+        let crossingAmount = (current + previous) / 2
+        return CushionLineFillPoint(xFraction: x, current: crossingAmount, previous: crossingAmount)
+    }
+
+    private static func lerp(_ start: Double, _ end: Double, _ t: Double) -> Double {
+        start + (end - start) * t
     }
 }
 
@@ -745,6 +1042,7 @@ private struct CushionVerdictCard: View {
             .padding(.leading, 48)
         }
         .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             isPopArt
             ? AnyShapeStyle(theme.colors.accent.color)
@@ -801,25 +1099,15 @@ enum CushionVerdictCopy {
     }
 
     static func metricAmount(for snapshot: HeroCushionSnapshot) -> String {
-        return formattedSigned(snapshot.roomDelta)
+        return formattedMoney(abs(snapshot.roomDelta))
     }
 
     static func paceSummary(for snapshot: HeroCushionSnapshot) -> String {
         let amount = formattedMoney(abs(snapshot.roomDelta))
-        let horizon = paceHorizon(for: snapshot.period)
         if snapshot.currentRoom < 0 {
-            return snapshot.roomDelta >= 0 ? "\(amount) better \(horizon)" : "\(amount) deeper \(horizon)"
+            return snapshot.roomDelta >= 0 ? "\(amount) better so far" : "\(amount) deeper so far"
         }
-        return "\(amount) \(snapshot.hasMoreRoom ? "under" : "over") \(horizon)"
-    }
-
-    /// The end-of-period the pace projects toward, matched to the selected period.
-    private static func paceHorizon(for period: HeroPeriod) -> String {
-        switch period {
-        case .day:   return "by day's end"
-        case .week:  return "by week's end"
-        case .month: return "by month-end"
-        }
+        return "\(amount) \(snapshot.hasMoreRoom ? "more" : "less") so far"
     }
 
     static func eyebrow(for snapshot: HeroCushionSnapshot) -> String {
@@ -1010,11 +1298,6 @@ private func formattedMoney(_ amount: Double) -> String {
         return "-$\(abs(rounded).formatted())"
     }
     return "$\(rounded.formatted())"
-}
-
-private func formattedSigned(_ amount: Double) -> String {
-    let sign = amount >= 0 ? "+" : "-"
-    return "\(sign)\(formattedMoney(abs(amount)))"
 }
 
 #if DEBUG

@@ -198,7 +198,7 @@ struct HomeView: View {
                     }
                 )
                 .presentationDetents([PresentationDetent.large])
-                .presentationDragIndicator(Visibility.visible)
+                .presentationDragIndicator(.hidden)
             }
         }
         .refreshable {

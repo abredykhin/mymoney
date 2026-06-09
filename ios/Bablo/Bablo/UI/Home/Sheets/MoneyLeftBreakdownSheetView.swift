@@ -580,8 +580,8 @@ private struct BreakdownStepCard: View {
 
             Spacer(minLength: 8)
 
-            // Signed amount — a touch smaller than the title so the title reads as primary
-            Text(signedMoney(step.amount))
+            // Amount — a touch smaller than the title so the title reads as primary.
+            Text(money(abs(step.amount)))
                 .font(theme.typography.mono(size: 18, weight: .bold))
                 .foregroundStyle(step.amount < 0 ? theme.colors.warning.color : theme.colors.success.color)
                 .lineLimit(1)
@@ -668,12 +668,6 @@ private struct BreakdownStepCard: View {
         case "ANNUALLY":    return "\(fmt)/yr"
         default:            return nil
         }
-    }
-
-    private func signedMoney(_ value: Double) -> String {
-        let rounded = Int(value.rounded())
-        if rounded < 0 { return "-$\(abs(rounded).formatted())" }
-        return "+$\(rounded.formatted())"
     }
 
     private func money(_ value: Double) -> String {
@@ -883,4 +877,3 @@ private struct ExcludedTransactionRowsList: View {
             .environmentObject(UserAccount())
     }
 }
-
