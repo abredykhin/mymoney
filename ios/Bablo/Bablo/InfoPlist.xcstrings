@@ -1,59 +1,77 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "CFBundleDisplayName" : {
-      "comment" : "Bundle display name",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "BabloApp"
+  "sourceLanguage": "en",
+  "strings": {
+    "CFBundleDisplayName": {
+      "comment": "Bundle display name",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "BabloApp"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BabloApp"
           }
         }
       }
     },
-    "CFBundleName" : {
-      "comment" : "Bundle name",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Bablo"
+    "CFBundleName": {
+      "comment": "Bundle name",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Bablo"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bablo"
           }
         }
       }
     },
-    "NSFaceIDUsageDescription" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "BabloApp uses Face ID to securely access your financial information."
+    "NSFaceIDUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BabloApp uses Face ID to securely access your financial information."
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "BabloApp utiliza Face ID para acceder de forma segura a su información financiera."
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BabloApp utiliza Face ID para acceder de forma segura a su información financiera."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "BabloApp 使用 Face ID 安全地访问您的财务信息。"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BabloApp 使用 Face ID 安全地访问您的财务信息。"
           }
         },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "BabloApp 使用 Face ID 安全地存取您的財務資訊。"
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BabloApp 使用 Face ID 安全地存取您的財務資訊。"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BabloApp використовує Face ID для безпечного доступу до вашої фінансової інформації."
           }
         }
       }
     }
   },
-  "version" : "1.2"
+  "version": "1.2"
 }
