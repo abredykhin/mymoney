@@ -24,7 +24,8 @@ struct GoalsPreviewFixtures {
             thisMonth: 340.0,
             statusLabel: "on track",
             fundingMode: "auto_stash",
-            monthlyContribution: 340.0
+            monthlyContribution: 340.0,
+            linkedAccountId: nil
         ),
         GoalSummaryItem(
             id: 2,
@@ -41,7 +42,8 @@ struct GoalsPreviewFixtures {
             thisMonth: 0.0,
             statusLabel: "at risk",
             fundingMode: "auto_stash",
-            monthlyContribution: 0.0
+            monthlyContribution: 0.0,
+            linkedAccountId: nil
         ),
         GoalSummaryItem(
             id: 3,
@@ -58,7 +60,8 @@ struct GoalsPreviewFixtures {
             thisMonth: 600.0,
             statusLabel: "almost",
             fundingMode: "auto_stash",
-            monthlyContribution: 600.0
+            monthlyContribution: 600.0,
+            linkedAccountId: nil
         ),
         GoalSummaryItem(
             id: 4,
@@ -75,7 +78,8 @@ struct GoalsPreviewFixtures {
             thisMonth: 0.0,
             statusLabel: "funded",
             fundingMode: "auto_stash",
-            monthlyContribution: 0.0
+            monthlyContribution: 0.0,
+            linkedAccountId: nil
         )
     ]
 

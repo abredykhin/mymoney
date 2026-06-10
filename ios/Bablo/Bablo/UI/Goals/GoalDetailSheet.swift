@@ -12,6 +12,7 @@ struct GoalDetailSheet: View {
     let goal: GoalSummaryItem
 
     @EnvironmentObject private var goalsService: GoalsService
+    @EnvironmentObject private var accountsService: AccountsService
     @Environment(\.dismiss) private var dismiss
     @Environment(\.babloTheme) private var theme
 
@@ -22,6 +23,7 @@ struct GoalDetailSheet: View {
     @State private var showEditSheet = false
     @State private var showDeleteConfirm = false
     @State private var errorMessage: String?
+    @State private var moveMode: GoalMoveMode = .add
 
     var body: some View {
         NavigationStack {
@@ -33,8 +35,8 @@ struct GoalDetailSheet: View {
                         .padding(.horizontal, theme.metrics.screenPadding)
                         .padding(.top, 8)
 
-                    // Add deposit section
-                    addDepositSection
+                    // Add / withdraw section
+                    moveMoneySection
                         .padding(.horizontal, theme.metrics.screenPadding)
 
                     // Deposit history
@@ -99,6 +101,7 @@ struct GoalDetailSheet: View {
             }) {
                 EditGoalSheet(goal: goal)
                     .environmentObject(goalsService)
+                    .environmentObject(accountsService)
             }
         }
         .presentationDetents([.medium, .large])
@@ -143,14 +146,22 @@ struct GoalDetailSheet: View {
         .babloCard(tone: .surface)
     }
 
-    // MARK: - Add Deposit Section
+    // MARK: - Move Money Section
 
-    private var addDepositSection: some View {
+    private var moveMoneySection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("LOG SAVINGS")
+            Text("MOVE MONEY")
                 .font(theme.typography.mono(size: 10, weight: .bold))
                 .tracking(1.5)
                 .foregroundStyle(theme.colors.textTertiary.color)
+
+            Picker("Move type", selection: $moveMode) {
+                ForEach(GoalMoveMode.allCases, id: \.self) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("goals.detail.moveMode")
 
             HStack(spacing: 12) {
                 HStack {
@@ -169,14 +180,14 @@ struct GoalDetailSheet: View {
                 .clipShape(RoundedRectangle(cornerRadius: theme.metrics.controlCornerRadius, style: .continuous))
 
                 Button {
-                    submitDeposit()
+                    submitMove()
                 } label: {
                     Group {
                         if isAddingDeposit {
                             ProgressView()
                                 .tint(theme.colors.surface.color)
                         } else {
-                            Text("Log savings")
+                            Text(moveMode.buttonTitle)
                                 .font(theme.typography.body(size: 14, weight: .bold))
                         }
                     }
@@ -188,8 +199,12 @@ struct GoalDetailSheet: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(isAddingDeposit || depositAmount.isEmpty)
-                .accessibilityIdentifier("goals.detail.logButton")
+                .accessibilityIdentifier("goals.detail.moveButton")
             }
+
+            Text(moveMode.helperText)
+                .font(theme.typography.body(size: 12, weight: .medium))
+                .foregroundStyle(theme.colors.textTertiary.color)
 
             if let errorMessage {
                 Text(errorMessage)
@@ -215,9 +230,9 @@ struct GoalDetailSheet: View {
                             .font(theme.typography.body(size: 14, weight: .medium))
                             .foregroundStyle(theme.colors.textSecondary.color)
                         Spacer()
-                        Text("+\(formatCurrency(deposit.amount))")
+                        Text(depositAmountText(deposit.amount))
                             .font(theme.typography.mono(size: 14, weight: .bold))
-                            .foregroundStyle(theme.colors.success.color)
+                            .foregroundStyle(deposit.amount < 0 ? theme.colors.warning.color : theme.colors.success.color)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
@@ -240,7 +255,7 @@ struct GoalDetailSheet: View {
 
     // MARK: - Helpers
 
-    private func submitDeposit() {
+    private func submitMove() {
         guard let amount = Double(depositAmount.replacingOccurrences(of: ",", with: ".")),
               amount > 0 else {
             errorMessage = "Enter a valid amount"
@@ -251,7 +266,12 @@ struct GoalDetailSheet: View {
 
         Task {
             do {
-                _ = try await goalsService.addDeposit(goalId: goal.id, amount: amount)
+                switch moveMode {
+                case .add:
+                    _ = try await goalsService.addDeposit(goalId: goal.id, amount: amount)
+                case .withdraw:
+                    _ = try await goalsService.withdrawFromGoal(goalId: goal.id, amount: amount)
+                }
                 depositAmount = ""
                 await loadDeposits()
             } catch {
@@ -297,6 +317,11 @@ struct GoalDetailSheet: View {
         return formatter.string(from: NSNumber(value: value)) ?? "$\(Int(value))"
     }
 
+    private func depositAmountText(_ value: Double) -> String {
+        let prefix = value < 0 ? "-" : "+"
+        return "\(prefix)\(formatCurrency(abs(value)))"
+    }
+
     private func formattedDepositDate(_ dateString: String) -> String {
         let isoFmt = ISO8601DateFormatter()
         isoFmt.formatOptions = [.withFullDate]
@@ -309,7 +334,36 @@ struct GoalDetailSheet: View {
     }
 }
 
+private enum GoalMoveMode: CaseIterable {
+    case add
+    case withdraw
+
+    var title: String {
+        switch self {
+        case .add: return "Add"
+        case .withdraw: return "Withdraw"
+        }
+    }
+
+    var buttonTitle: String {
+        switch self {
+        case .add: return "Add"
+        case .withdraw: return "Withdraw"
+        }
+    }
+
+    var helperText: String {
+        switch self {
+        case .add:
+            return "Add cash you already moved into this goal."
+        case .withdraw:
+            return "Move stored goal cash back to spendable."
+        }
+    }
+}
+
 #Preview {
     GoalDetailSheet(goal: GoalsPreviewFixtures.goals[0])
         .environmentObject(GoalsService())
+        .environmentObject(AccountsService())
 }

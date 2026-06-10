@@ -8,6 +8,37 @@ import Supabase
 
 // MARK: - Data Models
 
+enum GoalFundingMode: String, Codable, Equatable, CaseIterable {
+    case autoStash = "auto_stash"
+    case linked
+
+    var displayName: String {
+        switch self {
+        case .autoStash: return "Auto-stash"
+        case .linked: return "Linked account"
+        }
+    }
+}
+
+struct GoalFundingImpact: Equatable {
+    let monthlyContribution: Double
+    let daysRemaining: Int
+    let currentDailyPace: Double
+
+    var monthlyPoolDelta: Double {
+        -max(0, monthlyContribution)
+    }
+
+    var dailyPaceAfterContribution: Double {
+        let divisor = Double(max(1, daysRemaining))
+        return max(0, currentDailyPace + monthlyPoolDelta / divisor)
+    }
+
+    var dailyPaceDelta: Double {
+        dailyPaceAfterContribution - currentDailyPace
+    }
+}
+
 struct SavingsGoal: Codable, Identifiable, Equatable {
     let id: Int
     let user_id: String
@@ -109,6 +140,7 @@ struct GoalSummaryItem: Codable, Identifiable, Equatable {
     let statusLabel: String
     let fundingMode: String
     let monthlyContribution: Double
+    let linkedAccountId: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -126,6 +158,7 @@ struct GoalSummaryItem: Codable, Identifiable, Equatable {
         case statusLabel = "status_label"
         case fundingMode = "funding_mode"
         case monthlyContribution = "monthly_contribution"
+        case linkedAccountId = "linked_account_id"
     }
 
     var progressPercent: Double { min(1.0, max(0.0, pct / 100.0)) }
@@ -206,7 +239,9 @@ class GoalsService: ObservableObject {
         categoryIcon: String = "✈️",
         color: String = "#A9F236",
         priority: Int = 0,
-        monthlyContribution: Double = 0
+        monthlyContribution: Double = 0,
+        fundingMode: GoalFundingMode = .autoStash,
+        linkedAccountId: Int? = nil
     ) async throws -> SavingsGoal {
         isLoading = true
         error = nil
@@ -225,6 +260,8 @@ class GoalsService: ObservableObject {
             let color: String
             let priority: Int
             let monthly_contribution: Double
+            let funding_mode: GoalFundingMode
+            let linked_account_id: Int?
         }
 
         let body = CreateGoalRequest(
@@ -235,7 +272,9 @@ class GoalsService: ObservableObject {
             category_icon: categoryIcon,
             color: color,
             priority: priority,
-            monthly_contribution: monthlyContribution
+            monthly_contribution: fundingMode == .linked ? 0 : monthlyContribution,
+            funding_mode: fundingMode,
+            linked_account_id: linkedAccountId
         )
 
         do {
@@ -265,7 +304,9 @@ class GoalsService: ObservableObject {
         etaDate: String?,
         categoryIcon: String,
         color: String,
-        monthlyContribution: Double
+        monthlyContribution: Double,
+        fundingMode: GoalFundingMode = .autoStash,
+        linkedAccountId: Int? = nil
     ) async throws {
         isLoading = true
         error = nil
@@ -278,6 +319,8 @@ class GoalsService: ObservableObject {
             let category_icon: String
             let color: String
             let monthly_contribution: Double
+            let funding_mode: GoalFundingMode
+            let linked_account_id: Int?
         }
 
         let body = UpdateGoalRequest(
@@ -286,7 +329,9 @@ class GoalsService: ObservableObject {
             eta_date: etaDate,
             category_icon: categoryIcon,
             color: color,
-            monthly_contribution: monthlyContribution
+            monthly_contribution: fundingMode == .linked ? 0 : monthlyContribution,
+            funding_mode: fundingMode,
+            linked_account_id: linkedAccountId
         )
 
         do {
@@ -387,6 +432,35 @@ class GoalsService: ObservableObject {
             return deposit
         } catch {
             Logger.e("GoalsService: Failed to add deposit: \(error)")
+            self.error = error
+            throw error
+        }
+    }
+
+    /// Withdraw stored goal progress back into spendable cash.
+    ///
+    /// The database RPC enforces ownership and prevents current_amount from going below zero.
+    func withdrawFromGoal(goalId: Int, amount: Double) async throws -> SavingsDeposit {
+        isLoading = true
+        error = nil
+        defer { isLoading = false }
+
+        struct WithdrawParams: Codable {
+            let p_goal_id: Int
+            let p_amount: Double
+        }
+
+        do {
+            let withdrawal: SavingsDeposit = try await supabase
+                .rpc("withdraw_from_goal", params: WithdrawParams(p_goal_id: goalId, p_amount: amount))
+                .execute()
+                .value
+
+            Logger.i("GoalsService: Withdrawal of $\(amount) added successfully")
+            try await fetchGoalsSummary()
+            return withdrawal
+        } catch {
+            Logger.e("GoalsService: Failed to withdraw from goal: \(error)")
             self.error = error
             throw error
         }

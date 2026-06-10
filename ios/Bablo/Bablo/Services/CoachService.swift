@@ -37,6 +37,7 @@ enum CoachMissionType: String, Codable, Equatable {
 
 enum CoachMissionStatus: String, Codable, Equatable {
     case active
+    case ready
     case completed
     case dismissed
     case cancelled
@@ -79,15 +80,18 @@ struct CoachMission: Codable, Identifiable, Equatable {
         case updatedAt = "updated_at"
     }
 
-    var isActive: Bool { status == .active }
-    var isReadyToComplete: Bool { isActive && completedDays >= totalDays }
+    var isActive: Bool { status == .active || status == .ready }
+    var isReadyToComplete: Bool {
+        status == .ready || (status == .active && completedDays >= totalDays)
+    }
     var progressFraction: Double {
         guard totalDays > 0 else { return 0 }
         return min(1, max(0, Double(completedDays) / Double(totalDays)))
     }
 
     var currentDay: Int {
-        min(max(1, completedDays + (isActive ? 1 : 0)), max(1, totalDays))
+        let offset = status == .active ? 1 : 0
+        return min(max(1, completedDays + offset), max(1, totalDays))
     }
 }
 
@@ -530,6 +534,22 @@ class CoachService: ObservableObject {
         }
     }
 
+    func cancelMission(id: Int) async throws -> CoachMission {
+        try await updateMissionStatus(
+            rpcName: "cancel_coach_mission",
+            missionId: id,
+            logAction: "Cancelled"
+        )
+    }
+
+    func dismissMission(id: Int) async throws -> CoachMission {
+        try await updateMissionStatus(
+            rpcName: "dismiss_coach_mission",
+            missionId: id,
+            logAction: "Dismissed"
+        )
+    }
+
     /// Fetch tailored financial recommendations and manga nudge insights
     func fetchCoachInsights(force: Bool = false) async throws -> CoachInsight {
         // Coalesce concurrent callers onto the same request instead of firing several.
@@ -580,6 +600,31 @@ class CoachService: ObservableObject {
     /// Dismiss the current insight
     func dismissInsight() {
         self.isDismissed = true
+    }
+
+    private func updateMissionStatus(rpcName: String, missionId: Int, logAction: String) async throws -> CoachMission {
+        struct CoachMissionStatusRequest: Codable {
+            let p_mission_id: Int
+        }
+
+        isLoadingMissions = true
+        error = nil
+        defer { isLoadingMissions = false }
+
+        do {
+            let mission: CoachMission = try await supabase
+                .rpc(rpcName, params: CoachMissionStatusRequest(p_mission_id: missionId))
+                .execute()
+                .value
+
+            upsertMission(mission)
+            Logger.i("CoachService: \(logAction) coach mission \(mission.id)")
+            return mission
+        } catch {
+            Logger.e("CoachService: Failed to \(logAction.lowercased()) coach mission: \(error)")
+            self.error = error
+            throw error
+        }
     }
 
     private func upsertMission(_ mission: CoachMission) {

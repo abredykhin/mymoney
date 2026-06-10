@@ -94,6 +94,7 @@ struct GoalsTabView: View {
         }) {
             AddGoalSheet()
                 .environmentObject(goalsService)
+                .environmentObject(accountsService)
         }
     }
 
@@ -186,4 +187,3 @@ struct GoalsEmptyStateView: View {
         .environmentObject(AccountsService())
         .environmentObject(UserAccount())
 }
-

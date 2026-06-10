@@ -10,6 +10,7 @@ import SwiftUI
 
 struct AddGoalSheet: View {
     @EnvironmentObject private var goalsService: GoalsService
+    @EnvironmentObject private var accountsService: AccountsService
     @Environment(\.dismiss) private var dismiss
     @Environment(\.babloTheme) private var theme
 
@@ -17,6 +18,8 @@ struct AddGoalSheet: View {
     @State private var selectedIcon: String = "✈️"
     @State private var targetAmountText: String = ""
     @State private var monthlyContributionText: String = ""
+    @State private var fundingMode: GoalFundingMode = .autoStash
+    @State private var linkedAccountId: Int?
     @State private var hasTargetDate = false
     @State private var targetDate = Calendar.current.date(byAdding: .month, value: 6, to: Date()) ?? Date()
     @State private var selectedColor: String = GoalColorOption.blue.hex
@@ -62,27 +65,7 @@ struct AddGoalSheet: View {
                         .clipShape(RoundedRectangle(cornerRadius: theme.metrics.controlCornerRadius, style: .continuous))
                     }
 
-                    // Monthly auto-stash
-                    formSection(label: "AUTO-STASH PER MONTH (OPTIONAL)") {
-                        HStack {
-                            Text("$")
-                                .font(theme.typography.body(size: 17, weight: .bold))
-                                .foregroundStyle(theme.colors.textTertiary.color)
-                            TextField("0", text: $monthlyContributionText)
-                                .keyboardType(.decimalPad)
-                                .font(theme.typography.mono(size: 17, weight: .bold))
-                                .foregroundStyle(theme.colors.textPrimary.color)
-                                .accessibilityIdentifier("goals.add.contributionField")
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                        .background(theme.colors.surfaceMuted.color)
-                        .clipShape(RoundedRectangle(cornerRadius: theme.metrics.controlCornerRadius, style: .continuous))
-
-                        Text("We'll set this aside from your budget each month and hide it from safe-to-spend.")
-                            .font(theme.typography.body(size: 12, weight: .medium))
-                            .foregroundStyle(theme.colors.textTertiary.color)
-                    }
+                    fundingSection
 
                     // Target date
                     formSection(label: "TARGET DATE (OPTIONAL)") {
@@ -159,6 +142,9 @@ struct AddGoalSheet: View {
                 }
             }
         }
+        .task {
+            try? await accountsService.refreshAccounts()
+        }
     }
 
     // MARK: - Icon Picker
@@ -200,6 +186,57 @@ struct AddGoalSheet: View {
         }
     }
 
+    private var fundingSection: some View {
+        formSection(label: "FUNDING") {
+            Picker("Funding", selection: $fundingMode) {
+                ForEach(GoalFundingMode.allCases, id: \.rawValue) { mode in
+                    Text(mode.displayName).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("goals.add.fundingMode")
+
+            if fundingMode == .autoStash {
+                HStack {
+                    Text("$")
+                        .font(theme.typography.body(size: 17, weight: .bold))
+                        .foregroundStyle(theme.colors.textTertiary.color)
+                    TextField("0", text: $monthlyContributionText)
+                        .keyboardType(.decimalPad)
+                        .font(theme.typography.mono(size: 17, weight: .bold))
+                        .foregroundStyle(theme.colors.textPrimary.color)
+                        .accessibilityIdentifier("goals.add.contributionField")
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(theme.colors.surfaceMuted.color)
+                .clipShape(RoundedRectangle(cornerRadius: theme.metrics.controlCornerRadius, style: .continuous))
+
+                Text(autoStashImpactText)
+                    .font(theme.typography.body(size: 12, weight: .medium))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+            } else {
+                Picker("Linked account", selection: linkedAccountBinding) {
+                    Text("Choose account").tag(-1)
+                    ForEach(linkableAccounts) { account in
+                        Text(accountPickerTitle(account)).tag(account.id)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .background(theme.colors.surfaceMuted.color)
+                .clipShape(RoundedRectangle(cornerRadius: theme.metrics.controlCornerRadius, style: .continuous))
+                .accessibilityIdentifier("goals.add.linkedAccountPicker")
+
+                Text("This goal uses the account balance as progress and removes that account from safe-to-spend.")
+                    .font(theme.typography.body(size: 12, weight: .medium))
+                    .foregroundStyle(theme.colors.textTertiary.color)
+            }
+        }
+    }
+
     // MARK: - Form Section Helper
 
     @ViewBuilder
@@ -229,6 +266,14 @@ struct AddGoalSheet: View {
         }
 
         let monthlyContribution = Double(monthlyContributionText.replacingOccurrences(of: ",", with: ".")) ?? 0
+        guard monthlyContribution >= 0 else {
+            errorMessage = "Enter a positive monthly amount"
+            return
+        }
+        if fundingMode == .linked && linkedAccountId == nil {
+            errorMessage = "Choose an account to link"
+            return
+        }
 
         errorMessage = nil
         isSaving = true
@@ -247,7 +292,9 @@ struct AddGoalSheet: View {
                     etaDate: etaDateString,
                     categoryIcon: selectedIcon,
                     color: selectedColor,
-                    monthlyContribution: monthlyContribution
+                    monthlyContribution: monthlyContribution,
+                    fundingMode: fundingMode,
+                    linkedAccountId: fundingMode == .linked ? linkedAccountId : nil
                 )
                 dismiss()
             } catch {
@@ -255,6 +302,54 @@ struct AddGoalSheet: View {
             }
             isSaving = false
         }
+    }
+
+    private var linkableAccounts: [BankAccount] {
+        accountsService.visibleBanksWithAccounts
+            .flatMap(\.accounts)
+            .filter { $0.type.caseInsensitiveCompare("depository") == .orderedSame }
+            .sorted { $0.displayName < $1.displayName }
+    }
+
+    private var linkedAccountBinding: Binding<Int> {
+        Binding(
+            get: { linkedAccountId ?? -1 },
+            set: { linkedAccountId = $0 == -1 ? nil : $0 }
+        )
+    }
+
+    private var autoStashImpactText: String {
+        let monthlyContribution = Double(monthlyContributionText.replacingOccurrences(of: ",", with: ".")) ?? 0
+        guard monthlyContribution > 0 else {
+            return "We'll set this aside from your budget each month and hide it from safe-to-spend."
+        }
+        let impact = GoalFundingImpact(
+            monthlyContribution: monthlyContribution,
+            daysRemaining: daysRemainingInMonth,
+            currentDailyPace: 0
+        )
+        return "This lowers safe-to-spend by \(formatCurrency(monthlyContribution))/mo, about \(formatCurrency(abs(impact.dailyPaceDelta)))/day this month."
+    }
+
+    private var daysRemainingInMonth: Int {
+        let calendar = Calendar.current
+        let today = Date()
+        let day = calendar.component(.day, from: today)
+        let range = calendar.range(of: .day, in: .month, for: today)
+        return max(1, (range?.count ?? 30) - day + 1)
+    }
+
+    private func accountPickerTitle(_ account: BankAccount) -> String {
+        let mask = account.mask.map { " ·\($0)" } ?? ""
+        return "\(account.displayName)\(mask) · \(formatCurrency(account.currentBalance))"
+    }
+
+    private func formatCurrency(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        formatter.maximumFractionDigits = 0
+        return formatter.string(from: NSNumber(value: value)) ?? "$\(Int(value))"
     }
 }
 
@@ -303,11 +398,13 @@ struct GoalColorPicker: View {
 #Preview("Add Goal Sheet · Normal") {
     AddGoalSheet()
         .environmentObject(GoalsService())
+        .environmentObject(AccountsService())
         .babloTheme(.normal)
 }
 
 #Preview("Add Goal Sheet · Pop") {
     AddGoalSheet()
         .environmentObject(GoalsService())
+        .environmentObject(AccountsService())
         .babloTheme(.pop)
 }

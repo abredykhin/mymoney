@@ -93,7 +93,8 @@ struct CoachTabView: View {
                     CoachActiveMissionCard(
                         mission: activeMission,
                         fallbackGoalName: primaryGoal?.name ?? "Goals",
-                        complete: { completeMission(activeMission) }
+                        complete: { completeMission(activeMission) },
+                        cancel: { cancelMission(activeMission) }
                     )
                     .padding(.horizontal, theme.metrics.screenPadding)
                 } else if !dismissedMissionSuggestion {
@@ -139,7 +140,7 @@ struct CoachTabView: View {
     }
 
     private var activeMission: CoachMission? {
-        coachService.missions.first { $0.status == .active }
+        coachService.missions.first { $0.isActive }
     }
 
     private var coffeeMissionSavings: Double {
@@ -172,6 +173,23 @@ struct CoachTabView: View {
                 durationDays: duration,
                 projectedSavings: savings
             )
+        }
+
+        if let state = budgetService.budgetState {
+            let weeklyDelta = state.spentWeek - state.prevWeekSpent
+            if weeklyDelta >= 25 {
+                let savings = min(max(12, (weeklyDelta * 0.35).rounded()), 60)
+                return MissionSuggestion(
+                    type: .noSpend,
+                    targetCategory: nil,
+                    title: "\(duration)-day no-spend",
+                    icon: "🚫",
+                    blurb: "This week is \(formatCurrency(weeklyDelta)) hotter than last week. Try \(duration) no-spend days and stash the saved room.",
+                    dailyCap: 0,
+                    durationDays: duration,
+                    projectedSavings: savings
+                )
+            }
         }
 
         // Fallback: the original coffee cap.
@@ -286,6 +304,16 @@ struct CoachTabView: View {
                 try? await goalsService.fetchGoalsSummary()
             } catch {
                 Logger.e("CoachTabView: Failed to complete coach mission: \(error)")
+            }
+        }
+    }
+
+    private func cancelMission(_ mission: CoachMission) {
+        Task {
+            do {
+                _ = try await coachService.cancelMission(id: mission.id)
+            } catch {
+                Logger.e("CoachTabView: Failed to cancel coach mission: \(error)")
             }
         }
     }
@@ -840,6 +868,7 @@ private struct CoachActiveMissionCard: View {
     let mission: CoachMission
     let fallbackGoalName: String
     let complete: () -> Void
+    let cancel: () -> Void
     @Environment(\.babloTheme) private var theme
 
     var body: some View {
@@ -890,6 +919,17 @@ private struct CoachActiveMissionCard: View {
                                 .padding(.horizontal, 12)
                                 .frame(height: 32)
                                 .background(theme.colors.accent.color)
+                                .clipShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        Button(action: cancel) {
+                            Text("Cancel")
+                                .font(theme.typography.body(size: 12, weight: .bold))
+                                .foregroundStyle(theme.colors.textTertiary.color)
+                                .padding(.horizontal, 10)
+                                .frame(height: 30)
+                                .background(theme.colors.surfaceMuted.color)
                                 .clipShape(Capsule())
                         }
                         .buttonStyle(.plain)
@@ -1186,7 +1226,8 @@ struct CoachTabPreviewWrapper: View {
                             thisMonth: 96,
                             statusLabel: "on_track",
                             fundingMode: "auto_stash",
-                            monthlyContribution: 96
+                            monthlyContribution: 96,
+                            linkedAccountId: nil
                         )
                     ]
                 )

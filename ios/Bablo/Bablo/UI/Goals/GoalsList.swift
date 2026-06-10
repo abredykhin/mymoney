@@ -12,6 +12,7 @@ struct GoalsList: View {
     let onGoalTap: (GoalSummaryItem) -> Void
 
     @EnvironmentObject private var goalsService: GoalsService
+    @EnvironmentObject private var accountsService: AccountsService
     @State private var selectedGoal: GoalSummaryItem?
     @Environment(\.babloTheme) private var theme
 
@@ -79,6 +80,7 @@ struct GoalsList: View {
         }) { goal in
             GoalDetailSheet(goal: goal)
                 .environmentObject(goalsService)
+                .environmentObject(accountsService)
         }
     }
 }
@@ -87,6 +89,7 @@ struct GoalsList: View {
     GoalsList(goals: GoalsPreviewFixtures.goals, onGoalTap: { _ in })
         .padding()
         .environmentObject(GoalsService())
+        .environmentObject(AccountsService())
         .babloTheme(.normal)
 }
 
@@ -94,5 +97,6 @@ struct GoalsList: View {
     GoalsList(goals: GoalsPreviewFixtures.goals, onGoalTap: { _ in })
         .padding()
         .environmentObject(GoalsService())
+        .environmentObject(AccountsService())
         .babloTheme(.pop)
 }

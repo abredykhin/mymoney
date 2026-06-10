@@ -75,7 +75,8 @@ struct CoachServiceTests {
             thisMonth: thisMonth,
             statusLabel: "on_track",
             fundingMode: "auto_stash",
-            monthlyContribution: 96
+            monthlyContribution: 96,
+            linkedAccountId: nil
         )
     }
 
@@ -382,6 +383,148 @@ struct CoachServiceTests {
         #expect(completion.mission.status == .completed)
         #expect(completion.deposit?.amount == 24)
         #expect(service.missions.first?.status == .completed)
+    }
+
+    @Test @MainActor func testReadyMissionDecodesAsReadyToComplete() async throws {
+        let json = """
+        {
+          "id": 31,
+          "user_id": "user-1",
+          "mission_type": "category_cap",
+          "title": "3-day shopping cap",
+          "icon": "🛍️",
+          "target_goal_id": 1,
+          "goal_name": "Japan",
+          "start_date": "2026-06-09",
+          "end_date": "2026-06-11",
+          "projected_savings": 60,
+          "actual_savings": 0,
+          "status": "ready",
+          "completed_days": 3,
+          "total_days": 3,
+          "created_at": "2026-06-09T03:00:00Z",
+          "updated_at": "2026-06-11T03:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        let mission = try JSONDecoder().decode(CoachMission.self, from: json)
+
+        #expect(mission.status == .ready)
+        #expect(mission.isReadyToComplete)
+        #expect(mission.currentDay == 3)
+    }
+
+    @Test @MainActor func testCancelMissionQueriesRPCAndUpdatesStoredMission() async throws {
+        let mockData = """
+        {
+          "id": 12,
+          "user_id": "user-1",
+          "mission_type": "coffee_cap",
+          "title": "3-day coffee cap",
+          "icon": "☕",
+          "target_goal_id": 1,
+          "goal_name": "Japan",
+          "start_date": "2026-06-07",
+          "end_date": "2026-06-09",
+          "projected_savings": 24,
+          "actual_savings": 0,
+          "status": "cancelled",
+          "completed_days": 1,
+          "total_days": 3,
+          "created_at": "2026-06-07T03:00:00Z",
+          "updated_at": "2026-06-08T03:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        MockURLProtocol.mockHandler = { request in
+            let url = request.url!
+            #expect(url.path.contains("/rest/v1/rpc/cancel_coach_mission"))
+
+            let body = try #require(request.httpBodyStream?.readAllData())
+            let json = try #require(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            #expect(json["p_mission_id"] as? Int == 12)
+
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, mockData)
+        }
+
+        let service = CoachService(supabaseClient: Self.mockSupabaseClient())
+        service.missions = [
+            CoachMission(
+                id: 12,
+                userId: "user-1",
+                missionType: .coffeeCap,
+                title: "3-day coffee cap",
+                icon: "☕",
+                targetGoalId: 1,
+                goalName: "Japan",
+                startDate: "2026-06-07",
+                endDate: "2026-06-09",
+                projectedSavings: 24,
+                actualSavings: 0,
+                status: .active,
+                completedDays: 1,
+                totalDays: 3,
+                createdAt: "2026-06-07T03:00:00Z",
+                updatedAt: "2026-06-07T03:00:00Z"
+            )
+        ]
+
+        let mission = try await service.cancelMission(id: 12)
+
+        #expect(mission.status == .cancelled)
+        #expect(service.missions.first?.status == .cancelled)
+    }
+
+    @Test @MainActor func testDismissMissionQueriesRPCAndUpdatesStoredMission() async throws {
+        let mockData = """
+        {
+          "id": 22,
+          "user_id": "user-1",
+          "mission_type": "category_cap",
+          "title": "3-day shopping cap",
+          "icon": "🛍️",
+          "target_goal_id": 1,
+          "goal_name": "Japan",
+          "start_date": "2026-06-09",
+          "end_date": "2026-06-11",
+          "projected_savings": 60,
+          "actual_savings": 0,
+          "status": "dismissed",
+          "completed_days": 0,
+          "total_days": 3,
+          "created_at": "2026-06-09T03:00:00Z",
+          "updated_at": "2026-06-09T03:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        MockURLProtocol.mockHandler = { request in
+            let url = request.url!
+            #expect(url.path.contains("/rest/v1/rpc/dismiss_coach_mission"))
+
+            let body = try #require(request.httpBodyStream?.readAllData())
+            let json = try #require(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            #expect(json["p_mission_id"] as? Int == 22)
+
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, mockData)
+        }
+
+        let service = CoachService(supabaseClient: Self.mockSupabaseClient())
+        let mission = try await service.dismissMission(id: 22)
+
+        #expect(mission.status == .dismissed)
+        #expect(service.missions.first?.status == .dismissed)
     }
 
     @Test @MainActor func testCoachInsightsUnit() async throws {
