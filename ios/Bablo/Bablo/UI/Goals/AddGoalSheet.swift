@@ -16,6 +16,7 @@ struct AddGoalSheet: View {
     @State private var name: String = ""
     @State private var selectedIcon: String = "✈️"
     @State private var targetAmountText: String = ""
+    @State private var monthlyContributionText: String = ""
     @State private var hasTargetDate = false
     @State private var targetDate = Calendar.current.date(byAdding: .month, value: 6, to: Date()) ?? Date()
     @State private var selectedColor: String = GoalColorOption.blue.hex
@@ -59,6 +60,28 @@ struct AddGoalSheet: View {
                         .padding(.vertical, 12)
                         .background(theme.colors.surfaceMuted.color)
                         .clipShape(RoundedRectangle(cornerRadius: theme.metrics.controlCornerRadius, style: .continuous))
+                    }
+
+                    // Monthly auto-stash
+                    formSection(label: "AUTO-STASH PER MONTH (OPTIONAL)") {
+                        HStack {
+                            Text("$")
+                                .font(theme.typography.body(size: 17, weight: .bold))
+                                .foregroundStyle(theme.colors.textTertiary.color)
+                            TextField("0", text: $monthlyContributionText)
+                                .keyboardType(.decimalPad)
+                                .font(theme.typography.mono(size: 17, weight: .bold))
+                                .foregroundStyle(theme.colors.textPrimary.color)
+                                .accessibilityIdentifier("goals.add.contributionField")
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(theme.colors.surfaceMuted.color)
+                        .clipShape(RoundedRectangle(cornerRadius: theme.metrics.controlCornerRadius, style: .continuous))
+
+                        Text("We'll set this aside from your budget each month and hide it from safe-to-spend.")
+                            .font(theme.typography.body(size: 12, weight: .medium))
+                            .foregroundStyle(theme.colors.textTertiary.color)
                     }
 
                     // Target date
@@ -205,6 +228,8 @@ struct AddGoalSheet: View {
             return
         }
 
+        let monthlyContribution = Double(monthlyContributionText.replacingOccurrences(of: ",", with: ".")) ?? 0
+
         errorMessage = nil
         isSaving = true
 
@@ -221,7 +246,8 @@ struct AddGoalSheet: View {
                     targetAmount: amount,
                     etaDate: etaDateString,
                     categoryIcon: selectedIcon,
-                    color: selectedColor
+                    color: selectedColor,
+                    monthlyContribution: monthlyContribution
                 )
                 dismiss()
             } catch {

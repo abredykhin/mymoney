@@ -253,6 +253,7 @@ function calculateMonthlyAmount(stream: any): number {
 
   const multipliers: Record<string, number> = {
     'WEEKLY': 52 / 12,          // ~4.33 times per month
+    'BIWEEKLY': 26 / 12,        // ~2.17 times per month (every two weeks, 26/year)
     'SEMI_MONTHLY': 2,          // Twice per month (e.g., 1st and 15th)
     'MONTHLY': 1,               // Once per month
     'ANNUALLY': 1 / 12          // Once per year
@@ -274,6 +275,7 @@ function calculateMonthlyAmount(stream: any): number {
 function formatFrequencyForDisplay(plaidFrequency: string): string {
   const mapping: Record<string, string> = {
     'WEEKLY': 'Weekly',
+    'BIWEEKLY': 'Every Two Weeks',
     'SEMI_MONTHLY': 'Twice Monthly',
     'MONTHLY': 'Monthly',
     'ANNUALLY': 'Yearly'

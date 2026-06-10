@@ -8,8 +8,8 @@ struct CoachTabView: View {
     @EnvironmentObject private var userAccount: UserAccount
     @Environment(\.babloTheme) private var theme
 
-    @State private var selectedPreset: CoachPurchasePreset = .sushi
-    @State private var selectedAmount: Double = CoachPurchasePreset.sushi.defaultAmount
+    @State private var selectedPreset: CoachPurchasePreset = .medium
+    @State private var selectedAmount: Double = CoachPurchasePreset.medium.defaultAmount
     @State private var selectedQuestion: CoachQuestion = .canAfford
     @State private var dismissedMissionSuggestion = false
 
@@ -36,8 +36,17 @@ struct CoachTabView: View {
             amount: selectedAmount,
             budgetState: budgetService.budgetState,
             habit: habitSignal(for: selectedPreset),
-            primaryGoal: primaryGoal
+            primaryGoal: primaryGoal,
+            committedSafe: committedSafe
         )
+    }
+
+    /// The honest, trajectory-aware cushion the "Can I?" verdict is measured against — so the
+    /// answer accounts for the habit burn still coming this month, not just the raw pool.
+    private var committedSafe: Double? {
+        guard let pool = budgetService.budgetState?.poolRemaining,
+              let trajectory = coachService.trajectory else { return nil }
+        return trajectory.committedSafeToSpend(poolRemaining: pool)
     }
 
     private var heroCalculator: HeroBudgetCalculator? {
@@ -63,6 +72,7 @@ struct CoachTabView: View {
                     insight: coachService.currentInsight,
                     budgetState: budgetService.budgetState,
                     cushionSnapshot: monthlyCushionSnapshot,
+                    trajectory: coachService.trajectory,
                     primaryGoal: primaryGoal
                 )
                 .padding(.horizontal, theme.metrics.screenPadding)
@@ -135,7 +145,7 @@ struct CoachTabView: View {
     }
 
     private var coffeeMissionSavings: Double {
-        let habit = habitSignal(for: .coffee)
+        let habit = habitSignal(for: .small)
         if habit.spend > 0 {
             return min(max(18, habit.spend * 0.55), 42)
         }
@@ -168,12 +178,17 @@ struct CoachTabView: View {
         async let goals: () = fetchGoalsSummary()
         async let missions: () = fetchCoachMissions()
         async let pulse: () = fetchPulseSignals()
+        async let trajectory: () = fetchTrajectory()
         async let insight: () = fetchCoachInsight(force: forceInsight)
-        _ = await (budget, goals, missions, pulse, insight)
+        _ = await (budget, goals, missions, pulse, trajectory, insight)
     }
 
     private func fetchGoalsSummary() async {
         try? await goalsService.fetchGoalsSummary()
+    }
+
+    private func fetchTrajectory() async {
+        _ = try? await coachService.fetchTrajectory()
     }
 
     private func fetchCoachInsight(force: Bool) async {
@@ -370,13 +385,28 @@ private struct CoachReadCard: View {
     let insight: CoachInsight?
     let budgetState: BudgetStateRow?
     let cushionSnapshot: HeroCushionSnapshot?
+    let trajectory: SpendTrajectory?
     let primaryGoal: GoalSummaryItem?
     @Environment(\.babloTheme) private var theme
+
+    /// Naive pool safe-to-spend (what basic math reports).
+    private var naiveSafe: Double { budgetState?.poolRemaining ?? 0 }
+
+    /// Expected future discretionary burn from established habits.
+    private var projectedRemaining: Double { trajectory?.totalProjectedRemaining ?? 0 }
+
+    /// The honest cushion after subtracting that projected burn.
+    private var committedSafe: Double { naiveSafe - projectedRemaining }
+
+    /// Only surface the projection contrast when there's a meaningful habit burn to show.
+    private var hasProjection: Bool {
+        trajectory != nil && projectedRemaining >= 1 && naiveSafe > 0
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Monthly cushion")
+                Text(hasProjection ? "Projected cushion" : "Monthly cushion")
                     .font(theme.typography.body(size: 12, weight: .bold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
@@ -395,7 +425,15 @@ private struct CoachReadCard: View {
 
             FlowLayout(horizontalSpacing: 7, verticalSpacing: 7) {
                 ReadPill(title: "Spent MTD", detail: formatCurrency(budgetState?.spentMtd ?? 0), isAlert: false)
-                ReadPill(title: "Last month", detail: formatCurrency(cushionSnapshot?.previousSpend ?? budgetState?.prevMonthSpent ?? 0), isAlert: false)
+                if let driver = trajectory?.topDriver {
+                    ReadPill(
+                        title: driver.label,
+                        detail: "~\(formatCurrency(driver.projectedMonthEnd)) proj",
+                        isAlert: true
+                    )
+                } else {
+                    ReadPill(title: "Last month", detail: formatCurrency(cushionSnapshot?.previousSpend ?? budgetState?.prevMonthSpent ?? 0), isAlert: false)
+                }
                 ReadPill(title: primaryGoal?.name ?? "Goal", detail: goalDetail, isAlert: false)
             }
         }
@@ -410,7 +448,29 @@ private struct CoachReadCard: View {
     }
 
     private var readHeadline: AttributedString {
-        let safe = budgetState?.poolRemaining ?? 0
+        // Forward-looking headline: contrast the naive pool against the honest cushion left
+        // after this user's habits finish burning through the month. This is the Coach's wedge.
+        if hasProjection {
+            let cushionFloor = max(committedSafe, 0)
+            let text: String
+            if committedSafe <= 1 {
+                text = "Math says \(formatCurrency(naiveSafe)) safe — but your habits usually burn ~\(formatCurrency(projectedRemaining)) more this month. Real cushion ≈ \(formatCurrency(0))."
+            } else {
+                text = "Math says \(formatCurrency(naiveSafe)) safe — but your habits usually burn ~\(formatCurrency(projectedRemaining)) more this month. Real cushion ≈ \(formatCurrency(cushionFloor))."
+            }
+
+            var attributed = AttributedString(text)
+            if let range = attributed.range(of: "~\(formatCurrency(projectedRemaining))") {
+                attributed[range].foregroundColor = theme.colors.warning.color
+            }
+            if let range = attributed.range(of: formatCurrency(committedSafe <= 1 ? 0 : cushionFloor), options: .backwards) {
+                attributed[range].foregroundColor = committedSafe <= 1 ? theme.colors.danger.color : theme.colors.success.color
+            }
+            return attributed
+        }
+
+        // Fallback (no projection yet): room-vs-last-month, as before.
+        let safe = naiveSafe
         let roomDelta = cushionSnapshot?.roomDelta
         let delta = roomDelta ?? 0
         var text: String
@@ -501,7 +561,7 @@ private struct CoachCanICard: View {
                     Text("Can I?")
                         .font(theme.typography.title(size: 18, weight: .bold))
                         .foregroundStyle(theme.colors.textPrimary.color)
-                    Text("Coach weighs your budget & habits - not just the price.")
+                    Text(selectedPreset.tagline)
                         .font(theme.typography.body(size: 12, weight: .semibold))
                         .foregroundStyle(theme.colors.textTertiary.color)
                         .fixedSize(horizontal: false, vertical: true)
@@ -553,7 +613,7 @@ private struct CoachCanICard: View {
                     .foregroundStyle(theme.colors.textPrimary.color)
             }
 
-            Slider(value: $selectedAmount, in: 2...200, step: 1)
+            Slider(value: $selectedAmount, in: selectedPreset.sliderRange, step: 1)
                 .tint(verdictColor)
 
             CoachDecisionResultCard(decision: decision)
@@ -1071,7 +1131,9 @@ struct CoachTabPreviewWrapper: View {
                             pct: 42,
                             weeklyRate: 24,
                             thisMonth: 96,
-                            statusLabel: "on_track"
+                            statusLabel: "on_track",
+                            fundingMode: "auto_stash",
+                            monthlyContribution: 96
                         )
                     ]
                 )

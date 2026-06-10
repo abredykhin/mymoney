@@ -18,6 +18,7 @@ struct EditGoalSheet: View {
     @State private var name: String
     @State private var selectedIcon: String
     @State private var targetAmountText: String
+    @State private var monthlyContributionText: String
     @State private var hasTargetDate: Bool
     @State private var targetDate: Date
     @State private var selectedColor: String
@@ -35,6 +36,7 @@ struct EditGoalSheet: View {
         _name = State(initialValue: goal.name)
         _selectedIcon = State(initialValue: goal.categoryIcon)
         _targetAmountText = State(initialValue: "\(Int(goal.targetAmount))")
+        _monthlyContributionText = State(initialValue: goal.monthlyContribution > 0 ? "\(Int(goal.monthlyContribution))" : "")
         _selectedColor = State(initialValue: goal.color)
 
         if let etaStr = goal.etaDate {
@@ -78,6 +80,27 @@ struct EditGoalSheet: View {
                         .padding(.vertical, 12)
                         .background(theme.colors.surfaceMuted.color)
                         .clipShape(RoundedRectangle(cornerRadius: theme.metrics.controlCornerRadius, style: .continuous))
+                    }
+
+                    // Monthly auto-stash
+                    formSection(label: "AUTO-STASH PER MONTH (OPTIONAL)") {
+                        HStack {
+                            Text("$")
+                                .font(theme.typography.body(size: 17, weight: .bold))
+                                .foregroundStyle(theme.colors.textTertiary.color)
+                            TextField("0", text: $monthlyContributionText)
+                                .keyboardType(.decimalPad)
+                                .font(theme.typography.mono(size: 17, weight: .bold))
+                                .foregroundStyle(theme.colors.textPrimary.color)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(theme.colors.surfaceMuted.color)
+                        .clipShape(RoundedRectangle(cornerRadius: theme.metrics.controlCornerRadius, style: .continuous))
+
+                        Text("We'll set this aside from your budget each month and hide it from safe-to-spend.")
+                            .font(theme.typography.body(size: 12, weight: .medium))
+                            .foregroundStyle(theme.colors.textTertiary.color)
                     }
 
                     // Target date
@@ -213,6 +236,8 @@ struct EditGoalSheet: View {
             return
         }
 
+        let monthlyContribution = Double(monthlyContributionText.replacingOccurrences(of: ",", with: ".")) ?? 0
+
         errorMessage = nil
         isSaving = true
 
@@ -230,7 +255,8 @@ struct EditGoalSheet: View {
                     targetAmount: amount,
                     etaDate: etaDateString,
                     categoryIcon: selectedIcon,
-                    color: selectedColor
+                    color: selectedColor,
+                    monthlyContribution: monthlyContribution
                 )
                 dismiss()
             } catch {

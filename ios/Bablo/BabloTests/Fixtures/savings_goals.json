@@ -10,6 +10,9 @@
     "is_active": true,
     "color": "#A9F236",
     "priority": 0,
+    "funding_mode": "auto_stash",
+    "monthly_contribution": 200.00,
+    "contribution_started_on": "2026-04-23",
     "created_at": "2026-05-23T00:00:00Z",
     "updated_at": "2026-05-23T00:00:00Z"
   }

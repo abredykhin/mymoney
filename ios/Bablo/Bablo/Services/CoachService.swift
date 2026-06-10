@@ -96,52 +96,78 @@ struct CoachMissionCompletion: Codable, Equatable {
     let deposit: SavingsDeposit?
 }
 
+/// The lens the Coach reasons through for a purchase — what *kind* of risk the buy carries.
+/// Small buys are rarely about the price (it's the repetition); large buys are about absorption.
+enum CoachPurchaseLens: Equatable {
+    case habit   // small — the single price is noise; repetition is the real cost
+    case pace    // medium — does this want fit this week's rhythm?
+    case shock   // large — can I absorb a big hit without wrecking the goal?
+}
+
+/// Three purchase tiers that represent decision *archetypes*, not just price points.
 enum CoachPurchasePreset: String, CaseIterable, Identifiable, Equatable {
-    case coffee
-    case sushi
-    case concert
-    case rideshare
-    case shopping
+    case small
+    case medium
+    case large
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .coffee: return "Coffee"
-        case .sushi: return "Sushi"
-        case .concert: return "Concert"
-        case .rideshare: return "Ride"
-        case .shopping: return "Shopping"
+        case .small:  return "Coffee"
+        case .medium: return "T-shirt"
+        case .large:  return "New phone"
         }
     }
 
     var emoji: String {
         switch self {
-        case .coffee: return "☕"
-        case .sushi: return "🍣"
-        case .concert: return "🎟️"
-        case .rideshare: return "🚗"
-        case .shopping: return "🛍️"
+        case .small:  return "☕"
+        case .medium: return "👕"
+        case .large:  return "📱"
         }
     }
 
     var defaultAmount: Double {
         switch self {
-        case .coffee: return 6
-        case .sushi: return 48
-        case .concert: return 124
-        case .rideshare: return 22
-        case .shopping: return 75
+        case .small:  return 6
+        case .medium: return 40
+        case .large:  return 899
         }
     }
 
+    /// The slider span for this tier — small buys stay small, big buys reach into the hundreds.
+    var sliderRange: ClosedRange<Double> {
+        switch self {
+        case .small:  return 2...40
+        case .medium: return 20...150
+        case .large:  return 200...2000
+        }
+    }
+
+    var lens: CoachPurchaseLens {
+        switch self {
+        case .small:  return .habit
+        case .medium: return .pace
+        case .large:  return .shock
+        }
+    }
+
+    /// One-line framing of the question this tier really asks.
+    var tagline: String {
+        switch self {
+        case .small:  return "It's cheap — but is it adding up?"
+        case .medium: return "Does this want fit the week?"
+        case .large:  return "Can I absorb a big hit without wrecking goals?"
+        }
+    }
+
+    /// Representative category for the habit-signal lookup (best-effort).
     var category: FlexibleSpendingCategory {
         switch self {
-        case .coffee: return .coffeeRuns
-        case .sushi: return .eatsOut
-        case .concert: return .fun
-        case .rideshare: return .gettingAround
-        case .shopping: return .shopping
+        case .small:  return .coffeeRuns
+        case .medium: return .shopping
+        case .large:  return .shopping
         }
     }
 }
@@ -208,9 +234,11 @@ enum CoachPurchaseDecisionEngine {
         amount: Double,
         budgetState: BudgetStateRow?,
         habit: CoachHabitSignal,
-        primaryGoal: GoalSummaryItem?
+        primaryGoal: GoalSummaryItem?,
+        committedSafe: Double? = nil
     ) -> CoachPurchaseDecision {
-        let safeBefore = budgetState?.poolRemaining ?? 0
+        // Prefer the honest, trajectory-aware cushion when available; fall back to the naive pool.
+        let safeBefore = committedSafe ?? (budgetState?.poolRemaining ?? 0)
         let safeAfter = safeBefore - amount
         let goalProgress = primaryGoal?.progressPercent
         let goalNeedsCash = (goalProgress ?? 1) < 0.25 || (primaryGoal?.thisMonth ?? 1) <= 0
@@ -218,27 +246,30 @@ enum CoachPurchaseDecisionEngine {
         let trendUp = (habit.trendPercent ?? 0) >= 0.15
         let eatsTooMuchWeeklyPace = amount > max(1, budgetState?.weeklyPace ?? 0) * 0.35
 
+        // Verdict selection is shared across tiers; only the wording changes by lens.
         let verdict: CoachPurchaseVerdict
-        let headline: String
-        let reason: String
-
         if safeAfter < 0 {
             verdict = .skip
-            headline = "Skip this one."
-            reason = "\(preset.title) would overspend your safe pool by \(currency(abs(safeAfter))). Push that money toward \(primaryGoal?.name ?? "a goal") instead."
         } else if repeatedHabit && (goalNeedsCash || trendUp) {
             verdict = .caution
-            headline = "The price is tiny. The pattern is not."
-            reason = "\(habit.label) is already \(habit.transactionCount)x this period. The \(currency(amount)) is affordable, but the habit is pulling cash away from \(primaryGoal?.name ?? "your goals")."
         } else if eatsTooMuchWeeklyPace && goalNeedsCash {
             verdict = .caution
-            headline = "Possible, but it slows the goal."
-            reason = "This leaves \(currency(safeAfter)) safe, but it is a chunky bite of this week's pace while \(primaryGoal?.name ?? "your goal") needs funding."
         } else {
             verdict = .go
-            headline = "Treat earned. Go for it."
-            reason = "A one-off, not a habit - leaves \(currency(safeAfter)) safe and keeps \(primaryGoal?.name ?? "your goals") untouched."
         }
+
+        let copy = self.copy(
+            lens: preset.lens,
+            verdict: verdict,
+            amount: amount,
+            safeAfter: safeAfter,
+            habit: habit,
+            goal: primaryGoal,
+            weeklyPace: budgetState?.weeklyPace ?? 0,
+            dailyPace: budgetState?.dailyPace ?? 0
+        )
+        let headline = copy.headline
+        let reason = copy.reason
 
         return CoachPurchaseDecision(
             preset: preset,
@@ -253,6 +284,61 @@ enum CoachPurchaseDecisionEngine {
             reason: reason,
             footnote: footnote(for: habit)
         )
+    }
+
+    /// The headline + reason for a verdict, framed through the tier's lens. Small buys are
+    /// coached on repetition, medium on weekly pace, large on goal absorption.
+    private static func copy(
+        lens: CoachPurchaseLens,
+        verdict: CoachPurchaseVerdict,
+        amount: Double,
+        safeAfter: Double,
+        habit: CoachHabitSignal,
+        goal: GoalSummaryItem?,
+        weeklyPace: Double,
+        dailyPace: Double
+    ) -> (headline: String, reason: String) {
+        let goalName = goal?.name ?? "your goals"
+        let amt = currency(amount)
+        let safe = currency(safeAfter)
+        let overBy = currency(abs(safeAfter))
+        let setbackWeeks = max(1, Int((amount / max(1, goal?.weeklyRate ?? 0)).rounded(.up)))
+        let daysUntil = max(1, Int((abs(safeAfter) / max(1, dailyPace)).rounded(.up)))
+
+        switch (lens, verdict) {
+        // ── Small / habit lens ──────────────────────────────────────────────
+        case (.habit, .go):
+            return ("One won't move the needle.",
+                    "A single \(amt) \(habit.label.lowercased()) is noise. Go enjoy it — \(safe) stays safe.")
+        case (.habit, .caution):
+            return ("The price is tiny. The pattern is not.",
+                    "\(habit.label) is already \(habit.transactionCount)x this period. The \(amt) is fine; the habit is quietly pulling cash from \(goalName).")
+        case (.habit, .skip):
+            return ("Even small adds up when the pool's dry.",
+                    "You're \(overBy) past safe already. Hold the \(amt) until the next paycheck clears.")
+
+        // ── Medium / pace lens ──────────────────────────────────────────────
+        case (.pace, .go):
+            return ("Fits the week. Go for it.",
+                    "Leaves \(safe) safe and keeps \(goalName) on pace. Earned.")
+        case (.pace, .caution):
+            return ("Doable, but it bites the week.",
+                    "This is a chunky slice of this week's \(currency(weeklyPace)) pace while \(goalName) still needs funding. Possible — just slows the goal.")
+        case (.pace, .skip):
+            return ("This tips the week over.",
+                    "It pushes you \(overBy) past safe. Shrink it or wait — \(goalName) takes the hit otherwise.")
+
+        // ── Large / shock lens ──────────────────────────────────────────────
+        case (.shock, .go):
+            return ("You can absorb this.",
+                    "\(safe) still safe afterward and \(goalName) stays on track. Green light.")
+        case (.shock, .caution):
+            return ("You can cover it — but it costs the goal.",
+                    "You can swing \(amt), but it sets \(goalName) back ~\(setbackWeeks) week\(setbackWeeks == 1 ? "" : "s"). Worth it?")
+        case (.shock, .skip):
+            return ("Not this month.",
+                    "\(amt) overshoots your real cushion by \(overBy). Wait ~\(daysUntil) days (next paycheck) and it's a clean yes.")
+        }
     }
 
     private static func footnote(for habit: CoachHabitSignal) -> String {
@@ -278,6 +364,7 @@ enum CoachPurchaseDecisionEngine {
 class CoachService: ObservableObject {
     @Published var currentInsight: CoachInsight? = nil
     @Published var missions: [CoachMission] = []
+    @Published var trajectory: SpendTrajectory? = nil
     @Published var isDismissed: Bool = false
     @Published var isLoading: Bool = false
     @Published var isLoadingMissions: Bool = false
@@ -293,6 +380,29 @@ class CoachService: ObservableObject {
 
     init(supabaseClient: SupabaseClient = SupabaseManager.shared.client) {
         self.supabase = supabaseClient
+    }
+
+    // MARK: - Spend Trajectory
+
+    /// Fetch the month-end spend projection (deterministic, no LLM). Powers the honest
+    /// "committed safe to spend" cushion and the biggest-driver callout on the Coach tab.
+    @discardableResult
+    func fetchTrajectory() async throws -> SpendTrajectory {
+        do {
+            let rows: [SpendTrajectoryRow] = try await supabase
+                .rpc("get_spend_trajectory")
+                .execute()
+                .value
+
+            let trajectory = SpendTrajectory.build(rows: rows)
+            self.trajectory = trajectory
+            Logger.i("CoachService: Loaded spend trajectory (\(trajectory.items.count) buckets, projected remaining \(trajectory.totalProjectedRemaining))")
+            return trajectory
+        } catch {
+            Logger.e("CoachService: Failed to fetch spend trajectory: \(error)")
+            self.error = error
+            throw error
+        }
     }
 
     // MARK: - Missions

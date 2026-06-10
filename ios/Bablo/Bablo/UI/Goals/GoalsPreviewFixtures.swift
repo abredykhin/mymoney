@@ -22,7 +22,9 @@ struct GoalsPreviewFixtures {
             pct: 34.4,
             weeklyRate: 84.0,
             thisMonth: 340.0,
-            statusLabel: "on track"
+            statusLabel: "on track",
+            fundingMode: "auto_stash",
+            monthlyContribution: 340.0
         ),
         GoalSummaryItem(
             id: 2,
@@ -37,7 +39,9 @@ struct GoalsPreviewFixtures {
             pct: 25.0,
             weeklyRate: 0.0,
             thisMonth: 0.0,
-            statusLabel: "at risk"
+            statusLabel: "at risk",
+            fundingMode: "auto_stash",
+            monthlyContribution: 0.0
         ),
         GoalSummaryItem(
             id: 3,
@@ -52,7 +56,9 @@ struct GoalsPreviewFixtures {
             pct: 95.0,
             weeklyRate: 150.0,
             thisMonth: 600.0,
-            statusLabel: "almost"
+            statusLabel: "almost",
+            fundingMode: "auto_stash",
+            monthlyContribution: 600.0
         ),
         GoalSummaryItem(
             id: 4,
@@ -67,7 +73,9 @@ struct GoalsPreviewFixtures {
             pct: 100.0,
             weeklyRate: 0.0,
             thisMonth: 0.0,
-            statusLabel: "funded"
+            statusLabel: "funded",
+            fundingMode: "auto_stash",
+            monthlyContribution: 0.0
         )
     ]
 

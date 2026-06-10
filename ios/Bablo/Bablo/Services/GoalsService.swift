@@ -19,6 +19,10 @@ struct SavingsGoal: Codable, Identifiable, Equatable {
     let isActive: Bool
     let color: String
     let priority: Int
+    let fundingMode: String
+    let monthlyContribution: Double
+    let contributionStartedOn: String?
+    let linkedAccountId: Int?
     let createdAt: String
     let updatedAt: String
 
@@ -33,6 +37,10 @@ struct SavingsGoal: Codable, Identifiable, Equatable {
         case isActive = "is_active"
         case color
         case priority
+        case fundingMode = "funding_mode"
+        case monthlyContribution = "monthly_contribution"
+        case contributionStartedOn = "contribution_started_on"
+        case linkedAccountId = "linked_account_id"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -99,6 +107,8 @@ struct GoalSummaryItem: Codable, Identifiable, Equatable {
     let weeklyRate: Double
     let thisMonth: Double
     let statusLabel: String
+    let fundingMode: String
+    let monthlyContribution: Double
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -114,6 +124,8 @@ struct GoalSummaryItem: Codable, Identifiable, Equatable {
         case weeklyRate = "weekly_rate"
         case thisMonth = "this_month"
         case statusLabel = "status_label"
+        case fundingMode = "funding_mode"
+        case monthlyContribution = "monthly_contribution"
     }
 
     var progressPercent: Double { min(1.0, max(0.0, pct / 100.0)) }
@@ -193,7 +205,8 @@ class GoalsService: ObservableObject {
         etaDate: String?,
         categoryIcon: String = "✈️",
         color: String = "#A9F236",
-        priority: Int = 0
+        priority: Int = 0,
+        monthlyContribution: Double = 0
     ) async throws -> SavingsGoal {
         isLoading = true
         error = nil
@@ -211,6 +224,7 @@ class GoalsService: ObservableObject {
             let category_icon: String
             let color: String
             let priority: Int
+            let monthly_contribution: Double
         }
 
         let body = CreateGoalRequest(
@@ -220,7 +234,8 @@ class GoalsService: ObservableObject {
             eta_date: etaDate,
             category_icon: categoryIcon,
             color: color,
-            priority: priority
+            priority: priority,
+            monthly_contribution: monthlyContribution
         )
 
         do {
@@ -249,7 +264,8 @@ class GoalsService: ObservableObject {
         targetAmount: Double,
         etaDate: String?,
         categoryIcon: String,
-        color: String
+        color: String,
+        monthlyContribution: Double
     ) async throws {
         isLoading = true
         error = nil
@@ -261,6 +277,7 @@ class GoalsService: ObservableObject {
             let eta_date: String?
             let category_icon: String
             let color: String
+            let monthly_contribution: Double
         }
 
         let body = UpdateGoalRequest(
@@ -268,7 +285,8 @@ class GoalsService: ObservableObject {
             target_amount: targetAmount,
             eta_date: etaDate,
             category_icon: categoryIcon,
-            color: color
+            color: color,
+            monthly_contribution: monthlyContribution
         )
 
         do {

@@ -88,12 +88,17 @@ struct GoalsServiceTests {
             name: testGoalName,
             targetAmount: 3000.00,
             etaDate: "2027-06-30",
-            categoryIcon: "🏄"
+            categoryIcon: "🏄",
+            monthlyContribution: 200.00
         )
-        
+
         #expect(createdGoal.name == testGoalName)
         #expect(createdGoal.targetAmount == 3000.00)
         #expect(createdGoal.currentAmount == 0.00)
+        // Auto-stash (Mode B) round-trips and the BEFORE trigger stamps the accrual anchor.
+        #expect(createdGoal.fundingMode == "auto_stash")
+        #expect(createdGoal.monthlyContribution == 200.00)
+        #expect(createdGoal.contributionStartedOn != nil)
 
         // 5. Add a deposit and verify the database trigger updates the main goal balance automatically
         let deposit = try await service.addDeposit(goalId: createdGoal.id, amount: 250.00)

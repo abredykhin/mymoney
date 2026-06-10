@@ -103,6 +103,7 @@
 		757ABF492C18195400DF8C95 /* GoalsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */; };
 		757ABF492C18195400DF8CA8 /* BabloTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CA8 /* BabloTests.swift */; };
 		757ABF492C18195400DF8CAD /* CoachServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CAD /* CoachServiceTests.swift */; };
+		A1B2C3D4E5F600112233AA02 /* SpendTrajectoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600112233BB02 /* SpendTrajectoryTests.swift */; };
 		757ABF492C18195400DF8CB0 /* DesignSystemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CB0 /* DesignSystemTests.swift */; };
 		757ABF492C18195400DF8CB1 /* AuthLoginViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF482C18195400DF8CB1 /* AuthLoginViewModelTests.swift */; };
 		757ABF532C18195400DF8CA8 /* BabloUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 757ABF522C18195400DF8CA8 /* BabloUITests.swift */; };
@@ -141,6 +142,7 @@
 		75E49BAC2CA3EACF008D72F8 /* Dates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75E49BAB2CA3EACF008D72F8 /* Dates.swift */; };
 		817593B8E6AB203198C0B34E /* SubscriptionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22B25505CD6016DA6F22EE29 /* SubscriptionsService.swift */; };
 		89D3630D256C4590BF461C80 /* CategoryBreakdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 210C60500BC94ADC88204FFE /* CategoryBreakdown.swift */; };
+		A1B2C3D4E5F600112233AA01 /* SpendTrajectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F600112233BB01 /* SpendTrajectory.swift */; };
 		8BFF1113A3F23AA9B6F845A0 /* OnboardingIncomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DEC7CC9911D35A887B73A8 /* OnboardingIncomeViewModelTests.swift */; };
 		8E7A4C211BA54D6AB8D035C1 /* OnboardingSandboxStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7A4C201BA54D6AB8D035C1 /* OnboardingSandboxStateTests.swift */; };
 		8E7A4C291BA54D6AB8D035C1 /* OnboardingNameInputViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7A4C281BA54D6AB8D035C1 /* OnboardingNameInputViewModelTests.swift */; };
@@ -204,6 +206,7 @@
 		1CB442FCBA28DFC63AED0C61 /* OnboardingFixedExpensesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingFixedExpensesView.swift; sourceTree = "<group>"; };
 		1F7345AE9DF34B33BC92C821 /* TheLineupWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheLineupWidgetView.swift; sourceTree = "<group>"; };
 		210C60500BC94ADC88204FFE /* CategoryBreakdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryBreakdown.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F600112233BB01 /* SpendTrajectory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendTrajectory.swift; sourceTree = "<group>"; };
 		22B25505CD6016DA6F22EE29 /* SubscriptionsService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionsService.swift; sourceTree = "<group>"; };
 		23C1810B7EF201D0786BA6B6 /* OnboardingAmountStepper.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingAmountStepper.swift; sourceTree = "<group>"; };
 		241F8E9939B3B508CC812313 /* FixedExpenseCategoryTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FixedExpenseCategoryTests.swift; sourceTree = "<group>"; };
@@ -290,6 +293,7 @@
 		757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsServiceTests.swift; sourceTree = "<group>"; };
 		757ABF482C18195400DF8CA8 /* BabloTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BabloTests.swift; sourceTree = "<group>"; };
 		757ABF482C18195400DF8CAD /* CoachServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachServiceTests.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F600112233BB02 /* SpendTrajectoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendTrajectoryTests.swift; sourceTree = "<group>"; };
 		757ABF482C18195400DF8CB0 /* DesignSystemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystemTests.swift; sourceTree = "<group>"; };
 		757ABF482C18195400DF8CB1 /* AuthLoginViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthLoginViewModelTests.swift; sourceTree = "<group>"; };
 		757ABF4E2C18195400DF8CA8 /* BabloUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BabloUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -669,6 +673,7 @@
 				757ABF482C18195400DF8C94 /* PulseAnalyticsTests.swift */,
 				757ABF482C18195400DF8C95 /* GoalsServiceTests.swift */,
 				757ABF482C18195400DF8CAD /* CoachServiceTests.swift */,
+				A1B2C3D4E5F600112233BB02 /* SpendTrajectoryTests.swift */,
 				757ABF482C18195400DF8CB0 /* DesignSystemTests.swift */,
 				757ABF482C18195400DF8CB1 /* AuthLoginViewModelTests.swift */,
 				241F8E9939B3B508CC812313 /* FixedExpenseCategoryTests.swift */,
@@ -730,6 +735,7 @@
 				F627E8B0014BC6160A998D2B /* FlexibleSpendingCategory.swift */,
 				C90B633301DD401FB4FCCB9B /* FlexibleSpendingCategory+PlaidMapping.swift */,
 				210C60500BC94ADC88204FFE /* CategoryBreakdown.swift */,
+				A1B2C3D4E5F600112233BB01 /* SpendTrajectory.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -1127,6 +1133,7 @@
 				05706EF4C798BE6921652138 /* FlexibleSpendingCategory.swift in Sources */,
 				CEE77D35680A4C4EACF92149 /* FlexibleSpendingCategory+PlaidMapping.swift in Sources */,
 				89D3630D256C4590BF461C80 /* CategoryBreakdown.swift in Sources */,
+				A1B2C3D4E5F600112233AA01 /* SpendTrajectory.swift in Sources */,
 				1318B84F8F0244479A7F2FE3 /* WhereItWentWidgetView.swift in Sources */,
 				522F21627C184781A259930C /* TheLineupWidgetView.swift in Sources */,
 				D95B4ECD0B0830645BD96CDE /* IncomeInputViewModel.swift in Sources */,
@@ -1172,6 +1179,7 @@
 				757ABF492C18195400DF8C94 /* PulseAnalyticsTests.swift in Sources */,
 				757ABF492C18195400DF8C95 /* GoalsServiceTests.swift in Sources */,
 				757ABF492C18195400DF8CAD /* CoachServiceTests.swift in Sources */,
+				A1B2C3D4E5F600112233AA02 /* SpendTrajectoryTests.swift in Sources */,
 				757ABF492C18195400DF8CB0 /* DesignSystemTests.swift in Sources */,
 				757ABF492C18195400DF8CB1 /* AuthLoginViewModelTests.swift in Sources */,
 				5A0D4D717842591388AD49E5 /* FixedExpenseCategoryTests.swift in Sources */,

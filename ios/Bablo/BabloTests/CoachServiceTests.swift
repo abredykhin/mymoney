@@ -73,31 +73,35 @@ struct CoachServiceTests {
             pct: pct,
             weeklyRate: weeklyRate,
             thisMonth: thisMonth,
-            statusLabel: "on_track"
+            statusLabel: "on_track",
+            fundingMode: "auto_stash",
+            monthlyContribution: 96
         )
     }
 
     // MARK: - Fast Unit Tests (Offline)
 
-    @Test func testCanIPurchaseApprovesOneOffWhenBudgetAndGoalStayHealthy() {
+    // Medium tier (pace lens): a want that fits the week gets a green light.
+    @Test func testCanIPurchaseApprovesMediumWhenItFitsTheWeek() {
         let decision = CoachPurchaseDecisionEngine.evaluate(
-            preset: .sushi,
+            preset: .medium,
             amount: 48,
             budgetState: Self.budgetState(poolRemaining: 312),
-            habit: CoachHabitSignal(label: "Eats", spend: 142, transactionCount: 2, trendPercent: 0.38),
+            habit: CoachHabitSignal(label: "Shop", spend: 142, transactionCount: 2, trendPercent: 0.38),
             primaryGoal: Self.goal()
         )
 
         #expect(decision.verdict == .go)
         #expect(decision.safeAfterPurchase == 264)
         #expect(decision.goalName == "Japan")
-        #expect(decision.headline == "Treat earned. Go for it.")
-        #expect(decision.reason.contains("one-off"))
+        #expect(decision.headline == "Fits the week. Go for it.")
+        #expect(decision.reason.contains("on pace"))
     }
 
+    // Small tier (habit lens): a cheap buy that's a repeated habit draining a hungry goal → caution.
     @Test func testCanIPurchaseWarnsWhenCheapItemIsARepeatedHabitAndGoalNeedsCash() {
         let decision = CoachPurchaseDecisionEngine.evaluate(
-            preset: .coffee,
+            preset: .small,
             amount: 6,
             budgetState: Self.budgetState(poolRemaining: 80, dailyPace: 5, weeklyPace: 35),
             habit: CoachHabitSignal(label: "Coffee", spend: 42, transactionCount: 6, trendPercent: 0.22),
@@ -111,20 +115,37 @@ struct CoachServiceTests {
         #expect(decision.reason.contains("6x"))
     }
 
-    @Test func testCanIPurchaseBlocksWhenPurchaseWouldOverspendPool() {
+    // Large tier (shock lens): a big-ticket buy that overshoots the cushion → skip.
+    @Test func testCanIPurchaseBlocksWhenLargeBuyOvershootsCushion() {
         let decision = CoachPurchaseDecisionEngine.evaluate(
-            preset: .concert,
+            preset: .large,
             amount: 124,
             budgetState: Self.budgetState(poolRemaining: 72, dailyPace: 4, weeklyPace: 28),
-            habit: CoachHabitSignal(label: "Fun", spend: 220, transactionCount: 3, trendPercent: nil),
+            habit: CoachHabitSignal(label: "Shop", spend: 220, transactionCount: 3, trendPercent: nil),
             primaryGoal: Self.goal(name: "Emergency", pct: 8, weeklyRate: 75, thisMonth: 10)
         )
 
         #expect(decision.verdict == .skip)
         #expect(decision.safeAfterPurchase == -52)
         #expect(decision.goalName == "Emergency")
-        #expect(decision.headline == "Skip this one.")
-        #expect(decision.reason.contains("overspend"))
+        #expect(decision.headline == "Not this month.")
+        #expect(decision.reason.contains("overshoots"))
+    }
+
+    // The verdict is measured against the trajectory-aware committed cushion when provided —
+    // a buy that fits the naive pool can still be a skip once habit burn is subtracted.
+    @Test func testCanIPurchaseUsesCommittedSafeWhenProvided() {
+        let decision = CoachPurchaseDecisionEngine.evaluate(
+            preset: .medium,
+            amount: 40,
+            budgetState: Self.budgetState(poolRemaining: 300),
+            habit: CoachHabitSignal(label: "Shop", spend: 80, transactionCount: 2, trendPercent: nil),
+            primaryGoal: Self.goal(),
+            committedSafe: 25   // habits already claim most of the $300 pool
+        )
+
+        #expect(decision.verdict == .skip)
+        #expect(decision.safeAfterPurchase == -15)
     }
 
     @Test @MainActor func testFetchCoachMissionsQueriesRPC() async throws {

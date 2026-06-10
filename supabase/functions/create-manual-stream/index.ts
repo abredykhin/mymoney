@@ -205,6 +205,7 @@ function calculateMonthlyAmount(amount: number, frequency: string): number {
 
   const multipliers: Record<string, number> = {
     'WEEKLY': 52 / 12,
+    'BIWEEKLY': 26 / 12,
     'SEMI_MONTHLY': 2,
     'MONTHLY': 1,
     'QUARTERLY': 1 / 3,
