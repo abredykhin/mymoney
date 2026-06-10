@@ -89,7 +89,7 @@ struct CoachTabView: View {
                 )
                 .padding(.horizontal, theme.metrics.screenPadding)
 
-                if let activeMission = activeCoffeeMission {
+                if let activeMission = activeMission {
                     CoachActiveMissionCard(
                         mission: activeMission,
                         fallbackGoalName: primaryGoal?.name ?? "Goals",
@@ -98,9 +98,9 @@ struct CoachTabView: View {
                     .padding(.horizontal, theme.metrics.screenPadding)
                 } else if !dismissedMissionSuggestion {
                     CoachMissionSuggestionCard(
+                        suggestion: suggestedMission,
                         goalName: primaryGoal?.name ?? "Goals",
-                        projectedSavings: coffeeMissionSavings,
-                        start: startCoffeeMission,
+                        start: { startSuggestedMission(suggestedMission) },
                         dismiss: { withAnimation(.easeInOut(duration: 0.2)) { dismissedMissionSuggestion = true } }
                     )
                     .padding(.horizontal, theme.metrics.screenPadding)
@@ -138,10 +138,8 @@ struct CoachTabView: View {
             .map { CoachHabitSignal(from: $0) }
     }
 
-    private var activeCoffeeMission: CoachMission? {
-        coachService.missions.first { mission in
-            mission.missionType == .coffeeCap && mission.status == .active
-        }
+    private var activeMission: CoachMission? {
+        coachService.missions.first { $0.status == .active }
     }
 
     private var coffeeMissionSavings: Double {
@@ -150,6 +148,43 @@ struct CoachTabView: View {
             return min(max(18, habit.spend * 0.55), 42)
         }
         return 24
+    }
+
+    /// The mission Coach proposes, driven by the trajectory's biggest projected leak: cap the
+    /// category about to eat the most this month. Falls back to a coffee cap when there's no
+    /// strong category driver yet.
+    private var suggestedMission: MissionSuggestion {
+        let duration = 3
+
+        if let driver = coachService.trajectory?.topDriver,
+           case let .category(category) = driver.bucket,
+           driver.monthlyAverage >= 60 {
+            let dailyRate = driver.monthlyAverage / 30.0
+            let dailyCap = max(1, (dailyRate * 0.6).rounded())
+            let savings = max(12, ((dailyRate - dailyCap) * Double(duration)).rounded())
+            return MissionSuggestion(
+                type: .categoryCap,
+                targetCategory: category,
+                title: "\(duration)-day \(category.shortName.lowercased()) cap",
+                icon: category.emoji,
+                blurb: "\(category.displayName) is your biggest projected leak (~\(formatCurrency(driver.projectedMonthEnd)) this month). Cap it for \(duration) days and bank the difference.",
+                dailyCap: dailyCap,
+                durationDays: duration,
+                projectedSavings: savings
+            )
+        }
+
+        // Fallback: the original coffee cap.
+        return MissionSuggestion(
+            type: .coffeeCap,
+            targetCategory: .coffeeRuns,
+            title: "\(duration)-day coffee cap",
+            icon: "☕",
+            blurb: "Skip café coffee for \(duration) days. Coach banks the saved amount as money ready for your goal.",
+            dailyCap: 0,
+            durationDays: duration,
+            projectedSavings: coffeeMissionSavings
+        )
     }
 
     private func habitSignal(for preset: CoachPurchasePreset) -> CoachHabitSignal {
@@ -218,18 +253,24 @@ struct CoachTabView: View {
         }
     }
 
-    private func startCoffeeMission() {
+    private func startSuggestedMission(_ suggestion: MissionSuggestion) {
         Task {
             do {
-                _ = try await coachService.startCoffeeMission(
+                _ = try await coachService.startMission(
+                    type: suggestion.type,
                     goalId: primaryGoal?.id,
-                    projectedSavings: coffeeMissionSavings
+                    projectedSavings: suggestion.projectedSavings,
+                    dailyCap: suggestion.dailyCap,
+                    targetCategory: suggestion.targetCategory?.rawValue,
+                    title: suggestion.title,
+                    icon: suggestion.icon,
+                    durationDays: suggestion.durationDays
                 )
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
                     dismissedMissionSuggestion = false
                 }
             } catch {
-                Logger.e("CoachTabView: Failed to start coffee mission: \(error)")
+                Logger.e("CoachTabView: Failed to start mission: \(error)")
             }
         }
     }
@@ -707,9 +748,21 @@ private struct CoachDecisionResultCard: View {
     }
 }
 
-private struct CoachMissionSuggestionCard: View {
-    let goalName: String
+/// A concrete mission Coach proposes — derived from the trajectory's biggest leak.
+struct MissionSuggestion: Equatable {
+    let type: CoachMissionType
+    let targetCategory: FlexibleSpendingCategory?
+    let title: String
+    let icon: String
+    let blurb: String
+    let dailyCap: Double
+    let durationDays: Int
     let projectedSavings: Double
+}
+
+private struct CoachMissionSuggestionCard: View {
+    let suggestion: MissionSuggestion
+    let goalName: String
     let start: () -> Void
     let dismiss: () -> Void
     @Environment(\.babloTheme) private var theme
@@ -725,16 +778,16 @@ private struct CoachMissionSuggestionCard: View {
                     .background(theme.colors.accent.color.opacity(0.18))
                     .clipShape(Capsule())
                 Spacer()
-                Text("~\(formatCurrency(projectedSavings)) → \(goalName)")
+                Text("~\(formatCurrency(suggestion.projectedSavings)) → \(goalName)")
                     .font(theme.typography.body(size: 12, weight: .bold))
                     .foregroundStyle(theme.colors.success.color)
             }
 
-            Text("3-day coffee cap")
+            Text("\(suggestion.icon) \(suggestion.title)")
                 .font(theme.typography.title(size: 18, weight: .bold))
                 .foregroundStyle(theme.colors.textPrimary.color)
 
-            Text("Skip café coffee for 3 days. Coach will treat the saved amount as money ready for \(goalName).")
+            Text(suggestion.blurb)
                 .font(theme.typography.body(size: 13, weight: .semibold))
                 .foregroundStyle(theme.colors.textSecondary.color)
                 .fixedSize(horizontal: false, vertical: true)

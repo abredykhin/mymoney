@@ -28,7 +28,11 @@ struct CoachInsight: Codable, Equatable {
 }
 
 enum CoachMissionType: String, Codable, Equatable {
-    case coffeeCap = "coffee_cap"
+    case coffeeCap   = "coffee_cap"
+    /// Keep a chosen flexible category under a daily cap for N days.
+    case categoryCap = "category_cap"
+    /// N days with zero discretionary spend.
+    case noSpend     = "no_spend"
 }
 
 enum CoachMissionStatus: String, Codable, Equatable {
@@ -427,12 +431,29 @@ class CoachService: ObservableObject {
         }
     }
 
-    func startCoffeeMission(goalId: Int?, projectedSavings: Double) async throws -> CoachMission {
+    /// Start any mission type. `targetCategory` is the FlexibleSpendingCategory raw value for a
+    /// category_cap (ignored by no_spend); `title`/`icon` are optional client overrides that fall
+    /// back to server-derived defaults when nil.
+    @discardableResult
+    func startMission(
+        type: CoachMissionType,
+        goalId: Int?,
+        projectedSavings: Double,
+        dailyCap: Double = 0,
+        targetCategory: String? = nil,
+        title: String? = nil,
+        icon: String? = nil,
+        durationDays: Int = 3
+    ) async throws -> CoachMission {
         struct StartCoachMissionRequest: Codable {
             let p_mission_type: String
             let p_target_goal_id: Int?
             let p_projected_savings: Double
             let p_daily_cap: Double
+            let p_target_match: String?
+            let p_title: String?
+            let p_icon: String?
+            let p_duration_days: Int
         }
 
         isLoadingMissions = true
@@ -440,10 +461,14 @@ class CoachService: ObservableObject {
         defer { isLoadingMissions = false }
 
         let body = StartCoachMissionRequest(
-            p_mission_type: CoachMissionType.coffeeCap.rawValue,
+            p_mission_type: type.rawValue,
             p_target_goal_id: goalId,
             p_projected_savings: projectedSavings,
-            p_daily_cap: 0
+            p_daily_cap: dailyCap,
+            p_target_match: targetCategory,
+            p_title: title,
+            p_icon: icon,
+            p_duration_days: durationDays
         )
 
         do {
@@ -453,13 +478,23 @@ class CoachService: ObservableObject {
                 .value
 
             upsertMission(mission)
-            Logger.i("CoachService: Started coach mission \(mission.id)")
+            Logger.i("CoachService: Started \(type.rawValue) coach mission \(mission.id)")
             return mission
         } catch {
             Logger.e("CoachService: Failed to start coach mission: \(error)")
             self.error = error
             throw error
         }
+    }
+
+    /// Back-compat convenience for the original coffee-cap mission.
+    @discardableResult
+    func startCoffeeMission(goalId: Int?, projectedSavings: Double) async throws -> CoachMission {
+        try await startMission(
+            type: .coffeeCap,
+            goalId: goalId,
+            projectedSavings: projectedSavings
+        )
     }
 
     func completeMission(id: Int, actualSavings: Double, stashToGoal: Bool) async throws -> CoachMissionCompletion {

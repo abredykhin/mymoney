@@ -245,6 +245,65 @@ struct CoachServiceTests {
         #expect(service.missions.map(\.id).contains(12))
     }
 
+    @Test @MainActor func testStartCategoryCapMissionSendsGeneralizedParams() async throws {
+        let mockData = """
+        {
+          "id": 21,
+          "user_id": "user-1",
+          "mission_type": "category_cap",
+          "title": "3-day shop cap",
+          "icon": "🛍️",
+          "target_goal_id": 1,
+          "goal_name": "Japan",
+          "start_date": "2026-06-09",
+          "end_date": "2026-06-11",
+          "projected_savings": 60,
+          "actual_savings": 0,
+          "status": "active",
+          "completed_days": 0,
+          "total_days": 3,
+          "created_at": "2026-06-09T03:00:00Z",
+          "updated_at": "2026-06-09T03:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        MockURLProtocol.mockHandler = { request in
+            let url = request.url!
+            #expect(url.path.contains("/rest/v1/rpc/start_coach_mission"))
+
+            let body = try #require(request.httpBodyStream?.readAllData())
+            let json = try #require(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            #expect(json["p_mission_type"] as? String == "category_cap")
+            #expect(json["p_target_match"] as? String == "shopping")
+            #expect(json["p_daily_cap"] as? Double == 20)
+            #expect(json["p_duration_days"] as? Int == 3)
+
+            let response = HTTPURLResponse(
+                url: url,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, mockData)
+        }
+
+        let service = CoachService(supabaseClient: Self.mockSupabaseClient())
+        let mission = try await service.startMission(
+            type: .categoryCap,
+            goalId: 1,
+            projectedSavings: 60,
+            dailyCap: 20,
+            targetCategory: "shopping",
+            title: "3-day shop cap",
+            icon: "🛍️",
+            durationDays: 3
+        )
+
+        #expect(mission.id == 21)
+        #expect(mission.missionType == .categoryCap)
+        #expect(service.missions.map(\.id).contains(21))
+    }
+
     @Test @MainActor func testCompleteMissionCanReturnGoalDeposit() async throws {
         let mockData = """
         {
