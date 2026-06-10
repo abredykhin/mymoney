@@ -437,6 +437,10 @@ struct HomeView: View {
 
         await userAccount.fetchProfile()
         await budgetService.fetchBudgetSummary()
+        // Pull the single-pool RPC row so the Hero reflects goals_set_aside (Mode B
+        // auto-stash) and the pool that nets it; the Hero prefers this over the
+        // synthesized fallback whenever it's loaded.
+        await budgetService.fetchBudgetState(incomeBasis: userAccount.incomeBasis)
         try? await budgetService.fetchTotalBalance()
 
         if !isOffline {

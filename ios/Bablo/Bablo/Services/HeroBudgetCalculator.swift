@@ -45,6 +45,7 @@ struct HeroBudgetCalculator {
         dayOfMonth: Int,
         daysInMonth: Int,
         daysElapsedInWeek: Int = 1,
+        goalsSetAside: Double = 0,
         incomeBasis: IncomeBasis? = nil,
         budgetState: BudgetStateRow? = nil
     ) {
@@ -89,13 +90,15 @@ struct HeroBudgetCalculator {
             let resolvedBasis = incomeBasis
                 ?? (spendingPlanMode == .safeToSpend ? .cashOnly : .projected)
 
+            // G2: goals reserved (Mode B auto-stash) come out of the pool before smoothing,
+            // mirroring get_budget_state's goals_set_aside (already mode-clamped by the RPC).
             let poolTotalVal: Double
             let poolRemainingVal: Double
             if resolvedBasis == .cashOnly {
-                poolTotalVal = max(0.0, (liquidCashAvailable ?? 0.0) - upcomingUnpaidExpenses)
+                poolTotalVal = max(0.0, (liquidCashAvailable ?? 0.0) - upcomingUnpaidExpenses - goalsSetAside)
                 poolRemainingVal = poolTotalVal
             } else {
-                poolTotalVal = max(0.0, effIncome - monthlyMandatoryExpenses)
+                poolTotalVal = max(0.0, effIncome - monthlyMandatoryExpenses - goalsSetAside)
                 poolRemainingVal = poolTotalVal - variableSpend
             }
 
@@ -116,7 +119,7 @@ struct HeroBudgetCalculator {
                 prevMonthSpent: previousMonthVariableSpend,
                 effectiveIncome: effIncome,
                 mandatory: monthlyMandatoryExpenses,
-                goalsSetAside: 0.0,
+                goalsSetAside: goalsSetAside,
                 netCash: liquidCashAvailable ?? 0.0,
                 upcomingBills: upcomingUnpaidExpenses,
                 incomeBasis: resolvedBasis,
